@@ -1,0 +1,12 @@
+# PostgreSQL for local development and the integration tests:
+#   docker compose -f deploy/postgres/compose.yaml up -d
+#   WBFT_ANALYZER_TEST_DSN=postgres://analyzer:analyzer@127.0.0.1:5433/analyzer?sslmode=disable go test ./...
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: analyzer
+      POSTGRES_PASSWORD: analyzer
+      POSTGRES_DB: analyzer
+    ports:
+      - "127.0.0.1:5433:5432"
