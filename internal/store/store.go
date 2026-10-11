@@ -271,15 +271,26 @@ func (s *Store) Series(ctx context.Context, networkID int64, kind, node string) 
 	if err != nil {
 		return nil, fmt.Errorf("store: %w", err)
 	}
-	out, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (TrendPoint, error) {
-		var p TrendPoint
-		err := r.Scan(&p.Report, &p.At, &p.Kind, &p.Node, &p.Rate)
-		return p, err
-	})
+	return collect(rows, scanTrendPoint)
+}
+
+// SeriesBetween is Series limited to the points with from <= At <= to.
+// Times are compared as written; reports write them in RFC 3339 UTC, the
+// order Series and the alert rules use too.
+func (s *Store) SeriesBetween(ctx context.Context, networkID int64, kind, node, from, to string) ([]TrendPoint, error) {
+	rows, err := s.pool.Query(ctx, `SELECT report_id, at, kind, node, rate FROM trend_points
+		WHERE network_id = $1 AND kind = $2 AND node = $3 AND at >= $4 AND at <= $5 ORDER BY at, report_id`,
+		networkID, kind, node, from, to)
 	if err != nil {
 		return nil, fmt.Errorf("store: %w", err)
 	}
-	return out, nil
+	return collect(rows, scanTrendPoint)
+}
+
+func scanTrendPoint(r pgx.CollectableRow) (TrendPoint, error) {
+	var p TrendPoint
+	err := r.Scan(&p.Report, &p.At, &p.Kind, &p.Node, &p.Rate)
+	return p, err
 }
 
 // AlertRule is an alert rule of a network (design.md 6.7, 2).
@@ -314,15 +325,7 @@ func (s *Store) AlertRules(ctx context.Context, networkID int64) ([]AlertRule, e
 	if err != nil {
 		return nil, fmt.Errorf("store: %w", err)
 	}
-	out, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (AlertRule, error) {
-		var a AlertRule
-		err := r.Scan(&a.ID, &a.NetworkID, &a.Kind, &a.Node, &a.Window, &a.Baseline, &a.Mode, &a.Threshold, &a.Webhook)
-		return a, err
-	})
-	if err != nil {
-		return nil, fmt.Errorf("store: %w", err)
-	}
-	return out, nil
+	return collect(rows, scanAlertRule)
 }
 
 // SetAlert records the state of a rule and returns the state before
