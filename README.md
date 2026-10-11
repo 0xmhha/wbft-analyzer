@@ -31,6 +31,20 @@ first one (A0):
 Every command is listed by `wbft-analyzer help`; a command that is not built
 yet says so and exits with code 69.
 
+Built so far:
+
+- `wbft-analyzer ingest reports --db DSN FILE ...` loads inspector reports:
+  the public-build checks, one copy per file, and the observation rates of
+  each report added to the trends of its network, with the network's alert
+  rules evaluated and their webhooks told of state changes.
+
+A local PostgreSQL for development and the integration tests:
+
+```
+docker compose -f deploy/postgres/compose.yaml up -d
+WBFT_ANALYZER_TEST_DSN='postgres://analyzer:analyzer@127.0.0.1:5433/analyzer?sslmode=disable' go test ./...
+```
+
 ## Build and test
 
 ```

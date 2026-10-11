@@ -19,7 +19,8 @@ func TestRun(t *testing.T) {
 		{[]string{"version"}, exitOK, "wbft-analyzer dev"},
 		{[]string{"nope"}, exitUsage, `unknown command "nope"`},
 		{[]string{"serve", "--db", "x"}, exitUnavailable, "serve: not available yet"},
-		{[]string{"ingest", "reports", "r.json"}, exitUnavailable, "ingest: not available yet"},
+		{[]string{"ingest", "reports", "r.json"}, exitUsage, "Usage: wbft-analyzer ingest reports"},
+		{[]string{"ingest", "range"}, exitUsage, "not available yet"},
 	} {
 		var stdout, stderr bytes.Buffer
 		code := run(c.args, &stdout, &stderr)
