@@ -1,0 +1,3292 @@
+{
+  "schema": "wbft-inspector-report/1",
+  "run": {
+    "id": "0ec69e56-9f68-8577-acd4-549d46fc22b5",
+    "started_at": "2026-10-11T21:39:29.111647Z",
+    "finished_at": "2026-10-11T21:39:29.118949Z",
+    "inspector": {
+      "version": "0.1.0-dev",
+      "commit": "unknown",
+      "go": "go1.26.8",
+      "build": "public",
+      "catalog_sha256": "7e2a9c6ba7c8a148f062c79d54d0e28049323bcfb170871c9e494463f2c5cc87"
+    },
+    "spec": {
+      "repo": "github.com/0xmhha/wbft-spec",
+      "commit": "1c91f5025bdec752344a6757e8c9e9436def69df",
+      "reference_commit": "740526d0375a8aca817b580e7a4bfc4c1028ae29",
+      "requirement_count": 723,
+      "observable_count": 539
+    },
+    "command": [
+      "wbft-inspector",
+      "check",
+      "--events",
+      "testdata/events/round-changes.jsonl",
+      "--out",
+      "report.json"
+    ],
+    "inputs": [
+      {
+        "id": "in-1",
+        "kind": "events",
+        "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+        "path": "testdata/events/round-changes.jsonl",
+        "sha256": "2a063db1d6aabf567a6e60313a18802eaa62ac5aed8d02f11550b388e0a47a48",
+        "records": 244,
+        "time_range": {
+          "first": "2023-11-14T22:13:26.405Z",
+          "last": "2023-11-14T22:13:39.054Z"
+        }
+      }
+    ],
+    "nodes": [
+      {
+        "id": "0x24667eecdc879d40c9396d604ef787f341fff494",
+        "address": "0x24667eecdc879d40c9396d604ef787f341fff494",
+        "impl": "wbft",
+        "role": "validator",
+        "inputs": [
+          "in-1"
+        ]
+      }
+    ],
+    "clock": {
+      "model": "shared-host",
+      "skew_ms": 0,
+      "sched_ms": 100,
+      "margin_ms": 100
+    },
+    "options": {
+      "checks": null,
+      "fail_on": [
+        "critical",
+        "high",
+        "medium"
+      ],
+      "min_coverage": 0
+    }
+  },
+  "summary": {
+    "requirements": {
+      "total": 87,
+      "pass": 20,
+      "fail": 0,
+      "cannot_decide": 31,
+      "not_run": 36
+    },
+    "by_priority": {
+      "P0": {
+        "total": 6,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0,
+        "not_run": 6
+      },
+      "P1": {
+        "total": 45,
+        "pass": 16,
+        "fail": 0,
+        "cannot_decide": 13,
+        "not_run": 16
+      },
+      "P2": {
+        "total": 34,
+        "pass": 4,
+        "fail": 0,
+        "cannot_decide": 18,
+        "not_run": 12
+      },
+      "V": {
+        "total": 2,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0,
+        "not_run": 2
+      }
+    },
+    "by_tag": {
+      "header": {
+        "total": 6,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0,
+        "not_run": 6
+      },
+      "log": {
+        "total": 28,
+        "pass": 12,
+        "fail": 0,
+        "cannot_decide": 10,
+        "not_run": 6
+      },
+      "network": {
+        "total": 73,
+        "pass": 15,
+        "fail": 0,
+        "cannot_decide": 29,
+        "not_run": 29
+      }
+    },
+    "by_node": {
+      "0x24667eecdc879d40c9396d604ef787f341fff494": {
+        "total": 28,
+        "pass": 20,
+        "fail": 0,
+        "cannot_decide": 8,
+        "not_run": 0
+      }
+    },
+    "fail_by_severity": {},
+    "observations": 0,
+    "exit_code": 0
+  },
+  "results": [
+    {
+      "requirement": "WBFT-APP-051",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "app.no_prepare_on_invalid",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames rejections]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-APP-100",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "app.no_redecide_bad_block",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "NOT_EXERCISED",
+        "detail": "no instance of the requirement occurred in the input"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-HDR-060",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "hdr.proposal_verify_order",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames rejections]"
+      },
+      "severity": "high",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-HDR-061",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "hdr.bad_block_proposal_reject",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "high",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-NET-011",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST NOT",
+      "priority": "P2",
+      "checker": "net.frame_codes",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-NET-013",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "net.frame_codes",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-NET-020",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "net.frame_codes",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-NET-021",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "net.frame_codes",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-NET-023",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "net.peer_cache_before_known",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-NET-024",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "net.known_cache_drop",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-NET-027",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "net.frame_codes",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-NET-028",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "net.frame_codes",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-NET-032",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "net.per_peer_skip",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-NET-043",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST NOT",
+      "priority": "P2",
+      "checker": "net.no_relay_cases",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-NET-044",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST NOT",
+      "priority": "P2",
+      "checker": "net.no_disconnect_for_ignore",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SEC-041",
+      "tags": [
+        "network"
+      ],
+      "level": "SHOULD",
+      "priority": "P2",
+      "checker": "sec.equivocation_reported",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "advisory",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SEC-081",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST NOT",
+      "priority": "P2",
+      "checker": "sec.no_reprepare_bad_block",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "critical",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-003",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST NOT",
+      "priority": "P1",
+      "checker": "sm.no_send_non_validator",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-011",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "sm.relay_on_ok",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 27,
+        "pass": 27,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-012",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "sm.relay_backlog",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 3,
+        "pass": 3,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-013",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST NOT",
+      "priority": "P2",
+      "checker": "sm.no_relay_on_err",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 3,
+        "pass": 3,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-014",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.self_delivery",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 14,
+        "pass": 14,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-020",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "sm.disposition",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 10,
+        "pass": 10,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-026",
+      "tags": [
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.new_round_proposer",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-030",
+      "tags": [
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.round_timer_on_entry",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 6,
+        "pass": 6,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-035",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "msg.preprepare_fields",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-037",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "sm.preprepare_checks",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-039",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.accept_preprepare_order",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 4,
+        "pass": 4,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-040",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "msg.prepare_fields",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-043",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.prepared_transition",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 4,
+        "pass": 4,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-044",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "msg.commit_fields",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-046",
+      "tags": [
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.decide_on_commit_quorum",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 4,
+        "pass": 4,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-047",
+      "tags": [
+        "header"
+      ],
+      "level": "MUST",
+      "priority": "P0",
+      "checker": "sm.decide_seals",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-048",
+      "tags": [
+        "header"
+      ],
+      "level": "MUST",
+      "priority": "P0",
+      "checker": "sm.seal_count_exact",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-049",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.rc_on_finalize_fail",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-050",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST NOT",
+      "priority": "P1",
+      "checker": "sm.timer_not_stopped_on_decide",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 4,
+        "pass": 4,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-053",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "msg.roundchange_fields",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-054",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "sm.rc_store_rules",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-057",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.f_plus_one",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 1,
+        "pass": 1,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-059",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "sm.rc_quorum_propose",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-062",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "sm.justification_check",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-064",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "sm.extra_seal_check",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-067",
+      "tags": [
+        "header"
+      ],
+      "level": "MUST",
+      "priority": "P0",
+      "checker": "sm.extra_seal_merge",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-077",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.retry_rc",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 4,
+        "pass": 4,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-078",
+      "tags": [
+        "header",
+        "network"
+      ],
+      "level": "MAY",
+      "priority": "P0",
+      "checker": "sm.own_vote_extra",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "advisory",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-080",
+      "tags": [
+        "network"
+      ],
+      "level": "MAY",
+      "priority": "P1",
+      "checker": "sm.late_timeout_catchup",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "advisory",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-081",
+      "tags": [
+        "network"
+      ],
+      "level": "MAY",
+      "priority": "P1",
+      "checker": "sm.stale_retry",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "advisory",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-082",
+      "tags": [
+        "network"
+      ],
+      "level": "MAY",
+      "priority": "P2",
+      "checker": "sm.double_preprepare_r0",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "advisory",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-083",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST NOT",
+      "priority": "P2",
+      "checker": "sec.no_double_vote",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-084",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "sm.rc_proposal_justified",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-085",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "sm.digest_consistency",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-086",
+      "tags": [
+        "header",
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P0",
+      "checker": "sm.header_seal_quorum",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-087",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.rc_prepared_stable",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-088",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.rc_prepared_cert",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-089",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.first_rc_cause",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 2,
+        "pass": 2,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-SM-090",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.rc_prepared_round_lt",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-SM-091",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST NOT",
+      "priority": "P1",
+      "checker": "sm.post_decision_rc",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-001",
+      "tags": [
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "V",
+      "checker": "timer.monotonic",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-002",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.round_timeout",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "no chain configuration; round_timeout cannot be computed (give --chain-config)"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 11,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 11,
+        "reasons": {
+          "MISSING_DATA": 11
+        },
+        "sources": [
+          "in-1"
+        ]
+      },
+      "undecided_samples": [
+        {
+          "instance": "event:sim-7-24667eec-2:1",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 2,
+              "t": "2023-11-14T22:13:26.405Z",
+              "msg": "TIMER_ARM (4, 1)"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:106",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 107,
+              "t": "2023-11-14T22:13:37.002Z",
+              "msg": "TIMER_ARM (5, 0) step 38"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:138",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 139,
+              "t": "2023-11-14T22:13:37.037Z",
+              "msg": "TIMER_ARM (6, 0) step 47"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:15",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 16,
+              "t": "2023-11-14T22:13:30.405Z",
+              "msg": "TIMER_ARM (4, 2) step 11"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:150",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 151,
+              "t": "2023-11-14T22:13:38.012Z",
+              "msg": "TIMER_ARM (6, 0) step 50"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:180",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 181,
+              "t": "2023-11-14T22:13:38.039Z",
+              "msg": "TIMER_ARM (7, 0) step 58"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:203",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 204,
+              "t": "2023-11-14T22:13:39.022Z",
+              "msg": "TIMER_ARM (7, 0) step 63"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:243",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 244,
+              "t": "2023-11-14T22:13:39.054Z",
+              "msg": "TIMER_ARM (8, 0) step 72"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:38",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 39,
+              "t": "2023-11-14T22:13:36.067Z",
+              "msg": "TIMER_ARM (4, 3) step 20"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:56",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 57,
+              "t": "2023-11-14T22:13:36.117Z",
+              "msg": "TIMER_ARM (4, 3) step 26"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:99",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 100,
+              "t": "2023-11-14T22:13:36.157Z",
+              "msg": "TIMER_ARM (5, 0) step 36"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirement": "WBFT-TIMER-003",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.retry_arm",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "no chain configuration; RT(h) cannot be computed (give --chain-config)"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 6,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 6,
+        "reasons": {
+          "MISSING_DATA": 6
+        },
+        "sources": [
+          "in-1"
+        ]
+      },
+      "undecided_samples": [
+        {
+          "instance": "event:sim-7-24667eec-2:16",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 17,
+              "t": "2023-11-14T22:13:30.405Z",
+              "msg": "TIMER_ARM (4, 2) step 11"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:20",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 21,
+              "t": "2023-11-14T22:13:30.405Z",
+              "msg": "TIMER_ARM (4, 2) step 13"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:23",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 24,
+              "t": "2023-11-14T22:13:32.405Z",
+              "msg": "TIMER_ARM (4, 2) step 15"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:27",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 28,
+              "t": "2023-11-14T22:13:34.405Z",
+              "msg": "TIMER_ARM (4, 2) step 17"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:39",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 40,
+              "t": "2023-11-14T22:13:36.067Z",
+              "msg": "TIMER_ARM (4, 3) step 20"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:7",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 8,
+              "t": "2023-11-14T22:13:28.405Z",
+              "msg": "TIMER_ARM (4, 1) step 8"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirement": "WBFT-TIMER-004",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.afbt_base_only",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-005",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.round_timeout",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "no chain configuration; round_timeout cannot be computed (give --chain-config)"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 11,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 11,
+        "reasons": {
+          "MISSING_DATA": 11
+        },
+        "sources": [
+          "in-1"
+        ]
+      },
+      "undecided_samples": [
+        {
+          "instance": "event:sim-7-24667eec-2:1",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 2,
+              "t": "2023-11-14T22:13:26.405Z",
+              "msg": "TIMER_ARM (4, 1)"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:106",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 107,
+              "t": "2023-11-14T22:13:37.002Z",
+              "msg": "TIMER_ARM (5, 0) step 38"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:138",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 139,
+              "t": "2023-11-14T22:13:37.037Z",
+              "msg": "TIMER_ARM (6, 0) step 47"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:15",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 16,
+              "t": "2023-11-14T22:13:30.405Z",
+              "msg": "TIMER_ARM (4, 2) step 11"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:150",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 151,
+              "t": "2023-11-14T22:13:38.012Z",
+              "msg": "TIMER_ARM (6, 0) step 50"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:180",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 181,
+              "t": "2023-11-14T22:13:38.039Z",
+              "msg": "TIMER_ARM (7, 0) step 58"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:203",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 204,
+              "t": "2023-11-14T22:13:39.022Z",
+              "msg": "TIMER_ARM (7, 0) step 63"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:243",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 244,
+              "t": "2023-11-14T22:13:39.054Z",
+              "msg": "TIMER_ARM (8, 0) step 72"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:38",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 39,
+              "t": "2023-11-14T22:13:36.067Z",
+              "msg": "TIMER_ARM (4, 3) step 20"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:56",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 57,
+              "t": "2023-11-14T22:13:36.117Z",
+              "msg": "TIMER_ARM (4, 3) step 26"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:99",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 100,
+              "t": "2023-11-14T22:13:36.157Z",
+              "msg": "TIMER_ARM (5, 0) step 36"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirement": "WBFT-TIMER-006",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.round_timeout",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "no chain configuration; round_timeout cannot be computed (give --chain-config)"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 11,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 11,
+        "reasons": {
+          "MISSING_DATA": 11
+        },
+        "sources": [
+          "in-1"
+        ]
+      },
+      "undecided_samples": [
+        {
+          "instance": "event:sim-7-24667eec-2:1",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 2,
+              "t": "2023-11-14T22:13:26.405Z",
+              "msg": "TIMER_ARM (4, 1)"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:106",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 107,
+              "t": "2023-11-14T22:13:37.002Z",
+              "msg": "TIMER_ARM (5, 0) step 38"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:138",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 139,
+              "t": "2023-11-14T22:13:37.037Z",
+              "msg": "TIMER_ARM (6, 0) step 47"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:15",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 16,
+              "t": "2023-11-14T22:13:30.405Z",
+              "msg": "TIMER_ARM (4, 2) step 11"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:150",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 151,
+              "t": "2023-11-14T22:13:38.012Z",
+              "msg": "TIMER_ARM (6, 0) step 50"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:180",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 181,
+              "t": "2023-11-14T22:13:38.039Z",
+              "msg": "TIMER_ARM (7, 0) step 58"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:203",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 204,
+              "t": "2023-11-14T22:13:39.022Z",
+              "msg": "TIMER_ARM (7, 0) step 63"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:243",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 244,
+              "t": "2023-11-14T22:13:39.054Z",
+              "msg": "TIMER_ARM (8, 0) step 72"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:38",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 39,
+              "t": "2023-11-14T22:13:36.067Z",
+              "msg": "TIMER_ARM (4, 3) step 20"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:56",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 57,
+              "t": "2023-11-14T22:13:36.117Z",
+              "msg": "TIMER_ARM (4, 3) step 26"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:99",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 100,
+              "t": "2023-11-14T22:13:36.157Z",
+              "msg": "TIMER_ARM (5, 0) step 36"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirement": "WBFT-TIMER-007",
+      "tags": [
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.round_timeout",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "no chain configuration; round_timeout cannot be computed (give --chain-config)"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 11,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 11,
+        "reasons": {
+          "MISSING_DATA": 11
+        },
+        "sources": [
+          "in-1"
+        ]
+      },
+      "undecided_samples": [
+        {
+          "instance": "event:sim-7-24667eec-2:1",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 2,
+              "t": "2023-11-14T22:13:26.405Z",
+              "msg": "TIMER_ARM (4, 1)"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:106",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 107,
+              "t": "2023-11-14T22:13:37.002Z",
+              "msg": "TIMER_ARM (5, 0) step 38"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:138",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 139,
+              "t": "2023-11-14T22:13:37.037Z",
+              "msg": "TIMER_ARM (6, 0) step 47"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:15",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 16,
+              "t": "2023-11-14T22:13:30.405Z",
+              "msg": "TIMER_ARM (4, 2) step 11"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:150",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 151,
+              "t": "2023-11-14T22:13:38.012Z",
+              "msg": "TIMER_ARM (6, 0) step 50"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:180",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 181,
+              "t": "2023-11-14T22:13:38.039Z",
+              "msg": "TIMER_ARM (7, 0) step 58"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:203",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 204,
+              "t": "2023-11-14T22:13:39.022Z",
+              "msg": "TIMER_ARM (7, 0) step 63"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:243",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 244,
+              "t": "2023-11-14T22:13:39.054Z",
+              "msg": "TIMER_ARM (8, 0) step 72"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:38",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 39,
+              "t": "2023-11-14T22:13:36.067Z",
+              "msg": "TIMER_ARM (4, 3) step 20"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:56",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 57,
+              "t": "2023-11-14T22:13:36.117Z",
+              "msg": "TIMER_ARM (4, 3) step 26"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:99",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; round_timeout cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 100,
+              "t": "2023-11-14T22:13:36.157Z",
+              "msg": "TIMER_ARM (5, 0) step 36"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirement": "WBFT-TIMER-008",
+      "tags": [
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "V",
+      "checker": "timer.overflow_clamp",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-010",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.round_timer_on_entry",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "no chain configuration; the duration cannot be computed (give --chain-config)"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 6,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 6,
+        "reasons": {
+          "MISSING_DATA": 6
+        },
+        "sources": [
+          "in-1"
+        ]
+      },
+      "undecided_samples": [
+        {
+          "instance": "event:sim-7-24667eec-2:13",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; the duration cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 14,
+              "t": "2023-11-14T22:13:30.405Z",
+              "msg": "ROUND_ENTER (4, 2) step 11"
+            },
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 16,
+              "t": "2023-11-14T22:13:30.405Z",
+              "msg": "TIMER_ARM (4, 2) step 11"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:134",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; the duration cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 135,
+              "t": "2023-11-14T22:13:37.037Z",
+              "msg": "ROUND_ENTER (6, 0) step 47"
+            },
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 139,
+              "t": "2023-11-14T22:13:37.037Z",
+              "msg": "TIMER_ARM (6, 0) step 47"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:176",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; the duration cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 177,
+              "t": "2023-11-14T22:13:38.039Z",
+              "msg": "ROUND_ENTER (7, 0) step 58"
+            },
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 181,
+              "t": "2023-11-14T22:13:38.039Z",
+              "msg": "TIMER_ARM (7, 0) step 58"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:239",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; the duration cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 240,
+              "t": "2023-11-14T22:13:39.054Z",
+              "msg": "ROUND_ENTER (8, 0) step 72"
+            },
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 244,
+              "t": "2023-11-14T22:13:39.054Z",
+              "msg": "TIMER_ARM (8, 0) step 72"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:34",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; the duration cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 35,
+              "t": "2023-11-14T22:13:36.067Z",
+              "msg": "ROUND_ENTER (4, 3) step 20"
+            },
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 39,
+              "t": "2023-11-14T22:13:36.067Z",
+              "msg": "TIMER_ARM (4, 3) step 20"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:95",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; the duration cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 96,
+              "t": "2023-11-14T22:13:36.157Z",
+              "msg": "ROUND_ENTER (5, 0) step 36"
+            },
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 100,
+              "t": "2023-11-14T22:13:36.157Z",
+              "msg": "TIMER_ARM (5, 0) step 36"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirement": "WBFT-TIMER-011",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST NOT",
+      "priority": "P1",
+      "checker": "timer.no_touch_same_view",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-012",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.accept_preprepare_order",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "no chain configuration; the duration cannot be computed (give --chain-config)"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 4,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 4,
+        "reasons": {
+          "MISSING_DATA": 4
+        },
+        "sources": [
+          "in-1"
+        ]
+      },
+      "undecided_samples": [
+        {
+          "instance": "event:sim-7-24667eec-2:107",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; the duration cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 108,
+              "t": "2023-11-14T22:13:37.002Z",
+              "msg": "PREPREPARE_ACCEPT (5, 0) step 38"
+            },
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 107,
+              "t": "2023-11-14T22:13:37.002Z",
+              "msg": "TIMER_ARM (5, 0) step 38"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:151",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; the duration cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 152,
+              "t": "2023-11-14T22:13:38.012Z",
+              "msg": "PREPREPARE_ACCEPT (6, 0) step 50"
+            },
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 151,
+              "t": "2023-11-14T22:13:38.012Z",
+              "msg": "TIMER_ARM (6, 0) step 50"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:204",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; the duration cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 205,
+              "t": "2023-11-14T22:13:39.022Z",
+              "msg": "PREPREPARE_ACCEPT (7, 0) step 63"
+            },
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 204,
+              "t": "2023-11-14T22:13:39.022Z",
+              "msg": "TIMER_ARM (7, 0) step 63"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:57",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; the duration cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 58,
+              "t": "2023-11-14T22:13:36.117Z",
+              "msg": "PREPREPARE_ACCEPT (4, 3) step 26"
+            },
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 57,
+              "t": "2023-11-14T22:13:36.117Z",
+              "msg": "TIMER_ARM (4, 3) step 26"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirement": "WBFT-TIMER-013",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.cancel_on_arm",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 2,
+        "pass": 2,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-014",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.stale_expiry",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "NOT_EXERCISED",
+        "detail": "no instance of the requirement occurred in the input"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-015",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.expiry_actions",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 1,
+        "pass": 1,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-016",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST NOT",
+      "priority": "P1",
+      "checker": "sm.timer_not_stopped_on_decide",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 4,
+        "pass": 4,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-017",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.expiry_actions",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "NOT_EXERCISED",
+        "detail": "no instance of the requirement occurred in the input"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-018",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.stop_on_engine_stop",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "NOT_EXERCISED",
+        "detail": "no instance of the requirement occurred in the input"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-020",
+      "tags": [
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.retry_arm",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "no chain configuration; RT(h) cannot be computed (give --chain-config)"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 6,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 6,
+        "reasons": {
+          "MISSING_DATA": 6
+        },
+        "sources": [
+          "in-1"
+        ]
+      },
+      "undecided_samples": [
+        {
+          "instance": "event:sim-7-24667eec-2:16",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 17,
+              "t": "2023-11-14T22:13:30.405Z",
+              "msg": "TIMER_ARM (4, 2) step 11"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:20",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 21,
+              "t": "2023-11-14T22:13:30.405Z",
+              "msg": "TIMER_ARM (4, 2) step 13"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:23",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 24,
+              "t": "2023-11-14T22:13:32.405Z",
+              "msg": "TIMER_ARM (4, 2) step 15"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:27",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 28,
+              "t": "2023-11-14T22:13:34.405Z",
+              "msg": "TIMER_ARM (4, 2) step 17"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:39",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 40,
+              "t": "2023-11-14T22:13:36.067Z",
+              "msg": "TIMER_ARM (4, 3) step 20"
+            }
+          ]
+        },
+        {
+          "instance": "event:sim-7-24667eec-2:7",
+          "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+          "verdict": "CANNOT_DECIDE",
+          "reason": "MISSING_DATA",
+          "message": "no chain configuration; RT(h) cannot be computed (give --chain-config)",
+          "evidence": [
+            {
+              "kind": "event",
+              "input": "in-1",
+              "node": "0x24667eecdc879d40c9396d604ef787f341fff494",
+              "line": 8,
+              "t": "2023-11-14T22:13:28.405Z",
+              "msg": "TIMER_ARM (4, 1) step 8"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirement": "WBFT-TIMER-021",
+      "tags": [
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.retry_rc",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 3,
+        "pass": 3,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-022",
+      "tags": [
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "sm.retry_rc",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 1,
+        "pass": 1,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-023",
+      "tags": [
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.retry_not_cancel_on_quorum",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 2,
+        "pass": 2,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-024",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "timer.retry_wire_suppressed",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "MISSING_DATA",
+        "detail": "the checker needs input of kind [frames]"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-030",
+      "tags": [
+        "network",
+        "log"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.future_preprepare_defer",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-031",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P2",
+      "checker": "timer.future_reprocess",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-032",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.single_deferred",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-033",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.cancel_on_arm",
+      "checker_version": 1,
+      "verdict": "CANNOT_DECIDE",
+      "reason": {
+        "code": "NOT_EXERCISED",
+        "detail": "no instance of the requirement occurred in the input"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-040",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.build_wait",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-041",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST",
+      "priority": "P1",
+      "checker": "timer.build_no_wait_r1",
+      "checker_version": 1,
+      "verdict": "PASS",
+      "severity": "medium",
+      "coverage": {
+        "instances": 2,
+        "pass": 2,
+        "fail": 0,
+        "cannot_decide": 0,
+        "sources": [
+          "in-1"
+        ]
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-042",
+      "tags": [
+        "header"
+      ],
+      "level": "MUST",
+      "priority": "P0",
+      "checker": "timer.header_time",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    },
+    {
+      "requirement": "WBFT-TIMER-043",
+      "tags": [
+        "network"
+      ],
+      "level": "MUST NOT",
+      "priority": "P1",
+      "checker": "timer.r0_not_early",
+      "checker_version": 1,
+      "verdict": "NOT_RUN",
+      "reason": {
+        "detail": "no checker for this requirement in this build yet"
+      },
+      "severity": "medium",
+      "coverage": {
+        "instances": 0,
+        "pass": 0,
+        "fail": 0,
+        "cannot_decide": 0
+      }
+    }
+  ],
+  "observations": [],
+  "errors": []
+}

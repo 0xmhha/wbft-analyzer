@@ -1,0 +1,5 @@
+# The wbft-spec revision whose requirement list is the public list
+# (internal/privacy/data/requirements.txt). Change it only together with a
+# regenerated list: go run ./internal/privacy/gen -spec DIR.
+repository=0xmhha/wbft-spec
+commit=1c91f5025bdec752344a6757e8c9e9436def69df
