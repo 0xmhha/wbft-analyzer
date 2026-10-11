@@ -1,0 +1,150 @@
+// Package reports reads wbft-inspector reports (wbft-inspector-report/1)
+// and admits only those of the public inspector build for the public
+// specification (design.md 3.4 and 9).
+package reports
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+
+	"github.com/0xmhha/wbft-analyzer/internal/privacy"
+)
+
+// Schema is the report schema this package reads.
+const Schema = "wbft-inspector-report/1"
+
+// Report is the part of an inspector report the analyzer stores.
+type Report struct {
+	// ID is the sha256 of the report file: the same file loaded twice is
+	// the same report.
+	ID string `json:"-"`
+
+	Schema       string            `json:"schema"`
+	Run          Run               `json:"run"`
+	Summary      json.RawMessage   `json:"summary"`
+	Results      []Result          `json:"results"`
+	Observations []Observation     `json:"observations"`
+	Errors       []json.RawMessage `json:"errors"`
+}
+
+// Run is the run section of a report.
+type Run struct {
+	ID         string          `json:"id"`
+	StartedAt  string          `json:"started_at"`
+	FinishedAt string          `json:"finished_at"`
+	Inspector  Inspector       `json:"inspector"`
+	Spec       Spec            `json:"spec"`
+	Network    json.RawMessage `json:"network,omitempty"`
+	Range      json.RawMessage `json:"range,omitempty"`
+}
+
+// Inspector is the build that wrote a report.
+type Inspector struct {
+	Version       string `json:"version"`
+	Commit        string `json:"commit"`
+	Build         string `json:"build"`
+	CatalogSHA256 string `json:"catalog_sha256"`
+}
+
+// Spec is the specification a report was decided against.
+type Spec struct {
+	Repo   string `json:"repo"`
+	Commit string `json:"commit"`
+}
+
+// Result is the verdict of one requirement.
+type Result struct {
+	Requirement string          `json:"requirement"`
+	Node        string          `json:"node,omitempty"`
+	Verdict     string          `json:"verdict"`
+	Coverage    json.RawMessage `json:"coverage"`
+}
+
+// Observation is a finding that is not a verdict.
+type Observation struct {
+	ID           string   `json:"id"`
+	Kind         string   `json:"kind"`
+	Imp          []string `json:"imp"`
+	Requirements []string `json:"requirements,omitempty"`
+	Node         string   `json:"node,omitempty"`
+	Count        int64    `json:"count"`
+	First        string   `json:"first,omitempty"`
+	Last         string   `json:"last,omitempty"`
+}
+
+// ErrFormat is a file that is not a report of the supported schema.
+var ErrFormat = errors.New("reports: not a wbft-inspector-report/1 report")
+
+// ErrRefused is a report that the public build does not accept. The error
+// names the check that refused it but no requirement ID: the IDs a refused
+// report carries are not recorded (design.md 9, 3).
+var ErrRefused = errors.New("reports: refused")
+
+// Parse reads a report file: the schema name and the fields the analyzer
+// relies on must be there. It does not apply the public-build checks
+// (Admit).
+func Parse(raw []byte) (*Report, error) {
+	d := json.NewDecoder(bytes.NewReader(raw))
+	var r Report
+	if err := d.Decode(&r); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrFormat, err)
+	}
+	if d.More() {
+		return nil, fmt.Errorf("%w: data after the report", ErrFormat)
+	}
+	switch {
+	case r.Schema != Schema:
+		return nil, fmt.Errorf("%w: schema %q", ErrFormat, r.Schema)
+	case r.Run.ID == "" || r.Run.Inspector.Build == "" || r.Run.Inspector.CatalogSHA256 == "" || r.Run.Spec.Commit == "":
+		return nil, fmt.Errorf("%w: run.id, run.inspector.build, run.inspector.catalog_sha256 and run.spec.commit are required", ErrFormat)
+	case r.Results == nil || r.Observations == nil || r.Summary == nil || r.Errors == nil:
+		return nil, fmt.Errorf("%w: summary, results, observations and errors are required", ErrFormat)
+	}
+	for i, x := range r.Results {
+		if x.Requirement == "" || x.Verdict == "" {
+			return nil, fmt.Errorf("%w: results[%d] lacks requirement or verdict", ErrFormat, i)
+		}
+	}
+	for i, o := range r.Observations {
+		if o.ID == "" || o.Kind == "" {
+			return nil, fmt.Errorf("%w: observations[%d] lacks id or kind", ErrFormat, i)
+		}
+	}
+	sum := sha256.Sum256(raw)
+	r.ID = hex.EncodeToString(sum[:])
+	return &r, nil
+}
+
+// Admit applies the public-build checks in order: the report's build is
+// public; every requirement of its results and observations is a public
+// requirement; its catalog hash is that of a public inspector build. A
+// report failing one is refused as a whole; leaving out the unknown rows
+// would tell where the withheld requirements are.
+func Admit(r *Report) error {
+	if err := privacy.Check(); err != nil {
+		return err
+	}
+	if r.Run.Inspector.Build != "public" {
+		return fmt.Errorf("%w: the report was written by the inspector build %q, not public", ErrRefused, r.Run.Inspector.Build)
+	}
+	for _, x := range r.Results {
+		if !privacy.PublicRequirement(x.Requirement) {
+			return fmt.Errorf("%w: a result names a requirement outside the public specification", ErrRefused)
+		}
+	}
+	for _, o := range r.Observations {
+		for _, id := range o.Requirements {
+			if !privacy.PublicRequirement(id) {
+				return fmt.Errorf("%w: an observation names a requirement outside the public specification", ErrRefused)
+			}
+		}
+	}
+	if _, ok := privacy.PublicCatalog(r.Run.Inspector.CatalogSHA256); !ok {
+		return fmt.Errorf("%w: the catalog hash is not that of a public inspector build", ErrRefused)
+	}
+	return nil
+}
