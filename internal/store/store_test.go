@@ -67,10 +67,10 @@ func TestMigrate(t *testing.T) {
 	s, _ := testStore(t)
 	ctx := context.Background()
 	v, err := s.Migrate(ctx)
-	if err != nil || v != 1 {
+	if err != nil || v != 2 {
 		t.Fatalf("migrate: version %d, %v", v, err)
 	}
-	if v, err := s.Migrate(ctx); err != nil || v != 1 {
+	if v, err := s.Migrate(ctx); err != nil || v != 2 {
 		t.Fatalf("migrate again: version %d, %v", v, err)
 	}
 }
@@ -84,10 +84,10 @@ func TestPutReport(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := strings.Repeat("1", 64)
-	if added, err := s.PutReport(ctx, report(id)); err != nil || !added {
+	if added, _, err := s.PutReport(ctx, report(id)); err != nil || !added {
 		t.Fatalf("first put: %v %v", added, err)
 	}
-	if added, err := s.PutReport(ctx, report(id)); err != nil || added {
+	if added, _, err := s.PutReport(ctx, report(id)); err != nil || added {
 		t.Fatalf("second put: %v %v", added, err)
 	}
 	if r, o, err := s.ReportCounts(ctx, id); err != nil || r != 2 || o != 1 {
@@ -99,7 +99,7 @@ func TestPutReport(t *testing.T) {
 	// A report whose rows break a constraint leaves nothing behind.
 	bad := report(strings.Repeat("3", 64))
 	bad.Results = append(bad.Results, bad.Results[0])
-	if _, err := s.PutReport(ctx, bad); err == nil {
+	if _, _, err := s.PutReport(ctx, bad); err == nil {
 		t.Fatal("a duplicate result row was stored")
 	}
 	if _, _, err := s.ReportCounts(ctx, bad.ID); !errors.Is(err, ErrNotFound) {

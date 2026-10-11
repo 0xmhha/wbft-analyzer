@@ -5,7 +5,7 @@
 // Usage:
 //
 //	wbft-analyzer serve   --db DSN [--listen 127.0.0.1:8080]
-//	wbft-analyzer ingest  reports FILE ...
+//	wbft-analyzer ingest  reports --db DSN FILE ...
 //	wbft-analyzer ingest  run --manifest FILE [--report FILE ...]
 //	wbft-analyzer ingest  range --rpc URL --from N --to M
 //	wbft-analyzer follow  --rpc URL --from N
@@ -16,8 +16,8 @@
 // The commands are being built in stages (see README.md); a command that is
 // not built yet says so and exits with code 69.
 //
-// Exit codes: 0 success, 64 usage error, 69 not available, 70 internal
-// error.
+// Exit codes: 0 success, 64 usage error, 65 input data refused or invalid,
+// 69 not available, 70 internal error.
 package main
 
 import (
@@ -52,7 +52,7 @@ Run "wbft-analyzer <command> -h" for the flags of a command.
 // commands are the commands and whether they are built.
 var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
 	"serve":   notYet("serve"),
-	"ingest":  notYet("ingest"),
+	"ingest":  runIngest,
 	"follow":  notYet("follow"),
 	"reindex": notYet("reindex"),
 	"export":  notYet("export"),
