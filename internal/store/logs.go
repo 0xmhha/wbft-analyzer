@@ -12,6 +12,7 @@ import (
 )
 
 type LogEvent struct {
+	Mono         *string         `json:"t_mono_ns,omitempty"`
 	Input        string          `json:"input"`
 	Line         int64           `json:"line"`
 	Node         string          `json:"node"`
@@ -68,7 +69,7 @@ func (s *Store) PutLogEvents(ctx context.Context, dataset int64, events []logs.E
 			if err != nil {
 				return err
 			}
-			x := LogEvent{Input: e.Input, Line: e.Line, Node: e.Node, Run: e.Run, Wall: e.Wall, Kind: e.Record.Kind, Level: e.Level, Profile: e.Profile, ViewInferred: e.ViewInferred, Fields: fields}
+			x := LogEvent{Input: e.Input, Line: e.Line, Node: e.Node, Run: e.Run, Wall: e.Wall, Kind: e.Record.Kind, Level: e.Level, Profile: e.Profile, ViewInferred: e.ViewInferred, Fields: fields, Mono: e.Mono}
 			var height, round any
 			if e.Record.View != nil {
 				x.Height = e.Record.View.Seq

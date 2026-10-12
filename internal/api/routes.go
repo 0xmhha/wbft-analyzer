@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/0xmhha/wbft-analyzer/internal/derive/latency"
 	"github.com/0xmhha/wbft-analyzer/internal/derive/rounds"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
 	"net/http"
@@ -39,6 +40,9 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/phases/summary", id: "summarizePhaseLatency", summary: "WBFT consecutive phase distributions, counts and raw-sample overall percentiles; missing and negative samples remain explicit.", params: phaseParams(false), answers: map[int]any{200: latency.Summary{}}, handle: (*Server).phaseSummary},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/phases/samples", id: "listPhaseSamples", summary: "Source-linked WBFT phase samples and percentile-threshold spikes, with filter-bound cursor pages.", params: phaseParams(true), answers: map[int]any{200: PhasePage{}}, handle: (*Server).phaseSamples},
+
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/evidence", id: "resolveLogEvidence", summary: "Resolve an inspector source pointer only when network, file hash, node and original line match.", params: append(runParams(), param{name: "report", in: "query", doc: "report SHA256 ID", typ: "string", required: true}, param{name: "observation", in: "query", doc: "observation ID", typ: "string", required: true}, param{name: "index", in: "query", doc: "evidence ordinal 0..19", typ: "integer", required: true}), answers: map[int]any{200: store.LogEvidence{}}, handle: (*Server).logEvidence},
 
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}", id: "getLogEvent", summary: "One event by its immutable input ID and source line.", params: append(runParams(), param{name: "input", in: "path", doc: "log input ID", typ: "string", required: true}, param{name: "line", in: "path", doc: "positive source line", typ: "integer", format: "int64", required: true}), answers: map[int]any{200: store.LogEvent{}}, handle: (*Server).logEvent},
@@ -109,4 +113,13 @@ func eventParams() []param {
 		param{name: "round", in: "query", doc: "full decimal round, up to 156 decimal digits", typ: "string"},
 		param{name: "limit", in: "query", doc: "page size 1..1000, default 500", typ: "integer"},
 		param{name: "cursor", in: "query", doc: "opaque next cursor bound to dataset and filters", typ: "string"})
+}
+
+func phaseParams(pages bool) []param {
+	out := append(runParams(), eventParams()[2:4]...)
+	out = append(out, param{name: "node", in: "query", doc: "node label", typ: "string"}, param{name: "height", in: "query", doc: "full decimal height", typ: "string"}, param{name: "round", in: "query", doc: "full decimal round", typ: "string"}, param{name: "metric", in: "query", doc: "preprepare, prepare_quorum, commit_quorum, commit, import, round_to_decision, round_to_import", typ: "string"})
+	if pages {
+		out = append(out, param{name: "status", in: "query", doc: "valid, negative, missing_start/end/both/clock or invalid_clock", typ: "string"}, param{name: "clock", in: "query", doc: "wall, monotonic or unavailable", typ: "string"}, param{name: "threshold", in: "query", doc: "p50, p90, p95 or p99; requires metric and clock", typ: "string"}, param{name: "limit", in: "query", doc: "page size 1..1000, default500", typ: "integer"}, param{name: "cursor", in: "query", doc: "next cursor bound to filters", typ: "string"})
+	}
+	return out
 }

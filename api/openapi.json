@@ -495,6 +495,288 @@
         ],
         "type": "object"
       },
+      "LatencyBucket": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from_seconds": {
+            "format": "double",
+            "type": "number"
+          },
+          "to_seconds": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "count",
+          "from_seconds",
+          "to_seconds"
+        ],
+        "type": "object"
+      },
+      "LatencySample": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "clock": {
+            "type": "string"
+          },
+          "duplicate_markers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LatencySource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "seconds": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "start": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LatencySource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "clock",
+          "duplicate_markers",
+          "end",
+          "height",
+          "id",
+          "metric",
+          "node",
+          "profile",
+          "round",
+          "run",
+          "seconds",
+          "start",
+          "status"
+        ],
+        "type": "object"
+      },
+      "LatencySource": {
+        "additionalProperties": false,
+        "properties": {
+          "input": {
+            "type": "string"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "t_mono_ns": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "t_wall": {
+            "type": "string"
+          },
+          "view_inferred": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "input",
+          "line",
+          "t_mono_ns",
+          "t_wall",
+          "view_inferred"
+        ],
+        "type": "object"
+      },
+      "LatencyStats": {
+        "additionalProperties": false,
+        "properties": {
+          "clock": {
+            "type": "string"
+          },
+          "histogram": {
+            "items": {
+              "$ref": "#/components/schemas/LatencyBucket"
+            },
+            "type": "array"
+          },
+          "invalid_clock": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "max_seconds": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "mean_seconds": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "metric": {
+            "type": "string"
+          },
+          "min_seconds": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "missing": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "negative": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "type": "string"
+          },
+          "p50_seconds": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "p90_seconds": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "p95_seconds": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "p99_seconds": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "profile": {
+            "type": "string"
+          },
+          "stddev_seconds": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "valid": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clock",
+          "histogram",
+          "invalid_clock",
+          "max_seconds",
+          "mean_seconds",
+          "metric",
+          "min_seconds",
+          "missing",
+          "negative",
+          "node",
+          "p50_seconds",
+          "p90_seconds",
+          "p95_seconds",
+          "p99_seconds",
+          "profile",
+          "stddev_seconds",
+          "total",
+          "valid"
+        ],
+        "type": "object"
+      },
+      "LatencySummary": {
+        "additionalProperties": false,
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/LatencyStats"
+            },
+            "type": "array"
+          },
+          "percentile_method": {
+            "type": "string"
+          },
+          "samples": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "groups",
+          "percentile_method",
+          "samples"
+        ],
+        "type": "object"
+      },
       "LoadResult": {
         "additionalProperties": false,
         "properties": {
@@ -728,6 +1010,33 @@
         },
         "required": [
           "observations"
+        ],
+        "type": "object"
+      },
+      "PhasePage": {
+        "additionalProperties": false,
+        "properties": {
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/LatencySample"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "next",
+          "samples",
+          "total"
         ],
         "type": "object"
       },
@@ -1284,6 +1593,12 @@
           },
           "run": {
             "type": "string"
+          },
+          "t_mono_ns": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "t_wall": {
             "type": "string"
@@ -2262,6 +2577,283 @@
           }
         },
         "summary": "Immutable log input hashes, byte counts and normalization diagnostics."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/phases/samples": {
+      "get": {
+        "operationId": "listPhaseSamples",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "inclusive RFC3339 window start",
+            "in": "query",
+            "name": "from_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "inclusive RFC3339 window end",
+            "in": "query",
+            "name": "to_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "node label",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "full decimal height",
+            "in": "query",
+            "name": "height",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "full decimal round",
+            "in": "query",
+            "name": "round",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "preprepare, prepare_quorum, commit_quorum, commit, import, round_to_decision, round_to_import",
+            "in": "query",
+            "name": "metric",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "valid, negative, missing_start/end/both/clock or invalid_clock",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "wall, monotonic or unavailable",
+            "in": "query",
+            "name": "clock",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "p50, p90, p95 or p99; requires metric and clock",
+            "in": "query",
+            "name": "threshold",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "page size 1..1000, default500",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "next cursor bound to filters",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhasePage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Source-linked WBFT phase samples and percentile-threshold spikes, with filter-bound cursor pages."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/phases/summary": {
+      "get": {
+        "operationId": "summarizePhaseLatency",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "inclusive RFC3339 window start",
+            "in": "query",
+            "name": "from_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "inclusive RFC3339 window end",
+            "in": "query",
+            "name": "to_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "node label",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "full decimal height",
+            "in": "query",
+            "name": "height",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "full decimal round",
+            "in": "query",
+            "name": "round",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "preprepare, prepare_quorum, commit_quorum, commit, import, round_to_decision, round_to_import",
+            "in": "query",
+            "name": "metric",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LatencySummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "WBFT consecutive phase distributions, counts and raw-sample overall percentiles; missing and negative samples remain explicit."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/rounds/distribution": {
