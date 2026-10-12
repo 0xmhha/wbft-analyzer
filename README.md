@@ -23,7 +23,7 @@ The analyzer is built in stages; the A0 foundation is complete:
 |---|---|---|
 | A0 | command skeleton, inspector report loader with the public-build checks, PostgreSQL store, observation trends and alerts, API and front-end skeleton | complete |
 | A1 | header analysis: participation, proposers, epochs | implemented and validated on real testnet/G7 inputs |
-| A2 | node logs and chainbench runs | run ingestion, metadata timelines and round causes implemented; latency, replay and inspector log overlay pending |
+| A2 | node logs and chainbench runs | run ingestion, metadata timelines, round causes, inspector source overlay and phase latency implemented; replay and performance acceptance pending |
 | A3 | wbft event streams and mixed networks | not started |
 | A4 | governance history | not started |
 
@@ -226,9 +226,9 @@ regressions were retained as diagnostics. The committed regression input
 is a sanitized, incomplete metadata excerpt of those two heights; it does
 not replace the original real-run validation.
 
-A2 is not complete: independent inspector legacy log normalization and I2
-evidence overlay, phase latency, visual replay/keyframes and performance
-acceptance remain pending. A3 message matching, directed latency and
+A2 is not complete: visual replay/keyframes and performance acceptance
+remain pending. Inspector source overlay and node phase latency are
+implemented; complete I2 checker coverage remains separate. A3 message matching, directed latency and
 follow-mode acceptance are also pending.
 
 ## Inspector log evidence
@@ -251,3 +251,54 @@ from 32 round-change and four engine-restart observations to the original
 run inputs. Legacy coverage is not declared complete, so the report's
 existing requirements remain 33 undecided and 32 not run. This observation
 overlay is not a claim of full I2 checker coverage or A2 completion.
+
+
+## Node phase latency
+
+The run view provides phase statistics, histograms, cursor-page time series,
+node p95 bottleneck candidates and source-linked samples. Summary and sample
+endpoints are `/v1/networks/{net}/datasets/{dataset}/phases/summary` and
+`/phases/samples`. They require `from_t`/`to_t` (at most 24 hours); optional
+filters are node, full height, full round and metric. Sample pages additionally
+accept clock, status, percentile threshold, limit (1..1000) and a filter-bound
+cursor that also binds the derived snapshot. Appended source records invalidate
+a previous cursor. A threshold requires one metric and a wall or monotonic clock.
+
+| Metric | Start | End |
+|---|---|---|
+| preprepare | ROUND_ENTER | PREPREPARE_ACCEPT |
+| prepare_quorum | PREPREPARE_ACCEPT | QUORUM PREPARE |
+| commit_quorum | QUORUM PREPARE | QUORUM COMMIT |
+| commit | QUORUM COMMIT | decision |
+| import | decision | imported head |
+| round_to_decision | ROUND_ENTER | decision |
+| round_to_import | ROUND_ENTER | imported head |
+
+For the WBFT profile, decision is FINALIZE_HANDOVER and import is NEW_HEAD,
+following the engine's phase metric boundaries. In legacy gstable logs,
+NEW_HEAD means "block proposal committed", so it establishes decision only;
+"handle final committed" does not prove import. Import remains missing.
+Unknown profiles are not assigned phase boundaries.
+
+Pairing stays within the same node, input, engine run, height and round;
+round and engine boundaries reset anchors. Repeated markers retain the first
+source and expose an attempt-level duplicate count. The query includes context
+back to each input/run's latest round or engine boundary before its first
+selected record, with a 100,000 relevant-record cap. Samples are selected by
+end wall time, or available start/attempt time when an endpoint is missing.
+Source events outside the current filtered cursor page can be opened directly.
+
+Measurements with two monotonic stamps use those stamps; one absent stamp is
+missing_clock and does not silently fall back to wall time. Legacy logs have
+no monotonic timestamps. Negative, missing and invalid-clock samples remain
+visible and are excluded from valid statistics. Full integers remain strings.
+Percentiles use nearest rank on raw valid samples (including overall groups),
+standard deviation is population-based, and histogram counts equal valid
+sample counts. Clock groups are separate. A bottleneck rank identifies observed
+latency, not its cause. Cross-node matching and clock correction belong to A3.
+
+The real G7 scenario window produced 3,689 measurements, including incomplete
+attempts at the boundaries and proposer stops. Original-line timestamps and
+raw-sample percentile/statistic calculations are independently checked; import
+is unavailable for this source profile. This does not establish A2 replay or
+complete event coverage.

@@ -4,6 +4,7 @@ import type { Schemas } from "../api/client";
 import { eventClass, eventKey, eventLayout, field, timeWindow } from "../events";
 import type { LogEvent } from "../events";
 import { Pending, useLoad } from "../ui";
+import { PhaseLatency } from "./PhaseLatency";
 
 type Filter = { node: string; kind: string; phase: string; height: string; round: string };
 const emptyFilter: Filter = { node: "", kind: "", phase: "", height: "", round: "" };
@@ -40,6 +41,7 @@ export function Events({ net, onAuth }: { net: number; onAuth: () => void }) {
   const retainProof=useRef(false);
  useEffect(() => { setCursors([]); if(retainProof.current){retainProof.current=false}else{select(null)} }, [scope]);
  useEffect(()=>{if(proof&&evidence.state==="done"&&evidence.data?.event&&times){const t=Date.parse(evidence.data.event.t_wall);if(t<Date.parse(times.from_t)||t>Date.parse(times.to_t)){retainProof.current=true;setAnchor(t-span/2)}}},[proof,evidence,times?.from_t,times?.to_t,span]);
+ useEffect(()=>{if(pointer&&detail.state==="done"&&detail.data&&times){const t=Date.parse(detail.data.t_wall);if(t<Date.parse(times.from_t)||t>Date.parse(times.to_t)){retainProof.current=true;setAnchor(t-span/2)}}},[pointer,detail,times?.from_t,times?.to_t,span]);
  useEffect(()=>{choose(0);setAnchor(null);setDraft(emptyFilter);setFilter(emptyFilter)},[net]);
   const page = useLoad(async () => {
     if (!times) return null;
@@ -81,6 +83,7 @@ export function Events({ net, onAuth }: { net: number; onAuth: () => void }) {
       {pointer && <Pending load={detail} onAuth={onAuth} />}
       {chosenEvent && <aside><h2>{chosenEvent.kind}: {chosenEvent.node}</h2>{data && !data.events.some((e)=>eventKey(e)===eventKey(chosenEvent)) && <p>This source event was fetched separately and is highlighted alongside the current filtered page.</p>}<p>Source {chosenEvent.input}:{chosenEvent.line} · {chosenEvent.run} · {chosenEvent.profile} · log-{chosenEvent.level}</p><p className="mono">{chosenEvent.t_wall} · full height {chosenEvent.height || "unknown"} / round {chosenEvent.round || "unknown"}</p><p>{chosenEvent.view_inferred ? "View is inferred from this engine run's latest round." : "View is recorded in this line or unavailable."} No monotonic timestamp is present.</p><pre>{JSON.stringify(chosenEvent.fields, null, 2)}</pre><a href={`#/networks/${net}/headers`}>Compare header participation and missed proposer opportunities</a></aside>}
       {proof && <><Pending load={evidence} onAuth={onAuth}/>{evidence.state==="done"&&evidence.data&&<p>Inspector source: {evidence.data.status} · {evidence.data.report_input} → {evidence.data.dataset_input || "unavailable"}:{evidence.data.line} · SHA256 {evidence.data.sha256 || "unavailable"}</p>}</>}
+      <PhaseLatency net={net} dataset={id} times={times} node={filter.node} height={filter.height} round={filter.round} onAuth={onAuth} onPoint={(input,line)=>{setProof(null);setSelected(null);setPointer({input,line});}} />
       <LogOverlay net={net} dataset={id} onAuth={onAuth} onEvidence={(p)=>{setSelected(null);setPointer(null);setProof(p)}}/>
       <Pending load={rounds} onAuth={onAuth} />
       {rounds.state === "done" && rounds.data && <RoundSummary data={rounds.data} onPoint={(input, line) => { const e = data?.events.find((e) => e.input === input && e.line === line); if (e) select(e); else {setSelected(null);setPointer({input,line});} }} />}

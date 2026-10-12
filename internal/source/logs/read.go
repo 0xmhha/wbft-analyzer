@@ -20,6 +20,8 @@ import (
 // Event stamps the shared WBFT record with its log source. ViewInferred
 // means a missing view was carried from the last round of this engine run.
 type Event struct {
+	// Mono is absent in logs; event sources may supply their process clock.
+	Mono                                   *string
 	Record                                 event.Record
 	Node, Input, Run, Wall, Level, Profile string
 	Line                                   int64

@@ -175,6 +175,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/phases/samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Source-linked WBFT phase samples and percentile-threshold spikes, with filter-bound cursor pages. */
+        get: operations["listPhaseSamples"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/phases/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** WBFT consecutive phase distributions, counts and raw-sample overall percentiles; missing and negative samples remain explicit. */
+        get: operations["summarizePhaseLatency"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/rounds/distribution": {
         parameters: {
             query?: never;
@@ -485,6 +519,79 @@ export interface components {
             state: string;
             webhook_error?: string;
         };
+        LatencyBucket: {
+            /** Format: int64 */
+            count: number;
+            /** Format: double */
+            from_seconds: number;
+            /** Format: double */
+            to_seconds: number;
+        };
+        LatencySample: {
+            at: string;
+            clock: string;
+            /** Format: int64 */
+            duplicate_markers: number;
+            end: components["schemas"]["LatencySource"] | null;
+            height: string;
+            id: string;
+            metric: string;
+            node: string;
+            profile: string;
+            round: string;
+            run: string;
+            /** Format: double */
+            seconds: number | null;
+            start: components["schemas"]["LatencySource"] | null;
+            status: string;
+        };
+        LatencySource: {
+            input: string;
+            /** Format: int64 */
+            line: number;
+            t_mono_ns: string | null;
+            t_wall: string;
+            view_inferred: boolean;
+        };
+        LatencyStats: {
+            clock: string;
+            histogram: components["schemas"]["LatencyBucket"][];
+            /** Format: int64 */
+            invalid_clock: number;
+            /** Format: double */
+            max_seconds: number | null;
+            /** Format: double */
+            mean_seconds: number | null;
+            metric: string;
+            /** Format: double */
+            min_seconds: number | null;
+            /** Format: int64 */
+            missing: number;
+            /** Format: int64 */
+            negative: number;
+            node: string;
+            /** Format: double */
+            p50_seconds: number | null;
+            /** Format: double */
+            p90_seconds: number | null;
+            /** Format: double */
+            p95_seconds: number | null;
+            /** Format: double */
+            p99_seconds: number | null;
+            profile: string;
+            /** Format: double */
+            stddev_seconds: number | null;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            valid: number;
+        };
+        LatencySummary: {
+            groups: components["schemas"]["LatencyStats"][];
+            percentile_method: string;
+            /** Format: int64 */
+            samples: number;
+        };
         LoadResult: {
             alerts: components["schemas"]["IngestAlert"][];
             detail: string;
@@ -542,6 +649,12 @@ export interface components {
         };
         ObservationList: {
             observations: components["schemas"]["Observation"][];
+        };
+        PhasePage: {
+            next: string | null;
+            samples: components["schemas"]["LatencySample"][];
+            /** Format: int64 */
+            total: number;
         };
         Report: {
             catalog_sha256: string;
@@ -696,6 +809,7 @@ export interface components {
             profile: string;
             round: string;
             run: string;
+            t_mono_ns?: string | null;
             t_wall: string;
             view_inferred: boolean;
         };
@@ -1239,6 +1353,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LogInputList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listPhaseSamples: {
+        parameters: {
+            query: {
+                /** @description inclusive RFC3339 window start */
+                from_t: string;
+                /** @description inclusive RFC3339 window end */
+                to_t: string;
+                /** @description node label */
+                node?: string;
+                /** @description full decimal height */
+                height?: string;
+                /** @description full decimal round */
+                round?: string;
+                /** @description preprepare, prepare_quorum, commit_quorum, commit, import, round_to_decision, round_to_import */
+                metric?: string;
+                /** @description valid, negative, missing_start/end/both/clock or invalid_clock */
+                status?: string;
+                /** @description wall, monotonic or unavailable */
+                clock?: string;
+                /** @description p50, p90, p95 or p99; requires metric and clock */
+                threshold?: string;
+                /** @description page size 1..1000, default500 */
+                limit?: number;
+                /** @description next cursor bound to filters */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhasePage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    summarizePhaseLatency: {
+        parameters: {
+            query: {
+                /** @description inclusive RFC3339 window start */
+                from_t: string;
+                /** @description inclusive RFC3339 window end */
+                to_t: string;
+                /** @description node label */
+                node?: string;
+                /** @description full decimal height */
+                height?: string;
+                /** @description full decimal round */
+                round?: string;
+                /** @description preprepare, prepare_quorum, commit_quorum, commit, import, round_to_decision, round_to_import */
+                metric?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LatencySummary"];
                 };
             };
             /** @description the request failed */
