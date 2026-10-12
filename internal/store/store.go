@@ -161,6 +161,7 @@ type Result struct {
 
 // Observation is a finding of a report that is not a verdict.
 type Observation struct {
+	Evidence     json.RawMessage
 	ID           string
 	Kind         string
 	Imp          []string
@@ -217,9 +218,9 @@ func (s *Store) PutReport(ctx context.Context, r *Report) (added bool, networkID
 			}
 		}
 		for _, o := range r.Observations {
-			if _, err := tx.Exec(ctx, `INSERT INTO observations (report_id, obs_id, kind, imp, requirements, node, count, first_at, last_at)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-				r.ID, o.ID, o.Kind, nonNil(o.Imp), nonNil(o.Requirements), o.Node, o.Count, o.First, o.Last); err != nil {
+			if _, err := tx.Exec(ctx, `INSERT INTO observations (report_id, obs_id, kind, imp, requirements, node, count, first_at, last_at, evidence)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+				r.ID, o.ID, o.Kind, nonNil(o.Imp), nonNil(o.Requirements), o.Node, o.Count, o.First, o.Last, evidenceJSON(o.Evidence)); err != nil {
 				return err
 			}
 		}
@@ -347,4 +348,11 @@ func (s *Store) SetAlert(ctx context.Context, ruleID int64, state string, recent
 		return "", fmt.Errorf("store: %w", err)
 	}
 	return before, nil
+}
+
+func evidenceJSON(b json.RawMessage) json.RawMessage {
+	if len(b) == 0 {
+		return json.RawMessage("[]")
+	}
+	return b
 }

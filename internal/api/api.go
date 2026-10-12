@@ -21,6 +21,7 @@ import (
 
 	"github.com/0xmhha/wbft-analyzer/internal/derive/trends"
 	"github.com/0xmhha/wbft-analyzer/internal/ingest"
+	"github.com/0xmhha/wbft-analyzer/internal/reports"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
 )
 
@@ -280,14 +281,15 @@ type ResultList struct {
 // Observation is a finding of a report that is not a verdict. Imp holds
 // improvement IDs only.
 type Observation struct {
-	ID           string   `json:"id"`
-	Kind         string   `json:"kind"`
-	Imp          []string `json:"imp"`
-	Requirements []string `json:"requirements"`
-	Node         string   `json:"node"`
-	Count        int64    `json:"count"`
-	First        string   `json:"first"`
-	Last         string   `json:"last"`
+	Evidence     []reports.Evidence `json:"evidence"`
+	ID           string             `json:"id"`
+	Kind         string             `json:"kind"`
+	Imp          []string           `json:"imp"`
+	Requirements []string           `json:"requirements"`
+	Node         string             `json:"node"`
+	Count        int64              `json:"count"`
+	First        string             `json:"first"`
+	Last         string             `json:"last"`
 }
 
 func (s *Server) observations(w http.ResponseWriter, r *http.Request) {
@@ -302,8 +304,16 @@ func (s *Server) observations(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]Observation, len(obs))
 	for i, o := range obs {
+		var ev []reports.Evidence
+		if err := json.Unmarshal(o.Evidence, &ev); err != nil {
+			s.fail(w, r, err)
+			return
+		}
+		if ev == nil {
+			ev = []reports.Evidence{}
+		}
 		out[i] = Observation{ID: o.ID, Kind: o.Kind, Imp: o.Imp, Requirements: o.Requirements, Node: o.Node, Count: o.Count,
-			First: o.First, Last: o.Last}
+			First: o.First, Last: o.Last, Evidence: ev}
 	}
 	writeJSON(w, http.StatusOK, ObservationList{Observations: out})
 }

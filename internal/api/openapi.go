@@ -64,7 +64,7 @@ func Document() ([]byte, error) {
 			"title":   "wbft-analyzer",
 			"version": "v1",
 			"license": map[string]any{"name": "LGPL-3.0-or-later", "identifier": "LGPL-3.0-or-later"},
-			"description": "Networks, inspector reports, observation trends and alerts. Without a token the server answers " +
+			"description": "Networks, datasets, WBFT headers and epochs, inspector reports, observation trends and alerts. Without a token the server answers " +
 				"only to loopback host names; with one, every request carries it as a bearer token. Writes are JSON.",
 		},
 		"servers":  []any{map[string]any{"url": "/"}},

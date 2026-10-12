@@ -66,14 +66,26 @@ type Result struct {
 
 // Observation is a finding that is not a verdict.
 type Observation struct {
-	ID           string   `json:"id"`
-	Kind         string   `json:"kind"`
-	Imp          []string `json:"imp"`
-	Requirements []string `json:"requirements,omitempty"`
-	Node         string   `json:"node,omitempty"`
-	Count        int64    `json:"count"`
-	First        string   `json:"first,omitempty"`
-	Last         string   `json:"last,omitempty"`
+	Evidence     []Evidence `json:"evidence"`
+	ID           string     `json:"id"`
+	Kind         string     `json:"kind"`
+	Imp          []string   `json:"imp"`
+	Requirements []string   `json:"requirements,omitempty"`
+	Node         string     `json:"node,omitempty"`
+	Count        int64      `json:"count"`
+	First        string     `json:"first,omitempty"`
+	Last         string     `json:"last,omitempty"`
+}
+
+// Evidence is a source pointer. Payload, value and execution state are not stored.
+type Evidence struct {
+	Kind   string `json:"kind"`
+	Input  string `json:"input,omitempty"`
+	Node   string `json:"node,omitempty"`
+	Number string `json:"number,omitempty"`
+	Hash   string `json:"hash,omitempty"`
+	Field  string `json:"field,omitempty"`
+	Line   int64  `json:"line,omitempty"`
 }
 
 // ErrFormat is a file that is not a report of the supported schema.

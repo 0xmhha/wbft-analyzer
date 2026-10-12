@@ -119,6 +119,36 @@
         ],
         "type": "object"
       },
+      "DatasetList": {
+        "additionalProperties": false,
+        "properties": {
+          "datasets": {
+            "items": {
+              "$ref": "#/components/schemas/StoreDataset"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "datasets"
+        ],
+        "type": "object"
+      },
+      "EpochList": {
+        "additionalProperties": false,
+        "properties": {
+          "epochs": {
+            "items": {
+              "$ref": "#/components/schemas/StoreEpoch"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "epochs"
+        ],
+        "type": "object"
+      },
       "Error": {
         "additionalProperties": false,
         "properties": {
@@ -128,6 +158,288 @@
         },
         "required": [
           "error"
+        ],
+        "type": "object"
+      },
+      "HeaderList": {
+        "additionalProperties": false,
+        "properties": {
+          "headers": {
+            "items": {
+              "$ref": "#/components/schemas/HeadersRow"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "headers"
+        ],
+        "type": "object"
+      },
+      "HeadersCopy": {
+        "additionalProperties": false,
+        "properties": {
+          "committed": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "prepared": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "round": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "committed",
+          "hash",
+          "index",
+          "node",
+          "prepared",
+          "round",
+          "source"
+        ],
+        "type": "object"
+      },
+      "HeadersFact": {
+        "additionalProperties": false,
+        "properties": {
+          "coinbase": {
+            "type": "string"
+          },
+          "epoch": {
+            "type": "string"
+          },
+          "epoch_check": {
+            "type": "string"
+          },
+          "epoch_detail": {
+            "type": "string"
+          },
+          "epoch_info": {
+            "description": "a JSON value as the report wrote it"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "last_proposer": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "parent_hash": {
+            "type": "string"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "prev_committed": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "prev_prepared": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "prev_round": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "round_zero": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string"
+          },
+          "validators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "coinbase",
+          "epoch",
+          "epoch_check",
+          "epoch_detail",
+          "epoch_info",
+          "hash",
+          "index",
+          "last_proposer",
+          "number",
+          "parent_hash",
+          "policy",
+          "prev_committed",
+          "prev_prepared",
+          "prev_round",
+          "round_zero",
+          "time",
+          "validators"
+        ],
+        "type": "object"
+      },
+      "HeadersOpportunity": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "address",
+          "count"
+        ],
+        "type": "object"
+      },
+      "HeadersParticipation": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "committed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "late_committed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "late_prepared": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "own_committed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "own_prepared": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "prepared": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "address",
+          "committed",
+          "late_committed",
+          "late_prepared",
+          "own_committed",
+          "own_prepared",
+          "prepared"
+        ],
+        "type": "object"
+      },
+      "HeadersRow": {
+        "additionalProperties": false,
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/HeadersParticipation"
+            },
+            "type": "array"
+          },
+          "copy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HeadersCopy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decision_round": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "expected_proposer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fact": {
+            "$ref": "#/components/schemas/HeadersFact"
+          },
+          "missed": {
+            "items": {
+              "$ref": "#/components/schemas/HeadersOpportunity"
+            },
+            "type": "array"
+          },
+          "proposer_differs": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "round_source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cells",
+          "copy",
+          "decision_round",
+          "expected_proposer",
+          "fact",
+          "missed",
+          "proposer_differs",
+          "round_source"
         ],
         "type": "object"
       },
@@ -268,6 +580,12 @@
             "format": "int64",
             "type": "integer"
           },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ReportsEvidence"
+            },
+            "type": "array"
+          },
           "first": {
             "type": "string"
           },
@@ -298,6 +616,7 @@
         },
         "required": [
           "count",
+          "evidence",
           "first",
           "id",
           "imp",
@@ -403,6 +722,37 @@
         ],
         "type": "object"
       },
+      "ReportsEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
       "Result": {
         "additionalProperties": false,
         "properties": {
@@ -439,6 +789,293 @@
         },
         "required": [
           "results"
+        ],
+        "type": "object"
+      },
+      "StoreDataset": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "metadata": {
+            "description": "a JSON value as the report wrote it"
+          },
+          "name": {
+            "type": "string"
+          },
+          "network_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "nodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "progress": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "id",
+          "kind",
+          "metadata",
+          "name",
+          "network_id",
+          "nodes",
+          "progress",
+          "status",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "StoreEpoch": {
+        "additionalProperties": false,
+        "properties": {
+          "added": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/StoreEpochCandidate"
+            },
+            "type": "array"
+          },
+          "changes_known": {
+            "type": "boolean"
+          },
+          "check": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "info": {
+            "description": "a JSON value as the report wrote it"
+          },
+          "removed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "added",
+          "candidates",
+          "changes_known",
+          "check",
+          "detail",
+          "index",
+          "info",
+          "removed"
+        ],
+        "type": "object"
+      },
+      "StoreEpochCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "bls_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "diligence": {
+            "type": "string"
+          },
+          "index": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "validator_order": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "address",
+          "bls_key",
+          "diligence",
+          "index",
+          "validator_order"
+        ],
+        "type": "object"
+      },
+      "StoreHeaderBounds": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "bytes",
+          "count",
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "StoreHeaderSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "missing_heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rounds": {
+            "items": {
+              "$ref": "#/components/schemas/StoreRoundCount"
+            },
+            "type": "array"
+          },
+          "unknown_round": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "validators": {
+            "items": {
+              "$ref": "#/components/schemas/StoreValidatorSummary"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "heights",
+          "missing_heights",
+          "rounds",
+          "unknown_round",
+          "validators"
+        ],
+        "type": "object"
+      },
+      "StoreRoundCount": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "round": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count",
+          "round"
+        ],
+        "type": "object"
+      },
+      "StoreValidatorSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "committed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "eligible": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "inclusion_rate": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "known": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "missed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "prepared": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "proposed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "round_zero": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unknown": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "address",
+          "committed",
+          "eligible",
+          "inclusion_rate",
+          "known",
+          "missed",
+          "prepared",
+          "proposed",
+          "round_zero",
+          "unknown"
         ],
         "type": "object"
       },
@@ -495,7 +1132,7 @@
     }
   },
   "info": {
-    "description": "Networks, inspector reports, observation trends and alerts. Without a token the server answers only to loopback host names; with one, every request carries it as a bearer token. Writes are JSON.",
+    "description": "Networks, datasets, WBFT headers and epochs, inspector reports, observation trends and alerts. Without a token the server answers only to loopback host names; with one, every request carries it as a bearer token. Writes are JSON.",
     "license": {
       "identifier": "LGPL-3.0-or-later",
       "name": "LGPL-3.0-or-later"
@@ -749,6 +1386,329 @@
           }
         },
         "summary": "Replace the alert rules of a network; a rule equal to a stored one keeps its ID and state, IDs in the body are ignored."
+      }
+    },
+    "/v1/networks/{net}/datasets": {
+      "get": {
+        "operationId": "listDatasets",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Datasets and their import status, progress and errors."
+      }
+    },
+    "/v1/networks/{net}/epochs": {
+      "get": {
+        "operationId": "listEpochs",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "first decimal canonical index (uint64)",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "last decimal canonical index, included",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpochList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "At most 1024 epochs in a window of at most one million heights."
+      }
+    },
+    "/v1/networks/{net}/header-bounds": {
+      "get": {
+        "operationId": "getHeaderBounds",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreHeaderBounds"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Stored canonical header bounds and fact bytes."
+      }
+    },
+    "/v1/networks/{net}/headers": {
+      "get": {
+        "operationId": "listHeaders",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "first decimal canonical index (uint64)",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "last decimal canonical index, included",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "copy dataset ID; requires node",
+            "in": "query",
+            "name": "dataset",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "copy node label; requires dataset",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeaderList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "At most 1024 heights with participation, proposer and optional node copies."
+      }
+    },
+    "/v1/networks/{net}/headers/summary": {
+      "get": {
+        "operationId": "summarizeHeaders",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "first decimal canonical index (uint64)",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "last decimal canonical index, included",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreHeaderSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Participation denominators, proposer totals and decision round distribution for at most 100000 heights."
       }
     },
     "/v1/networks/{net}/trends/observations": {

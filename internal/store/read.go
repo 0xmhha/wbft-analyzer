@@ -113,14 +113,14 @@ func (s *Store) Results(ctx context.Context, reportID string, verdict, node *str
 
 // Observations returns the observations of a report, by ID.
 func (s *Store) Observations(ctx context.Context, reportID string) ([]Observation, error) {
-	rows, err := s.pool.Query(ctx, `SELECT obs_id, kind, imp, requirements, node, count, first_at, last_at FROM observations
+	rows, err := s.pool.Query(ctx, `SELECT obs_id, kind, imp, requirements, node, count, first_at, last_at, evidence FROM observations
 		WHERE report_id = $1 ORDER BY obs_id`, reportID)
 	if err != nil {
 		return nil, fmt.Errorf("store: %w", err)
 	}
 	return collect(rows, func(r pgx.CollectableRow) (Observation, error) {
 		var o Observation
-		err := r.Scan(&o.ID, &o.Kind, &o.Imp, &o.Requirements, &o.Node, &o.Count, &o.First, &o.Last)
+		err := r.Scan(&o.ID, &o.Kind, &o.Imp, &o.Requirements, &o.Node, &o.Count, &o.First, &o.Last, &o.Evidence)
 		return o, err
 	})
 }
