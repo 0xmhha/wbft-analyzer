@@ -75,4 +75,16 @@ func TestMessageCursorSourceFiltersAndNetwork(t *testing.T) {
 	if c.do("GET", other, nil, nil) != 404 {
 		t.Fatal("foreign network accepted")
 	}
+	var record messages.Record
+	if c.do("GET", base+"/source?input=frames&file=frames-synthetic.jsonl&ordinal=2", nil, &record) != 200 || record.Ordinal != 2 || record.Seq != "2" || record.Decode != "missing_payload" {
+		t.Fatal(record)
+	}
+	if c.do("GET", base+"/source?input=frames&file=frames-synthetic.jsonl&ordinal=999", nil, nil) != 404 {
+		t.Fatal("absent source accepted")
+	}
+	for _, q := range []string{"?input=frames&file=../raw&ordinal=2", "?input=frames&file=frames-synthetic.jsonl&ordinal=0", "?input=frames&file=frames-synthetic.jsonl&ordinal=2&ordinal=3"} {
+		if c.do("GET", base+"/source"+q, nil, nil) != 400 {
+			t.Fatal("invalid source accepted", q)
+		}
+	}
 }

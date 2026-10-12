@@ -96,6 +96,11 @@ capture() {
  get "/networks/$message_net/datasets/$message_id/messages/inputs" message-inputs
  get "/networks/$message_net/datasets/$message_id/messages/records?limit=1000" message-records
  get "/networks/$message_net/datasets/$message_id/messages/records?phase=PREPARE" message-prepare
+ get "/networks/$message_net/datasets/$message_id/messages/summary" message-summary
+ get "/networks/$message_net/datasets/$message_id/messages/pairs?limit=1000" message-pairs
+ get "/networks/$message_net/datasets/$message_id/messages/source?input=frames&file=frames-synthetic.jsonl&ordinal=1" message-source
+ get "/networks/$run_net/datasets/$run_id/messages/summary" run-message-summary
+ get "/networks/$run_net/datasets/$run_id/messages/pairs?limit=1000" run-message-pairs
  get /reports reports
  log_report=$(jq -r '.reports[] | select(.run_id=="log-evidence-dump") | .id' "$dir/reports.json")
  get "/networks/$run_net/datasets/$run_id/evidence?report=$log_report&observation=log-source&index=0" log-evidence
@@ -127,9 +132,13 @@ for i in $(seq 1 $((${#counts[@]} - 1))); do
 done
 "$bin" ingest range --db "$src" --blocks "$root/internal/source/headers/testdata" --config "$root/internal/source/headers/testdata/config.json" --from 0 --to 3 --name dump-headers --node fixture >"$out/headers.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/g7/manifest.json" >"$out/run.log"
+run_dataset_id=$(sed -n 's/^dataset=\([0-9][0-9]*\).*/\1/p' "$out/run.log")
+"$bin" reindex messages --db "$src" --dataset "$run_dataset_id" >"$out/run-pair-index.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/baseline/manifest-1.json" >"$out/baseline-1.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/baseline/manifest-2.json" >"$out/baseline-2.log"
 "$bin" ingest messages --db "$src" --manifest "$root/internal/source/messages/testdata/manifest.json" >"$out/messages.log"
+message_dataset_id=$(jq -r .dataset_id "$out/messages.log")
+"$bin" reindex messages --db "$src" --dataset "$message_dataset_id" >"$out/message-pair-index.log"
 # A synthetic report points into the real sanitized G7 fixture. Its input
 # namespace differs from the dataset, so resolution must use SHA/node.
 python3 - "$root" "$work/log-report.json" <<'PYLOG'

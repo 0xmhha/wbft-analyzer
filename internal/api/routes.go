@@ -4,6 +4,7 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/derive/baseline"
 	"github.com/0xmhha/wbft-analyzer/internal/derive/latency"
 	"github.com/0xmhha/wbft-analyzer/internal/derive/rounds"
+	sourcemessages "github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
 	"net/http"
 )
@@ -41,6 +42,9 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/source", id: "getMessageSource", summary: "One original metadata record by immutable input, file and ordinal; no payload bytes.", params: append(runParams(), param{name: "input", in: "query", doc: "original input ID", typ: "string", required: true}, param{name: "file", in: "query", doc: "original journal/frame file name", typ: "string", required: true}, param{name: "ordinal", in: "query", doc: "positive original source ordinal", typ: "integer", format: "int64", required: true}), answers: map[int]any{200: sourcemessages.Record{}}, handle: (*Server).messageSource},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/pairs", id: "listMessagePairs", summary: "Directional source-linked message pairs; matching uses the entire dataset before window filtering. Reindex required.", params: pairParams(true), answers: map[int]any{200: PairPage{}}, handle: (*Server).pairSamples},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/summary", id: "summarizeMessagePairs", summary: "Raw-pair distributions separated by direction, matching strength, path and clock; coverage remains explicit.", params: pairParams(false), answers: map[int]any{200: PairSummary{}}, handle: (*Server).pairSummary},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/inputs", id: "listMessageInputs", summary: "Immutable journal/frame file hashes and normalization diagnostics; no payload bytes.", params: runParams(), answers: map[int]any{200: MessageInputList{}}, handle: (*Server).messageInputs},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/records", id: "listMessageRecords", summary: "Source-ordered message metadata with snapshot/filter-bound cursor; at most 1000 rows.", params: messageParams(), answers: map[int]any{200: MessagePage{}}, handle: (*Server).messageRecords},
 	{method: "GET", path: "/v1/networks/{net}/rounds/baseline", id: "compareRunRoundBaselines", summary: "Independent run observer round rates over a common full-height range; no network pooling.", params: append(headerParams(), param{name: "datasets", in: "query", doc: "2..16 comma-separated completed run dataset IDs", typ: "string", required: true}, param{name: "node", in: "query", doc: "optional observer node", typ: "string"}), answers: map[int]any{200: baseline.Summary{}}, handle: (*Server).roundBaseline},
@@ -132,4 +136,15 @@ func phaseParams(pages bool) []param {
 
 func messageParams() []param {
 	return append(runParams(), param{name: "input", in: "query", doc: "input ID", typ: "string"}, param{name: "type", in: "query", doc: "segment, conn, frame, outcome, send_suppressed, step or gap", typ: "string"}, param{name: "node", in: "query", doc: "recording node address", typ: "string"}, param{name: "phase", in: "query", doc: "WBFT PRE-PREPARE, PREPARE, COMMIT or ROUND-CHANGE", typ: "string"}, param{name: "height", in: "query", doc: "full decimal height", typ: "string"}, param{name: "round", in: "query", doc: "full decimal round", typ: "string"}, param{name: "limit", in: "query", doc: "page size 1..1000", typ: "integer"}, param{name: "cursor", in: "query", doc: "source cursor bound to snapshot and filters", typ: "string"})
+}
+
+func pairParams(pages bool) []param {
+	out := append(runParams(), param{name: "from_t", in: "query", doc: "optional inclusive RFC3339 start; requires to_t, at most 24h", typ: "string", format: "date-time"}, param{name: "to_t", in: "query", doc: "optional inclusive RFC3339 end; requires from_t", typ: "string", format: "date-time"})
+	for _, name := range []string{"sender", "receiver", "node", "phase", "height", "round", "strength", "path", "clock", "status"} {
+		out = append(out, param{name: name, in: "query", doc: "exact message evidence filter", typ: "string"})
+	}
+	if pages {
+		out = append(out, param{name: "threshold", in: "query", doc: "p50/p90/p95/p99; requires one phase, strength, path and clock", typ: "string"}, param{name: "limit", in: "query", doc: "page size 1..1000", typ: "integer"}, param{name: "cursor", in: "query", doc: "snapshot and filter bound cursor", typ: "string"})
+	}
+	return out
 }

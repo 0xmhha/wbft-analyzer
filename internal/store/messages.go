@@ -107,3 +107,19 @@ func (s *Store) MessageRecords(ctx context.Context, id int64, f MessageFilter) (
 		return x, e
 	})
 }
+
+func (s *Store) MessageRecordAt(ctx context.Context, id int64, input, file string, ordinal int64) (messages.Record, error) {
+	rows, e := s.pool.Query(ctx, `SELECT record FROM message_records WHERE dataset_id=$1 AND input_id=$2 AND file=$3 AND ordinal=$4`, id, input, file, ordinal)
+	if e != nil {
+		return messages.Record{}, e
+	}
+	return one(rows, func(r pgx.CollectableRow) (messages.Record, error) {
+		var b []byte
+		var x messages.Record
+		e := r.Scan(&b)
+		if e == nil {
+			e = json.Unmarshal(b, &x)
+		}
+		return x, e
+	})
+}

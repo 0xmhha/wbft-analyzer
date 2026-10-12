@@ -53,7 +53,11 @@ func (s *Server) lookupDataset(w http.ResponseWriter, r *http.Request, kind stri
 	}
 	for _, d := range ds {
 		if d.ID == id {
-			if d.Kind != kind {
+			matches := d.Kind == kind
+			if kind == "message-evidence" {
+				matches = d.Kind == "messages" || d.Kind == "run"
+			}
+			if !matches {
 				writeError(w, 400, "dataset has the wrong input kind")
 				return d, false
 			}
