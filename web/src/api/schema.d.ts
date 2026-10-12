@@ -328,6 +328,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/rounds/baseline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Independent run observer round rates over a common full-height range; no network pooling. */
+        get: operations["compareRunRoundBaselines"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/trends/observations": {
         parameters: {
             query?: never;
@@ -468,6 +485,68 @@ export interface components {
         };
         AlertRuleList: {
             rules: components["schemas"]["AlertRule"][];
+        };
+        BaselineBin: {
+            /** Format: int64 */
+            count: number;
+            round: string;
+        };
+        BaselineComparison: {
+            /** Format: double */
+            mean_fraction: number | null;
+            node: string;
+            profile: string;
+            round: string;
+            /** Format: int64 */
+            runs: number;
+            /** Format: double */
+            sample_stddev: number | null;
+            /** Format: double */
+            sample_variance: number | null;
+            samples: components["schemas"]["BaselineRate"][];
+        };
+        BaselineInput: {
+            id: string;
+            node: string;
+            profile: string;
+            sha256: string;
+        };
+        BaselineObserver: {
+            bins: components["schemas"]["BaselineBin"][];
+            /** Format: int64 */
+            known: number;
+            /** Format: int64 */
+            missing: number;
+            node: string;
+            profile: string;
+            /** Format: int64 */
+            unknown: number;
+        };
+        BaselineRate: {
+            /** Format: int64 */
+            count: number;
+            /** Format: int64 */
+            dataset: number;
+            /** Format: int64 */
+            denominator: number;
+            /** Format: double */
+            fraction: number | null;
+        };
+        BaselineRun: {
+            /** Format: int64 */
+            dataset: number;
+            inputs: components["schemas"]["BaselineInput"][];
+            name: string;
+            observers: components["schemas"]["BaselineObserver"][];
+        };
+        BaselineSummary: {
+            comparisons: components["schemas"]["BaselineComparison"][];
+            /** Format: int64 */
+            expected_heights: number;
+            from: string;
+            method: string;
+            runs: components["schemas"]["BaselineRun"][];
+            to: string;
         };
         DatasetList: {
             datasets: components["schemas"]["StoreDataset"][];
@@ -1930,6 +2009,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreHeaderSummary"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    compareRunRoundBaselines: {
+        parameters: {
+            query: {
+                /** @description first decimal canonical index (uint64) */
+                from: string;
+                /** @description last decimal canonical index, included */
+                to: string;
+                /** @description 2..16 comma-separated completed run dataset IDs */
+                datasets: string;
+                /** @description optional observer node */
+                node?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BaselineSummary"];
                 };
             };
             /** @description the request failed */

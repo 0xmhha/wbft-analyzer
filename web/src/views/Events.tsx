@@ -6,6 +6,7 @@ import type { LogEvent } from "../events";
 import { Pending, useLoad } from "../ui";
 import { PhaseLatency } from "./PhaseLatency";
 import { VisualReplay } from "./VisualReplay";
+import { RoundBaselines } from "./RoundBaselines";
 
 type Filter = { node: string; kind: string; phase: string; height: string; round: string };
 const emptyFilter: Filter = { node: "", kind: "", phase: "", height: "", round: "" };
@@ -61,6 +62,7 @@ export function Events({ net, onAuth }: { net: number; onAuth: () => void }) {
       {datasets.data.length === 0 ? <p>No run dataset yet. Load a run manifest or a local chainbench workspace.</p> : <label>Run dataset <select value={id} onChange={(e) => resetDataset(Number(e.target.value))}>{datasets.data.map((d) => <option key={d.id} value={d.id}>{d.name} · {d.status}</option>)}</select></label>}
       {run && <p>{run.status} · {run.progress.toLocaleString()} stored events {run.error && <span className="error">· {run.error}</span>}</p>}
     </>}
+    {datasets.state==="done" && <RoundBaselines key={net} net={net} datasets={datasets.data} onAuth={onAuth}/>}
     <Pending load={info} onAuth={onAuth} />
     {info.state === "done" && info.data && <details><summary>Input hashes, profiles and diagnostics</summary><p>Clock model: {String((run?.metadata as Record<string, unknown> | null)?.clock || (run?.metadata as Record<string, unknown> | null)?.Clock || "unknown")}. Source timestamps can arrive out of order; the counts below do not establish clock skew. Logs have no monotonic clock and do not establish complete event coverage.</p><table><thead><tr><th>Input / node</th><th>Profile</th><th>Normalized source records</th><th>Unknown / malformed</th><th>Wall / monotonic regressions / sequence gaps</th><th>SHA256</th></tr></thead><tbody>{info.data.inputs.map((i) => <tr key={i.id}><td>{i.id} / {i.node} · {i.kind}</td><td title={i.profile_sha256}>{i.profile}</td><td>{i.stats.events.toLocaleString()}</td><td>{i.stats.unknown} / {i.stats.malformed}</td><td>{i.stats.clock_regressions} / {i.stats.monotonic_regressions || 0} / {i.stats.sequence_gaps || 0}</td><td className="mono" title={i.sha256}>{i.sha256.slice(0, 16)}…</td></tr>)}</tbody></table></details>}
     {times && <>

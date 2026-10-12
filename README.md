@@ -23,7 +23,7 @@ The analyzer is built in stages; the A0 foundation is complete:
 |---|---|---|
 | A0 | command skeleton, inspector report loader with the public-build checks, PostgreSQL store, observation trends and alerts, API and front-end skeleton | complete |
 | A1 | header analysis: participation, proposers, epochs | implemented and validated on real testnet/G7 inputs |
-| A2 | node logs and chainbench runs | run ingestion, metadata timelines, round causes, inspector source overlay and phase latency implemented; visual replay implemented; repeated-run acceptance pending |
+| A2 | node logs and chainbench runs | run ingestion, metadata timelines, round causes, inspector source overlay and phase latency implemented; visual replay and independent-run baseline comparison implemented |
 | A3 | wbft event streams and mixed networks | not started |
 | A4 | governance history | not started |
 
@@ -226,9 +226,9 @@ regressions were retained as diagnostics. The committed regression input
 is a sanitized, incomplete metadata excerpt of those two heights; it does
 not replace the original real-run validation.
 
-A2 is not complete: repeated G7 baseline acceptance remains pending.
-Inspector source overlay, node phase latency and visual replay/keyframes
-are implemented; complete I2 checker coverage remains separate. A3 message matching, directed latency and
+Inspector source overlay, node phase latency, visual replay/keyframes and
+independent-run baseline comparison are implemented. Complete I2 checker
+coverage and A3 message/clock integration remain separate. A3 message matching, directed latency and
 follow-mode acceptance are also pending.
 
 ## Inspector log evidence
@@ -344,3 +344,24 @@ validate ingestion and the projection. Client/server seeks agree at 375
 node/time cases across the datasets. An exact 100,000-event source window is
 used for laptop Canvas cadence measurements. This validates visual replay;
 closed re-execution, what-if and follow-mode acceptance remain separate.
+
+
+## Independent run baselines
+
+`GET /v1/networks/{net}/rounds/baseline?datasets=ID,ID&from=H&to=H&node=N`
+compares 2..16 completed run datasets from the same network over a common
+full-height range of at most 100,000 heights. The run view offers the same
+selection and displays observer counts, individual rates, mean fraction and
+unbiased sample variance/stddev. Source hashes expose provenance; repeated
+node/profile/hash copies across selected runs are rejected.
+
+Claims are deduplicated by node/profile/height. Each observer remains separate
+from network decisions, and each independent run has equal weight. Rates use
+known claims; unknown and missing heights remain explicit. A run with no known
+claims contributes no rate, and a single valid run has no sample variance.
+These statistics describe the selected runs and do not prescribe a universal
+acceptance threshold or infer independent physical execution from a hash alone.
+
+API and persistence verification cover missing observations, unequal known
+claim counts, independent source identity and sample variance. Committed
+fixtures are explicitly synthetic; original operational evidence stays local.

@@ -119,6 +119,242 @@
         ],
         "type": "object"
       },
+      "BaselineBin": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "round": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "round"
+        ],
+        "type": "object"
+      },
+      "BaselineComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "mean_fraction": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "node": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "runs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sample_stddev": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "sample_variance": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/BaselineRate"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "mean_fraction",
+          "node",
+          "profile",
+          "round",
+          "runs",
+          "sample_stddev",
+          "sample_variance",
+          "samples"
+        ],
+        "type": "object"
+      },
+      "BaselineInput": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "node",
+          "profile",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "BaselineObserver": {
+        "additionalProperties": false,
+        "properties": {
+          "bins": {
+            "items": {
+              "$ref": "#/components/schemas/BaselineBin"
+            },
+            "type": "array"
+          },
+          "known": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "missing": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "unknown": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bins",
+          "known",
+          "missing",
+          "node",
+          "profile",
+          "unknown"
+        ],
+        "type": "object"
+      },
+      "BaselineRate": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dataset": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "denominator": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "fraction": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "count",
+          "dataset",
+          "denominator",
+          "fraction"
+        ],
+        "type": "object"
+      },
+      "BaselineRun": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/BaselineInput"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "observers": {
+            "items": {
+              "$ref": "#/components/schemas/BaselineObserver"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "dataset",
+          "inputs",
+          "name",
+          "observers"
+        ],
+        "type": "object"
+      },
+      "BaselineSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "comparisons": {
+            "items": {
+              "$ref": "#/components/schemas/BaselineComparison"
+            },
+            "type": "array"
+          },
+          "expected_heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/BaselineRun"
+            },
+            "type": "array"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "comparisons",
+          "expected_heights",
+          "from",
+          "method",
+          "runs",
+          "to"
+        ],
+        "type": "object"
+      },
       "DatasetList": {
         "additionalProperties": false,
         "properties": {
@@ -3757,6 +3993,92 @@
           }
         },
         "summary": "Participation denominators, proposer totals and decision round distribution for at most 100000 heights."
+      }
+    },
+    "/v1/networks/{net}/rounds/baseline": {
+      "get": {
+        "operationId": "compareRunRoundBaselines",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "first decimal canonical index (uint64)",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "last decimal canonical index, included",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "2..16 comma-separated completed run dataset IDs",
+            "in": "query",
+            "name": "datasets",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "optional observer node",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaselineSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Independent run observer round rates over a common full-height range; no network pooling."
       }
     },
     "/v1/networks/{net}/trends/observations": {

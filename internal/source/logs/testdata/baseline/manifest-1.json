@@ -1,0 +1,20 @@
+{
+  "format": "wbft-analyzer-run/1",
+  "name": "baseline-fixture-1",
+  "run": "baseline-fixture-1",
+  "network": {
+    "chain_id": "7",
+    "genesis_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "name": "synthetic-baseline"
+  },
+  "clock": "unknown",
+  "inputs": [
+    {
+      "id": "log",
+      "node": "n1",
+      "path": "run-1.jsonl",
+      "profile": "gstable@740526d03",
+      "sha256": "58643ac7250596b365695ff627753f63f12e3221c061a50284a9266efbdc0e19"
+    }
+  ]
+}
