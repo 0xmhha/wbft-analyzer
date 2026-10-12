@@ -1151,6 +1151,333 @@
         ],
         "type": "object"
       },
+      "MessageInputList": {
+        "additionalProperties": false,
+        "properties": {
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/StoreMessageInput"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "inputs"
+        ],
+        "type": "object"
+      },
+      "MessagePage": {
+        "additionalProperties": false,
+        "properties": {
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesRecord"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "next",
+          "records"
+        ],
+        "type": "object"
+      },
+      "MessagesFile": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bytes",
+          "name",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "MessagesRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "cause": {
+            "type": "string"
+          },
+          "check": {
+            "type": "string"
+          },
+          "clock_source": {
+            "type": "string"
+          },
+          "config_digest": {
+            "type": "string"
+          },
+          "decode": {
+            "type": "string"
+          },
+          "dedup_key": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "dir": {
+            "type": "string"
+          },
+          "dropped": {
+            "type": "string"
+          },
+          "engine": {
+            "type": "string"
+          },
+          "engine_run": {
+            "type": "string"
+          },
+          "event": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "gap_first_mono_ns": {
+            "type": "string"
+          },
+          "gap_last_mono_ns": {
+            "type": "string"
+          },
+          "head_hash": {
+            "type": "string"
+          },
+          "head_number": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "improvements": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "known_hit": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "node": {
+            "type": "string"
+          },
+          "of": {
+            "type": "string"
+          },
+          "offer": {
+            "type": "string"
+          },
+          "offset": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "out_digest": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "payload_sha256": {
+            "type": "string"
+          },
+          "peer": {
+            "type": "string"
+          },
+          "peer_recent_hit": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "peer_status": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "relay_of": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "string"
+          },
+          "signature_status": {
+            "type": "string"
+          },
+          "signer": {
+            "type": "string"
+          },
+          "size": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "step": {
+            "type": "string"
+          },
+          "t_mono_ns": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "t_wall": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "via": {
+            "type": "string"
+          },
+          "wire_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "write": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "input",
+          "node",
+          "ordinal",
+          "run",
+          "seq",
+          "type"
+        ],
+        "type": "object"
+      },
+      "MessagesStats": {
+        "additionalProperties": false,
+        "properties": {
+          "clock_diagnostics": {
+            "type": "string"
+          },
+          "clock_regressions": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "decoded": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "frames": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "gap_records": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "partial_runs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "records": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sequence_gaps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "undecoded": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unknown_peers": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clock_diagnostics",
+          "clock_regressions",
+          "decoded",
+          "frames",
+          "gap_records",
+          "partial_runs",
+          "records",
+          "sequence_gaps",
+          "undecoded",
+          "unknown_peers"
+        ],
+        "type": "object"
+      },
+      "MessagesSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesFile"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bytes",
+          "files",
+          "id",
+          "kind",
+          "node",
+          "sha256"
+        ],
+        "type": "object"
+      },
       "Network": {
         "additionalProperties": false,
         "properties": {
@@ -2216,6 +2543,22 @@
         ],
         "type": "object"
       },
+      "StoreMessageInput": {
+        "additionalProperties": false,
+        "properties": {
+          "stats": {
+            "$ref": "#/components/schemas/MessagesStats"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/MessagesSummary"
+          }
+        },
+        "required": [
+          "stats",
+          "summary"
+        ],
+        "type": "object"
+      },
       "StoreReplayNode": {
         "additionalProperties": false,
         "properties": {
@@ -3176,6 +3519,198 @@
           }
         },
         "summary": "Immutable log input hashes, byte counts and normalization diagnostics."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/messages/inputs": {
+      "get": {
+        "operationId": "listMessageInputs",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageInputList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Immutable journal/frame file hashes and normalization diagnostics; no payload bytes."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/messages/records": {
+      "get": {
+        "operationId": "listMessageRecords",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "input ID",
+            "in": "query",
+            "name": "input",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "segment, conn, frame, outcome, send_suppressed, step or gap",
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "recording node address",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "WBFT PRE-PREPARE, PREPARE, COMMIT or ROUND-CHANGE",
+            "in": "query",
+            "name": "phase",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "full decimal height",
+            "in": "query",
+            "name": "height",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "full decimal round",
+            "in": "query",
+            "name": "round",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "page size 1..1000",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "source cursor bound to snapshot and filters",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagePage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Source-ordered message metadata with snapshot/filter-bound cursor; at most 1000 rows."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/phases/samples": {
