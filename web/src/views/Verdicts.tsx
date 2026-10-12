@@ -1,7 +1,7 @@
 import { get } from "../api/client";
 import { buildMatrix } from "../matrix";
 import { Glyph, Labelled, Pending, useLoad } from "../ui";
-import { absent, verdictEncoding, verdicts } from "../visual";
+import { absent, partlyPassed, verdictEncoding, verdicts } from "../visual";
 
 /** Where are the specification violations? Requirements by reports, whole-run verdicts. */
 export function Verdicts({ net, onAuth }: { net: number; onAuth: () => void }) {
@@ -24,8 +24,10 @@ export function Verdicts({ net, onAuth }: { net: number; onAuth: () => void }) {
         {Object.values(verdicts).map((e) => (
           <Labelled key={e.label} enc={e} />
         ))}
+        <Labelled enc={partlyPassed} />
         <Labelled enc={absent} />
       </p>
+      <p className="muted">Partly passed: some instances passed, none failed, and others could not be decided. The requirement is still undecided.</p>
       <Pending load={load} onAuth={onAuth} />
       {load.state === "done" && load.data.reports.length === 0 && <p className="muted">No report on this network.</p>}
       {load.state === "done" && load.data.reports.length > 0 && (
@@ -48,7 +50,7 @@ export function Verdicts({ net, onAuth }: { net: number; onAuth: () => void }) {
                   <td className="mono">{row.requirement}</td>
                   {row.cells.map((v, i) => (
                     <td key={i} className="cell">
-                      <Glyph enc={verdictEncoding(v)} />
+                      <Glyph enc={verdictEncoding(v?.verdict, v?.coverage)} />
                     </td>
                   ))}
                   <td className="num">{row.fails || ""}</td>

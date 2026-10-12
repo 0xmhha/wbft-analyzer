@@ -39,6 +39,8 @@ th { font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line)
 .glyph .stroke { stroke-width: 2; fill: none; }
 .glyph .hatch { fill: none; stroke-width: 1; }
 .v-pass circle { fill: var(--pass); }
+.v-partly .half { fill: var(--pass); }
+.v-partly .ring { stroke: var(--pass); }
 .v-fail .stroke { stroke: var(--fail); }
 .v-notrun .ring { stroke: var(--notrun); }
 .v-unknown .hatch, .a-pending .hatch { stroke: var(--unknown); }

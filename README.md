@@ -75,6 +75,11 @@ observation trends with their alert rules. Its API types are generated from
 that step (for example by `go install`) serves the API only, and answers its
 pages with 503.
 
+The verdict overlay distinguishes partly passed requirements with a
+half-filled circle and a `partly passed` label. These are `CANNOT_DECIDE`
+results whose coverage has passed and undecided instances, with no failed
+instance; they remain undecided. Other undecided results are hatched.
+
 ```
 cd web && npm ci && npm run build && cd ..
 go build ./cmd/wbft-analyzer
