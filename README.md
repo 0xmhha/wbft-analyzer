@@ -230,3 +230,24 @@ A2 is not complete: independent inspector legacy log normalization and I2
 evidence overlay, phase latency, visual replay/keyframes and performance
 acceptance remain pending. A3 message matching, directed latency and
 follow-mode acceptance are also pending.
+
+## Inspector log evidence
+
+Run timelines can resolve inspector observation pointers to exact log
+records. Reports retain only input ID, kind, node, SHA256 and profile;
+input paths and launch metadata are discarded. A source jump requires
+matching network identity, file SHA256, node, profile (when declared),
+original line and height (when declared). Different, missing and ambiguous
+sources remain unavailable. The report and dataset input names may differ;
+content identity maps them without guessing between duplicate copies.
+
+Selecting a matched pointer highlights its event, adds its node lane when
+outside the page filter, and moves the time window when needed. The UI
+shows resolution status and the source hash. Header-copy selection lists
+only nodes with actual stored copies, separate from log-only inputs.
+
+An independent legacy G7 report matches all 68 representative pointers
+from 32 round-change and four engine-restart observations to the original
+run inputs. Legacy coverage is not declared complete, so the report's
+existing requirements remain 33 undecided and 32 not run. This observation
+overlay is not a claim of full I2 checker coverage or A2 completion.

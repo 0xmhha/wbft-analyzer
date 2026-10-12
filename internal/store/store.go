@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0xmhha/wbft-analyzer/internal/reports"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -123,6 +124,7 @@ type Report struct {
 	Network          json.RawMessage
 	Range            json.RawMessage
 	Summary          json.RawMessage
+	Inputs           []ReportInput
 	Results          []Result
 	Observations     []Observation
 	// Network is the network of the run, nil when the report names none
@@ -132,6 +134,8 @@ type Report struct {
 	// when the report has no range.
 	Points []TrendPoint
 }
+
+type ReportInput = reports.Input
 
 // NetworkKey identifies a network: chain ID and genesis hash. Name is
 // used when the network is new.
@@ -201,10 +205,19 @@ func (s *Store) PutReport(ctx context.Context, r *Report) (added bool, networkID
 		if err != nil {
 			return err
 		}
-		if tag.RowsAffected() == 0 {
+		added = tag.RowsAffected() != 0
+		for _, in := range r.Inputs {
+			tag, err := tx.Exec(ctx, `INSERT INTO report_inputs(report_id,input_id,kind,node,sha256,profile) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(report_id,input_id) DO UPDATE SET input_id=report_inputs.input_id WHERE report_inputs.kind=EXCLUDED.kind AND report_inputs.node=EXCLUDED.node AND report_inputs.sha256=EXCLUDED.sha256 AND report_inputs.profile=EXCLUDED.profile`, r.ID, in.ID, in.Kind, in.Node, in.SHA256, in.Profile)
+			if err != nil {
+				return err
+			}
+			if tag.RowsAffected() != 1 {
+				return errors.New("report source identity conflict")
+			}
+		}
+		if !added {
 			return nil
 		}
-		added = true
 		for _, p := range r.Points {
 			if _, err := tx.Exec(ctx, `INSERT INTO trend_points (report_id, network_id, kind, node, rate, at) VALUES ($1, $2, $3, $4, $5, $6)`,
 				r.ID, nid, p.Kind, p.Node, p.Rate, p.At); err != nil {

@@ -39,6 +39,8 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/evidence", id: "resolveLogEvidence", summary: "Resolve an inspector source pointer only when network, file hash, node and original line match.", params: append(runParams(), param{name: "report", in: "query", doc: "report SHA256 ID", typ: "string", required: true}, param{name: "observation", in: "query", doc: "observation ID", typ: "string", required: true}, param{name: "index", in: "query", doc: "evidence ordinal 0..19", typ: "integer", required: true}), answers: map[int]any{200: store.LogEvidence{}}, handle: (*Server).logEvidence},
+
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}", id: "getLogEvent", summary: "One event by its immutable input ID and source line.", params: append(runParams(), param{name: "input", in: "path", doc: "log input ID", typ: "string", required: true}, param{name: "line", in: "path", doc: "positive source line", typ: "integer", format: "int64", required: true}), answers: map[int]any{200: store.LogEvent{}}, handle: (*Server).logEvent},
 
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/rounds/distribution", id: "getLogRoundDistribution", summary: "Per-node decision claims and round entries with correlated cause evidence, at most 100000 relevant events.", params: append(runParams(), eventParams()[2:4]...), answers: map[int]any{200: rounds.Summary{}}, handle: (*Server).logRounds},
