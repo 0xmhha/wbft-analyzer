@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/0xmhha/wbft-analyzer/internal/derive/rounds"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
 	"net/http"
 )
@@ -38,6 +39,14 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}", id: "getLogEvent", summary: "One event by its immutable input ID and source line.", params: append(runParams(), param{name: "input", in: "path", doc: "log input ID", typ: "string", required: true}, param{name: "line", in: "path", doc: "positive source line", typ: "integer", format: "int64", required: true}), answers: map[int]any{200: store.LogEvent{}}, handle: (*Server).logEvent},
+
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/rounds/distribution", id: "getLogRoundDistribution", summary: "Per-node decision claims and round entries with correlated cause evidence, at most 100000 relevant events.", params: append(runParams(), eventParams()[2:4]...), answers: map[int]any{200: rounds.Summary{}}, handle: (*Server).logRounds},
+
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/inputs", id: "listLogInputs", summary: "Immutable log input hashes, byte counts and normalization diagnostics.", params: runParams(), answers: map[int]any{200: LogInputList{}}, handle: (*Server).logInputs},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/event-bounds", id: "getEventBounds", summary: "Stored run event bounds and count.", params: runParams(), answers: map[int]any{200: store.EventBounds{}}, handle: (*Server).eventBounds},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/events", id: "listLogEvents", summary: "Cursor-paged metadata-only events; at most 1000 rows in a 24-hour window.", params: eventParams(), answers: map[int]any{200: LogEventPage{}}, handle: (*Server).logEvents},
+
 	{method: "GET", path: "/v1/networks/{net}/datasets", id: "listDatasets", summary: "Datasets and their import status, progress and errors.", params: []param{netPath}, answers: map[int]any{200: DatasetList{}}, handle: (*Server).datasets},
 	{method: "GET", path: "/v1/networks/{net}/header-bounds", id: "getHeaderBounds", summary: "Stored canonical header bounds and fact bytes.", params: []param{netPath}, answers: map[int]any{200: store.HeaderBounds{}}, handle: (*Server).headerBounds},
 	{method: "GET", path: "/v1/networks/{net}/headers", id: "listHeaders", summary: "At most 1024 heights with participation, proposer and optional node copies.", params: append(headerParams(), param{name: "dataset", in: "query", doc: "copy dataset ID; requires node", typ: "integer", format: "int64"}, param{name: "node", in: "query", doc: "copy node label; requires dataset", typ: "string"}), answers: map[int]any{200: HeaderList{}}, handle: (*Server).headers},
@@ -82,4 +91,20 @@ var routes = []route{
 
 func headerParams() []param {
 	return []param{netPath, {name: "from", in: "query", doc: "first decimal canonical index (uint64)", typ: "string", required: true}, {name: "to", in: "query", doc: "last decimal canonical index, included", typ: "string", required: true}}
+}
+
+func runParams() []param {
+	return []param{netPath, {name: "dataset", in: "path", doc: "run dataset ID belonging to the network", typ: "integer", format: "int64", required: true}}
+}
+func eventParams() []param {
+	return append(runParams(),
+		param{name: "from_t", in: "query", doc: "inclusive RFC3339 window start", typ: "string", format: "date-time", required: true},
+		param{name: "to_t", in: "query", doc: "inclusive RFC3339 window end", typ: "string", format: "date-time", required: true},
+		param{name: "node", in: "query", doc: "one node label", typ: "string"},
+		param{name: "kind", in: "query", doc: "WBFT event kind", typ: "string"},
+		param{name: "phase", in: "query", doc: "WBFT PRE-PREPARE, PREPARE, COMMIT or ROUND-CHANGE", typ: "string"},
+		param{name: "height", in: "query", doc: "full decimal height, up to 156 decimal digits", typ: "string"},
+		param{name: "round", in: "query", doc: "full decimal round, up to 156 decimal digits", typ: "string"},
+		param{name: "limit", in: "query", doc: "page size 1..1000, default 500", typ: "integer"},
+		param{name: "cursor", in: "query", doc: "opaque next cursor bound to dataset and filters", typ: "string"})
 }

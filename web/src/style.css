@@ -78,3 +78,18 @@ article pre { overflow: auto; max-height: 24rem; }
 
 .chosen-cell { background: #d3e6f0; outline: 1px solid #246e93; }
 .evidence-mark { margin-left: 3px; font-weight: bold; }
+
+.swimlanes { min-width: 900px; width: 100%; max-height: 650px; }
+.swimlanes text { font-size: 12px; fill: currentColor; }
+.swimlanes .lane { stroke: #6b7280; stroke-width: 1; }
+.swimlanes .tick { stroke: #9ca3af; stroke-width: .5; opacity: .5; }
+.swimlanes circle { cursor: pointer; }
+.event-round { fill: #2563eb; }
+.event-send { fill: #d97706; }
+.event-quorum { fill: #9333ea; }
+.event-head { fill: #16a34a; }
+.event-timeout { fill: #dc2626; }
+.event-other { fill: #6b7280; }
+.event-selected { stroke: currentColor; stroke-width: 2; }
+.event-table { max-height: 450px; overflow-y: auto; }
+.controls { gap: .5rem; display: flex; flex-wrap: wrap; align-items: center; }

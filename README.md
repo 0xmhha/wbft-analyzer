@@ -23,7 +23,7 @@ The analyzer is built in stages; the A0 foundation is complete:
 |---|---|---|
 | A0 | command skeleton, inspector report loader with the public-build checks, PostgreSQL store, observation trends and alerts, API and front-end skeleton | complete |
 | A1 | header analysis: participation, proposers, epochs | implemented and validated on real testnet/G7 inputs |
-| A2 | node logs and chainbench runs | not started |
+| A2 | node logs and chainbench runs | run ingestion, metadata timelines and round causes implemented; latency, replay and inspector log overlay pending |
 | A3 | wbft event streams and mixed networks | not started |
 | A4 | governance history | not started |
 
@@ -46,6 +46,19 @@ Built so far:
   resume without duplicating canonical facts; another node adds its own
   copies. Dataset status, progress, failure and available nodes are exposed.
   A canonical conflict fails the batch rather than overwriting it.
+- `wbft-analyzer ingest run --db DSN --manifest RUN.json` streams JSON
+  node logs using the generated `gstable@740526d03` profile or the pinned
+  WBFT profile. `--chainbench DIR --rpc URL --name DATASET` reads a local
+  formatVersion 3 workspace and independently obtains the network identity
+  from RPC. It does not copy launch commands or key paths. Use `--from_t`
+  and `--to_t` for a bounded scenario window in chainbench mode, or put them
+  in the manifest. Input hashes, captured byte counts and profile hashes
+  and the normalizer version bind the dataset. Repeating a complete import skips it; an interrupted or
+  failed import can retry the same immutable inputs. A different input or
+  network requires another name. Unknown phrases/malformed records leave
+  diagnostic counts and a failed status, without storing their raw values.
+  Only metadata is persisted; payload, data, arbitrary errors and nested
+  objects are removed at both source and store boundaries.
 - `wbft-analyzer serve --db DSN` serves the REST API under `/v1`: networks,
   reports with their results and observations (and `POST /v1/reports`,
   the same loader), observation trends, alert rules (`PUT` replaces a
@@ -182,3 +195,38 @@ own/child hashes, validator addresses and the selected node; another fork
 or node does not mark the cell. The seven implemented content checks pass,
 node-key binding is partly decided and other selected P0 checks remain not
 run. This does not claim completion of all inspector P0 requirements.
+
+## Run timelines (A2 in progress)
+
+The events view lists run datasets, import diagnostics and immutable input
+hashes. It shows node swimlanes and a source-linked event table with wall
+clock zoom/pan, node/kind/message/full-height/full-round filters and cursor
+pages. A selected source outside the current page can be fetched directly
+by its input ID and original line number. Heights and rounds remain decimal
+strings. Logs have no monotonic timestamps and do not prove coverage,
+missing delivery or a successful wire write. Timestamps may arrive out of
+order; their counts are shown without asserting clock skew.
+
+`GET /v1/networks/{net}/datasets/{dataset}/rounds/distribution` reports
+per-node/profile decision claims deduplicated by height, and round entries
+with cause evidence. Causes are recorded or log-correlated within the same
+engine run and height; unknown is preserved. A node's decision claims are
+not pooled into one network distribution. Header decision rounds remain
+the network-level source. Queries use an explicit wall-time window of at
+most 24 hours and at most 100,000 relevant round-analysis records.
+
+A real local G7 run covered normal progress, one proposer stop, two
+consecutive proposer stops and a node restart. All original seven files
+(1.71 GB) normalized without unknown phrases or malformed records. The
+scenario window stored 38,302 events in 55.94 seconds after input-hash preflight. Height 5542 entered
+round 1 (five timeout and one F+1 causes); height 5565 entered rounds 1 and
+2 (five timeout causes each). Uninterrupted observer nodes claimed rounds
+0:70, 1:2, 2:2, agreeing with RPC for those 74 heights. Timestamp ordering
+regressions were retained as diagnostics. The committed regression input
+is a sanitized, incomplete metadata excerpt of those two heights; it does
+not replace the original real-run validation.
+
+A2 is not complete: independent inspector legacy log normalization and I2
+evidence overlay, phase latency, visual replay/keyframes and performance
+acceptance remain pending. A3 message matching, directed latency and
+follow-mode acceptance are also pending.

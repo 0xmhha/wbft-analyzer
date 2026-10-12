@@ -63,17 +63,24 @@ stop() {
 
 # capture PORT DIR writes the answers of the read endpoints to DIR.
 capture() {
-	local base=http://127.0.0.1:$1/v1 dir=$2 header_net
+	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
-	header_net=$(jq -r '.networks[] | select(.chain_id == "8283") | .id' "$dir/networks.json")
+	header_net=$(jq -r --arg genesis "$(jq -r .hash "$root/internal/source/headers/testdata/0.json")" '.networks[] | select(.chain_id == "8283" and .genesis_hash == $genesis) | .id' "$dir/networks.json")
 	test -n "$header_net"
 	get "/networks/$header_net/datasets" header-datasets
 	get "/networks/$header_net/header-bounds" header-bounds
 	get "/networks/$header_net/headers?from=0&to=3&dataset=1&node=fixture" header-rows
 	get "/networks/$header_net/headers/summary?from=0&to=3" header-summary
 	get "/networks/$header_net/epochs?from=0&to=3" header-epochs
+	run_net=$(jq -r '.networks[] | select(.genesis_hash == "0xe4dbf0369f658041a30759c9341973c7239e0467fdeecd1c21790e15c32c086f") | .id' "$dir/networks.json")
+ get "/networks/$run_net/datasets" run-datasets
+ run_id=$(jq -r '.datasets[] | select(.kind=="run") | .id' "$dir/run-datasets.json")
+ get "/networks/$run_net/datasets/$run_id/inputs" run-inputs
+ get "/networks/$run_net/datasets/$run_id/event-bounds" run-bounds
+ get "/networks/$run_net/datasets/$run_id/events?from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:30Z&limit=1000" run-events
+ get "/networks/$run_net/datasets/$run_id/rounds/distribution?from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:30Z" run-rounds
 	get /networks/1 network-1
 	get /reports reports
 	get /networks/1/alert-rules alert-rules
@@ -101,6 +108,7 @@ for i in $(seq 1 $((${#counts[@]} - 1))); do
 	curl -sf -X POST -H 'Content-Type: application/json' --data-binary "@$work/r$i.json" http://127.0.0.1:18091/v1/reports >/dev/null
 done
 "$bin" ingest range --db "$src" --blocks "$root/internal/source/headers/testdata" --config "$root/internal/source/headers/testdata/config.json" --from 0 --to 3 --name dump-headers --node fixture >"$out/headers.log"
+"$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/g7/manifest.json" >"$out/run.log"
 capture 18091 "$out/source"
 stop
 

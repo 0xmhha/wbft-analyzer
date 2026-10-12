@@ -120,7 +120,7 @@ func (g *schemas) of(t reflect.Type) map[string]any {
 	case timeType:
 		return map[string]any{"type": "string", "format": "date-time"}
 	case rawType:
-		return map[string]any{"description": "a JSON value as the report wrote it"}
+		return map[string]any{"description": "a JSON value admitted by the source or report reader"}
 	}
 	switch t.Kind() {
 	case reflect.Pointer:
