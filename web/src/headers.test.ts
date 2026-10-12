@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evidenceHeight, included, pageEnd } from "./headers";
+import { evidenceHeight, evidenceMatches, included, pageEnd } from "./headers";
 describe("header evidence and windows", () => {
  it("keeps full numbers and selects the preceding height of previous-seal evidence", () => {
   expect(evidenceHeight({kind:"block",number:"18446744073709551618",field:"extra.prev_committed_seal.sealers"})).toBe("18446744073709551617");
@@ -9,4 +9,16 @@ describe("header evidence and windows", () => {
  });
  it("clamps pages without binary64 rounding", () => {expect(pageEnd("18446744073709551400","18446744073709551615")).toBe("18446744073709551527");expect(pageEnd("4","6")).toBe("6")});
  it("does not turn unknown into absent", () => {expect(included(null)).toBe("unknown");expect(included(false)).toBe("absent");expect(included(true)).toBe("included")});
+});
+
+import type { HeaderRow } from "./headers";
+it("binds previous proofs to the child and direct proofs to the row, with validator scope", () => {
+ const row={fact:{number:"10",hash:"0xaa"},proof_hash:"0xbb"} as HeaderRow;
+ expect(evidenceMatches(row,{kind:"block",number:"11",hash:"0xbb",field:"extra.prev_committed_seal.sealers",address:"0xAB"},"0xab")).toBe(true);
+ expect(evidenceMatches(row,{kind:"block",number:"11",hash:"0xaa",field:"extra.prev_committed_seal.sealers"})).toBe(false);
+ expect(evidenceMatches(row,{kind:"block",number:"10",hash:"0xbb",field:"Coinbase"})).toBe(false);
+ expect(evidenceMatches(row,{kind:"block",number:"10",hash:"0xaa",field:"Coinbase"})).toBe(true);
+ expect(evidenceMatches(row,{kind:"block",number:"11",hash:"0xbb",field:"extra.prev_committed_seal.sealers",address:"0xab"},"0xcd")).toBe(false);
+ expect(evidenceMatches({...row,copy:{node:"node2"}} as HeaderRow,{kind:"block",node:"node1",number:"10",hash:"0xaa",field:"Coinbase"})).toBe(false);
+ expect(evidenceMatches({...row,proof_hash:null},{kind:"block",number:"11",hash:"0xbb",field:"extra.prev_committed_seal.sealers"})).toBe(false);
 });

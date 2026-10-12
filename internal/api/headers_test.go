@@ -56,14 +56,14 @@ func TestHeaderAPI(t *testing.T) {
 	// payload fields never reach PostgreSQL or its API.
 	reportRaw := report(t, func(m map[string]any) {
 		m["run"].(map[string]any)["network"] = map[string]any{"chain_id": "8283", "genesis_hash": "0x2bdf79b3d3cc49f9e6638ff81f3bb85065c79945a8fe4556cd0ff47bbfc02490"}
-		m["observations"] = []any{map[string]any{"id": "o1", "kind": "late_seal", "imp": []any{}, "count": 1, "requirements": []any{}, "evidence": []any{map[string]any{"kind": "block", "number": "3", "field": "extra.prev_committed_seal", "value": "DO_NOT_STORE", "payload": "DO_NOT_STORE"}}}}
+		m["observations"] = []any{map[string]any{"id": "o1", "kind": "late_seal", "imp": []any{}, "count": 1, "requirements": []any{}, "evidence": []any{map[string]any{"kind": "block", "number": "3", "field": "extra.prev_committed_seal", "address": "0x0000000000000000000000000000000000000001", "value": "DO_NOT_STORE", "payload": "DO_NOT_STORE"}}}}
 	})
 	var loaded LoadResult
 	if c.do("POST", "/v1/reports", reportRaw, &loaded) != 201 {
 		t.Fatal(loaded)
 	}
 	var obs ObservationList
-	if c.do("GET", "/v1/reports/"+loaded.ID+"/observations", nil, &obs) != 200 || len(obs.Observations[0].Evidence) != 1 || obs.Observations[0].Evidence[0].Number != "3" {
+	if c.do("GET", "/v1/reports/"+loaded.ID+"/observations", nil, &obs) != 200 || len(obs.Observations[0].Evidence) != 1 || obs.Observations[0].Evidence[0].Number != "3" || obs.Observations[0].Evidence[0].Address != "0x0000000000000000000000000000000000000001" {
 		t.Fatal(obs)
 	}
 	got, _ := json.Marshal(obs)

@@ -421,6 +421,12 @@
             },
             "type": "array"
           },
+          "proof_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "proposer_differs": {
             "type": [
               "boolean",
@@ -438,6 +444,7 @@
           "expected_proposer",
           "fact",
           "missed",
+          "proof_hash",
           "proposer_differs",
           "round_source"
         ],
@@ -725,6 +732,9 @@
       "ReportsEvidence": {
         "additionalProperties": false,
         "properties": {
+          "address": {
+            "type": "string"
+          },
           "field": {
             "type": "string"
           },

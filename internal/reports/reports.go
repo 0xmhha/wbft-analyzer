@@ -79,13 +79,14 @@ type Observation struct {
 
 // Evidence is a source pointer. Payload, value and execution state are not stored.
 type Evidence struct {
-	Kind   string `json:"kind"`
-	Input  string `json:"input,omitempty"`
-	Node   string `json:"node,omitempty"`
-	Number string `json:"number,omitempty"`
-	Hash   string `json:"hash,omitempty"`
-	Field  string `json:"field,omitempty"`
-	Line   int64  `json:"line,omitempty"`
+	Address string `json:"address,omitempty"`
+	Kind    string `json:"kind"`
+	Input   string `json:"input,omitempty"`
+	Node    string `json:"node,omitempty"`
+	Number  string `json:"number,omitempty"`
+	Hash    string `json:"hash,omitempty"`
+	Field   string `json:"field,omitempty"`
+	Line    int64  `json:"line,omitempty"`
 }
 
 // ErrFormat is a file that is not a report of the supported schema.

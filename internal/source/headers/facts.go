@@ -107,6 +107,10 @@ func Analyze(src *Source, cfg *types.Config, index uint64, node string) (Fact, C
 		if err != nil {
 			return Fact{}, Copy{}, err
 		}
+		if codec.BlockHash(p) != h.ParentHash {
+			return Fact{}, Copy{}, fmt.Errorf("header does not extend its source parent")
+		}
+
 		last = types.ProposerOf(p)
 	}
 	for _, a := range v.Addresses() {
@@ -163,6 +167,7 @@ type Participation struct {
 	LateCommitted *bool  `json:"late_committed"`
 }
 type Row struct {
+	ProofHash        *string         `json:"proof_hash"`
 	Fact             Fact            `json:"fact"`
 	DecisionRound    *int64          `json:"decision_round"`
 	RoundSource      string          `json:"round_source"`
@@ -188,6 +193,8 @@ func Derive(f Fact, child *Fact, c *Copy, policy *types.ProposerPolicy, last typ
 		if child.ParentHash != f.Hash {
 			return r, fmt.Errorf("child does not extend the header")
 		}
+		hash := child.Hash
+		r.ProofHash = &hash
 		v := child.PrevRound
 		r.DecisionRound = &v
 		r.RoundSource = "child_prev_round"
