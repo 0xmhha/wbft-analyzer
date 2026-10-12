@@ -192,6 +192,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/messages/pairs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Directional source-linked message pairs; matching uses the entire dataset before window filtering. Reindex required. */
+        get: operations["listMessagePairs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/messages/records": {
         parameters: {
             query?: never;
@@ -201,6 +218,40 @@ export interface paths {
         };
         /** Source-ordered message metadata with snapshot/filter-bound cursor; at most 1000 rows. */
         get: operations["listMessageRecords"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/messages/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One original metadata record by immutable input, file and ordinal; no payload bytes. */
+        get: operations["getMessageSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/messages/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Raw-pair distributions separated by direction, matching strength, path and clock; coverage remains explicit. */
+        get: operations["summarizeMessagePairs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -789,6 +840,62 @@ export interface components {
             name: string;
             sha256: string;
         };
+        MessagesGroup: {
+            distribution: components["schemas"]["LatencyStats"];
+            key: components["schemas"]["MessagesGroupKey"];
+            statuses: {
+                [key: string]: number;
+            };
+        };
+        MessagesGroupKey: {
+            clock: string;
+            node: string;
+            path: string;
+            phase: string;
+            receiver: string;
+            scope: string;
+            sender: string;
+            strength: string;
+        };
+        MessagesPair: {
+            at: string;
+            candidates: components["schemas"]["MessagesSource"][];
+            cause?: string;
+            clock: string;
+            dedup_key?: string;
+            digest?: string;
+            height: string;
+            id: string;
+            /** Format: double */
+            lower_seconds: number | null;
+            path: string;
+            phase: string;
+            /** Format: double */
+            raw_seconds: number | null;
+            receive: components["schemas"]["MessagesSource"] | null;
+            /** Format: int64 */
+            receive_candidates: number;
+            receiver: string;
+            round: string;
+            /** Format: double */
+            seconds: number | null;
+            send: components["schemas"]["MessagesSource"] | null;
+            /** Format: int64 */
+            send_candidates: number;
+            sender: string;
+            status: string;
+            strength: string;
+            /** Format: double */
+            upper_seconds: number | null;
+            views: components["schemas"]["MessagesView"][];
+            write?: string;
+        };
+        MessagesPairStatistics: {
+            groups: components["schemas"]["MessagesGroup"][];
+            /** Format: int64 */
+            pairs: number;
+            percentile_method: string;
+        };
         MessagesRecord: {
             cause?: string;
             check?: string;
@@ -840,6 +947,21 @@ export interface components {
             wire_code?: string | null;
             write?: string;
         };
+        MessagesSource: {
+            clock_source?: string;
+            file?: string;
+            input: string;
+            kind?: string;
+            node: string;
+            /** Format: int64 */
+            offset?: number | null;
+            /** Format: int64 */
+            ordinal: number;
+            run: string;
+            seq?: string;
+            t_mono_ns?: string | null;
+            t_wall: string;
+        };
         MessagesStats: {
             clock_diagnostics: string;
             /** Format: int64 */
@@ -870,6 +992,10 @@ export interface components {
             node: string;
             sha256: string;
         };
+        MessagesView: {
+            height: string;
+            round: string;
+        };
         Network: {
             chain_id: string;
             genesis_hash: string;
@@ -898,6 +1024,19 @@ export interface components {
         };
         ObservationList: {
             observations: components["schemas"]["Observation"][];
+        };
+        PairPage: {
+            index: components["schemas"]["StorePairIndex"];
+            next: string | null;
+            pairs: components["schemas"]["MessagesPair"][];
+            /** Format: double */
+            threshold_seconds: number | null;
+            /** Format: int64 */
+            total: number;
+        };
+        PairSummary: {
+            index: components["schemas"]["StorePairIndex"];
+            summary: components["schemas"]["MessagesPairStatistics"];
         };
         PhasePage: {
             next: string | null;
@@ -1145,6 +1284,36 @@ export interface components {
         StoreMessageInput: {
             stats: components["schemas"]["MessagesStats"];
             summary: components["schemas"]["MessagesSummary"];
+        };
+        StorePairCoverage: {
+            /** Format: int64 */
+            gap_records: number;
+            input: string;
+            kind: string;
+            /** Format: int64 */
+            monotonic_regressions: number | null;
+            /** Format: int64 */
+            partial_runs: number | null;
+            /** Format: int64 */
+            sequence_gaps: number;
+            /** Format: int64 */
+            wall_clock_regressions: number | null;
+        };
+        StorePairIndex: {
+            coverage: components["schemas"]["StorePairCoverage"][];
+            dataset_status: string;
+            diagnostics: {
+                [key: string]: number;
+            };
+            from_t: string | null;
+            /** Format: int64 */
+            issues: number;
+            /** Format: int64 */
+            pairs: number;
+            /** Format: int64 */
+            records: number;
+            to_t: string | null;
+            version: string;
         };
         StoreReplayNode: {
             initial: components["schemas"]["StoreReplayState"];
@@ -1751,6 +1920,80 @@ export interface operations {
             };
         };
     };
+    listMessagePairs: {
+        parameters: {
+            query?: {
+                /** @description optional inclusive RFC3339 start; requires to_t, at most 24h */
+                from_t?: string;
+                /** @description optional inclusive RFC3339 end; requires from_t */
+                to_t?: string;
+                /** @description exact message evidence filter */
+                sender?: string;
+                /** @description exact message evidence filter */
+                receiver?: string;
+                /** @description exact message evidence filter */
+                node?: string;
+                /** @description exact message evidence filter */
+                phase?: string;
+                /** @description exact message evidence filter */
+                height?: string;
+                /** @description exact message evidence filter */
+                round?: string;
+                /** @description exact message evidence filter */
+                strength?: string;
+                /** @description exact message evidence filter */
+                path?: string;
+                /** @description exact message evidence filter */
+                clock?: string;
+                /** @description exact message evidence filter */
+                status?: string;
+                /** @description p50/p90/p95/p99; requires one phase, strength, path and clock */
+                threshold?: string;
+                /** @description page size 1..1000 */
+                limit?: number;
+                /** @description snapshot and filter bound cursor */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairPage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     listMessageRecords: {
         parameters: {
             query?: {
@@ -1789,6 +2032,124 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessagePage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getMessageSource: {
+        parameters: {
+            query: {
+                /** @description original input ID */
+                input: string;
+                /** @description original journal/frame file name */
+                file: string;
+                /** @description positive original source ordinal */
+                ordinal: number;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagesRecord"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    summarizeMessagePairs: {
+        parameters: {
+            query?: {
+                /** @description optional inclusive RFC3339 start; requires to_t, at most 24h */
+                from_t?: string;
+                /** @description optional inclusive RFC3339 end; requires from_t */
+                to_t?: string;
+                /** @description exact message evidence filter */
+                sender?: string;
+                /** @description exact message evidence filter */
+                receiver?: string;
+                /** @description exact message evidence filter */
+                node?: string;
+                /** @description exact message evidence filter */
+                phase?: string;
+                /** @description exact message evidence filter */
+                height?: string;
+                /** @description exact message evidence filter */
+                round?: string;
+                /** @description exact message evidence filter */
+                strength?: string;
+                /** @description exact message evidence filter */
+                path?: string;
+                /** @description exact message evidence filter */
+                clock?: string;
+                /** @description exact message evidence filter */
+                status?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairSummary"];
                 };
             };
             /** @description the request failed */

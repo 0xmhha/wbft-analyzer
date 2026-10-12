@@ -395,3 +395,36 @@ acceptance threshold or infer independent physical execution from a hash alone.
 API and persistence verification cover missing observations, unequal known
 claim counts, independent source identity and sample variance. Committed
 fixtures are explicitly synthetic; original operational evidence stays local.
+
+
+## Directional message latency
+
+`reindex messages --db DSN --dataset ID` derives metadata pairs for a message
+or run dataset. Journal/frame peers identify link direction; event broadcast
+and processing records retain node strength; logged tuples retain key strength.
+A recovered author is not substituted for a wire peer. Repeated sends/receives,
+conflicting views or digests and low64 collisions remain ambiguous. Broadcast groups cover recording nodes without claiming intended recipient
+membership. Missing observations do not establish transmission failure. Frame exports without an
+explicit successful write remain unconfirmed.
+
+The derived snapshot is committed atomically and is bound to dataset metadata,
+progress, status and pairing version. GETs do not reindex. Matching uses the
+whole source before window filtering, so an out-of-window retry still prevents
+a false unique match. Reindex refuses more than one million source records or
+projected endpoints; reads refuse more than 100,000 matching groups. Results
+are never silently truncated. Stale indexes return 409.
+
+`/messages/summary` and cursor-paged `/messages/pairs` keep direction, phase,
+strength, local/direct/relay/processing path and clock apart. Percentiles and
+histograms use raw valid pairs, including overall and per-node distributions.
+Local intervals require same-node/run monotonic stamps. Cross-node intervals
+use the declared shared-host clock or NTP uncertainty; unknown clocks retain
+raw trends only. Input gaps, partial runs and unavailable diagnostics remain
+explicit. Candidate views and immutable source pointers survive ambiguity.
+`/messages/source?input&file&ordinal` resolves one original metadata record.
+
+The message latency view connects filters, directional p95 cells, raw-sample
+histograms, node statistics and pair/source details. Chart motion is optional
+and respects reduced-motion preferences. Event stamps can share one step;
+zero elapsed time describes those recorded stamps. This does not complete
+mixed-input pairing, missing-seal classification, follow mode or re-execution.

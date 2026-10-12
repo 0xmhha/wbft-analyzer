@@ -1,0 +1,66 @@
+import { useState } from "react";
+import { get, type Schemas } from "../api/client";
+import { Pending, useLoad } from "../ui";
+import { PhaseHistogram, seconds } from "./PhaseLatency";
+
+type Group = Schemas["MessagesGroup"];
+type Pair = Schemas["MessagesPair"];
+type Source = Schemas["MessagesSource"];
+type Filters = { phase: string; strength: string; path: string; clock: string; sender: string; receiver: string; node: string; height: string; round: string; from_t: string; to_t: string };
+const empty: Filters = { phase: "", strength: "", path: "", clock: "", sender: "", receiver: "", node: "", height: "", round: "", from_t: "", to_t: "" };
+function dimension(g: Group) { return `${g.key.phase} · ${g.key.strength} · ${g.key.path} · ${g.key.clock}`; }
+
+export function MessageLatency({ net, onAuth }: { net: number; onAuth: () => void }) {
+ const datasets = useLoad(async () => (await get("/v1/networks/{net}/datasets", { path: { net } })).datasets.filter(d => d.kind === "run" || d.kind === "messages"), [net]);
+ const [chosen, choose] = useState(0);
+ const id = chosen || (datasets.state === "done" ? datasets.data.at(-1)?.id : 0) || 0;
+ const run = datasets.state === "done" ? datasets.data.find(d => d.id === id) : undefined;
+ const [draft, edit] = useState<Filters>(empty), [filter, apply] = useState<Filters>(empty);
+ const [cursors, setCursors] = useState<string[]>([]), [selected, select] = useState<Pair | null>(null);
+ const [selectedSource, setSource] = useState<Source | null>(null);
+ const sourceRecord = useLoad(async () => !selectedSource ? null : selectedSource.kind === "message" ? get("/v1/networks/{net}/datasets/{dataset}/messages/source", { path: {net, dataset:id}, query: {input:selectedSource.input, file:selectedSource.file || "", ordinal:selectedSource.ordinal} }) : get("/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}", {path:{net,dataset:id,input:selectedSource.input,line:selectedSource.ordinal}}), [net,id,JSON.stringify(selectedSource)]);
+ const [motion, setMotion] = useState(true);
+ const query = Object.fromEntries(Object.entries(filter).filter(([, v]) => v));
+ const scope = JSON.stringify({ net, id, query }), cursor = cursors.at(-1);
+ const summary = useLoad(async () => id ? get("/v1/networks/{net}/datasets/{dataset}/messages/summary", { path: { net, dataset: id }, query }) : null, [scope]);
+ const page = useLoad(async () => id ? get("/v1/networks/{net}/datasets/{dataset}/messages/pairs", { path: { net, dataset: id }, query: { ...query, limit: 100, ...(cursor ? { cursor } : {}) } }) : null, [scope, cursor]);
+ const groups = summary.state === "done" && summary.data ? summary.data.summary.groups : [];
+ const index = summary.state === "done" ? summary.data?.index : null;
+ const setFilter = (f: Filters) => { edit(f); apply(f); setCursors([]); select(null); setSource(null); };
+ const options: Partial<Record<keyof Filters, string[]>> = { phase: ["PRE-PREPARE", "PREPARE", "COMMIT", "ROUND-CHANGE"], strength: ["link", "node", "key"], path: ["local", "direct", "relay", "propagation_processing"], clock: ["monotonic", "shared-host", "ntp", "unknown", "unavailable"] };
+ return <section className={motion ? "message-latency" : "message-latency no-motion"}>
+  <h1>How long did recorded WBFT messages take?</h1>
+  <p>Link records, broadcast-to-processing evidence and weak logged keys are kept separate. Missing observations are not proof of transmission failure. Unknown clocks have raw trends only; they do not contribute to valid percentiles. Repeated copies remain ambiguous. Event timestamps can share one step stamp; zero elapsed time describes those recorded stamps.</p>
+  <Pending load={datasets} onAuth={onAuth} />
+  {datasets.state === "done" && <label>Evidence dataset <select value={id} onChange={e => { choose(Number(e.target.value)); setFilter(empty); }}>{datasets.data.map(d => <option key={d.id} value={d.id}>{d.name} · {d.kind} · {d.status}</option>)}</select></label>}
+  {run && <p>{run.status} · {run.progress.toLocaleString()} original records</p>}
+  <form className="controls" onSubmit={e => { e.preventDefault(); setFilter(draft); }}>
+   {Object.entries(options).map(([key, values]) => <label key={key}>{key}<select value={draft[key as keyof Filters]} onChange={e => edit({ ...draft, [key]: e.target.value })}><option value="">All {key} values</option>{values.map(v => <option key={v}>{v}</option>)}</select></label>)}
+   {(["node", "sender", "receiver"] as const).map(k => <label key={k}>{k}<select value={draft[k]} onChange={e => edit({ ...draft, [k]: e.target.value })}><option value="">All nodes</option>{run?.nodes.map(n => <option key={n}>{n}</option>)}</select></label>)}
+   {(["height", "round", "from_t", "to_t"] as const).map(k => <label key={k}>{k}<input value={draft[k]} onChange={e => edit({ ...draft, [k]: e.target.value })} placeholder={k.endsWith("_t") ? "RFC3339; both bounds required" : "full decimal"} /></label>)}
+   <button>Apply filters</button><button type="button" onClick={() => setFilter(empty)}>Clear filters</button>
+   <label><input type="checkbox" checked={motion} onChange={e => setMotion(e.target.checked)} /> Chart motion</label>
+  </form>
+  <Pending load={summary} onAuth={onAuth} />
+  {index && <details open><summary>Source coverage and pairing diagnostics</summary><p>{index.records.toLocaleString()} original records · {index.pairs.toLocaleString()} pair groups · {index.issues.toLocaleString()} unprojected records · source dataset {index.dataset_status}</p><p>{Object.entries(index.diagnostics).map(([k, v]) => `${k}: ${v.toLocaleString()}`).join(" · ")}</p><p>The source counts cover the entire dataset. Tables and charts below use the applied filters. Broadcast groups cover recording nodes; intended recipient membership is unavailable without link records.</p><div className="table-scroll"><table><thead><tr><th>Input / kind</th><th>Gap records / sequence gaps</th><th>Partial run / wall regressions / monotonic regressions</th></tr></thead><tbody>{index.coverage.map(c => <tr key={c.input}><td>{c.input} / {c.kind}</td><td>{c.gap_records} / {c.sequence_gaps}</td><td>{c.partial_runs ?? "unavailable"} / {c.wall_clock_regressions ?? "unavailable"} / {c.monotonic_regressions ?? "unavailable"}</td></tr>)}</tbody></table></div></details>}
+  {summary.state === "done" && summary.data && <>
+   <p>{summary.data.summary.pairs.toLocaleString()} pair groups match the filters · {summary.data.summary.percentile_method}</p>
+   {groups.filter(g => g.key.scope === "overall").map(g => <details key={dimension(g)} open><summary>{dimension(g)} · {g.distribution.valid} valid / {g.distribution.total} groups</summary>
+    <p>{Object.entries(g.statuses).map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>
+    <p>p50 {seconds(g.distribution.p50_seconds)} · p95 {seconds(g.distribution.p95_seconds)} · p99 {seconds(g.distribution.p99_seconds)} · stddev {seconds(g.distribution.stddev_seconds)}</p>
+    <PhaseHistogram key={scope + dimension(g)} group={{ ...g.distribution, metric: g.key.phase, clock: `${g.key.strength}/${g.key.path}/${g.key.clock}` }} />
+    <DirectionMap groups={groups.filter(x => x.key.scope === "direction" && dimension(x) === dimension(g))} onSelect={(sender, receiver) => setFilter({ ...filter, sender, receiver, phase: g.key.phase, strength: g.key.strength, path: g.key.path, clock: g.key.clock })} />
+   </details>)}
+   <details><summary>Node and direction statistics</summary><div className="table-scroll"><table><thead><tr><th>Evidence dimensions / scope</th><th>Node / sender → receiver</th><th>Total / valid / statuses</th><th>p50 / p90 / p95 / p99</th><th>Mean / stddev</th></tr></thead><tbody>{groups.filter(g => g.key.scope !== "overall").map(g => <tr key={JSON.stringify(g.key)}><td>{dimension(g)} / {g.key.scope}</td><td>{g.key.node || `${g.key.sender} → ${g.key.receiver}`}</td><td>{g.distribution.total} / {g.distribution.valid}<br />{Object.entries(g.statuses).map(([k, v]) => `${k}:${v}`).join(" · ")}</td><td>{[g.distribution.p50_seconds, g.distribution.p90_seconds, g.distribution.p95_seconds, g.distribution.p99_seconds].map(seconds).join(" / ")}</td><td>{seconds(g.distribution.mean_seconds)} / {seconds(g.distribution.stddev_seconds)}</td></tr>)}</tbody></table></div></details>
+  </>}
+  <Pending load={page} onAuth={onAuth} />
+  {page.state === "done" && page.data && <><p>{page.data.pairs.length} pairs on this page / {page.data.total} matching groups. Select a group to inspect its original source pointers.</p><div className="table-scroll"><table><thead><tr><th>Sender → receiver / phase</th><th>Full view</th><th>Strength / path / clock</th><th>Status / candidates</th><th>Valid latency / raw trend / uncertainty</th><th>Evidence</th></tr></thead><tbody>{page.data.pairs.map(p => <tr key={p.id} className={selected?.id === p.id ? "selected" : ""}><td>{p.sender} → {p.receiver}<br />{p.phase}</td><td>{p.height || "unknown"} / {p.round || "unknown"}</td><td>{p.strength} / {p.path} / {p.clock}</td><td>{p.status}<br />{p.send_candidates} sends / {p.receive_candidates} receives</td><td>{seconds(p.seconds)}<br />raw {seconds(p.raw_seconds)}<br />[{seconds(p.lower_seconds)}, {seconds(p.upper_seconds)}]</td><td><button type="button" onClick={() => {select(p);setSource(null)}}>Inspect pair</button></td></tr>)}</tbody></table></div><div className="controls"><button type="button" disabled={!cursors.length} onClick={() => { setCursors(cursors.slice(0, -1)); select(null); }}>Previous pairs</button><button type="button" disabled={!page.data.next} onClick={() => { const next = page.data?.next; if (next) setCursors([...cursors, next]); select(null); }}>Next pairs</button></div></>}
+  {selected && <aside><h2>Message pair evidence</h2><p>{selected.id} · source pointers are retained for missing and ambiguous groups. The candidate preview contains at most 16 pointers; candidate counts include all records.</p><div className="controls">{selected.candidates.map((p,i) => <button key={i} type="button" onClick={() => setSource(p)}>{p.kind} {p.input}:{p.file ? `${p.file}:` : ""}{p.ordinal}</button>)}</div><pre>{JSON.stringify(selected, null, 2)}</pre><Pending load={sourceRecord} onAuth={onAuth}/>{sourceRecord.state === "done" && sourceRecord.data && <><h3>Original stored metadata record</h3><pre>{JSON.stringify(sourceRecord.data,null,2)}</pre></>}</aside>}
+ </section>;
+}
+
+export function DirectionMap({ groups, onSelect }: { groups: Group[]; onSelect: (sender: string, receiver: string) => void }) {
+ const nodes = [...new Set(groups.flatMap(g => [g.key.sender, g.key.receiver]))].sort();
+ const max = Math.max(.001, ...groups.map(g => g.distribution.p95_seconds ?? 0));
+ return <div className="table-scroll"><table className="direction-map"><caption>Directional p95; select a cell to filter every view. Unknown is not zero.</caption><thead><tr><th>Sender ↓ / receiver →</th>{nodes.map(n => <th key={n}>{n}</th>)}</tr></thead><tbody>{nodes.map(a => <tr key={a}><th>{a}</th>{nodes.map(b => { const g = groups.find(g => g.key.sender === a && g.key.receiver === b), value = g?.distribution.p95_seconds; return <td key={b}><button type="button" disabled={!g} onClick={() => onSelect(a, b)} style={{ background: value == null ? "transparent" : `rgba(121,84,199,${.12 + .65 * value / max})` }} title={`${a} → ${b}; ${g?.distribution.valid ?? 0} valid / ${g?.distribution.total ?? 0} groups`}>{value == null ? "unknown" : seconds(value)}</button></td>; })}</tr>)}</tbody></table></div>;
+}

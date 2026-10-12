@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -39,6 +40,35 @@ func (s *Server) messageInputs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, MessageInputList{xs})
+}
+
+func (s *Server) messageSource(w http.ResponseWriter, r *http.Request) {
+	d, ok := s.lookupDataset(w, r, "messages")
+	if !ok {
+		return
+	}
+	q := r.URL.Query()
+	for k, v := range q {
+		if (k != "input" && k != "file" && k != "ordinal") || len(v) != 1 {
+			writeError(w, 400, "invalid message source query")
+			return
+		}
+	}
+	ordinal, e := strconv.ParseInt(q.Get("ordinal"), 10, 64)
+	if e != nil || ordinal < 1 || !logs.Identifier(q.Get("input")) || q.Get("file") == "" || len(q.Get("file")) > 160 || strings.ContainsAny(q.Get("file"), "/\\") {
+		writeError(w, 400, "invalid original message source pointer")
+		return
+	}
+	x, e := s.Store.MessageRecordAt(r.Context(), d.ID, q.Get("input"), q.Get("file"), ordinal)
+	if errors.Is(e, store.ErrNotFound) {
+		writeError(w, 404, "message source not found")
+		return
+	}
+	if e != nil {
+		s.fail(w, r, e)
+		return
+	}
+	writeJSON(w, 200, x)
 }
 func (s *Server) messageRecords(w http.ResponseWriter, r *http.Request) {
 	d, ok := s.lookupDataset(w, r, "messages")

@@ -36,6 +36,11 @@ type Summary struct {
 	Samples int64   `json:"samples"`
 }
 
+// Distribution computes counts and quantiles from original samples. Callers
+// keep their evidence dimensions outside this distribution; precomputed pair
+// percentiles are never accepted as samples.
+func Distribution(samples []Sample) Stats { return statistics([4]string{}, samples) }
+
 func Summarize(samples []Sample) Summary {
 	groups := map[[4]string][]Sample{}
 	for _, s := range samples {

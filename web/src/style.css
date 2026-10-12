@@ -96,3 +96,12 @@ article pre { overflow: auto; max-height: 24rem; }
 
 .replay-canvas { display:block; width:100%; min-width:900px; cursor:crosshair; }
 .replay > label input[type="range"] {width:100%;}
+
+.message-latency figure rect { transform-box: fill-box; transform-origin: bottom; animation: message-bar-grow 400ms ease both; }
+.message-latency button { transition: background-color 150ms ease; }
+.message-latency tr.selected { background: #7954c722; }
+.direction-map button { min-width: 5rem; width: 100%; }
+@keyframes message-bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.no-motion figure rect { animation: none; }
+.no-motion button { transition: none; }
+@media (prefers-reduced-motion: reduce) { .message-latency figure rect { animation: none; } .message-latency button { transition: none; } }
