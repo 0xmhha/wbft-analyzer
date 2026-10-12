@@ -35,13 +35,27 @@ func loopbackHost(host string) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
+// apiCSP is the content security policy of the API's answers: JSON, never
+// rendered.
+const apiCSP = "default-src 'none'; frame-ancestors 'none'"
+
+// webCSP is that of the front end: its own scripts, styles and API, no
+// inline code, no frames, no forms.
+const webCSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; " +
+	"font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+
 // guard wraps the API with the checks every request goes through:
 // security headers, then the bearer token when the server has one, or,
 // without a token, a loopback Host (so that a web page cannot reach the
 // local server under a name of its own, DNS rebinding), and for writes a
 // JSON body from the same origin (so that a page cannot post a form to
 // it).
-func (s *Server) guard(next http.Handler) http.Handler {
+//
+// The front end's files (static) carry no data: they are served without
+// the token, so that a browser can load the page that then asks for it,
+// but still to loopback host names only when the server has no token,
+// and only to GET and HEAD.
+func (s *Server) guard(next http.Handler, static bool) http.Handler {
 	var want [32]byte
 	if s.Token != "" {
 		want = sha256.Sum256([]byte(s.Token))
@@ -52,8 +66,18 @@ func (s *Server) guard(next http.Handler) http.Handler {
 		h.Set("X-Frame-Options", "DENY")
 		h.Set("Referrer-Policy", "no-referrer")
 		h.Set("Cache-Control", "no-store")
-		h.Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
-		if s.Token != "" {
+		if static {
+			h.Set("Content-Security-Policy", webCSP)
+		} else {
+			h.Set("Content-Security-Policy", apiCSP)
+		}
+		switch {
+		case s.Token == "":
+			if host := hostOnly(r.Host); !loopbackHost(host) {
+				writeError(w, http.StatusMisdirectedRequest, "the server answers only to a loopback host name")
+				return
+			}
+		case !static:
 			got, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 			// Compare digests: equal length, constant time.
 			sum := sha256.Sum256([]byte(got))
@@ -62,11 +86,13 @@ func (s *Server) guard(next http.Handler) http.Handler {
 				writeError(w, http.StatusUnauthorized, "a bearer token is required")
 				return
 			}
-		} else if host := hostOnly(r.Host); !loopbackHost(host) {
-			writeError(w, http.StatusMisdirectedRequest, "the server answers only to a loopback host name")
-			return
 		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			if static {
+				h.Set("Allow", "GET, HEAD")
+				writeError(w, http.StatusMethodNotAllowed, "the front end's files are read only")
+				return
+			}
 			if o := r.Header.Get("Origin"); o != "" && !sameOrigin(o, r.Host) {
 				writeError(w, http.StatusForbidden, "cross-origin writes are refused")
 				return

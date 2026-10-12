@@ -2,3 +2,7 @@
 /bin/
 *.test
 *.out
+
+# The front end: dependencies and the build embedded by internal/web
+/web/node_modules/
+/internal/web/dist/app/

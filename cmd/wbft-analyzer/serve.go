@@ -17,13 +17,15 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/api"
 	"github.com/0xmhha/wbft-analyzer/internal/ingest"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
+	"github.com/0xmhha/wbft-analyzer/internal/web"
 )
 
 const serveUsage = `Usage: wbft-analyzer serve --db DSN [--listen 127.0.0.1:8080] [--auth token]
 
 Serves the REST API under /v1: networks, inspector reports with their
 results and observations, observation trends, alert rules and alerts.
-POST /v1/reports loads a report as "ingest reports" does.
+POST /v1/reports loads a report as "ingest reports" does. Every other path
+serves the web front end built into the binary.
 
 The server listens on 127.0.0.1 by default and then needs no
 authentication; it answers only to a loopback host name. To listen on any
@@ -85,7 +87,8 @@ func runServe(args []string, _, stderr io.Writer) int {
 	}
 	log := slog.New(slog.NewTextHandler(stderr, nil))
 	srv := &http.Server{
-		Handler:           (&api.Server{Store: s, Reporter: &ingest.Reporter{Store: s}, Token: token, Log: log}).Handler(),
+		Handler: (&api.Server{Store: s, Reporter: &ingest.Reporter{Store: s}, Token: token, Log: log,
+			Web: web.Handler()}).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       2 * time.Minute,
 		WriteTimeout:      2 * time.Minute,
@@ -96,7 +99,7 @@ func runServe(args []string, _, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return exitInternal
 	}
-	log.Info("serving", "addr", ln.Addr().String(), "auth", *auth != "")
+	log.Info("serving", "addr", ln.Addr().String(), "auth", *auth != "", "front_end", web.Built())
 	done := make(chan error, 1)
 	go func() { done <- srv.Serve(ln) }()
 	select {

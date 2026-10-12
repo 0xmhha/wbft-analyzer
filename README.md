@@ -65,6 +65,24 @@ on two PostgreSQL servers and keeps the dump as the `analyzer-dump`
 artifact. A dump restores with
 `pg_restore --no-owner --dbname=DSN analyzer.dump` and opens with `serve`.
 
+## Web front end
+
+`web/` is a static React/d3 page that `serve` delivers at `/`. It
+shows the loaded networks, the inspector's verdicts across reports, and
+observation trends with their alert rules. Its API types are generated from
+`api/openapi.json` (`npm run gen`). `npm run build` writes it to
+`internal/web/dist/app`, which `go build` embeds. A binary built without
+that step (for example by `go install`) serves the API only, and answers its
+pages with 503.
+
+```
+cd web && npm ci && npm run build && cd ..
+go build ./cmd/wbft-analyzer
+```
+
+For development, `npm run dev` serves the page with hot reload and sends
+`/v1` to a `wbft-analyzer serve` on `127.0.0.1:8080`.
+
 ## Build and test
 
 ```
