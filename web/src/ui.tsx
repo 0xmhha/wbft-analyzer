@@ -11,6 +11,10 @@ export function Glyph({ enc, size = 12 }: { enc: Encoding; size?: number }) {
       <title>{enc.label}</title>
       {enc.glyph === "disc" && <circle cx={h} cy={h} r={h - 1} />}
       {enc.glyph === "ring" && <circle cx={h} cy={h} r={h - 2} className="ring" />}
+      {enc.glyph === "half-disc" && <>
+        <path d={`M${h} 2A${h - 2} ${h - 2} 0 0 0 ${h} ${size - 2}Z`} className="half" />
+        <circle cx={h} cy={h} r={h - 2} className="ring" />
+      </>}
       {enc.glyph === "cross" && <path d={`M2 2L${size - 2} ${size - 2}M${size - 2} 2L2 ${size - 2}`} className="stroke" />}
       {enc.glyph === "hatch" && <rect x={0.5} y={0.5} width={size - 1} height={size - 1} className="hatch" />}
     </svg>

@@ -2,7 +2,7 @@
 // colour and shape together; an unknown value is hatched, never blank,
 // since blank reads as "none".
 
-export type Glyph = "disc" | "cross" | "hatch" | "ring";
+export type Glyph = "disc" | "half-disc" | "cross" | "hatch" | "ring";
 
 export interface Encoding {
   label: string;
@@ -21,9 +21,19 @@ export const verdicts: Record<string, Encoding> = {
 /** A requirement a report does not list: not judged there. */
 export const absent: Encoding = { label: "not in report", className: "v-absent", glyph: "hatch" };
 
+/** Passed instances mixed with undecided ones still have an undecided verdict. */
+export const partlyPassed: Encoding = { label: "partly passed", className: "v-partly", glyph: "half-disc" };
+
 /** The encoding of a verdict; a verdict this build does not know is drawn as unknown. */
-export function verdictEncoding(v: string | undefined): Encoding {
+export function verdictEncoding(v: string | undefined, coverage?: unknown): Encoding {
   if (v === undefined) return absent;
+  if (v === "CANNOT_DECIDE" && coverage !== null && typeof coverage === "object") {
+    const c = coverage as Record<string, unknown>;
+    if (typeof c.pass === "number" && Number.isSafeInteger(c.pass) && c.pass > 0 &&
+        c.fail === 0 && typeof c.cannot_decide === "number" && Number.isSafeInteger(c.cannot_decide) && c.cannot_decide > 0) {
+      return partlyPassed;
+    }
+  }
   return verdicts[v] ?? { label: v.toLowerCase(), className: "v-unknown", glyph: "hatch" };
 }
 
