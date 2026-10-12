@@ -75,3 +75,6 @@ label { display: block; margin: 8px 0; }
 .chosen { background: #e7f0f5; }
 article pre { overflow: auto; max-height: 24rem; }
 .controls input { max-width: 16rem; }
+
+.chosen-cell { background: #d3e6f0; outline: 1px solid #246e93; }
+.evidence-mark { margin-left: 3px; font-weight: bold; }

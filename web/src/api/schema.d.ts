@@ -364,6 +364,7 @@ export interface components {
             expected_proposer: string | null;
             fact: components["schemas"]["HeadersFact"];
             missed: components["schemas"]["HeadersOpportunity"][];
+            proof_hash: string | null;
             proposer_differs: boolean | null;
             round_source: string;
         };
@@ -442,6 +443,7 @@ export interface components {
             reports: components["schemas"]["Report"][];
         };
         ReportsEvidence: {
+            address?: string;
             field?: string;
             hash?: string;
             input?: string;

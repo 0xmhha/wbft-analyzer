@@ -73,13 +73,13 @@ func TestPublicBlocks(t *testing.T) {
 func TestParticipationAndProposer(t *testing.T) {
 	addresses := []string{"0x0000000000000000000000000000000000000001", "0x0000000000000000000000000000000000000002"}
 	f := Fact{Index: "18446744073709551615", Number: "18446744073709551616", Hash: "hash", Validators: addresses, Coinbase: addresses[1]}
-	child := Fact{ParentHash: "hash", PrevRound: 3, PrevPrepared: []int64{0, 1}, PrevCommitted: []int64{1}}
+	child := Fact{Hash: "child-hash", ParentHash: "hash", PrevRound: 3, PrevPrepared: []int64{0, 1}, PrevCommitted: []int64{1}}
 	c := Copy{Round: 0, Prepared: []int64{0}, Committed: []int64{}}
 	row, err := Derive(f, &child, &c, &types.ProposerPolicy{}, types.Address{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if *row.DecisionRound != 3 || *row.ExpectedProposer != addresses[1] || *row.ProposerDiffers || !*row.Cells[1].LateCommitted || !*row.Cells[1].LatePrepared || *row.Cells[0].LatePrepared {
+	if row.ProofHash == nil || *row.ProofHash != "child-hash" || *row.DecisionRound != 3 || *row.ExpectedProposer != addresses[1] || *row.ProposerDiffers || !*row.Cells[1].LateCommitted || !*row.Cells[1].LatePrepared || *row.Cells[0].LatePrepared {
 		t.Fatal(row)
 	}
 	if row.Missed[0].Count != 2 || row.Missed[1].Count != 1 {

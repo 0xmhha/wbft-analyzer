@@ -22,7 +22,7 @@ The analyzer is built in stages; the A0 foundation is complete:
 | Stage | Content | State |
 |---|---|---|
 | A0 | command skeleton, inspector report loader with the public-build checks, PostgreSQL store, observation trends and alerts, API and front-end skeleton | complete |
-| A1 | header analysis: participation, proposers, epochs | implemented; live multi-node and inspector P0 acceptance remains |
+| A1 | header analysis: participation, proposers, epochs | implemented and validated on real testnet/G7 inputs |
 | A2 | node logs and chainbench runs | not started |
 | A3 | wbft event streams and mixed networks | not started |
 | A4 | governance history | not started |
@@ -174,6 +174,11 @@ of up to 1024 heights agree per validator with `istanbul_status` previous
 prepare/commit totals. All 714 epoch blocks match the header-reconstructed
 inputs. Stored facts are 106.1 MiB; tables plus indexes are approximately
 289 MiB (147 MiB heights, 76 MiB seals, 65 MiB copies, 1.2 MiB epochs).
-Independent live-node duplicate import and an actual inspector testnet P0
-report overlay are still acceptance work. Tests use two independent RPC
-surfaces replaying real public headers; this is not a live-node claim.
+Real G7 nodes independently imported heights 1..160 plus the child:
+canonical heights (161), seals and epoch 140 are shared, while each node
+retains 161 copies. Actual inspector main 2b790c3 reports were imported
+for the same testnet/G7 inputs. Evidence matches full heights, canonical
+own/child hashes, validator addresses and the selected node; another fork
+or node does not mark the cell. The seven implemented content checks pass,
+node-key binding is partly decided and other selected P0 checks remain not
+run. This does not claim completion of all inspector P0 requirements.
