@@ -49,7 +49,7 @@ type Alert struct {
 	Recent   float64 `json:"recent"`
 	Baseline float64 `json:"baseline,omitempty"`
 	// WebhookError is the failure of the rule's webhook, if any.
-	WebhookError string `json:"-"`
+	WebhookError string `json:"webhook_error,omitempty"`
 }
 
 // Reporter loads inspector reports.
@@ -75,12 +75,18 @@ func (r *Reporter) Files(ctx context.Context, files []string) ([]Result, error) 
 }
 
 func (r *Reporter) file(ctx context.Context, file string) (Result, error) {
-	res := Result{File: file}
 	raw, err := os.ReadFile(file)
 	if err != nil {
-		res.Outcome, res.Detail = Invalid, err.Error()
-		return res, nil
+		return Result{File: file, Outcome: Invalid, Detail: err.Error()}, nil
 	}
+	return r.Load(ctx, file, raw)
+}
+
+// Load loads one report given as its file contents; name is recorded as
+// the result's File. Like Files, it returns an error only for a store
+// error.
+func (r *Reporter) Load(ctx context.Context, name string, raw []byte) (Result, error) {
+	res := Result{File: name}
 	rep, err := reports.Parse(raw)
 	if err != nil {
 		res.Outcome, res.Detail = Invalid, err.Error()

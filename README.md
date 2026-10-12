@@ -37,6 +37,13 @@ Built so far:
   the public-build checks, one copy per file, and the observation rates of
   each report added to the trends of its network, with the network's alert
   rules evaluated and their webhooks told of state changes.
+- `wbft-analyzer serve --db DSN` serves the REST API under `/v1`: networks,
+  reports with their results and observations (and `POST /v1/reports`,
+  the same loader), observation trends, alert rules (`PUT` replaces a
+  network's set) and alert states. It listens on `127.0.0.1:8080` and
+  then answers only to a loopback host name; another address needs
+  `--auth token`, a bearer token taken from `$WBFT_ANALYZER_TOKEN`. The
+  server speaks plain HTTP: reach it over a network through a TLS proxy.
 
 A local PostgreSQL for development and the integration tests:
 

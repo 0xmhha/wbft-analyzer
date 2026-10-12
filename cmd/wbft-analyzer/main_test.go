@@ -6,9 +6,11 @@ import (
 	"testing"
 )
 
-// TestRun: the usage, the version, an unknown command and a command that
-// is not built yet give their exit codes and messages.
+// TestRun: the usage, the version, an unknown command, a command that is
+// not built yet and the serve checks made before the database is opened
+// give their exit codes and messages.
 func TestRun(t *testing.T) {
+	t.Setenv("WBFT_ANALYZER_TOKEN", "short")
 	for _, c := range []struct {
 		args []string
 		code int
@@ -18,7 +20,11 @@ func TestRun(t *testing.T) {
 		{[]string{"help"}, exitOK, "Commands:"},
 		{[]string{"version"}, exitOK, "wbft-analyzer dev"},
 		{[]string{"nope"}, exitUsage, `unknown command "nope"`},
-		{[]string{"serve", "--db", "x"}, exitUnavailable, "serve: not available yet"},
+		{[]string{"follow"}, exitUnavailable, "follow: not available yet"},
+		{[]string{"serve", "--db", "x", "--listen", "0.0.0.0:8080"}, exitUsage, "needs --auth token"},
+		{[]string{"serve", "--db", "x", "--listen", ":8080"}, exitUsage, "needs --auth token"},
+		{[]string{"serve", "--db", "x", "--auth", "token"}, exitUsage, "of 32 characters or more"},
+		{[]string{"serve", "--db", "x", "--auth", "oidc"}, exitUnavailable, "--auth oidc is not available yet"},
 		{[]string{"ingest", "reports", "r.json"}, exitUsage, "Usage: wbft-analyzer ingest reports"},
 		{[]string{"ingest", "range"}, exitUsage, "not available yet"},
 	} {

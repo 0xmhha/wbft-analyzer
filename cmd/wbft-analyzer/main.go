@@ -4,7 +4,7 @@
 //
 // Usage:
 //
-//	wbft-analyzer serve   --db DSN [--listen 127.0.0.1:8080]
+//	wbft-analyzer serve   --db DSN [--listen 127.0.0.1:8080] [--auth token]
 //	wbft-analyzer ingest  reports --db DSN FILE ...
 //	wbft-analyzer ingest  run --manifest FILE [--report FILE ...]
 //	wbft-analyzer ingest  range --rpc URL --from N --to M
@@ -51,7 +51,7 @@ Run "wbft-analyzer <command> -h" for the flags of a command.
 
 // commands are the commands and whether they are built.
 var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
-	"serve":   notYet("serve"),
+	"serve":   runServe,
 	"ingest":  runIngest,
 	"follow":  notYet("follow"),
 	"reindex": notYet("reindex"),
