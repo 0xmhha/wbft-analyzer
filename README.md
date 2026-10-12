@@ -150,6 +150,41 @@ delivery. An overall percentile is computed from samples, not by averaging
 pair percentiles. API, stored data, views and evidence links must be checked
 against real runs before these workflows are marked complete.
 
+## Message metadata inputs
+
+`ingest messages --db DSN --manifest FILE` accepts immutable journal
+or R-01 frame directories. The manifest format is
+`wbft-analyzer-messages/1`, with `name`, a `network` (`chain_id`,
+`genesis_hash`, `name`), `clock` and `inputs` (`id`, `kind`, `node`, `path`).
+`node` is the recording node's consensus address; paths are local-only.
+`kind` is `journal` or `frames`. `clock.model` is `unknown`, `shared-host`
+or `ntp`; only `ntp` takes a required nonnegative `skew_ms` bound.
+An optional input `sha256` checks the canonical, sorted file manifest hash.
+
+The journal reader and message codec come from the pinned WBFT module.
+Only decoded metadata, source file hashes and original positions enter
+PostgreSQL. Signer recovery does not assert validator membership. Payloads,
+step input bytes, configuration, remote endpoints and arbitrary error text
+are excluded. R-01 payload hashes and sizes are checked before decoding;
+missing payloads and unknown peers remain explicit. Journal gaps and
+monotonic regressions are diagnostics. Inherited R-01 timestamps are marked
+separately from recorded frame timestamps. An absent R-01 write error is
+`no_error_recorded`, not proof of a successful write.
+
+Damage or a torn final journal record retains the readable prefix and
+fails the dataset. Retrying the same immutable input compares existing
+rows and inserts no duplicates; repairing or extending an input needs a
+new dataset name. The reader bounds journal segments to 256 MiB, frame
+lines to 4 MiB, payload decoding to 16 MiB and frame sequence tracking to
+one million records per input. Artifact symlinks are refused.
+
+The messages page shows dataset status, file provenance, diagnostics,
+source-ordered cursor pages, full height/round filters and record details.
+Read APIs are `messages/inputs` and `messages/records` below a network's
+dataset route. Cursors bind the dataset snapshot and filters. This input
+and evidence path does not yet pair node-to-node messages, estimate clock
+skew, classify missing votes or perform closed execution replay.
+
 ## Public scope
 
 The analyzer only accepts reports of the public inspector build for the

@@ -33,6 +33,10 @@ type eventCursor struct {
 var fullDecimal = regexp.MustCompile(`^(0|[1-9][0-9]{0,155})$`)
 
 func (s *Server) lookupRun(w http.ResponseWriter, r *http.Request) (store.Dataset, bool) {
+	return s.lookupDataset(w, r, "run")
+}
+
+func (s *Server) lookupDataset(w http.ResponseWriter, r *http.Request, kind string) (store.Dataset, bool) {
 	n, ok := s.lookupNetwork(w, r)
 	if !ok {
 		return store.Dataset{}, false
@@ -49,8 +53,8 @@ func (s *Server) lookupRun(w http.ResponseWriter, r *http.Request) (store.Datase
 	}
 	for _, d := range ds {
 		if d.ID == id {
-			if d.Kind != "run" {
-				writeError(w, 400, "dataset has no log events")
+			if d.Kind != kind {
+				writeError(w, 400, "dataset has the wrong input kind")
 				return d, false
 			}
 			return d, true

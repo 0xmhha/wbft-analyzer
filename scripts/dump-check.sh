@@ -63,7 +63,7 @@ stop() {
 
 # capture PORT DIR writes the answers of the read endpoints to DIR.
 capture() {
-	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report baseline_net baseline_ids
+	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report baseline_net baseline_ids message_net message_id
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
@@ -90,6 +90,12 @@ capture() {
  get "/networks/$baseline_net/datasets" baseline-datasets
  baseline_ids=$(jq -r '.datasets[].id' "$dir/baseline-datasets.json" | paste -sd, -)
  get "/networks/$baseline_net/rounds/baseline?datasets=$baseline_ids&from=31&to=32&node=n1" run-baseline
+ message_net=$(jq -r '.networks[]|select(.name=="synthetic-messages")|.id' "$dir/networks.json")
+ get "/networks/$message_net/datasets" message-datasets
+ message_id=$(jq -r '.datasets[0].id' "$dir/message-datasets.json")
+ get "/networks/$message_net/datasets/$message_id/messages/inputs" message-inputs
+ get "/networks/$message_net/datasets/$message_id/messages/records?limit=1000" message-records
+ get "/networks/$message_net/datasets/$message_id/messages/records?phase=PREPARE" message-prepare
  get /reports reports
  log_report=$(jq -r '.reports[] | select(.run_id=="log-evidence-dump") | .id' "$dir/reports.json")
  get "/networks/$run_net/datasets/$run_id/evidence?report=$log_report&observation=log-source&index=0" log-evidence
@@ -123,6 +129,7 @@ done
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/g7/manifest.json" >"$out/run.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/baseline/manifest-1.json" >"$out/baseline-1.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/baseline/manifest-2.json" >"$out/baseline-2.log"
+"$bin" ingest messages --db "$src" --manifest "$root/internal/source/messages/testdata/manifest.json" >"$out/messages.log"
 # A synthetic report points into the real sanitized G7 fixture. Its input
 # namespace differs from the dataset, so resolution must use SHA/node.
 python3 - "$root" "$work/log-report.json" <<'PYLOG'

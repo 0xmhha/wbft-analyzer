@@ -1,0 +1,1 @@
+{"format":"wbft-analyzer-messages/1","name":"synthetic-messages","network":{"chain_id":"8","genesis_hash":"0x0000000000000000000000000000000000000000000000000000000000000000","name":"synthetic-messages"},"clock":{"model":"unknown"},"inputs":[{"id":"frames","kind":"frames","node":"0x0000000000000000000000000000000000000001","path":"synthetic"}]}
