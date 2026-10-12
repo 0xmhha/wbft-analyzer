@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/0xmhha/wbft-analyzer/internal/derive/baseline"
 	"github.com/0xmhha/wbft-analyzer/internal/derive/latency"
 	"github.com/0xmhha/wbft-analyzer/internal/derive/rounds"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
@@ -40,6 +41,7 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/rounds/baseline", id: "compareRunRoundBaselines", summary: "Independent run observer round rates over a common full-height range; no network pooling.", params: append(headerParams(), param{name: "datasets", in: "query", doc: "2..16 comma-separated completed run dataset IDs", typ: "string", required: true}, param{name: "node", in: "query", doc: "optional observer node", typ: "string"}), answers: map[int]any{200: baseline.Summary{}}, handle: (*Server).roundBaseline},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/replay/window", id: "getReplayWindow", summary: "Metadata visual replay window, at most 100000 events, with preceding state; reindex required if stale.", params: append(append(runParams(), eventParams()[2:4]...), param{name: "node", in: "query", doc: "one node label", typ: "string"}, param{name: "to_input", in: "query", doc: "optional inclusive end source at to_t; requires to_line", typ: "string"}, param{name: "to_line", in: "query", doc: "inclusive original source line at to_t", typ: "integer", format: "int64"}), answers: map[int]any{200: store.ReplayWindow{}}, handle: (*Server).replayWindow},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/replay/keyframe", id: "getReplayKeyframe", summary: "Nearest prior keyframe plus bounded tail folded through t; exact nanosecond axis.", params: append(runParams(), param{name: "node", in: "query", doc: "node label", typ: "string", required: true}, param{name: "t", in: "query", doc: "inclusive RFC3339 target", typ: "string", format: "date-time", required: true}), answers: map[int]any{200: store.ReplayState{}}, handle: (*Server).replayKeyframe},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/phases/summary", id: "summarizePhaseLatency", summary: "WBFT consecutive phase distributions, counts and raw-sample overall percentiles; missing and negative samples remain explicit.", params: phaseParams(false), answers: map[int]any{200: latency.Summary{}}, handle: (*Server).phaseSummary},

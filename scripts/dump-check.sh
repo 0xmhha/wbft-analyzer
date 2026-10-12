@@ -63,7 +63,7 @@ stop() {
 
 # capture PORT DIR writes the answers of the read endpoints to DIR.
 capture() {
-	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report
+	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report baseline_net baseline_ids
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
@@ -76,7 +76,7 @@ capture() {
 	get "/networks/$header_net/epochs?from=0&to=3" header-epochs
 	run_net=$(jq -r '.networks[] | select(.genesis_hash == "0xe4dbf0369f658041a30759c9341973c7239e0467fdeecd1c21790e15c32c086f") | .id' "$dir/networks.json")
  get "/networks/$run_net/datasets" run-datasets
- run_id=$(jq -r '.datasets[] | select(.kind=="run") | .id' "$dir/run-datasets.json")
+ run_id=$(jq -r '.datasets[] | select(.kind=="run" and .name=="g7-excerpt") | .id' "$dir/run-datasets.json")
  get "/networks/$run_net/datasets/$run_id/inputs" run-inputs
  get "/networks/$run_net/datasets/$run_id/event-bounds" run-bounds
  get "/networks/$run_net/datasets/$run_id/events?from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:30Z&limit=1000" run-events
@@ -86,6 +86,10 @@ capture() {
  get "/networks/$run_net/datasets/$run_id/phases/samples?from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:30Z&metric=round_to_decision&clock=wall&threshold=p95" run-phase-threshold
  get "/networks/$run_net/datasets/$run_id/replay/window?from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:30Z" run-replay-window
  get "/networks/$run_net/datasets/$run_id/replay/keyframe?node=node2&t=2026-10-12T17:23:01Z" run-replay-state
+ baseline_net=$(jq -r '.networks[]|select(.chain_id=="7" and .name=="synthetic-baseline")|.id' "$dir/networks.json")
+ get "/networks/$baseline_net/datasets" baseline-datasets
+ baseline_ids=$(jq -r '.datasets[].id' "$dir/baseline-datasets.json" | paste -sd, -)
+ get "/networks/$baseline_net/rounds/baseline?datasets=$baseline_ids&from=31&to=32&node=n1" run-baseline
  get /reports reports
  log_report=$(jq -r '.reports[] | select(.run_id=="log-evidence-dump") | .id' "$dir/reports.json")
  get "/networks/$run_net/datasets/$run_id/evidence?report=$log_report&observation=log-source&index=0" log-evidence
@@ -117,6 +121,8 @@ for i in $(seq 1 $((${#counts[@]} - 1))); do
 done
 "$bin" ingest range --db "$src" --blocks "$root/internal/source/headers/testdata" --config "$root/internal/source/headers/testdata/config.json" --from 0 --to 3 --name dump-headers --node fixture >"$out/headers.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/g7/manifest.json" >"$out/run.log"
+"$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/baseline/manifest-1.json" >"$out/baseline-1.log"
+"$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/baseline/manifest-2.json" >"$out/baseline-2.log"
 # A synthetic report points into the real sanitized G7 fixture. Its input
 # namespace differs from the dataset, so resolution must use SHA/node.
 python3 - "$root" "$work/log-report.json" <<'PYLOG'
