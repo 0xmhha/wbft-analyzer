@@ -1,0 +1,1174 @@
+{
+  "components": {
+    "schemas": {
+      "Alert": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline": {
+            "format": "double",
+            "type": "number"
+          },
+          "changed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "network_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "recent": {
+            "format": "double",
+            "type": "number"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/AlertRule"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "firing",
+              "resolved"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "baseline",
+          "changed_at",
+          "network_id",
+          "recent",
+          "rule",
+          "state"
+        ],
+        "type": "object"
+      },
+      "AlertList": {
+        "additionalProperties": false,
+        "properties": {
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "alerts"
+        ],
+        "type": "object"
+      },
+      "AlertRule": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "absolute",
+              "relative"
+            ],
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "threshold": {
+            "format": "double",
+            "type": "number"
+          },
+          "webhook": {
+            "type": "string"
+          },
+          "window": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "baseline",
+          "kind",
+          "mode",
+          "node",
+          "threshold",
+          "webhook",
+          "window"
+        ],
+        "type": "object"
+      },
+      "AlertRuleList": {
+        "additionalProperties": false,
+        "properties": {
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/AlertRule"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "rules"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "IngestAlert": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline": {
+            "format": "double",
+            "type": "number"
+          },
+          "before": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "network": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "type": "string"
+          },
+          "recent": {
+            "format": "double",
+            "type": "number"
+          },
+          "rule": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "state": {
+            "type": "string"
+          },
+          "webhook_error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "before",
+          "kind",
+          "network",
+          "recent",
+          "rule",
+          "state"
+        ],
+        "type": "object"
+      },
+      "LoadResult": {
+        "additionalProperties": false,
+        "properties": {
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/IngestAlert"
+            },
+            "type": "array"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "added",
+              "skipped",
+              "refused",
+              "invalid"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "alerts",
+          "detail",
+          "outcome"
+        ],
+        "type": "object"
+      },
+      "Network": {
+        "additionalProperties": false,
+        "properties": {
+          "chain_id": {
+            "type": "string"
+          },
+          "genesis_hash": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reports": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "visibility": {
+            "enum": [
+              "public",
+              "private"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "chain_id",
+          "genesis_hash",
+          "id",
+          "name",
+          "reports",
+          "visibility"
+        ],
+        "type": "object"
+      },
+      "NetworkList": {
+        "additionalProperties": false,
+        "properties": {
+          "networks": {
+            "items": {
+              "$ref": "#/components/schemas/Network"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "networks"
+        ],
+        "type": "object"
+      },
+      "Observation": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "first": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "imp": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "last": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "requirements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "count",
+          "first",
+          "id",
+          "imp",
+          "kind",
+          "last",
+          "node",
+          "requirements"
+        ],
+        "type": "object"
+      },
+      "ObservationList": {
+        "additionalProperties": false,
+        "properties": {
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/Observation"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "observations"
+        ],
+        "type": "object"
+      },
+      "Report": {
+        "additionalProperties": false,
+        "properties": {
+          "catalog_sha256": {
+            "type": "string"
+          },
+          "finished_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "inspector_commit": {
+            "type": "string"
+          },
+          "inspector_version": {
+            "type": "string"
+          },
+          "loaded_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "network": {
+            "description": "a JSON value as the report wrote it"
+          },
+          "network_id": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "range": {
+            "description": "a JSON value as the report wrote it"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "spec_commit": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "string"
+          },
+          "summary": {
+            "description": "a JSON value as the report wrote it"
+          }
+        },
+        "required": [
+          "catalog_sha256",
+          "finished_at",
+          "id",
+          "inspector_commit",
+          "inspector_version",
+          "loaded_at",
+          "network",
+          "network_id",
+          "range",
+          "run_id",
+          "spec_commit",
+          "started_at",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "ReportList": {
+        "additionalProperties": false,
+        "properties": {
+          "reports": {
+            "items": {
+              "$ref": "#/components/schemas/Report"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "reports"
+        ],
+        "type": "object"
+      },
+      "Result": {
+        "additionalProperties": false,
+        "properties": {
+          "coverage": {
+            "description": "a JSON value as the report wrote it"
+          },
+          "node": {
+            "type": "string"
+          },
+          "requirement": {
+            "type": "string"
+          },
+          "verdict": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "coverage",
+          "node",
+          "requirement",
+          "verdict"
+        ],
+        "type": "object"
+      },
+      "ResultList": {
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/Result"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "type": "object"
+      },
+      "TrendPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "rate": {
+            "format": "double",
+            "type": "number"
+          },
+          "report": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "kind",
+          "node",
+          "rate",
+          "report"
+        ],
+        "type": "object"
+      },
+      "TrendPointList": {
+        "additionalProperties": false,
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/TrendPoint"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "Networks, inspector reports, observation trends and alerts. Without a token the server answers only to loopback host names; with one, every request carries it as a bearer token. Writes are JSON.",
+    "license": {
+      "identifier": "LGPL-3.0-or-later",
+      "name": "LGPL-3.0-or-later"
+    },
+    "title": "wbft-analyzer",
+    "version": "v1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/v1/alerts": {
+      "get": {
+        "operationId": "listAlerts",
+        "parameters": [
+          {
+            "description": "only this network",
+            "in": "query",
+            "name": "net",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "The states of the evaluated alert rules."
+      }
+    },
+    "/v1/networks": {
+      "get": {
+        "operationId": "listNetworks",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "The networks with their report counts."
+      }
+    },
+    "/v1/networks/{net}": {
+      "get": {
+        "operationId": "getNetwork",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Network"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "One network."
+      }
+    },
+    "/v1/networks/{net}/alert-rules": {
+      "get": {
+        "operationId": "listAlertRules",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "The alert rules of a network."
+      },
+      "put": {
+        "operationId": "replaceAlertRules",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertRuleList"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Replace the alert rules of a network; a rule equal to a stored one keeps its ID and state, IDs in the body are ignored."
+      }
+    },
+    "/v1/networks/{net}/trends/observations": {
+      "get": {
+        "operationId": "listTrendPoints",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "observation kind",
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "node; absent for the rate over all nodes",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "window start",
+            "in": "query",
+            "name": "from_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "window end, included",
+            "in": "query",
+            "name": "to_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrendPointList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "The rates of one observation kind in the reports finished in a window, which must be given."
+      }
+    },
+    "/v1/openapi.json": {
+      "get": {
+        "operationId": "getOpenAPI",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "This document."
+      }
+    },
+    "/v1/reports": {
+      "get": {
+        "operationId": "listReports",
+        "parameters": [
+          {
+            "description": "only this network",
+            "in": "query",
+            "name": "net",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "The stored inspector reports, by finish time."
+      },
+      "post": {
+        "operationId": "loadReport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "a wbft-inspector-report/1 report file",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoadResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoadResult"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoadResult"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Load an inspector report: 201 added, 200 already stored, 422 refused by the public build or not a report."
+      }
+    },
+    "/v1/reports/{id}": {
+      "get": {
+        "operationId": "getReport",
+        "parameters": [
+          {
+            "description": "report ID: the lowercase hex sha256 of the report file",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "One report without its results and observations."
+      }
+    },
+    "/v1/reports/{id}/observations": {
+      "get": {
+        "operationId": "listObservations",
+        "parameters": [
+          {
+            "description": "report ID: the lowercase hex sha256 of the report file",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "The observations of a report."
+      }
+    },
+    "/v1/reports/{id}/results": {
+      "get": {
+        "operationId": "listResults",
+        "parameters": [
+          {
+            "description": "report ID: the lowercase hex sha256 of the report file",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "only this verdict",
+            "in": "query",
+            "name": "verdict",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "only this node; empty for the results of the whole run",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "The verdicts of a report."
+      }
+    }
+  },
+  "security": [
+    {},
+    {
+      "bearer": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "/"
+    }
+  ]
+}

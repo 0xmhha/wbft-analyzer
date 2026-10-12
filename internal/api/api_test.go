@@ -107,12 +107,32 @@ func (c client) do(method, path string, body []byte, out any) int {
 	}
 	rec := httptest.NewRecorder()
 	c.h.ServeHTTP(rec, req)
+	c.conforms(method, path, rec)
 	if out != nil {
 		if err := json.Unmarshal(rec.Body.Bytes(), out); err != nil {
 			c.t.Fatalf("%s %s: %d %q: %v", method, path, rec.Code, rec.Body, err)
 		}
 	}
 	return rec.Code
+}
+
+// conforms fails the test when an answer does not match the OpenAPI
+// document: every answer the tests see is checked against it.
+func (c client) conforms(method, path string, rec *httptest.ResponseRecorder) {
+	c.t.Helper()
+	sch, err := loadSpec(c.t).answerSchema(method, path, rec.Code)
+	if err != nil {
+		c.t.Fatal(err)
+	}
+	d := json.NewDecoder(bytes.NewReader(rec.Body.Bytes()))
+	d.UseNumber()
+	var v any
+	if err := d.Decode(&v); err != nil {
+		c.t.Fatalf("%s %s: %d %q: %v", method, path, rec.Code, rec.Body, err)
+	}
+	if err := loadSpec(c.t).check(v, sch, "$"); err != nil {
+		c.t.Fatalf("%s %s: %d: the answer does not match the document: %v", method, path, rec.Code, err)
+	}
 }
 
 // TestReports: a report posted to the API is loaded like a file given to

@@ -44,6 +44,12 @@ Built so far:
   then answers only to a loopback host name; another address needs
   `--auth token`, a bearer token taken from `$WBFT_ANALYZER_TOKEN`. The
   server speaks plain HTTP: reach it over a network through a TLS proxy.
+- The API is described by an OpenAPI 3.1 document, built from the route
+  table and the Go types of the answers. It is served at
+  `GET /v1/openapi.json` and committed as `api/openapi.json` for the front
+  end's type generation. After changing the API, rewrite the committed copy
+  with `go test ./internal/api -run TestOpenAPIDocument -update`. The tests
+  check every answer they receive against the document.
 
 A local PostgreSQL for development and the integration tests:
 
