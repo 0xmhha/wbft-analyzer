@@ -1,6 +1,9 @@
 package api
 
-import "net/http"
+import (
+	"github.com/0xmhha/wbft-analyzer/internal/store"
+	"net/http"
+)
 
 // route is one operation of the API. The table below is both what the
 // server mounts and what the OpenAPI document describes (openapi.go), so
@@ -35,6 +38,12 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets", id: "listDatasets", summary: "Datasets and their import status, progress and errors.", params: []param{netPath}, answers: map[int]any{200: DatasetList{}}, handle: (*Server).datasets},
+	{method: "GET", path: "/v1/networks/{net}/header-bounds", id: "getHeaderBounds", summary: "Stored canonical header bounds and fact bytes.", params: []param{netPath}, answers: map[int]any{200: store.HeaderBounds{}}, handle: (*Server).headerBounds},
+	{method: "GET", path: "/v1/networks/{net}/headers", id: "listHeaders", summary: "At most 1024 heights with participation, proposer and optional node copies.", params: append(headerParams(), param{name: "dataset", in: "query", doc: "copy dataset ID; requires node", typ: "integer", format: "int64"}, param{name: "node", in: "query", doc: "copy node label; requires dataset", typ: "string"}), answers: map[int]any{200: HeaderList{}}, handle: (*Server).headers},
+	{method: "GET", path: "/v1/networks/{net}/epochs", id: "listEpochs", summary: "At most 1024 epochs in a window of at most one million heights.", params: headerParams(), answers: map[int]any{200: EpochList{}}, handle: (*Server).epochs},
+	{method: "GET", path: "/v1/networks/{net}/headers/summary", id: "summarizeHeaders", summary: "Participation denominators, proposer totals and decision round distribution for at most 100000 heights.", params: headerParams(), answers: map[int]any{200: store.HeaderSummary{}}, handle: (*Server).headerSummary},
+
 	{method: "GET", path: "/v1/networks", id: "listNetworks", summary: "The networks with their report counts.",
 		answers: map[int]any{200: NetworkList{}}, handle: (*Server).networks},
 	{method: "GET", path: "/v1/networks/{net}", id: "getNetwork", summary: "One network.",
@@ -69,4 +78,8 @@ var routes = []route{
 		answers: map[int]any{200: ResultList{}}, handle: (*Server).results},
 	{method: "GET", path: "/v1/reports/{id}/observations", id: "listObservations", summary: "The observations of a report.",
 		params: []param{reportPath}, answers: map[int]any{200: ObservationList{}}, handle: (*Server).observations},
+}
+
+func headerParams() []param {
+	return []param{netPath, {name: "from", in: "query", doc: "first decimal canonical index (uint64)", typ: "string", required: true}, {name: "to", in: "query", doc: "last decimal canonical index, included", typ: "string", required: true}}
 }

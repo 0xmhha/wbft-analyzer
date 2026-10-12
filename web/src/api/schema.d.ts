@@ -73,6 +73,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Datasets and their import status, progress and errors. */
+        get: operations["listDatasets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/epochs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** At most 1024 epochs in a window of at most one million heights. */
+        get: operations["listEpochs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/header-bounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stored canonical header bounds and fact bytes. */
+        get: operations["getHeaderBounds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/headers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** At most 1024 heights with participation, proposer and optional node copies. */
+        get: operations["listHeaders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/headers/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Participation denominators, proposer totals and decision round distribution for at most 100000 heights. */
+        get: operations["summarizeHeaders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/trends/observations": {
         parameters: {
             query?: never;
@@ -214,8 +299,73 @@ export interface components {
         AlertRuleList: {
             rules: components["schemas"]["AlertRule"][];
         };
+        DatasetList: {
+            datasets: components["schemas"]["StoreDataset"][];
+        };
+        EpochList: {
+            epochs: components["schemas"]["StoreEpoch"][];
+        };
         Error: {
             error: string;
+        };
+        HeaderList: {
+            headers: components["schemas"]["HeadersRow"][];
+        };
+        HeadersCopy: {
+            committed: number[];
+            hash: string;
+            index: string;
+            node: string;
+            prepared: number[];
+            /** Format: int64 */
+            round: number;
+            source: string;
+        };
+        HeadersFact: {
+            coinbase: string;
+            epoch: string;
+            epoch_check: string;
+            epoch_detail: string;
+            /** @description a JSON value as the report wrote it */
+            epoch_info: unknown;
+            hash: string;
+            index: string;
+            last_proposer: string;
+            number: string;
+            parent_hash: string;
+            policy: string;
+            prev_committed: number[];
+            prev_prepared: number[];
+            /** Format: int64 */
+            prev_round: number;
+            round_zero: string;
+            time: string;
+            validators: string[];
+        };
+        HeadersOpportunity: {
+            address: string;
+            /** Format: int64 */
+            count: number;
+        };
+        HeadersParticipation: {
+            address: string;
+            committed: boolean | null;
+            late_committed: boolean | null;
+            late_prepared: boolean | null;
+            own_committed: boolean | null;
+            own_prepared: boolean | null;
+            prepared: boolean | null;
+        };
+        HeadersRow: {
+            cells: components["schemas"]["HeadersParticipation"][];
+            copy: components["schemas"]["HeadersCopy"] | null;
+            /** Format: int64 */
+            decision_round: number | null;
+            expected_proposer: string | null;
+            fact: components["schemas"]["HeadersFact"];
+            missed: components["schemas"]["HeadersOpportunity"][];
+            proposer_differs: boolean | null;
+            round_source: string;
         };
         IngestAlert: {
             /** Format: double */
@@ -256,6 +406,7 @@ export interface components {
         Observation: {
             /** Format: int64 */
             count: number;
+            evidence: components["schemas"]["ReportsEvidence"][];
             first: string;
             id: string;
             imp: string[];
@@ -290,6 +441,16 @@ export interface components {
         ReportList: {
             reports: components["schemas"]["Report"][];
         };
+        ReportsEvidence: {
+            field?: string;
+            hash?: string;
+            input?: string;
+            kind: string;
+            /** Format: int64 */
+            line?: number;
+            node?: string;
+            number?: string;
+        };
         Result: {
             /** @description a JSON value as the report wrote it */
             coverage: unknown;
@@ -299,6 +460,88 @@ export interface components {
         };
         ResultList: {
             results: components["schemas"]["Result"][];
+        };
+        StoreDataset: {
+            error: string;
+            /** Format: int64 */
+            id: number;
+            kind: string;
+            /** @description a JSON value as the report wrote it */
+            metadata: unknown;
+            name: string;
+            /** Format: int64 */
+            network_id: number;
+            nodes: string[];
+            /** Format: int64 */
+            progress: number;
+            status: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        StoreEpoch: {
+            added: string[];
+            candidates: components["schemas"]["StoreEpochCandidate"][];
+            changes_known: boolean;
+            check: string;
+            detail: string;
+            index: string;
+            /** @description a JSON value as the report wrote it */
+            info: unknown;
+            removed: string[];
+        };
+        StoreEpochCandidate: {
+            address: string;
+            bls_key: string | null;
+            diligence: string;
+            /** Format: int64 */
+            index: number;
+            /** Format: int64 */
+            validator_order: number | null;
+        };
+        StoreHeaderBounds: {
+            /** Format: int64 */
+            bytes: number;
+            /** Format: int64 */
+            count: number;
+            from: string | null;
+            to: string | null;
+        };
+        StoreHeaderSummary: {
+            /** Format: int64 */
+            heights: number;
+            /** Format: int64 */
+            missing_heights: number;
+            rounds: components["schemas"]["StoreRoundCount"][];
+            /** Format: int64 */
+            unknown_round: number;
+            validators: components["schemas"]["StoreValidatorSummary"][];
+        };
+        StoreRoundCount: {
+            /** Format: int64 */
+            count: number;
+            /** Format: int64 */
+            round: number;
+        };
+        StoreValidatorSummary: {
+            address: string;
+            /** Format: int64 */
+            committed: number;
+            /** Format: int64 */
+            eligible: number;
+            /** Format: double */
+            inclusion_rate: number | null;
+            /** Format: int64 */
+            known: number;
+            /** Format: int64 */
+            missed: number;
+            /** Format: int64 */
+            prepared: number;
+            /** Format: int64 */
+            proposed: number;
+            /** Format: int64 */
+            round_zero: number;
+            /** Format: int64 */
+            unknown: number;
         };
         TrendPoint: {
             at: string;
@@ -504,6 +747,230 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AlertRuleList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listDatasets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listEpochs: {
+        parameters: {
+            query: {
+                /** @description first decimal canonical index (uint64) */
+                from: string;
+                /** @description last decimal canonical index, included */
+                to: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EpochList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getHeaderBounds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreHeaderBounds"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listHeaders: {
+        parameters: {
+            query: {
+                /** @description first decimal canonical index (uint64) */
+                from: string;
+                /** @description last decimal canonical index, included */
+                to: string;
+                /** @description copy dataset ID; requires node */
+                dataset?: number;
+                /** @description copy node label; requires dataset */
+                node?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeaderList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    summarizeHeaders: {
+        parameters: {
+            query: {
+                /** @description first decimal canonical index (uint64) */
+                from: string;
+                /** @description last decimal canonical index, included */
+                to: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreHeaderSummary"];
                 };
             };
             /** @description the request failed */

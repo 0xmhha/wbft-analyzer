@@ -26,7 +26,7 @@ func TestRun(t *testing.T) {
 		{[]string{"serve", "--db", "x", "--auth", "token"}, exitUsage, "of 32 characters or more"},
 		{[]string{"serve", "--db", "x", "--auth", "oidc"}, exitUnavailable, "--auth oidc is not available yet"},
 		{[]string{"ingest", "reports", "r.json"}, exitUsage, "Usage: wbft-analyzer ingest reports"},
-		{[]string{"ingest", "range"}, exitUsage, "not available yet"},
+		{[]string{"ingest", "range"}, exitUsage, "Usage of ingest range"},
 	} {
 		var stdout, stderr bytes.Buffer
 		code := run(c.args, &stdout, &stderr)

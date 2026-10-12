@@ -65,3 +65,13 @@ th { font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line)
 .token { margin: 12px 0; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .chart { display: block; margin: 8px 0; }
 label { display: block; margin: 8px 0; }
+
+.table-scroll { overflow: auto; max-height: 65vh; }
+.participation thead { position: sticky; top: 0; background: var(--bg, #fff); }
+.seal { font-size: 1.25rem; }
+.seal-included { color: #246e93; }
+.seal-absent { color: #777; }
+.seal-unknown { color: #8b6717; }
+.chosen { background: #e7f0f5; }
+article pre { overflow: auto; max-height: 24rem; }
+.controls input { max-width: 16rem; }

@@ -22,7 +22,7 @@ The analyzer is built in stages; the A0 foundation is complete:
 | Stage | Content | State |
 |---|---|---|
 | A0 | command skeleton, inspector report loader with the public-build checks, PostgreSQL store, observation trends and alerts, API and front-end skeleton | complete |
-| A1 | header analysis: participation, proposers, epochs | not started |
+| A1 | header analysis: participation, proposers, epochs | implemented; live multi-node and inspector P0 acceptance remains |
 | A2 | node logs and chainbench runs | not started |
 | A3 | wbft event streams and mixed networks | not started |
 | A4 | governance history | not started |
@@ -36,6 +36,16 @@ Built so far:
   the public-build checks, one copy per file, and the observation rates of
   each report added to the trends of its network, with the network's alert
   rules evaluated and their webhooks told of state changes.
+- `wbft-analyzer ingest range --db DSN --rpc URL --config CONFIG.json
+  --from N --to M --name DATASET --node NODE` imports a bounded header
+  range and its child. Use `--blocks DIR` instead of `--rpc` for
+  zero-padded block RLP files. Configuration is explicit and must name
+  the RPC chain ID. Batches contain at most 100 headers, are limited to
+  five per second, and retry transport/server failures. Optional RPC
+  capabilities are probed. Repeat a name and immutable range/config to
+  resume without duplicating canonical facts; another node adds its own
+  copies. Dataset status, progress, failure and available nodes are exposed.
+  A canonical conflict fails the batch rather than overwriting it.
 - `wbft-analyzer serve --db DSN` serves the REST API under `/v1`: networks,
   reports with their results and observations (and `POST /v1/reports`,
   the same loader), observation trends, alert rules (`PUT` replaces a
@@ -58,7 +68,7 @@ WBFT_ANALYZER_TEST_DSN='postgres://analyzer:analyzer@127.0.0.1:5433/analyzer?ssl
 ```
 
 `scripts/dump-check.sh SOURCE_DSN TARGET_DSN OUT_DIR` loads a set of
-reports, saves the database with `pg_dump`, restores the dump into another
+reports and real public header fixtures, saves the database with `pg_dump`, restores the dump into another
 database and checks that the API answers the same from both; CI runs it
 on two PostgreSQL servers and keeps the dump as the `analyzer-dump`
 artifact. A dump restores with
@@ -67,7 +77,7 @@ artifact. A dump restores with
 ## Web front end
 
 `web/` is a static React/d3 page that `serve` delivers at `/`. It
-shows the loaded networks, the inspector's verdicts across reports, and
+shows loaded networks, header participation/proposers/epochs, the inspector's verdicts across reports, and
 observation trends with their alert rules. Its API types are generated from
 `api/openapi.json` (`npm run gen`). `npm run build` writes it to
 `internal/web/dist/app`, which `go build` embeds. A binary built without
@@ -137,3 +147,33 @@ description of them.
 ## License
 
 LGPL-3.0-or-later. See `LICENSE` and `COPYING`.
+
+## Header analysis
+
+Network participation at height h is the previous prepare/commit bitmap of
+h+1, interpreted in V(h). Own seals are dataset/node copies, which the WBFT
+block hash excludes. A missing child stays unknown. Genesis has no voting
+participation. Inclusion rates expose eligible/known/unknown denominators;
+a rate is unavailable when an eligible height is unknown. Proposer rotation
+and earlier opportunities use wbft's validator policy; a Coinbase difference
+is an observation and carries no analyzer verdict. Full header numbers and
+canonical uint64 indices are separate decimal strings in the API and UI.
+
+The wbft module is pinned to `800141cb6e65`. It supplies codec, header validator
+lookup, proposer rotation and epoch recomputation. Epoch candidates and the
+selected BLS keys are reconstructed from the header, without an execution
+state oracle; `matched_header_inputs` explicitly states this limit. Epoch
+panels show diligence, selection order and changes between stored headers.
+The participation matrix splits governing epochs, has bounded height pages,
+node-copy selection and inspector evidence pointers. Previous-seal evidence
+selects the preceding height; payload/state values are not persisted.
+
+Validation on 2026-10-13: public testnet heights 22044761..22144760 plus the
+child, 100000 requested headers in 289.409 s (345.5 headers/s). All 98 windows
+of up to 1024 heights agree per validator with `istanbul_status` previous
+prepare/commit totals. All 714 epoch blocks match the header-reconstructed
+inputs. Stored facts are 106.1 MiB; tables plus indexes are approximately
+289 MiB (147 MiB heights, 76 MiB seals, 65 MiB copies, 1.2 MiB epochs).
+Independent live-node duplicate import and an actual inspector testnet P0
+report overlay are still acceptance work. Tests use two independent RPC
+surfaces replaying real public headers; this is not a live-node claim.

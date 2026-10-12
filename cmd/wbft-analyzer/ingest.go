@@ -19,7 +19,8 @@ stored once (a file already stored is skipped), and its observation rates
 are added to the trends of its network; the alert rules of that network
 are evaluated and their webhooks told of state changes.
 
-The other kinds of dataset (run, range, journal) are not available yet.
+Use "ingest range -h" for RPC/RLP header range imports.
+The other kinds of dataset (run, journal) are not available yet.
 
 Exit codes: 0 every file added or skipped, 65 a file refused or not a
 report, 69 the database is unavailable, 70 a store error.
@@ -32,6 +33,9 @@ const (
 )
 
 func runIngest(args []string, stdout, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "range" {
+		return runRange(args[1:], stdout, stderr)
+	}
 	if len(args) == 0 || args[0] != "reports" {
 		fmt.Fprint(stderr, ingestUsage)
 		return exitUsage

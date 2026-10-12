@@ -63,10 +63,17 @@ stop() {
 
 # capture PORT DIR writes the answers of the read endpoints to DIR.
 capture() {
-	local base=http://127.0.0.1:$1/v1 dir=$2
+	local base=http://127.0.0.1:$1/v1 dir=$2 header_net
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
+	header_net=$(jq -r '.networks[] | select(.chain_id == "8283") | .id' "$dir/networks.json")
+	test -n "$header_net"
+	get "/networks/$header_net/datasets" header-datasets
+	get "/networks/$header_net/header-bounds" header-bounds
+	get "/networks/$header_net/headers?from=0&to=3&dataset=1&node=fixture" header-rows
+	get "/networks/$header_net/headers/summary?from=0&to=3" header-summary
+	get "/networks/$header_net/epochs?from=0&to=3" header-epochs
 	get /networks/1 network-1
 	get /reports reports
 	get /networks/1/alert-rules alert-rules
@@ -93,6 +100,7 @@ curl -sf -X PUT -H 'Content-Type: application/json' http://127.0.0.1:18091/v1/ne
 for i in $(seq 1 $((${#counts[@]} - 1))); do
 	curl -sf -X POST -H 'Content-Type: application/json' --data-binary "@$work/r$i.json" http://127.0.0.1:18091/v1/reports >/dev/null
 done
+"$bin" ingest range --db "$src" --blocks "$root/internal/source/headers/testdata" --config "$root/internal/source/headers/testdata/config.json" --from 0 --to 3 --name dump-headers --node fixture >"$out/headers.log"
 capture 18091 "$out/source"
 stop
 

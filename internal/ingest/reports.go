@@ -136,8 +136,13 @@ func toRow(rep *reports.Report) (*store.Report, error) {
 	}
 	var obs []trends.Observation
 	for _, o := range rep.Observations {
+		evidence := o.Evidence
+		if evidence == nil {
+			evidence = []reports.Evidence{}
+		}
+		ev, _ := json.Marshal(evidence)
 		row.Observations = append(row.Observations, store.Observation{ID: o.ID, Kind: o.Kind, Imp: o.Imp, Requirements: o.Requirements,
-			Node: o.Node, Count: o.Count, First: o.First, Last: o.Last})
+			Node: o.Node, Count: o.Count, First: o.First, Last: o.Last, Evidence: ev})
 		obs = append(obs, trends.Observation{Kind: o.Kind, Node: o.Node, Count: o.Count})
 	}
 	if len(rep.Run.Network) > 0 && string(rep.Run.Network) != "null" {
