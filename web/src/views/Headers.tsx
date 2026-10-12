@@ -48,8 +48,8 @@ export function Headers({ net, onAuth }: { net: number; onAuth: () => void }) {
       <label>First index <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={from} inputMode="numeric" /></label> <button>Go</button>{" "}
       <button type="button" disabled={BigInt(from) <= BigInt(bounds?.from || "0")} onClick={() => move(-128n)}>Previous</button>{" "}
       <button type="button" disabled={BigInt(to) >= BigInt(bounds?.to || "0")} onClick={() => move(128n)}>Next</button>{" "}
-      <label>Node copy <select value={dataset} onChange={(e) => { const id=Number(e.target.value); setDataset(id); setNode(overview.state === "done" ? overview.data.datasets.find((d) => d.id===id)?.nodes[0] || "" : ""); }}><option value={0}>No copy</option>{overview.state === "done" && overview.data.datasets.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>{" "}
-      {dataset !== 0 && <label>Node label <select value={node} onChange={(e) => setNode(e.target.value)}>{overview.state === "done" && overview.data.datasets.find((d) => d.id === dataset)?.nodes.map((n) => <option key={n} value={n}>{n}</option>)}</select></label>}
+      <label>Node copy <select value={dataset} onChange={(e) => { const id=Number(e.target.value); setDataset(id); setNode(overview.state === "done" ? overview.data.datasets.find((d) => d.id===id)?.copy_nodes[0] || "" : ""); }}><option value={0}>No copy</option>{overview.state === "done" && overview.data.datasets.filter((d)=>d.copy_nodes.length>0).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>{" "}
+      {dataset !== 0 && <label>Node label <select value={node} onChange={(e) => setNode(e.target.value)}>{overview.state === "done" && overview.data.datasets.find((d) => d.id === dataset)?.copy_nodes.map((n) => <option key={n} value={n}>{n}</option>)}</select></label>}
     </form>
     <nav>{(["participation", "proposers", "epochs"] as const).map((v) => <button type="button" key={v} className={view === v ? "here" : ""} onClick={() => setView(v)}>{v}</button>)}</nav>
     <Pending load={window} onAuth={onAuth} />

@@ -141,6 +141,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resolve an inspector source pointer only when network, file hash, node and original line match. */
+        get: operations["resolveLogEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/inputs": {
         parameters: {
             query?: never;
@@ -603,6 +620,7 @@ export interface components {
             t_wall: string;
         };
         StoreDataset: {
+            copy_nodes: string[];
             error: string;
             /** Format: int64 */
             id: number;
@@ -680,6 +698,19 @@ export interface components {
             run: string;
             t_wall: string;
             view_inferred: boolean;
+        };
+        StoreLogEvidence: {
+            dataset_input: string;
+            event: components["schemas"]["StoreLogEvent"] | null;
+            /** Format: int64 */
+            index: number;
+            /** Format: int64 */
+            line: number;
+            observation: string;
+            report: string;
+            report_input: string;
+            sha256: string;
+            status: string;
         };
         StoreLogInput: {
             /** Format: int64 */
@@ -1115,6 +1146,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreLogEvent"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    resolveLogEvidence: {
+        parameters: {
+            query: {
+                /** @description report SHA256 ID */
+                report: string;
+                /** @description observation ID */
+                observation: string;
+                /** @description evidence ordinal 0..19 */
+                index: number;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreLogEvidence"];
                 };
             };
             /** @description the request failed */

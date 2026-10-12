@@ -1009,6 +1009,12 @@
       "StoreDataset": {
         "additionalProperties": false,
         "properties": {
+          "copy_nodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "error": {
             "type": "string"
           },
@@ -1048,6 +1054,7 @@
           }
         },
         "required": [
+          "copy_nodes",
           "error",
           "id",
           "kind",
@@ -1298,6 +1305,59 @@
           "run",
           "t_wall",
           "view_inferred"
+        ],
+        "type": "object"
+      },
+      "StoreLogEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset_input": {
+            "type": "string"
+          },
+          "event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreLogEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "index": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "observation": {
+            "type": "string"
+          },
+          "report": {
+            "type": "string"
+          },
+          "report_input": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dataset_input",
+          "event",
+          "index",
+          "line",
+          "observation",
+          "report",
+          "report_input",
+          "sha256",
+          "status"
         ],
         "type": "object"
       },
@@ -2055,6 +2115,93 @@
           }
         },
         "summary": "One event by its immutable input ID and source line."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/evidence": {
+      "get": {
+        "operationId": "resolveLogEvidence",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "report SHA256 ID",
+            "in": "query",
+            "name": "report",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "observation ID",
+            "in": "query",
+            "name": "observation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "evidence ordinal 0..19",
+            "in": "query",
+            "name": "index",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreLogEvidence"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Resolve an inspector source pointer only when network, file hash, node and original line match."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/inputs": {

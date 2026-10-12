@@ -9,7 +9,7 @@
 #   TARGET_DSN  another empty database, ideally on another server, to restore into
 #   OUT_DIR     receives analyzer.dump and the answers (source/, target/)
 #
-# Needs go, curl, jq and pg_dump/pg_restore of the server's major version or
+# Needs go, python3, curl, jq and pg_dump/pg_restore of the server's major version or
 # newer. Ports 18091 and 18092 on 127.0.0.1 must be free.
 set -euo pipefail
 
@@ -63,7 +63,7 @@ stop() {
 
 # capture PORT DIR writes the answers of the read endpoints to DIR.
 capture() {
-	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id
+	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
@@ -81,6 +81,9 @@ capture() {
  get "/networks/$run_net/datasets/$run_id/event-bounds" run-bounds
  get "/networks/$run_net/datasets/$run_id/events?from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:30Z&limit=1000" run-events
  get "/networks/$run_net/datasets/$run_id/rounds/distribution?from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:30Z" run-rounds
+ get /reports reports
+ log_report=$(jq -r '.reports[] | select(.run_id=="log-evidence-dump") | .id' "$dir/reports.json")
+ get "/networks/$run_net/datasets/$run_id/evidence?report=$log_report&observation=log-source&index=0" log-evidence
 	get /networks/1 network-1
 	get /reports reports
 	get /networks/1/alert-rules alert-rules
@@ -109,12 +112,26 @@ for i in $(seq 1 $((${#counts[@]} - 1))); do
 done
 "$bin" ingest range --db "$src" --blocks "$root/internal/source/headers/testdata" --config "$root/internal/source/headers/testdata/config.json" --from 0 --to 3 --name dump-headers --node fixture >"$out/headers.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/g7/manifest.json" >"$out/run.log"
+# A synthetic report points into the real sanitized G7 fixture. Its input
+# namespace differs from the dataset, so resolution must use SHA/node.
+python3 - "$root" "$work/log-report.json" <<'PYLOG'
+import json,sys
+from pathlib import Path
+root=Path(sys.argv[1]);base=json.loads((root/'internal/reports/testdata/report.json').read_text());m=json.loads((root/'internal/source/logs/testdata/g7/manifest.json').read_text())
+inp=next(i for i in m['inputs'] if i['node']=='node3')
+rows=(root/'internal/source/logs/testdata/g7'/inp['path']).read_text().splitlines()
+line=next(n for n,s in enumerate(rows,1) if (d:=json.loads(s))['msg']=='WBFT: start new round' and str(d['next.seq'])=='5542' and str(d['next.round'])=='1')
+base['run']['id']='log-evidence-dump';base['run']['network']=m['network'];base['run']['inputs']=[dict(id='report-log-3',kind='log',node='node3',sha256=inp['sha256'],profile=inp['profile'])]
+base['observations']=[dict(id='log-source',kind='round_change_f_plus_one',count=1,imp=[],checker='fixture',evidence=[dict(kind='log',input='report-log-3',node='node3',line=line,number='5542')])]
+Path(sys.argv[2]).write_text(json.dumps(base)+'\n')
+PYLOG
+"$bin" ingest reports --db "$src" "$work/log-report.json" >"$out/log-report.log"
 capture 18091 "$out/source"
 stop
 
 reports=$(jq '.reports | length' "$out/source/reports.json")
 states=$(jq -r '[.alerts[].state] | join(",")' "$out/source/alerts.json")
-if [ "$reports" != "${#counts[@]}" ] || [ "$states" != "resolved,firing" ]; then
+if [ "$reports" != "$(( ${#counts[@]} + 1 ))" ] || [ "$states" != "resolved,firing" ]; then
 	echo "dump-check: the source holds $reports reports and alerts [$states], want ${#counts[@]} and [resolved,firing]" >&2
 	exit 1
 fi

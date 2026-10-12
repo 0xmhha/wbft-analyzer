@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/0xmhha/wbft-analyzer/internal/privacy"
 )
@@ -33,6 +34,7 @@ type Report struct {
 
 // Run is the run section of a report.
 type Run struct {
+	Inputs     []Input         `json:"inputs,omitempty"`
 	ID         string          `json:"id"`
 	StartedAt  string          `json:"started_at"`
 	FinishedAt string          `json:"finished_at"`
@@ -40,6 +42,15 @@ type Run struct {
 	Spec       Spec            `json:"spec"`
 	Network    json.RawMessage `json:"network,omitempty"`
 	Range      json.RawMessage `json:"range,omitempty"`
+}
+
+// Input is a source identity; paths and launch metadata are deliberately absent.
+type Input struct {
+	ID      string `json:"id"`
+	Kind    string `json:"kind"`
+	Node    string `json:"node,omitempty"`
+	SHA256  string `json:"sha256,omitempty"`
+	Profile string `json:"profile,omitempty"`
 }
 
 // Inspector is the build that wrote a report.
@@ -126,6 +137,19 @@ func Parse(raw []byte) (*Report, error) {
 		if o.ID == "" || o.Kind == "" {
 			return nil, fmt.Errorf("%w: observations[%d] lacks id or kind", ErrFormat, i)
 		}
+	}
+	seenInputs := map[string]bool{}
+	for _, in := range r.Run.Inputs {
+		if !regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$`).MatchString(in.ID) || seenInputs[in.ID] || in.SHA256 != "" && !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(in.SHA256) {
+			return nil, fmt.Errorf("%w: invalid or duplicate source identity", ErrFormat)
+		}
+		if !map[string]bool{"rpc": true, "log": true, "frames": true, "events": true, "genesis": true, "vectors": true, "impl": true, "cache": true}[in.Kind] {
+			return nil, fmt.Errorf("%w: unknown source kind", ErrFormat)
+		}
+		if in.Profile != "" && !regexp.MustCompile(`^(gstable@740526d03|wbft@[0-9a-f]{12})$`).MatchString(in.Profile) {
+			return nil, fmt.Errorf("%w: unknown source profile", ErrFormat)
+		}
+		seenInputs[in.ID] = true
 	}
 	sum := sha256.Sum256(raw)
 	r.ID = hex.EncodeToString(sum[:])

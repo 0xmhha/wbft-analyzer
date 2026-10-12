@@ -127,7 +127,7 @@ func (r *Reporter) Load(ctx context.Context, name string, raw []byte) (Result, e
 // toRow converts a report to its store row: the network when the run names
 // chain ID and genesis hash, and the trend points when it has a range.
 func toRow(rep *reports.Report) (*store.Report, error) {
-	row := &store.Report{ID: rep.ID, RunID: rep.Run.ID, StartedAt: rep.Run.StartedAt, FinishedAt: rep.Run.FinishedAt,
+	row := &store.Report{Inputs: rep.Run.Inputs, ID: rep.ID, RunID: rep.Run.ID, StartedAt: rep.Run.StartedAt, FinishedAt: rep.Run.FinishedAt,
 		InspectorVersion: rep.Run.Inspector.Version, InspectorCommit: rep.Run.Inspector.Commit,
 		CatalogSHA256: rep.Run.Inspector.CatalogSHA256, SpecCommit: rep.Run.Spec.Commit,
 		Network: rep.Run.Network, Range: rep.Run.Range, Summary: rep.Summary}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { get } from "../api/client";
 import type { Schemas } from "../api/client";
 import { eventClass, eventKey, eventLayout, field, timeWindow } from "../events";
@@ -28,14 +28,18 @@ export function Events({ net, onAuth }: { net: number; onAuth: () => void }) {
   const [cursors, setCursors] = useState<string[]>([]);
   const [selected, setSelected] = useState<LogEvent | null>(null);
  const [pointer,setPointer]=useState<{input:string;line:number}|null>(null);
- const select=(e:LogEvent|null)=>{setPointer(null);setSelected(e)};
+ const select=(e:LogEvent|null)=>{setProof(null);setPointer(null);setSelected(e)};
  const detail=useLoad(async()=>pointer?get("/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}",{path:{net,dataset:id,...pointer}}):null,[net,id,pointer?.input,pointer?.line]);
- const chosenEvent=pointer?(detail.state==="done"?detail.data:null):selected;
+ const [proof,setProof]=useState<{report:string;observation:string;index:number}|null>(null);
+ const evidence=useLoad(async()=>proof?get("/v1/networks/{net}/datasets/{dataset}/evidence",{path:{net,dataset:id},query:proof}):null,[net,id,proof?.report,proof?.observation,proof?.index]);
+ const chosenEvent=proof?(evidence.state==="done"?evidence.data?.event||null:null):pointer?(detail.state==="done"?detail.data:null):selected;
   const bounds = info.state === "done" ? info.data?.bounds : null;
   const times = bounds?.from_t && bounds.to_t ? timeWindow(anchor ?? Date.parse(bounds.from_t), span, bounds) : null;
   const cursor = cursors.at(-1);
   const scope = `${net}:${id}:${times?.from_t}:${times?.to_t}:${JSON.stringify(filter)}`;
-  useEffect(() => { setCursors([]); select(null); }, [scope]);
+  const retainProof=useRef(false);
+ useEffect(() => { setCursors([]); if(retainProof.current){retainProof.current=false}else{select(null)} }, [scope]);
+ useEffect(()=>{if(proof&&evidence.state==="done"&&evidence.data?.event&&times){const t=Date.parse(evidence.data.event.t_wall);if(t<Date.parse(times.from_t)||t>Date.parse(times.to_t)){retainProof.current=true;setAnchor(t-span/2)}}},[proof,evidence,times?.from_t,times?.to_t,span]);
  useEffect(()=>{choose(0);setAnchor(null);setDraft(emptyFilter);setFilter(emptyFilter)},[net]);
   const page = useLoad(async () => {
     if (!times) return null;
@@ -76,6 +80,8 @@ export function Events({ net, onAuth }: { net: number; onAuth: () => void }) {
       </>}
       {pointer && <Pending load={detail} onAuth={onAuth} />}
       {chosenEvent && <aside><h2>{chosenEvent.kind}: {chosenEvent.node}</h2>{data && !data.events.some((e)=>eventKey(e)===eventKey(chosenEvent)) && <p>This source event was fetched separately and is highlighted alongside the current filtered page.</p>}<p>Source {chosenEvent.input}:{chosenEvent.line} · {chosenEvent.run} · {chosenEvent.profile} · log-{chosenEvent.level}</p><p className="mono">{chosenEvent.t_wall} · full height {chosenEvent.height || "unknown"} / round {chosenEvent.round || "unknown"}</p><p>{chosenEvent.view_inferred ? "View is inferred from this engine run's latest round." : "View is recorded in this line or unavailable."} No monotonic timestamp is present.</p><pre>{JSON.stringify(chosenEvent.fields, null, 2)}</pre><a href={`#/networks/${net}/headers`}>Compare header participation and missed proposer opportunities</a></aside>}
+      {proof && <><Pending load={evidence} onAuth={onAuth}/>{evidence.state==="done"&&evidence.data&&<p>Inspector source: {evidence.data.status} · {evidence.data.report_input} → {evidence.data.dataset_input || "unavailable"}:{evidence.data.line} · SHA256 {evidence.data.sha256 || "unavailable"}</p>}</>}
+      <LogOverlay net={net} dataset={id} onAuth={onAuth} onEvidence={(p)=>{setSelected(null);setPointer(null);setProof(p)}}/>
       <Pending load={rounds} onAuth={onAuth} />
       {rounds.state === "done" && rounds.data && <RoundSummary data={rounds.data} onPoint={(input, line) => { const e = data?.events.find((e) => e.input === input && e.line === line); if (e) select(e); else {setSelected(null);setPointer({input,line});} }} />}
     </>}
@@ -93,4 +99,13 @@ export function Swimlanes({ events, nodes, from, to, selected, onSelect }: { eve
 }
 function RoundSummary({ data, onPoint }: { data: Schemas["RoundsSummary"]; onPoint: (input: string, line: number) => void }) {
   return <details><summary>Round distribution and cause evidence</summary><p>Decision claims are deduplicated per node and height, and remain separate by node/profile. They do not pool repeated observations of the same network height. Unknown decision rounds: {data.unknown_decisions}. Causes inferred from logs are marked log_correlated; unknown is preserved.</p><table><thead><tr><th>Node / profile</th><th>Round</th><th>Decision claims</th></tr></thead><tbody>{data.decisions.map((b) => <tr key={`${b.node}:${b.profile}:${b.round}`}><td>{b.node} / {b.profile}</td><td>{b.round}</td><td>{b.count}</td></tr>)}</tbody></table><table><thead><tr><th>Node</th><th>Height / round</th><th>Proposer</th><th>Cause / strength</th><th>Source</th></tr></thead><tbody>{data.transitions.map((t) => <tr key={`${t.input}:${t.line}`}><td>{t.node}</td><td>{t.height} / {t.round}</td><td className="mono">{t.proposer || "unknown"}</td><td>{t.cause} / {t.confidence}</td><td><button type="button" onClick={() => onPoint(t.input, t.line)}>{t.input}:{t.line}</button>{t.cause_line > 0 && ` ← ${t.cause_input}:${t.cause_line}`}</td></tr>)}</tbody></table>{data.transitions_omitted > 0 && <p>{data.transitions_omitted} additional transitions are counted but omitted. Narrow the window or use ROUND_ENTER event cursor pages.</p>}</details>;
+}
+
+function LogOverlay({net,dataset,onAuth,onEvidence}:{net:number;dataset:number;onAuth:()=>void;onEvidence:(p:{report:string;observation:string;index:number})=>void}){
+ const observations=useLoad(async()=>{
+  const reports=(await get("/v1/reports",{query:{net}})).reports;
+  const groups=await Promise.all(reports.map(async(r)=>({report:r.id,rows:(await get("/v1/reports/{id}/observations",{path:{id:r.id}})).observations})));
+  return groups.flatMap((g)=>g.rows.filter((o)=>o.evidence.some((e)=>e.kind==="log"||e.kind==="event")).map((o)=>({...o,report:g.report})));
+ },[net,dataset]);
+ return <details><summary>Inspector log evidence</summary><p>Source jumps require the same network, file SHA256, node and original line. Missing or ambiguous sources remain unavailable; an input name alone is insufficient.</p><Pending load={observations} onAuth={onAuth}/>{observations.state==="done"&&<table><thead><tr><th>Observation / node</th><th>Count</th><th>Original evidence</th></tr></thead><tbody>{observations.data.map((o)=><tr key={`${o.report}:${o.id}`}><td>{o.kind} / {o.node || "network"}</td><td>{o.count}</td><td>{o.evidence.map((e,index)=>(e.kind==="log"||e.kind==="event")?<button type="button" key={index} onClick={()=>onEvidence({report:o.report,observation:o.id,index})}>{e.input}:{e.line}</button>:null)}</td></tr>)}</tbody></table>}</details>;
 }

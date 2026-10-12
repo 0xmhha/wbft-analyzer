@@ -17,6 +17,7 @@ import (
 )
 
 type Dataset struct {
+	CopyNodes []string        `json:"copy_nodes"`
 	Nodes     []string        `json:"nodes"`
 	ID        int64           `json:"id"`
 	NetworkID int64           `json:"network_id"`
@@ -31,11 +32,11 @@ type Dataset struct {
 
 func scanDataset(r pgx.CollectableRow) (Dataset, error) {
 	var d Dataset
-	err := r.Scan(&d.ID, &d.NetworkID, &d.Name, &d.Kind, &d.Status, &d.Progress, &d.Error, &d.Metadata, &d.UpdatedAt, &d.Nodes)
+	err := r.Scan(&d.ID, &d.NetworkID, &d.Name, &d.Kind, &d.Status, &d.Progress, &d.Error, &d.Metadata, &d.UpdatedAt, &d.Nodes, &d.CopyNodes)
 	return d, err
 }
 
-const datasetColumns = `id,network_id,name,kind,status,progress,error,metadata,updated_at,coalesce((SELECT array_agg(DISTINCT hc.node ORDER BY hc.node) FROM (SELECT node FROM header_copies WHERE dataset_id=datasets.id UNION SELECT node FROM log_inputs WHERE dataset_id=datasets.id) hc), ARRAY[]::text[])`
+const datasetColumns = `id,network_id,name,kind,status,progress,error,metadata,updated_at,coalesce((SELECT array_agg(DISTINCT hc.node ORDER BY hc.node) FROM (SELECT node FROM header_copies WHERE dataset_id=datasets.id UNION SELECT node FROM log_inputs WHERE dataset_id=datasets.id) hc), ARRAY[]::text[]),coalesce((SELECT array_agg(DISTINCT node ORDER BY node) FROM header_copies WHERE dataset_id=datasets.id),ARRAY[]::text[])`
 
 func (s *Store) Datasets(ctx context.Context, networkID int64) ([]Dataset, error) {
 	r, err := s.pool.Query(ctx, `SELECT `+datasetColumns+` FROM datasets WHERE network_id=$1 ORDER BY id`, networkID)
