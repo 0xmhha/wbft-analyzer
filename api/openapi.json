@@ -161,6 +161,22 @@
         ],
         "type": "object"
       },
+      "EventView": {
+        "additionalProperties": false,
+        "properties": {
+          "round": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "round",
+          "seq"
+        ],
+        "type": "object"
+      },
       "HeaderList": {
         "additionalProperties": false,
         "properties": {
@@ -871,6 +887,14 @@
             "format": "int64",
             "type": "integer"
           },
+          "monotonic_regressions": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sequence_gaps": {
+            "format": "int64",
+            "type": "integer"
+          },
           "sha256": {
             "type": "string"
           },
@@ -1037,6 +1061,242 @@
           "next",
           "samples",
           "total"
+        ],
+        "type": "object"
+      },
+      "ReplayCounter": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "type": "string"
+          },
+          "quorum": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ReplayPointer"
+          }
+        },
+        "required": [
+          "count",
+          "quorum",
+          "source"
+        ],
+        "type": "object"
+      },
+      "ReplayKeyframe": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "folded": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input": {
+            "type": "string"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ReplayState"
+          }
+        },
+        "required": [
+          "at",
+          "folded",
+          "input",
+          "line",
+          "state"
+        ],
+        "type": "object"
+      },
+      "ReplayPointer": {
+        "additionalProperties": false,
+        "properties": {
+          "input": {
+            "type": "string"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "t_wall": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "input",
+          "line",
+          "t_wall"
+        ],
+        "type": "object"
+      },
+      "ReplayState": {
+        "additionalProperties": false,
+        "properties": {
+          "backlog": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "backlog_partial": {
+            "type": "boolean"
+          },
+          "cause": {
+            "type": "string"
+          },
+          "counters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ReplayCounter"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "engine_active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "head_kind": {
+            "type": "string"
+          },
+          "last_head": {
+            "type": "string"
+          },
+          "latest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReplayPointer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "node": {
+            "type": "string"
+          },
+          "online": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "profile": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "state_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReplayPointer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timers": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ReplayTimer"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "unmatched_timer_events": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "view": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "backlog",
+          "backlog_partial",
+          "cause",
+          "counters",
+          "engine_active",
+          "head_kind",
+          "last_head",
+          "latest",
+          "node",
+          "online",
+          "profile",
+          "run",
+          "state",
+          "state_source",
+          "timers",
+          "unmatched_timer_events",
+          "view"
+        ],
+        "type": "object"
+      },
+      "ReplayTimer": {
+        "additionalProperties": false,
+        "properties": {
+          "closed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReplayPointer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deadline_mono_ns": {
+            "type": "string"
+          },
+          "duration_ms": {
+            "type": "string"
+          },
+          "engine": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ReplayPointer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "closed",
+          "deadline_mono_ns",
+          "duration_ms",
+          "engine",
+          "generation",
+          "kind",
+          "source",
+          "status"
         ],
         "type": "object"
       },
@@ -1594,6 +1854,9 @@
           "run": {
             "type": "string"
           },
+          "source": {
+            "type": "string"
+          },
           "t_mono_ns": {
             "type": [
               "string",
@@ -1686,6 +1949,9 @@
           "id": {
             "type": "string"
           },
+          "kind": {
+            "type": "string"
+          },
           "node": {
             "type": "string"
           },
@@ -1705,11 +1971,108 @@
         "required": [
           "bytes",
           "id",
+          "kind",
           "node",
           "profile",
           "profile_sha256",
           "sha256",
           "stats"
+        ],
+        "type": "object"
+      },
+      "StoreReplayNode": {
+        "additionalProperties": false,
+        "properties": {
+          "initial": {
+            "$ref": "#/components/schemas/StoreReplayState"
+          },
+          "levels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "monotonic_regressions": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "type": "string"
+          },
+          "sequence_gaps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "wall_regressions": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "initial",
+          "levels",
+          "monotonic_regressions",
+          "node",
+          "sequence_gaps",
+          "wall_regressions"
+        ],
+        "type": "object"
+      },
+      "StoreReplayState": {
+        "additionalProperties": false,
+        "properties": {
+          "keyframe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReplayKeyframe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/ReplayState"
+          },
+          "tail_records": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "keyframe",
+          "state",
+          "tail_records",
+          "version"
+        ],
+        "type": "object"
+      },
+      "StoreReplayWindow": {
+        "additionalProperties": false,
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/StoreLogEvent"
+            },
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/StoreReplayNode"
+            },
+            "type": "array"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "events",
+          "nodes",
+          "version"
         ],
         "type": "object"
       },
@@ -2854,6 +3217,193 @@
           }
         },
         "summary": "WBFT consecutive phase distributions, counts and raw-sample overall percentiles; missing and negative samples remain explicit."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/replay/keyframe": {
+      "get": {
+        "operationId": "getReplayKeyframe",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "node label",
+            "in": "query",
+            "name": "node",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "inclusive RFC3339 target",
+            "in": "query",
+            "name": "t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreReplayState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Nearest prior keyframe plus bounded tail folded through t; exact nanosecond axis."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/replay/window": {
+      "get": {
+        "operationId": "getReplayWindow",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "inclusive RFC3339 window start",
+            "in": "query",
+            "name": "from_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "inclusive RFC3339 window end",
+            "in": "query",
+            "name": "to_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "one node label",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "optional inclusive end source at to_t; requires to_line",
+            "in": "query",
+            "name": "to_input",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "inclusive original source line at to_t",
+            "in": "query",
+            "name": "to_line",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreReplayWindow"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Metadata visual replay window, at most 100000 events, with preceding state; reindex required if stale."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/rounds/distribution": {

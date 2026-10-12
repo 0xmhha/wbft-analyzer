@@ -84,6 +84,8 @@ capture() {
  get "/networks/$run_net/datasets/$run_id/phases/summary?from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:30Z" run-phase-summary
  get "/networks/$run_net/datasets/$run_id/phases/samples?from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:30Z&metric=round_to_decision&limit=1000" run-phase-samples
  get "/networks/$run_net/datasets/$run_id/phases/samples?from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:30Z&metric=round_to_decision&clock=wall&threshold=p95" run-phase-threshold
+ get "/networks/$run_net/datasets/$run_id/replay/window?from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:30Z" run-replay-window
+ get "/networks/$run_net/datasets/$run_id/replay/keyframe?node=node2&t=2026-10-12T17:23:01Z" run-replay-state
  get /reports reports
  log_report=$(jq -r '.reports[] | select(.run_id=="log-evidence-dump") | .id' "$dir/reports.json")
  get "/networks/$run_net/datasets/$run_id/evidence?report=$log_report&observation=log-source&index=0" log-evidence

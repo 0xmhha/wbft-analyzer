@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0xmhha/wbft/observe/event/schema"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,6 +17,9 @@ import (
 	"strings"
 	"time"
 )
+
+const EventProfile = "wbft@events-v1"
+const EventNormalizer = "wbft-event-normalization/2"
 
 const ManifestFormat = "wbft-analyzer-run/1"
 
@@ -28,6 +32,7 @@ type Network struct {
 	Name        string `json:"name"`
 }
 type File struct {
+	Kind    string `json:"kind,omitempty"`
 	ID      string `json:"id"`
 	Node    string `json:"node"`
 	Path    string `json:"path"`
@@ -47,6 +52,7 @@ type Manifest struct {
 
 // InputSummary is safe import metadata. The path is local-only on PreparedInput.
 type InputSummary struct {
+	Kind          string `json:"kind,omitempty"`
 	ID            string `json:"id"`
 	Node          string `json:"node"`
 	Profile       string `json:"profile"`
@@ -89,7 +95,7 @@ func LoadManifest(path string) (Manifest, error) {
 			m.Inputs[i].Path = filepath.Join(filepath.Dir(path), m.Inputs[i].Path)
 		}
 		p := m.Inputs[i].Profile
-		if p != "" && p != "wbft" && p != "gstable@740526d03" && !filepath.IsAbs(p) {
+		if m.Inputs[i].Kind != "events" && p != "" && p != "wbft" && p != "gstable@740526d03" && !filepath.IsAbs(p) {
 			m.Inputs[i].Profile = filepath.Join(filepath.Dir(path), p)
 		}
 	}
@@ -166,7 +172,20 @@ func Prepare(ctx context.Context, m Manifest) (Plan, error) {
 			return p, errors.New("invalid or duplicate input ID")
 		}
 		ids[f.ID] = true
-		profile, err := LoadProfile(f.Profile)
+		var profile *Profile
+		var err error
+		switch f.Kind {
+		case "", "log":
+			profile, err = LoadProfile(f.Profile)
+		case "events":
+			if f.Profile != "" {
+				return p, errors.New("event input uses the pinned schema, not a log profile")
+			}
+			hash := sha256.Sum256(schema.File())
+			profile = &Profile{ID: EventProfile, SHA256: hex.EncodeToString(hash[:])}
+		default:
+			return p, errors.New("unsupported run input kind")
+		}
 		if err != nil {
 			return p, err
 		}
@@ -189,22 +208,29 @@ func Prepare(ctx context.Context, m Manifest) (Plan, error) {
 		if f.SHA256 != "" && f.SHA256 != sha {
 			return p, errors.New("input checksum differs from manifest")
 		}
-		p.Inputs = append(p.Inputs, PreparedInput{Summary: InputSummary{ID: f.ID, Node: f.Node, Profile: profile.ID, ProfileSHA256: profile.SHA256, SHA256: sha, Bytes: size}, Path: f.Path, Profile: profile})
+		p.Inputs = append(p.Inputs, PreparedInput{Summary: InputSummary{Kind: f.Kind, ID: f.ID, Node: f.Node, Profile: profile.ID, ProfileSHA256: profile.SHA256, SHA256: sha, Bytes: size}, Path: f.Path, Profile: profile})
 	}
 	sort.Slice(p.Inputs, func(i, j int) bool { return p.Inputs[i].Summary.ID < p.Inputs[j].Summary.ID })
 	inputs := []InputSummary{}
 	for _, f := range p.Inputs {
 		inputs = append(inputs, f.Summary)
 	}
+	eventsNormalizer := ""
+	for _, in := range inputs {
+		if in.Kind == "events" {
+			eventsNormalizer = EventNormalizer
+		}
+	}
 	p.Metadata, _ = json.Marshal(struct {
-		Format     string `json:"format"`
-		Normalizer string `json:"normalizer"`
-		Run        string `json:"run"`
-		Clock      string `json:"clock"`
-		From       string `json:"from_t"`
-		To         string `json:"to_t"`
-		Inputs     []InputSummary
-	}{m.Format, NormalizerVersion, m.Run, m.Clock, p.Manifest.FromWall, p.Manifest.ToWall, inputs})
+		EventsNormalizer string `json:"events_normalizer,omitempty"`
+		Format           string `json:"format"`
+		Normalizer       string `json:"normalizer"`
+		Run              string `json:"run"`
+		Clock            string `json:"clock"`
+		From             string `json:"from_t"`
+		To               string `json:"to_t"`
+		Inputs           []InputSummary
+	}{eventsNormalizer, m.Format, NormalizerVersion, m.Run, m.Clock, p.Manifest.FromWall, p.Manifest.ToWall, inputs})
 	return p, nil
 }
 

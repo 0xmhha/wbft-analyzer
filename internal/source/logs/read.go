@@ -28,14 +28,16 @@ type Event struct {
 	ViewInferred                           bool
 }
 type Stats struct {
-	Lines            int64  `json:"lines"`
-	Events           int64  `json:"events"`
-	Unknown          int64  `json:"unknown"`
-	Malformed        int64  `json:"malformed"`
-	ClockRegressions int64  `json:"clock_regressions"`
-	SHA256           string `json:"sha256"`
-	FirstWall        string `json:"first_wall"`
-	LastWall         string `json:"last_wall"`
+	MonotonicRegressions int64  `json:"monotonic_regressions,omitempty"`
+	SequenceGaps         int64  `json:"sequence_gaps,omitempty"`
+	Lines                int64  `json:"lines"`
+	Events               int64  `json:"events"`
+	Unknown              int64  `json:"unknown"`
+	Malformed            int64  `json:"malformed"`
+	ClockRegressions     int64  `json:"clock_regressions"`
+	SHA256               string `json:"sha256"`
+	FirstWall            string `json:"first_wall"`
+	LastWall             string `json:"last_wall"`
 }
 
 // Read streams at most a 4MiB line into memory. Diagnostics contain counts,

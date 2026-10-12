@@ -209,6 +209,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/replay/keyframe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Nearest prior keyframe plus bounded tail folded through t; exact nanosecond axis. */
+        get: operations["getReplayKeyframe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/replay/window": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Metadata visual replay window, at most 100000 events, with preceding state; reindex required if stale. */
+        get: operations["getReplayWindow"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/rounds/distribution": {
         parameters: {
             query?: never;
@@ -444,6 +478,10 @@ export interface components {
         Error: {
             error: string;
         };
+        EventView: {
+            round: string;
+            seq: string;
+        };
         HeaderList: {
             headers: components["schemas"]["HeadersRow"][];
         };
@@ -617,6 +655,10 @@ export interface components {
             lines: number;
             /** Format: int64 */
             malformed: number;
+            /** Format: int64 */
+            monotonic_regressions?: number;
+            /** Format: int64 */
+            sequence_gaps?: number;
             sha256: string;
             /** Format: int64 */
             unknown: number;
@@ -655,6 +697,61 @@ export interface components {
             samples: components["schemas"]["LatencySample"][];
             /** Format: int64 */
             total: number;
+        };
+        ReplayCounter: {
+            count: string;
+            quorum: string;
+            source: components["schemas"]["ReplayPointer"];
+        };
+        ReplayKeyframe: {
+            at: string;
+            /** Format: int64 */
+            folded: number;
+            input: string;
+            /** Format: int64 */
+            line: number;
+            state: components["schemas"]["ReplayState"];
+        };
+        ReplayPointer: {
+            input: string;
+            /** Format: int64 */
+            line: number;
+            t_wall: string;
+        };
+        ReplayState: {
+            /** Format: int64 */
+            backlog: number | null;
+            backlog_partial: boolean;
+            cause: string;
+            counters: {
+                [key: string]: components["schemas"]["ReplayCounter"];
+            };
+            engine_active: boolean | null;
+            head_kind: string;
+            last_head: string;
+            latest: components["schemas"]["ReplayPointer"] | null;
+            node: string;
+            online: boolean | null;
+            profile: string;
+            run: string;
+            state: string;
+            state_source: components["schemas"]["ReplayPointer"] | null;
+            timers: {
+                [key: string]: components["schemas"]["ReplayTimer"];
+            };
+            /** Format: int64 */
+            unmatched_timer_events: number;
+            view: components["schemas"]["EventView"] | null;
+        };
+        ReplayTimer: {
+            closed: components["schemas"]["ReplayPointer"] | null;
+            deadline_mono_ns: string;
+            duration_ms: string;
+            engine: string;
+            generation: string;
+            kind: string;
+            source: components["schemas"]["ReplayPointer"];
+            status: string;
         };
         Report: {
             catalog_sha256: string;
@@ -809,6 +906,7 @@ export interface components {
             profile: string;
             round: string;
             run: string;
+            source?: string;
             t_mono_ns?: string | null;
             t_wall: string;
             view_inferred: boolean;
@@ -830,11 +928,35 @@ export interface components {
             /** Format: int64 */
             bytes: number;
             id: string;
+            kind: string;
             node: string;
             profile: string;
             profile_sha256: string;
             sha256: string;
             stats: components["schemas"]["LogsStats"];
+        };
+        StoreReplayNode: {
+            initial: components["schemas"]["StoreReplayState"];
+            levels: string[];
+            /** Format: int64 */
+            monotonic_regressions: number;
+            node: string;
+            /** Format: int64 */
+            sequence_gaps: number;
+            /** Format: int64 */
+            wall_regressions: number;
+        };
+        StoreReplayState: {
+            keyframe: components["schemas"]["ReplayKeyframe"] | null;
+            state: components["schemas"]["ReplayState"];
+            /** Format: int64 */
+            tail_records: number;
+            version: string;
+        };
+        StoreReplayWindow: {
+            events: components["schemas"]["StoreLogEvent"][];
+            nodes: components["schemas"]["StoreReplayNode"][];
+            version: string;
         };
         StoreRoundCount: {
             /** Format: int64 */
@@ -1475,6 +1597,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LatencySummary"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getReplayKeyframe: {
+        parameters: {
+            query: {
+                /** @description node label */
+                node: string;
+                /** @description inclusive RFC3339 target */
+                t: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreReplayState"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getReplayWindow: {
+        parameters: {
+            query: {
+                /** @description inclusive RFC3339 window start */
+                from_t: string;
+                /** @description inclusive RFC3339 window end */
+                to_t: string;
+                /** @description one node label */
+                node?: string;
+                /** @description optional inclusive end source at to_t; requires to_line */
+                to_input?: string;
+                /** @description inclusive original source line at to_t */
+                to_line?: number;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreReplayWindow"];
                 };
             };
             /** @description the request failed */

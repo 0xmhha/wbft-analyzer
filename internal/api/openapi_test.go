@@ -181,7 +181,11 @@ func (s *spec) check(v any, sch map[string]any, at string) error {
 		for _, k := range keys {
 			p, ok := props[k]
 			if !ok {
-				return fmt.Errorf("%s: %q is not in the document", at, k)
+				if extra, allowed := sch["additionalProperties"].(map[string]any); allowed {
+					p = extra
+				} else {
+					return fmt.Errorf("%s: %q is not in the document", at, k)
+				}
 			}
 			if err := s.check(v[k], p.(map[string]any), at+"."+k); err != nil {
 				return err

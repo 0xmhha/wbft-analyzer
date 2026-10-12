@@ -23,7 +23,7 @@ The analyzer is built in stages; the A0 foundation is complete:
 |---|---|---|
 | A0 | command skeleton, inspector report loader with the public-build checks, PostgreSQL store, observation trends and alerts, API and front-end skeleton | complete |
 | A1 | header analysis: participation, proposers, epochs | implemented and validated on real testnet/G7 inputs |
-| A2 | node logs and chainbench runs | run ingestion, metadata timelines, round causes, inspector source overlay and phase latency implemented; replay and performance acceptance pending |
+| A2 | node logs and chainbench runs | run ingestion, metadata timelines, round causes, inspector source overlay and phase latency implemented; visual replay implemented; repeated-run acceptance pending |
 | A3 | wbft event streams and mixed networks | not started |
 | A4 | governance history | not started |
 
@@ -226,9 +226,9 @@ regressions were retained as diagnostics. The committed regression input
 is a sanitized, incomplete metadata excerpt of those two heights; it does
 not replace the original real-run validation.
 
-A2 is not complete: visual replay/keyframes and performance acceptance
-remain pending. Inspector source overlay and node phase latency are
-implemented; complete I2 checker coverage remains separate. A3 message matching, directed latency and
+A2 is not complete: repeated G7 baseline acceptance remains pending.
+Inspector source overlay, node phase latency and visual replay/keyframes
+are implemented; complete I2 checker coverage remains separate. A3 message matching, directed latency and
 follow-mode acceptance are also pending.
 
 ## Inspector log evidence
@@ -302,3 +302,45 @@ attempts at the boundaries and proposer stops. Original-line timestamps and
 raw-sample percentile/statistic calculations are independently checked; import
 is unavailable for this source profile. This does not establish A2 replay or
 complete event coverage.
+
+
+## Visual replay
+
+Run manifests accept input kind `events` for the pinned WBFT events-v1 schema,
+or `log` (the default) for implementation-profile logs. Event files preserve
+node/run/sequence, full height/round, monotonic timestamps and step metadata;
+duplicate keys, identity mismatches and repeated/decreasing sequence numbers
+are refused. Gaps and clock regressions remain diagnostics. Event normalization
+is separately versioned; bytes, payloads and arbitrary error text are excluded
+at both source and persistence. A source file is not proof of complete coverage.
+
+Run ingestion builds a recorded-state projection with per-node keyframes at
+height and lifecycle boundaries and every 1,024 records. Existing datasets can
+be indexed with `reindex replay --db DSN --dataset ID`. The projection records
+view, state, timer generation, observed quorum counts, partial backlog and the
+last imported head or legacy decision claim. It does not execute consensus
+rules. A message's view never replaces the node's view. Stale expirations and
+cancellations of other generations cannot remove the active timer.
+
+`GET /v1/networks/{net}/datasets/{dataset}/replay/window?from_t&to_t&node`
+returns up to 100,000 metadata records with state immediately before the window.
+`/replay/keyframe?node&t` folds the nearest preceding snapshot and a bounded tail
+through t. The wall-time axis retains nanoseconds and deterministic input/line
+ties. Optional `to_input` and `to_line` select an exact inclusive source endpoint
+at `to_t`, including a cut within equal timestamps. Stale/missing indexes return
+409 until reindexed; oversized windows return 400. GETs do not build indexes.
+
+The run view provides Canvas playback, pause/rewind, source steps by node,
+height and round, time or event-proportional speed, selected source loops,
+keyboard controls, node states and timer marks, height/round counts, cause
+flows and recorded quorum race counts/evidence. Counts are node observations,
+not network decisions. Missing state and intermediate counts remain unknown.
+A quorum message is linked by the same input/run/step; log-only links are
+explicitly inferred. Info-only logs do not produce receive arrows. A3 adds
+message pairing, link arrows and cross-node clock/latency analysis.
+
+Real W2 proposer-stop/restart and 103,344-event simulations and real G7 logs
+validate ingestion and the projection. Client/server seeks agree at 375
+node/time cases across the datasets. An exact 100,000-event source window is
+used for laptop Canvas cadence measurements. This validates visual replay;
+closed re-execution, what-if and follow-mode acceptance remain separate.

@@ -93,3 +93,6 @@ article pre { overflow: auto; max-height: 24rem; }
 .event-selected { stroke: currentColor; stroke-width: 2; }
 .event-table { max-height: 450px; overflow-y: auto; }
 .controls { gap: .5rem; display: flex; flex-wrap: wrap; align-items: center; }
+
+.replay-canvas { display:block; width:100%; min-width:900px; cursor:crosshair; }
+.replay > label input[type="range"] {width:100%;}
