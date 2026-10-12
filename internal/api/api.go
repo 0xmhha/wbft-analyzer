@@ -54,20 +54,15 @@ func (s *Server) log() *slog.Logger {
 	return slog.Default()
 }
 
-// Handler returns the API handler.
+// Handler returns the API handler: the routes of the route table
+// (routes.go), behind the request checks (guard.go).
 func (s *Server) Handler() http.Handler {
 	m := http.NewServeMux()
-	m.HandleFunc("GET /v1/networks", s.networks)
-	m.HandleFunc("GET /v1/networks/{net}", s.network)
-	m.HandleFunc("GET /v1/networks/{net}/trends/observations", s.trendPoints)
-	m.HandleFunc("GET /v1/networks/{net}/alert-rules", s.alertRules)
-	m.HandleFunc("PUT /v1/networks/{net}/alert-rules", s.putAlertRules)
-	m.HandleFunc("GET /v1/alerts", s.alerts)
-	m.HandleFunc("GET /v1/reports", s.reports)
-	m.HandleFunc("POST /v1/reports", s.postReport)
-	m.HandleFunc("GET /v1/reports/{id}", s.report)
-	m.HandleFunc("GET /v1/reports/{id}/results", s.results)
-	m.HandleFunc("GET /v1/reports/{id}/observations", s.observations)
+	for _, rt := range routes {
+		h := rt.handle
+		m.HandleFunc(rt.method+" "+rt.path, func(w http.ResponseWriter, r *http.Request) { h(s, w, r) })
+	}
+	m.HandleFunc("GET "+openAPIPath, s.openAPI)
 	m.HandleFunc("/v1/", func(w http.ResponseWriter, _ *http.Request) { writeError(w, http.StatusNotFound, "no such resource") })
 	return s.guard(m)
 }
@@ -78,7 +73,7 @@ type Network struct {
 	ChainID     string `json:"chain_id"`
 	GenesisHash string `json:"genesis_hash"`
 	Name        string `json:"name"`
-	Visibility  string `json:"visibility"`
+	Visibility  string `json:"visibility" enum:"public,private"`
 	Reports     int64  `json:"reports"`
 }
 
@@ -96,7 +91,7 @@ func (s *Server) networks(w http.ResponseWriter, r *http.Request) {
 	for i, n := range ns {
 		out[i] = toNetwork(n)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"networks": out})
+	writeJSON(w, http.StatusOK, NetworkList{Networks: out})
 }
 
 func (s *Server) network(w http.ResponseWriter, r *http.Request) {
@@ -138,6 +133,11 @@ func netFilter(w http.ResponseWriter, r *http.Request) (*int64, bool) {
 		return nil, false
 	}
 	return &id, true
+}
+
+// NetworkList is the answer of GET /v1/networks.
+type NetworkList struct {
+	Networks []Network `json:"networks"`
 }
 
 // Report is a stored inspector report without its results and
@@ -185,7 +185,7 @@ func (s *Server) reports(w http.ResponseWriter, r *http.Request) {
 	for i, x := range xs {
 		out[i] = toReport(x)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"reports": out})
+	writeJSON(w, http.StatusOK, ReportList{Reports: out})
 }
 
 var reportID = regexp.MustCompile(`^[0-9a-f]{64}$`)
@@ -214,6 +214,11 @@ func (s *Server) report(w http.ResponseWriter, r *http.Request) {
 	if x, ok := s.lookupReport(w, r); ok {
 		writeJSON(w, http.StatusOK, toReport(x))
 	}
+}
+
+// ReportList is the answer of GET /v1/reports.
+type ReportList struct {
+	Reports []Report `json:"reports"`
 }
 
 // Result is the verdict of one requirement; Node is empty for the whole
@@ -249,7 +254,12 @@ func (s *Server) results(w http.ResponseWriter, r *http.Request) {
 	for i, y := range rs {
 		out[i] = Result{Requirement: y.Requirement, Node: y.Node, Verdict: y.Verdict, Coverage: orNull(y.Coverage)}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"results": out})
+	writeJSON(w, http.StatusOK, ResultList{Results: out})
+}
+
+// ResultList is the answer of GET /v1/reports/{id}/results.
+type ResultList struct {
+	Results []Result `json:"results"`
 }
 
 // Observation is a finding of a report that is not a verdict. Imp holds
@@ -280,7 +290,12 @@ func (s *Server) observations(w http.ResponseWriter, r *http.Request) {
 		out[i] = Observation{ID: o.ID, Kind: o.Kind, Imp: o.Imp, Requirements: o.Requirements, Node: o.Node, Count: o.Count,
 			First: o.First, Last: o.Last}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"observations": out})
+	writeJSON(w, http.StatusOK, ObservationList{Observations: out})
+}
+
+// ObservationList is the answer of GET /v1/reports/{id}/observations.
+type ObservationList struct {
+	Observations []Observation `json:"observations"`
 }
 
 // LoadResult is the outcome of a posted report: added, skipped (already
@@ -288,7 +303,7 @@ func (s *Server) observations(w http.ResponseWriter, r *http.Request) {
 // are the rule states it changed.
 type LoadResult struct {
 	ID      string         `json:"id,omitempty"`
-	Outcome ingest.Outcome `json:"outcome"`
+	Outcome ingest.Outcome `json:"outcome" enum:"added,skipped,refused,invalid"`
 	Detail  string         `json:"detail"`
 	Alerts  []ingest.Alert `json:"alerts"`
 }
@@ -364,7 +379,12 @@ func (s *Server) trendPoints(w http.ResponseWriter, r *http.Request) {
 	for i, p := range ps {
 		out[i] = TrendPoint{Report: p.Report, At: p.At, Kind: p.Kind, Node: p.Node, Rate: p.Rate}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"points": out})
+	writeJSON(w, http.StatusOK, TrendPointList{Points: out})
+}
+
+// TrendPointList is the answer of GET /v1/networks/{net}/trends/observations.
+type TrendPointList struct {
+	Points []TrendPoint `json:"points"`
 }
 
 // AlertRule is an alert rule of a network (design.md 6.7): the median of
@@ -378,7 +398,7 @@ type AlertRule struct {
 	Node      string  `json:"node"`
 	Window    int     `json:"window"`
 	Baseline  int     `json:"baseline"`
-	Mode      string  `json:"mode"`
+	Mode      string  `json:"mode" enum:"absolute,relative"`
 	Threshold float64 `json:"threshold"`
 	Webhook   string  `json:"webhook"`
 }
@@ -406,7 +426,7 @@ func writeRules(w http.ResponseWriter, rs []store.AlertRule) {
 	for i, a := range rs {
 		out[i] = toAlertRule(a)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"rules": out})
+	writeJSON(w, http.StatusOK, AlertRuleList{Rules: out})
 }
 
 // putAlertRules replaces the rules of a network with {"rules": [...]}. A
@@ -417,9 +437,7 @@ func (s *Server) putAlertRules(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var body struct {
-		Rules []AlertRule `json:"rules"`
-	}
+	var body AlertRuleList
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
 	if err := d.Decode(&body); err != nil || d.More() || body.Rules == nil {
@@ -463,11 +481,17 @@ func checkWebhook(u string) error {
 	return nil
 }
 
+// AlertRuleList is the rules of a network: the answer of GET and the body
+// and answer of PUT /v1/networks/{net}/alert-rules.
+type AlertRuleList struct {
+	Rules []AlertRule `json:"rules"`
+}
+
 // Alert is the recorded state of an evaluated rule.
 type Alert struct {
 	Rule      AlertRule `json:"rule"`
 	NetworkID int64     `json:"network_id"`
-	State     string    `json:"state"`
+	State     string    `json:"state" enum:"pending,firing,resolved"`
 	Recent    float64   `json:"recent"`
 	Baseline  float64   `json:"baseline"`
 	ChangedAt time.Time `json:"changed_at"`
@@ -488,7 +512,17 @@ func (s *Server) alerts(w http.ResponseWriter, r *http.Request) {
 		out[i] = Alert{Rule: toAlertRule(a.Rule), NetworkID: a.Rule.NetworkID, State: a.State, Recent: a.Recent, Baseline: a.Baseline,
 			ChangedAt: a.ChangedAt}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"alerts": out})
+	writeJSON(w, http.StatusOK, AlertList{Alerts: out})
+}
+
+// AlertList is the answer of GET /v1/alerts.
+type AlertList struct {
+	Alerts []Alert `json:"alerts"`
+}
+
+// Error is the answer to a request that failed.
+type Error struct {
+	Error string `json:"error"`
 }
 
 // fail logs an internal error and answers 500 without its detail. A
@@ -501,7 +535,7 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 func writeError(w http.ResponseWriter, code int, msg string) {
-	writeJSON(w, code, map[string]string{"error": msg})
+	writeJSON(w, code, Error{Error: msg})
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {
