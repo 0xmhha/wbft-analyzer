@@ -54,7 +54,7 @@ var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
 	"serve":   runServe,
 	"ingest":  runIngest,
 	"follow":  notYet("follow"),
-	"reindex": notYet("reindex"),
+	"reindex": runReindex,
 	"export":  notYet("export"),
 }
 

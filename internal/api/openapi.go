@@ -135,6 +135,11 @@ func (g *schemas) of(t reflect.Type) map[string]any {
 		return map[string]any{"type": "number", "format": "double"}
 	case reflect.Slice:
 		return map[string]any{"type": "array", "items": g.of(t.Elem())}
+	case reflect.Map:
+		if t.Key().Kind() != reflect.String {
+			panic(fmt.Sprintf("api: unsupported map key %s", t))
+		}
+		return map[string]any{"type": "object", "properties": map[string]any{}, "required": []string{}, "additionalProperties": g.of(t.Elem())}
 	case reflect.Struct:
 		return map[string]any{"$ref": "#/components/schemas/" + g.component(t)}
 	}

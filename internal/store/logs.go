@@ -6,12 +6,14 @@ import (
 	"errors"
 	"time"
 
+	sourceevents "github.com/0xmhha/wbft-analyzer/internal/source/events"
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
 	"github.com/0xmhha/wbft/observe/event"
 	"github.com/jackc/pgx/v5"
 )
 
 type LogEvent struct {
+	Source       string          `json:"source,omitempty"`
 	Mono         *string         `json:"t_mono_ns,omitempty"`
 	Input        string          `json:"input"`
 	Line         int64           `json:"line"`
@@ -27,6 +29,7 @@ type LogEvent struct {
 	Fields       json.RawMessage `json:"fields"`
 }
 type LogInput struct {
+	Kind          string     `json:"kind"`
 	ID            string     `json:"id"`
 	Node          string     `json:"node"`
 	Profile       string     `json:"profile"`
@@ -37,7 +40,7 @@ type LogInput struct {
 }
 
 func (s *Store) PutLogInput(ctx context.Context, dataset int64, in logs.InputSummary) error {
-	tag, err := s.pool.Exec(ctx, `INSERT INTO log_inputs(dataset_id,input_id,node,profile,profile_sha256,sha256,bytes) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(dataset_id,input_id) DO UPDATE SET input_id=log_inputs.input_id WHERE log_inputs.node=EXCLUDED.node AND log_inputs.profile=EXCLUDED.profile AND log_inputs.profile_sha256=EXCLUDED.profile_sha256 AND log_inputs.sha256=EXCLUDED.sha256 AND log_inputs.bytes=EXCLUDED.bytes`, dataset, in.ID, in.Node, in.Profile, in.ProfileSHA256, in.SHA256, in.Bytes)
+	tag, err := s.pool.Exec(ctx, `INSERT INTO log_inputs(dataset_id,input_id,node,profile,profile_sha256,sha256,bytes,kind) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(dataset_id,input_id) DO UPDATE SET input_id=log_inputs.input_id WHERE log_inputs.node=EXCLUDED.node AND log_inputs.profile=EXCLUDED.profile AND log_inputs.profile_sha256=EXCLUDED.profile_sha256 AND log_inputs.sha256=EXCLUDED.sha256 AND log_inputs.bytes=EXCLUDED.bytes AND log_inputs.kind=EXCLUDED.kind`, dataset, in.ID, in.Node, in.Profile, in.ProfileSHA256, in.SHA256, in.Bytes, inputKind(in.Kind))
 	if err == nil && tag.RowsAffected() != 1 {
 		err = errors.New("log input conflict")
 	}
@@ -65,11 +68,20 @@ func (s *Store) PutLogEvents(ctx context.Context, dataset int64, events []logs.E
 			if err = json.Unmarshal(raw, &m); err != nil {
 				return err
 			}
-			fields, err := json.Marshal(logs.Metadata(m))
+			safe := logs.Metadata(m)
+			if e.Record.Src == "event" {
+				m["kind"], _ = json.Marshal(e.Record.Kind)
+				safe = sourceevents.Metadata(m)
+			}
+			fields, err := json.Marshal(safe)
 			if err != nil {
 				return err
 			}
-			x := LogEvent{Input: e.Input, Line: e.Line, Node: e.Node, Run: e.Run, Wall: e.Wall, Kind: e.Record.Kind, Level: e.Level, Profile: e.Profile, ViewInferred: e.ViewInferred, Fields: fields, Mono: e.Mono}
+			source := ""
+			if e.Record.Src == "event" {
+				source = "event"
+			}
+			x := LogEvent{Source: source, Input: e.Input, Line: e.Line, Node: e.Node, Run: e.Run, Wall: e.Wall, Kind: e.Record.Kind, Level: e.Level, Profile: e.Profile, ViewInferred: e.ViewInferred, Fields: fields, Mono: e.Mono}
 			var height, round any
 			if e.Record.View != nil {
 				x.Height = e.Record.View.Seq
@@ -89,7 +101,7 @@ func (s *Store) PutLogEvents(ctx context.Context, dataset int64, events []logs.E
 			if err != nil {
 				return err
 			}
-			batch.Queue(`INSERT INTO log_events(dataset_id,input_id,line,node,run,t_wall,kind,height,round,event) VALUES($1,$2,$3,$4,$5,$6,$7,$8::numeric,$9::numeric,$10) ON CONFLICT(dataset_id,input_id,line) DO UPDATE SET event=log_events.event WHERE log_events.event=EXCLUDED.event`, dataset, e.Input, e.Line, e.Node, e.Run, wall.Truncate(time.Microsecond), e.Record.Kind, height, round, b)
+			batch.Queue(`INSERT INTO log_events(dataset_id,input_id,line,node,run,t_wall,kind,height,round,event,axis_ns) VALUES($1,$2,$3,$4,$5,$6,$7,$8::numeric,$9::numeric,$10,$11::numeric) ON CONFLICT(dataset_id,input_id,line) DO UPDATE SET event=log_events.event WHERE log_events.event=EXCLUDED.event`, dataset, e.Input, e.Line, e.Node, e.Run, wall.Truncate(time.Microsecond), e.Record.Kind, height, round, b, axisNS(wall))
 		}
 		results := tx.SendBatch(ctx, batch)
 		for range events {
@@ -111,14 +123,14 @@ func (s *Store) PutLogEvents(ctx context.Context, dataset int64, events []logs.E
 	})
 }
 func (s *Store) LogInputs(ctx context.Context, dataset int64) ([]LogInput, error) {
-	rows, err := s.pool.Query(ctx, `SELECT input_id,node,profile,profile_sha256,sha256,bytes,stats FROM log_inputs WHERE dataset_id=$1 ORDER BY input_id`, dataset)
+	rows, err := s.pool.Query(ctx, `SELECT input_id,node,profile,profile_sha256,sha256,bytes,stats,kind FROM log_inputs WHERE dataset_id=$1 ORDER BY input_id`, dataset)
 	if err != nil {
 		return nil, err
 	}
 	return collect(rows, func(r pgx.CollectableRow) (LogInput, error) {
 		var in LogInput
 		var raw []byte
-		err := r.Scan(&in.ID, &in.Node, &in.Profile, &in.ProfileSHA256, &in.SHA256, &in.Bytes, &raw)
+		err := r.Scan(&in.ID, &in.Node, &in.Profile, &in.ProfileSHA256, &in.SHA256, &in.Bytes, &raw, &in.Kind)
 		if err == nil {
 			err = json.Unmarshal(raw, &in.Stats)
 		}
@@ -166,7 +178,7 @@ func (s *Store) LogBounds(ctx context.Context, dataset int64) (EventBounds, erro
 }
 
 func LogInputOf(summary logs.InputSummary, stats logs.Stats) LogInput {
-	return LogInput{ID: summary.ID, Node: summary.Node, Profile: summary.Profile, ProfileSHA256: summary.ProfileSHA256, SHA256: summary.SHA256, Bytes: summary.Bytes, Stats: stats}
+	return LogInput{Kind: inputKind(summary.Kind), ID: summary.ID, Node: summary.Node, Profile: summary.Profile, ProfileSHA256: summary.ProfileSHA256, SHA256: summary.SHA256, Bytes: summary.Bytes, Stats: stats}
 }
 
 func (s *Store) LogEvent(ctx context.Context, dataset int64, input string, line int64) (LogEvent, error) {
@@ -183,4 +195,11 @@ func (s *Store) LogEvent(ctx context.Context, dataset int64, input string, line 
 		}
 		return x, err
 	})
+}
+
+func inputKind(kind string) string {
+	if kind == "" {
+		return "log"
+	}
+	return kind
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0xmhha/wbft-analyzer/internal/source/events"
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
 )
@@ -49,6 +50,9 @@ func Run(ctx context.Context, s *store.Store, m logs.Manifest, progress func(int
 		res.Skipped = true
 		res.Events = d.Progress
 		res.Inputs, err = s.LogInputs(ctx, d.ID)
+		if err == nil {
+			_, err = s.RebuildReplay(ctx, d.ID)
+		}
 		return res, err
 	}
 	diagnostics := []string{}
@@ -76,7 +80,7 @@ func Run(ctx context.Context, s *store.Store, m logs.Manifest, progress func(int
 			}
 			return nil
 		}
-		stats, e := logs.Read(ctx, io.NewSectionReader(f, 0, in.Summary.Bytes), in.Profile, in.Summary.Node, in.Summary.ID, func(ev logs.Event) error {
+		emit := func(ev logs.Event) error {
 			if plan.Includes(ev.Wall) {
 				batch = append(batch, ev)
 				if len(batch) == cap(batch) {
@@ -84,7 +88,13 @@ func Run(ctx context.Context, s *store.Store, m logs.Manifest, progress func(int
 				}
 			}
 			return nil
-		})
+		}
+		var stats logs.Stats
+		if in.Summary.Kind == "events" {
+			stats, e = events.Read(ctx, io.NewSectionReader(f, 0, in.Summary.Bytes), in.Summary.Node, in.Summary.ID, emit)
+		} else {
+			stats, e = logs.Read(ctx, io.NewSectionReader(f, 0, in.Summary.Bytes), in.Profile, in.Summary.Node, in.Summary.ID, emit)
+		}
 		f.Close()
 		if e == nil {
 			e = flush()
@@ -107,6 +117,9 @@ func Run(ctx context.Context, s *store.Store, m logs.Manifest, progress func(int
 	if len(diagnostics) > 0 {
 		detail = strings.Join(diagnostics, "; ")
 		err = errors.New(detail)
+	}
+	if err == nil {
+		_, err = s.RebuildReplay(ctx, d.ID)
 	}
 	return res, err
 }
