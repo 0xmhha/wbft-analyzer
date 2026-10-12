@@ -90,6 +90,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/event-bounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stored run event bounds and count. */
+        get: operations["getEventBounds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cursor-paged metadata-only events; at most 1000 rows in a 24-hour window. */
+        get: operations["listLogEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One event by its immutable input ID and source line. */
+        get: operations["getLogEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Immutable log input hashes, byte counts and normalization diagnostics. */
+        get: operations["listLogInputs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/rounds/distribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-node decision claims and round entries with correlated cause evidence, at most 100000 relevant events. */
+        get: operations["getLogRoundDistribution"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/epochs": {
         parameters: {
             query?: never;
@@ -326,7 +411,7 @@ export interface components {
             epoch: string;
             epoch_check: string;
             epoch_detail: string;
-            /** @description a JSON value as the report wrote it */
+            /** @description a JSON value admitted by the source or report reader */
             epoch_info: unknown;
             hash: string;
             index: string;
@@ -390,6 +475,28 @@ export interface components {
             /** @enum {string} */
             outcome: "added" | "skipped" | "refused" | "invalid";
         };
+        LogEventPage: {
+            events: components["schemas"]["StoreLogEvent"][];
+            next: string | null;
+        };
+        LogInputList: {
+            inputs: components["schemas"]["StoreLogInput"][];
+        };
+        LogsStats: {
+            /** Format: int64 */
+            clock_regressions: number;
+            /** Format: int64 */
+            events: number;
+            first_wall: string;
+            last_wall: string;
+            /** Format: int64 */
+            lines: number;
+            /** Format: int64 */
+            malformed: number;
+            sha256: string;
+            /** Format: int64 */
+            unknown: number;
+        };
         Network: {
             chain_id: string;
             genesis_hash: string;
@@ -427,16 +534,16 @@ export interface components {
             inspector_version: string;
             /** Format: date-time */
             loaded_at: string;
-            /** @description a JSON value as the report wrote it */
+            /** @description a JSON value admitted by the source or report reader */
             network: unknown;
             /** Format: int64 */
             network_id: number | null;
-            /** @description a JSON value as the report wrote it */
+            /** @description a JSON value admitted by the source or report reader */
             range: unknown;
             run_id: string;
             spec_commit: string;
             started_at: string;
-            /** @description a JSON value as the report wrote it */
+            /** @description a JSON value admitted by the source or report reader */
             summary: unknown;
         };
         ReportList: {
@@ -454,7 +561,7 @@ export interface components {
             number?: string;
         };
         Result: {
-            /** @description a JSON value as the report wrote it */
+            /** @description a JSON value admitted by the source or report reader */
             coverage: unknown;
             node: string;
             requirement: string;
@@ -463,12 +570,44 @@ export interface components {
         ResultList: {
             results: components["schemas"]["Result"][];
         };
+        RoundsBin: {
+            /** Format: int64 */
+            count: number;
+            node: string;
+            profile: string;
+            round: string;
+        };
+        RoundsSummary: {
+            decisions: components["schemas"]["RoundsBin"][];
+            entries: components["schemas"]["RoundsBin"][];
+            transitions: components["schemas"]["RoundsTransition"][];
+            /** Format: int64 */
+            transitions_omitted: number;
+            /** Format: int64 */
+            unknown_decisions: number;
+        };
+        RoundsTransition: {
+            cause: string;
+            cause_input: string;
+            /** Format: int64 */
+            cause_line: number;
+            confidence: string;
+            height: string;
+            input: string;
+            /** Format: int64 */
+            line: number;
+            node: string;
+            profile: string;
+            proposer: string;
+            round: string;
+            t_wall: string;
+        };
         StoreDataset: {
             error: string;
             /** Format: int64 */
             id: number;
             kind: string;
-            /** @description a JSON value as the report wrote it */
+            /** @description a JSON value admitted by the source or report reader */
             metadata: unknown;
             name: string;
             /** Format: int64 */
@@ -487,7 +626,7 @@ export interface components {
             check: string;
             detail: string;
             index: string;
-            /** @description a JSON value as the report wrote it */
+            /** @description a JSON value admitted by the source or report reader */
             info: unknown;
             removed: string[];
         };
@@ -499,6 +638,14 @@ export interface components {
             index: number;
             /** Format: int64 */
             validator_order: number | null;
+        };
+        StoreEventBounds: {
+            /** Format: int64 */
+            count: number;
+            /** Format: date-time */
+            from_t: string | null;
+            /** Format: date-time */
+            to_t: string | null;
         };
         StoreHeaderBounds: {
             /** Format: int64 */
@@ -517,6 +664,32 @@ export interface components {
             /** Format: int64 */
             unknown_round: number;
             validators: components["schemas"]["StoreValidatorSummary"][];
+        };
+        StoreLogEvent: {
+            /** @description a JSON value admitted by the source or report reader */
+            fields: unknown;
+            height: string;
+            input: string;
+            kind: string;
+            level: string;
+            /** Format: int64 */
+            line: number;
+            node: string;
+            profile: string;
+            round: string;
+            run: string;
+            t_wall: string;
+            view_inferred: boolean;
+        };
+        StoreLogInput: {
+            /** Format: int64 */
+            bytes: number;
+            id: string;
+            node: string;
+            profile: string;
+            profile_sha256: string;
+            sha256: string;
+            stats: components["schemas"]["LogsStats"];
         };
         StoreRoundCount: {
             /** Format: int64 */
@@ -790,6 +963,249 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEventBounds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreEventBounds"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listLogEvents: {
+        parameters: {
+            query: {
+                /** @description inclusive RFC3339 window start */
+                from_t: string;
+                /** @description inclusive RFC3339 window end */
+                to_t: string;
+                /** @description one node label */
+                node?: string;
+                /** @description WBFT event kind */
+                kind?: string;
+                /** @description WBFT PRE-PREPARE, PREPARE, COMMIT or ROUND-CHANGE */
+                phase?: string;
+                /** @description full decimal height, up to 156 decimal digits */
+                height?: string;
+                /** @description full decimal round, up to 156 decimal digits */
+                round?: string;
+                /** @description page size 1..1000, default 500 */
+                limit?: number;
+                /** @description opaque next cursor bound to dataset and filters */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogEventPage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getLogEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description log input ID */
+                input: string;
+                /** @description positive source line */
+                line: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreLogEvent"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listLogInputs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogInputList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getLogRoundDistribution: {
+        parameters: {
+            query: {
+                /** @description inclusive RFC3339 window start */
+                from_t: string;
+                /** @description inclusive RFC3339 window end */
+                to_t: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoundsSummary"];
                 };
             };
             /** @description the request failed */

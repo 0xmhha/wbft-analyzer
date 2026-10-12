@@ -35,7 +35,7 @@ func scanDataset(r pgx.CollectableRow) (Dataset, error) {
 	return d, err
 }
 
-const datasetColumns = `id,network_id,name,kind,status,progress,error,metadata,updated_at,coalesce((SELECT array_agg(DISTINCT hc.node ORDER BY hc.node) FROM header_copies hc WHERE hc.dataset_id=datasets.id), ARRAY[]::text[])`
+const datasetColumns = `id,network_id,name,kind,status,progress,error,metadata,updated_at,coalesce((SELECT array_agg(DISTINCT hc.node ORDER BY hc.node) FROM (SELECT node FROM header_copies WHERE dataset_id=datasets.id UNION SELECT node FROM log_inputs WHERE dataset_id=datasets.id) hc), ARRAY[]::text[])`
 
 func (s *Store) Datasets(ctx context.Context, networkID int64) ([]Dataset, error) {
 	r, err := s.pool.Query(ctx, `SELECT `+datasetColumns+` FROM datasets WHERE network_id=$1 ORDER BY id`, networkID)
@@ -48,12 +48,20 @@ func (s *Store) Datasets(ctx context.Context, networkID int64) ([]Dataset, error
 // BeginRange protects the dataset with a session advisory lock. A stale
 // importing state can resume only when its old connection no longer holds it.
 func (s *Store) BeginRange(ctx context.Context, k NetworkKey, name string, metadata json.RawMessage) (Dataset, func(), error) {
+	return s.beginDataset(ctx, k, name, "range", metadata)
+}
+
+func (s *Store) BeginRun(ctx context.Context, k NetworkKey, name string, metadata json.RawMessage) (Dataset, func(), error) {
+	return s.beginDataset(ctx, k, name, "run", metadata)
+}
+
+func (s *Store) beginDataset(ctx context.Context, k NetworkKey, name, kind string, metadata json.RawMessage) (Dataset, func(), error) {
 	var nid, id int64
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		if err := tx.QueryRow(ctx, `INSERT INTO networks(chain_id,genesis_hash,name,visibility) VALUES($1,$2,$3,'public') ON CONFLICT(chain_id,genesis_hash) DO UPDATE SET chain_id=EXCLUDED.chain_id RETURNING id`, k.ChainID, k.GenesisHash, k.Name).Scan(&nid); err != nil {
 			return err
 		}
-		return tx.QueryRow(ctx, `INSERT INTO datasets(network_id,name,kind,visibility,metadata) VALUES($1,$2,'range','public',$3) ON CONFLICT(name) DO UPDATE SET name=EXCLUDED.name RETURNING id`, nid, name, metadata).Scan(&id)
+		return tx.QueryRow(ctx, `INSERT INTO datasets(network_id,name,kind,visibility,metadata) VALUES($1,$2,$3,'public',$4) ON CONFLICT(name) DO UPDATE SET name=EXCLUDED.name RETURNING id`, nid, name, kind, metadata).Scan(&id)
 	})
 	if err != nil {
 		return Dataset{}, nil, err
@@ -96,9 +104,9 @@ func (s *Store) BeginRange(ctx context.Context, k NetworkKey, name string, metad
 	_ = json.Unmarshal(metadata, &b)
 	aa, _ := json.Marshal(a)
 	bb, _ := json.Marshal(b)
-	if d.NetworkID != nid || d.Kind != "range" || !bytes.Equal(aa, bb) {
+	if d.NetworkID != nid || d.Kind != kind || !bytes.Equal(aa, bb) {
 		release()
-		return d, nil, errors.New("dataset name already has a different network, range or configuration")
+		return d, nil, errors.New("dataset name already has a different network, kind or input configuration")
 	}
 	if _, err = conn.Exec(ctx, `UPDATE datasets SET status='importing',error='',updated_at=now() WHERE id=$1`, id); err != nil {
 		release()

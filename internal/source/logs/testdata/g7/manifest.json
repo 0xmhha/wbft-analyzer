@@ -1,0 +1,62 @@
+{
+  "format": "wbft-analyzer-run/1",
+  "name": "g7-excerpt",
+  "run": "g7-proposer-stops",
+  "network": {
+    "chain_id": "8283",
+    "genesis_hash": "0xe4dbf0369f658041a30759c9341973c7239e0467fdeecd1c21790e15c32c086f",
+    "name": "local-g7"
+  },
+  "clock": "shared-host",
+  "inputs": [
+    {
+      "id": "log-1",
+      "node": "node1",
+      "path": "node1.jsonl",
+      "profile": "gstable@740526d03",
+      "sha256": "8d1040133fb074bb22ca2e55e841df078e6bd8a010297c40f10e1345bbb06413"
+    },
+    {
+      "id": "log-2",
+      "node": "node2",
+      "path": "node2.jsonl",
+      "profile": "gstable@740526d03",
+      "sha256": "eba0bcf1f9a24a684ee9b605fe2a0a773cfd2c0cddf059cfa0461b1e92c25c1a"
+    },
+    {
+      "id": "log-3",
+      "node": "node3",
+      "path": "node3.jsonl",
+      "profile": "gstable@740526d03",
+      "sha256": "5614f6cc28e6c92d1dc23ab2a1f653d75691eeaa15f46644e14c2ce909c73560"
+    },
+    {
+      "id": "log-4",
+      "node": "node4",
+      "path": "node4.jsonl",
+      "profile": "gstable@740526d03",
+      "sha256": "19d9419ac69f954f4f851fe001f50efaa31d64eb050d3753ccab1e72ed2d7982"
+    },
+    {
+      "id": "log-5",
+      "node": "node5",
+      "path": "node5.jsonl",
+      "profile": "gstable@740526d03",
+      "sha256": "ad9ccc43fdf2fb7f1eaf10eb0d8ab9118c63ac810dd31e408448041f4da25adb"
+    },
+    {
+      "id": "log-6",
+      "node": "node6",
+      "path": "node6.jsonl",
+      "profile": "gstable@740526d03",
+      "sha256": "a93a36948066ef256d485c7e8948810e169cb5f14402ba6ecf094df2a842f9c9"
+    },
+    {
+      "id": "log-7",
+      "node": "node7",
+      "path": "node7.jsonl",
+      "profile": "gstable@740526d03",
+      "sha256": "b3bab2f305fd47d12a1124871fefe48b03c7e026965e8bc7129998326ed46e29"
+    }
+  ]
+}

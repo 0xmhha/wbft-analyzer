@@ -237,7 +237,7 @@
             "type": "string"
           },
           "epoch_info": {
-            "description": "a JSON value as the report wrote it"
+            "description": "a JSON value admitted by the source or report reader"
           },
           "hash": {
             "type": "string"
@@ -527,6 +527,88 @@
         ],
         "type": "object"
       },
+      "LogEventPage": {
+        "additionalProperties": false,
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/StoreLogEvent"
+            },
+            "type": "array"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "events",
+          "next"
+        ],
+        "type": "object"
+      },
+      "LogInputList": {
+        "additionalProperties": false,
+        "properties": {
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/StoreLogInput"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "inputs"
+        ],
+        "type": "object"
+      },
+      "LogsStats": {
+        "additionalProperties": false,
+        "properties": {
+          "clock_regressions": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "events": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "first_wall": {
+            "type": "string"
+          },
+          "last_wall": {
+            "type": "string"
+          },
+          "lines": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "malformed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "unknown": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clock_regressions",
+          "events",
+          "first_wall",
+          "last_wall",
+          "lines",
+          "malformed",
+          "sha256",
+          "unknown"
+        ],
+        "type": "object"
+      },
       "Network": {
         "additionalProperties": false,
         "properties": {
@@ -672,7 +754,7 @@
             "type": "string"
           },
           "network": {
-            "description": "a JSON value as the report wrote it"
+            "description": "a JSON value admitted by the source or report reader"
           },
           "network_id": {
             "format": "int64",
@@ -682,7 +764,7 @@
             ]
           },
           "range": {
-            "description": "a JSON value as the report wrote it"
+            "description": "a JSON value admitted by the source or report reader"
           },
           "run_id": {
             "type": "string"
@@ -694,7 +776,7 @@
             "type": "string"
           },
           "summary": {
-            "description": "a JSON value as the report wrote it"
+            "description": "a JSON value admitted by the source or report reader"
           }
         },
         "required": [
@@ -767,7 +849,7 @@
         "additionalProperties": false,
         "properties": {
           "coverage": {
-            "description": "a JSON value as the report wrote it"
+            "description": "a JSON value admitted by the source or report reader"
           },
           "node": {
             "type": "string"
@@ -802,6 +884,128 @@
         ],
         "type": "object"
       },
+      "RoundsBin": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "node",
+          "profile",
+          "round"
+        ],
+        "type": "object"
+      },
+      "RoundsSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/RoundsBin"
+            },
+            "type": "array"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/RoundsBin"
+            },
+            "type": "array"
+          },
+          "transitions": {
+            "items": {
+              "$ref": "#/components/schemas/RoundsTransition"
+            },
+            "type": "array"
+          },
+          "transitions_omitted": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unknown_decisions": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "decisions",
+          "entries",
+          "transitions",
+          "transitions_omitted",
+          "unknown_decisions"
+        ],
+        "type": "object"
+      },
+      "RoundsTransition": {
+        "additionalProperties": false,
+        "properties": {
+          "cause": {
+            "type": "string"
+          },
+          "cause_input": {
+            "type": "string"
+          },
+          "cause_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "confidence": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "proposer": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "t_wall": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cause",
+          "cause_input",
+          "cause_line",
+          "confidence",
+          "height",
+          "input",
+          "line",
+          "node",
+          "profile",
+          "proposer",
+          "round",
+          "t_wall"
+        ],
+        "type": "object"
+      },
       "StoreDataset": {
         "additionalProperties": false,
         "properties": {
@@ -816,7 +1020,7 @@
             "type": "string"
           },
           "metadata": {
-            "description": "a JSON value as the report wrote it"
+            "description": "a JSON value admitted by the source or report reader"
           },
           "name": {
             "type": "string"
@@ -885,7 +1089,7 @@
             "type": "string"
           },
           "info": {
-            "description": "a JSON value as the report wrote it"
+            "description": "a JSON value admitted by the source or report reader"
           },
           "removed": {
             "items": {
@@ -939,6 +1143,35 @@
           "diligence",
           "index",
           "validator_order"
+        ],
+        "type": "object"
+      },
+      "StoreEventBounds": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from_t": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_t": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "count",
+          "from_t",
+          "to_t"
         ],
         "type": "object"
       },
@@ -1008,6 +1241,100 @@
           "rounds",
           "unknown_round",
           "validators"
+        ],
+        "type": "object"
+      },
+      "StoreLogEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "description": "a JSON value admitted by the source or report reader"
+          },
+          "height": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "t_wall": {
+            "type": "string"
+          },
+          "view_inferred": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fields",
+          "height",
+          "input",
+          "kind",
+          "level",
+          "line",
+          "node",
+          "profile",
+          "round",
+          "run",
+          "t_wall",
+          "view_inferred"
+        ],
+        "type": "object"
+      },
+      "StoreLogInput": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "profile_sha256": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/LogsStats"
+          }
+        },
+        "required": [
+          "bytes",
+          "id",
+          "node",
+          "profile",
+          "profile_sha256",
+          "sha256",
+          "stats"
         ],
         "type": "object"
       },
@@ -1446,6 +1773,428 @@
           }
         },
         "summary": "Datasets and their import status, progress and errors."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/event-bounds": {
+      "get": {
+        "operationId": "getEventBounds",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreEventBounds"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Stored run event bounds and count."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/events": {
+      "get": {
+        "operationId": "listLogEvents",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "inclusive RFC3339 window start",
+            "in": "query",
+            "name": "from_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "inclusive RFC3339 window end",
+            "in": "query",
+            "name": "to_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "one node label",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "WBFT event kind",
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "WBFT PRE-PREPARE, PREPARE, COMMIT or ROUND-CHANGE",
+            "in": "query",
+            "name": "phase",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "full decimal height, up to 156 decimal digits",
+            "in": "query",
+            "name": "height",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "full decimal round, up to 156 decimal digits",
+            "in": "query",
+            "name": "round",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "page size 1..1000, default 500",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "opaque next cursor bound to dataset and filters",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogEventPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Cursor-paged metadata-only events; at most 1000 rows in a 24-hour window."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}": {
+      "get": {
+        "operationId": "getLogEvent",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "log input ID",
+            "in": "path",
+            "name": "input",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "positive source line",
+            "in": "path",
+            "name": "line",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreLogEvent"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "One event by its immutable input ID and source line."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/inputs": {
+      "get": {
+        "operationId": "listLogInputs",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogInputList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Immutable log input hashes, byte counts and normalization diagnostics."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/rounds/distribution": {
+      "get": {
+        "operationId": "getLogRoundDistribution",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "inclusive RFC3339 window start",
+            "in": "query",
+            "name": "from_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "inclusive RFC3339 window end",
+            "in": "query",
+            "name": "to_t",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoundsSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Per-node decision claims and round entries with correlated cause evidence, at most 100000 relevant events."
       }
     },
     "/v1/networks/{net}/epochs": {
