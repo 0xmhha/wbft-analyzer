@@ -44,6 +44,62 @@ jobs:
       - run: go vet ./...
       - run: go test -race ./...
 
+  dump:
+    # Roadmap A0: a loaded database is kept as a pg_dump artifact, and the
+    # dump restored on another server answers the API the same.
+    name: dump and restore
+    runs-on: ubuntu-latest
+    services:
+      source:
+        image: postgres:16
+        env:
+          POSTGRES_USER: analyzer
+          POSTGRES_PASSWORD: analyzer
+          POSTGRES_DB: analyzer
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U analyzer"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+      target:
+        image: postgres:16
+        env:
+          POSTGRES_USER: analyzer
+          POSTGRES_PASSWORD: analyzer
+          POSTGRES_DB: analyzer
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U analyzer"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: go.sum
+      - name: PostgreSQL client 16
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -yq postgresql-client-16
+          echo /usr/lib/postgresql/16/bin >> "$GITHUB_PATH"
+      - run: pg_dump --version
+      - run: >-
+          scripts/dump-check.sh
+          'postgres://analyzer:analyzer@localhost:5432/analyzer?sslmode=disable'
+          'postgres://analyzer:analyzer@localhost:5433/analyzer?sslmode=disable'
+          dump-check
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analyzer-dump
+          path: dump-check/
+          if-no-files-found: ignore
+
   lint:
     name: lint
     runs-on: ubuntu-latest

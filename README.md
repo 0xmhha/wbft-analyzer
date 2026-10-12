@@ -52,6 +52,13 @@ docker compose -f deploy/postgres/compose.yaml up -d
 WBFT_ANALYZER_TEST_DSN='postgres://analyzer:analyzer@127.0.0.1:5433/analyzer?sslmode=disable' go test ./...
 ```
 
+`scripts/dump-check.sh SOURCE_DSN TARGET_DSN OUT_DIR` loads a set of
+reports, saves the database with `pg_dump`, restores the dump into another
+database and checks that the API answers the same from both; CI runs it
+on two PostgreSQL servers and keeps the dump as the `analyzer-dump`
+artifact. A dump restores with
+`pg_restore --no-owner --dbname=DSN analyzer.dump` and opens with `serve`.
+
 ## Build and test
 
 ```
