@@ -17,12 +17,11 @@ to a static web front end.
 
 ## Status
 
-The analyzer is built in stages; this repository is at the start of the
-first one (A0):
+The analyzer is built in stages; the A0 foundation is complete:
 
 | Stage | Content | State |
 |---|---|---|
-| A0 | command skeleton, inspector report loader with the public-build checks, PostgreSQL store, observation trends and alerts, API and front-end skeleton | started |
+| A0 | command skeleton, inspector report loader with the public-build checks, PostgreSQL store, observation trends and alerts, API and front-end skeleton | complete |
 | A1 | header analysis: participation, proposers, epochs | not started |
 | A2 | node logs and chainbench runs | not started |
 | A3 | wbft event streams and mixed networks | not started |
@@ -96,6 +95,37 @@ go test ./...
 ```
 
 Go 1.26.8 or later.
+
+
+## Required analysis features
+
+The WBFT analyzer must support equivalents of the analysis workflows in
+[CometBFT Analyzer Backend](https://github.com/bft-labs/cometbft-analyzer-backend),
+[CometBFT Analyzer Frontend](https://github.com/bft-labs/cometbft-analyzer-frontend)
+and [CometBFT Analyzer Types](https://github.com/bft-labs/cometbft-analyzer-types).
+The reviewed revisions are `60afbea`, `9b83021` and `a7cfae9`, respectively.
+These features are required for A2/A3 completion; they are not implemented
+by the A0 report views.
+
+| Reference workflow | WBFT equivalent | Stage |
+|---|---|---|
+| Project/simulation management, uploads and processing status | Networks and run datasets, input selection, ingestion status/errors/retry, repeatable imports | A2 |
+| Consensus trace, event table and event details | Node swimlanes by height/round, zoom/pan, node/phase/message filters, cursor pages, linked event details and source evidence | A2/A3 |
+| Event and message types | WBFT PRE-PREPARE, PREPARE, COMMIT and ROUND-CHANGE; local/direct/relay paths; full height/round values; generated API types | A2/A3 |
+| Pairwise, time-series and end-to-end latency | Directed node pairs by message type and height/round; round entry, proposal acceptance, quorum, decision and import intervals | A2/A3 |
+| Vote latency statistics and slow samples | p50/p90/p95/p99 with sample counts, threshold filters, paginated samples and evidence links | A3 |
+| Network distributions, node statistics and rankings | Histograms, standard deviation, sends/receives/unmatched counts and bottleneck candidates | A3 |
+| Latency heatmaps, distributions, pair details and charts | Directed heatmaps, distributions, rankings, pair/node details and time series sharing the same filters | A3 |
+
+WBFT participation comes from header seals and consensus events. The
+CometBFT prevote/precommit phases are not WBFT message types. Local intervals
+use monotonic time; cross-node measurements carry the clock model and
+matching strength. Link, node and key matches remain distinguishable.
+Unknown clocks, skew, journal gaps, negative samples and missing inputs
+must be visible; missing observations do not imply zero latency or failed
+delivery. An overall percentile is computed from samples, not by averaging
+pair percentiles. API, stored data, views and evidence links must be checked
+against real runs before these workflows are marked complete.
 
 ## Public scope
 
