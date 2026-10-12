@@ -100,6 +100,38 @@ jobs:
           path: dump-check/
           if-no-files-found: ignore
 
+  web:
+    # The front end: its API types are those of api/openapi.json, it
+    # type-checks, its tests pass, and it builds into the binary.
+    name: web front end
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: go.sum
+      - run: npm ci
+      - name: API types match api/openapi.json
+        run: |
+          npm run gen
+          git diff --exit-code -- src/api/schema.d.ts
+      - run: npm test
+      - run: npm run build
+      - name: The binary embeds the build
+        working-directory: .
+        run: go test -count=1 ./internal/web/
+        env:
+          WBFT_ANALYZER_WEB_BUILT: "1"
+
   lint:
     name: lint
     runs-on: ubuntu-latest

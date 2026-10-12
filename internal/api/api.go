@@ -38,6 +38,9 @@ type Server struct {
 	MaxBody int64
 	// Log receives the errors not shown to clients; nil is slog.Default.
 	Log *slog.Logger
+	// Web serves the front end's files at every path outside /v1/; nil
+	// answers 404 there.
+	Web http.Handler
 }
 
 func (s *Server) maxBody() int64 {
@@ -54,9 +57,21 @@ func (s *Server) log() *slog.Logger {
 	return slog.Default()
 }
 
-// Handler returns the API handler: the routes of the route table
-// (routes.go), behind the request checks (guard.go).
+// Handler returns the server's handler: the API under /v1/ (the routes of
+// the route table, routes.go) and the front end elsewhere, each behind
+// its request checks (guard.go).
 func (s *Server) Handler() http.Handler {
+	root := http.NewServeMux()
+	root.Handle("/v1/", s.guard(s.api(), false))
+	web := s.Web
+	if web == nil {
+		web = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { writeError(w, http.StatusNotFound, "no such resource") })
+	}
+	root.Handle("/", s.guard(web, true))
+	return root
+}
+
+func (s *Server) api() http.Handler {
 	m := http.NewServeMux()
 	for _, rt := range routes {
 		h := rt.handle
@@ -64,7 +79,7 @@ func (s *Server) Handler() http.Handler {
 	}
 	m.HandleFunc("GET "+openAPIPath, s.openAPI)
 	m.HandleFunc("/v1/", func(w http.ResponseWriter, _ *http.Request) { writeError(w, http.StatusNotFound, "no such resource") })
-	return s.guard(m)
+	return m
 }
 
 // Network is a network: chain ID and genesis hash identify it.

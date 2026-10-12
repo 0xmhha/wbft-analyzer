@@ -1,0 +1,65 @@
+/* Data ink first (replay.md 6): faint grids, no shadows or gradients;
+   colour always comes with a shape. */
+:root {
+  --fg: #1d1d1f;
+  --muted: #6e6e73;
+  --line: #e5e5ea;
+  --pass: #2e7d32;
+  --fail: #c62828;
+  --unknown: #8e8e93;
+  --notrun: #8e8e93;
+  --firing: #c62828;
+  --resolved: #2e7d32;
+  font: 14px/1.45 system-ui, sans-serif;
+  color: var(--fg);
+}
+
+body { margin: 0 24px 48px; }
+header { display: flex; gap: 24px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.brand { font-weight: 600; color: var(--fg); text-decoration: none; }
+nav a.here { font-weight: 600; text-decoration: none; color: var(--fg); }
+h1 { font-size: 18px; font-weight: 600; margin: 20px 0 12px; }
+table { border-collapse: collapse; }
+th, td { padding: 3px 10px 3px 0; text-align: left; vertical-align: middle; }
+th { font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line); }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: ui-monospace, monospace; font-size: 12px; }
+.muted { color: var(--muted); }
+.error { color: var(--fail); }
+.scroll { overflow-x: auto; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); }
+.labelled { display: inline-flex; gap: 4px; align-items: center; }
+
+.matrix th.col { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 11px; padding: 4px 2px; }
+.matrix td.cell { padding: 1px 3px; }
+
+.glyph { display: inline-block; vertical-align: middle; }
+.glyph circle, .glyph rect { stroke: none; }
+.glyph .ring { fill: none; stroke-width: 1.5; }
+.glyph .stroke { stroke-width: 2; fill: none; }
+.glyph .hatch { fill: none; stroke-width: 1; }
+.v-pass circle { fill: var(--pass); }
+.v-fail .stroke { stroke: var(--fail); }
+.v-notrun .ring { stroke: var(--notrun); }
+.v-unknown .hatch, .a-pending .hatch { stroke: var(--unknown); }
+.v-absent .hatch { stroke: var(--line); }
+.a-firing .stroke { stroke: var(--firing); }
+.a-resolved circle { fill: var(--resolved); }
+
+/* Hatching: a CSS pattern on the rect, no inline SVG defs needed. */
+.glyph.v-unknown, .glyph.v-absent, .glyph.a-pending {
+  background-image: repeating-linear-gradient(45deg, var(--unknown) 0 1px, transparent 1px 3px);
+}
+.glyph.v-absent { background-image: repeating-linear-gradient(45deg, var(--line) 0 1px, transparent 1px 3px); }
+
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .tick, .chart .axis { fill: var(--muted); font-size: 11px; }
+.chart .series { fill: none; stroke: var(--fg); stroke-width: 1.5; }
+.chart .dot { fill: var(--fg); }
+.chart .threshold { stroke: var(--firing); stroke-dasharray: 4 3; }
+.chart .direct { fill: var(--firing); font-size: 11px; }
+.rules { list-style: none; padding: 0; }
+.rules li { margin: 4px 0; }
+.token { margin: 12px 0; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.chart { display: block; margin: 8px 0; }
+label { display: block; margin: 8px 0; }
