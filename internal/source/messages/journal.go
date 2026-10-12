@@ -83,7 +83,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 		if rec.JSeq == 0 || rec.JSeq <= last {
 			return s, errors.New("journal sequence duplicate or regression")
 		}
-		if last == 0 && (rec.JSeq != 1 || pos.Segment != 0) {
+		if last == 0 && rec.JSeq != 1 {
 			s.PartialRuns++
 		}
 		if last != 0 && rec.JSeq-last > 1 {

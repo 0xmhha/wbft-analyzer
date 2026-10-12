@@ -254,3 +254,56 @@ func TestArtifactBoundsAndCancellation(t *testing.T) {
 		t.Fatal("trailing JSON accepted")
 	}
 }
+
+func TestRestartStartsAtSeqOneRegardlessOfSegmentNumber(t *testing.T) {
+	dir := t.TempDir()
+	a := types.Address{}
+	a[19] = 1
+	for _, run := range []string{"run-1", "run-2"} {
+		w, e := journal.Open(journal.Options{Dir: dir, Synchronous: true}, journal.Identity{Self: a, Run: run, ChainID: big.NewInt(7)})
+		if e != nil {
+			t.Fatal(e)
+		}
+		w.Put(journal.Record{Body: &journal.MsgRec{Dir: "in", Code: 0x13, Payload: []byte{0xc0}}})
+		if e = w.Close(); e != nil {
+			t.Fatal(e)
+		}
+	}
+	in := Input{ID: "restart", Kind: "journal", Node: self, Path: dir}
+	sum, e := Fingerprint(context.Background(), in)
+	if e != nil {
+		t.Fatal(e)
+	}
+	s, e := Read(context.Background(), Prepared{in, sum}, "7", genesis, func(Record) error { return nil })
+	if e != nil || s.PartialRuns != 0 || s.Frames != 2 {
+		t.Fatal(s, e)
+	}
+}
+func TestRetainedPartialRunUsesJournalSequence(t *testing.T) {
+	dir := t.TempDir()
+	a := types.Address{}
+	a[19] = 1
+	w, e := journal.Open(journal.Options{Dir: dir, SegmentBytes: 500, Synchronous: true}, journal.Identity{Self: a, Run: "run", ChainID: big.NewInt(7)})
+	if e != nil {
+		t.Fatal(e)
+	}
+	for i := 0; i < 100; i++ {
+		w.Put(journal.Record{Body: &journal.MsgRec{Dir: "in", Code: 0x13, Payload: []byte{0xc0}}})
+	}
+	if e = w.Close(); e != nil {
+		t.Fatal(e)
+	}
+	if e = os.Remove(filepath.Join(dir, "00000000000000000000.wal")); e != nil {
+		t.Fatal(e)
+	}
+	_ = os.Remove(filepath.Join(dir, "00000000000000000000.wal.idx"))
+	in := Input{ID: "partial", Kind: "journal", Node: self, Path: dir}
+	sum, e := Fingerprint(context.Background(), in)
+	if e != nil {
+		t.Fatal(e)
+	}
+	s, e := Read(context.Background(), Prepared{in, sum}, "7", genesis, func(Record) error { return nil })
+	if e != nil || s.PartialRuns != 1 || s.Frames >= 100 {
+		t.Fatal(s, e)
+	}
+}
