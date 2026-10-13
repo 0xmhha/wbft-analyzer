@@ -4990,6 +4990,38 @@
         ],
         "type": "object"
       },
+      "StoreReexecEventEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "event_dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/StoreLogEvent"
+            },
+            "type": "array"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "source_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_dataset_id",
+          "events",
+          "source_ordinal",
+          "status"
+        ],
+        "type": "object"
+      },
       "StoreReexecJob": {
         "additionalProperties": false,
         "properties": {
@@ -8544,6 +8576,96 @@
           }
         },
         "summary": "Version identity, source completeness and output comparison; no payloads or filesystem paths."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}/events": {
+      "get": {
+        "operationId": "getReexecEvents",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "closed replay run ID belonging to this dataset",
+            "in": "path",
+            "name": "reexec",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "positive original source ordinal",
+            "in": "query",
+            "name": "ordinal",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "completed event dataset on the same network",
+            "in": "query",
+            "name": "event_dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreReexecEventEvidence"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Fresh source-bound event evidence for one replay step; at most 1000 explicit events, no inferred engine identity."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}/steps": {

@@ -835,3 +835,17 @@ reproduction. Full closed replay
 acceptance still requires the complete simulation/restart bundle,
 cross-architecture comparisons and the remaining received-message mutation
 criteria. Visual event playback is separate from core execution.
+
+
+### Recorded event evidence for a replay step
+
+Select a journal source in the core replay screen and choose its original
+completed event dataset. The read-only `/reexec/{reexec}/events` endpoint takes
+`ordinal` and `event_dataset`. It checks the retained input fingerprint, original
+journal coordinates, message outcome and clock association, and explicit writer,
+engine and step identity in one database snapshot. A copied competing event
+input, unavailable source, incomplete association or absent engine identity
+remains unavailable. At most 1000 original events are returned; excess sources
+are refused rather than truncated. Each link opens the exact original event and
+its visual playback position. Event association does not change stored replay
+classifications or establish core reproduction.

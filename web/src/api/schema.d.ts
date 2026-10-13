@@ -567,6 +567,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fresh source-bound event evidence for one replay step; at most 1000 explicit events, no inferred engine identity. */
+        get: operations["getReexecEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}/steps": {
         parameters: {
             query?: never;
@@ -2132,6 +2149,15 @@ export interface components {
             snapshot: string;
             to_t: string | null;
             version: string;
+        };
+        StoreReexecEventEvidence: {
+            /** Format: int64 */
+            event_dataset_id: number;
+            events: components["schemas"]["StoreLogEvent"][];
+            reason?: string;
+            /** Format: int64 */
+            source_ordinal: number;
+            status: string;
         };
         StoreReexecJob: {
             answer_scope: string;
@@ -3981,6 +4007,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreReexecRun"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getReexecEvents: {
+        parameters: {
+            query: {
+                /** @description positive original source ordinal */
+                ordinal: number;
+                /** @description completed event dataset on the same network */
+                event_dataset: number;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description closed replay run ID belonging to this dataset */
+                reexec: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreReexecEventEvidence"];
                 };
             };
             /** @description the request failed */
