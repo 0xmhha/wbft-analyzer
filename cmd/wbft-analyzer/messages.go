@@ -20,6 +20,7 @@ func runMessages(args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	dsn := fs.String("db", os.Getenv("WBFT_ANALYZER_DB"), "PostgreSQL DSN")
 	path := fs.String("manifest", "", "wbft-analyzer-messages/1 manifest")
+	inputs := fs.String("inputs-dir", "", "private SHA256 file storage for replay inputs (optional)")
 	if fs.Parse(args) != nil || *dsn == "" || *path == "" || fs.NArg() != 0 {
 		fs.Usage()
 		return exitUsage
@@ -41,7 +42,7 @@ func runMessages(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, e)
 		return exitInternal
 	}
-	res, e := ingest.Messages(ctx, s, m)
+	res, e := ingest.MessagesWithInputs(ctx, s, m, *inputs)
 	if je := json.NewEncoder(stdout).Encode(res); je != nil {
 		fmt.Fprintln(stderr, je)
 		return exitInternal

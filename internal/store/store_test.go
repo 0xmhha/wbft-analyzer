@@ -67,10 +67,10 @@ func TestMigrate(t *testing.T) {
 	s, _ := testStore(t)
 	ctx := context.Background()
 	v, err := s.Migrate(ctx)
-	if err != nil || v != 15 {
+	if err != nil || v != 16 {
 		t.Fatalf("migrate: version %d, %v", v, err)
 	}
-	if v, err := s.Migrate(ctx); err != nil || v != 15 {
+	if v, err := s.Migrate(ctx); err != nil || v != 16 {
 		t.Fatalf("migrate again: version %d, %v", v, err)
 	}
 }
