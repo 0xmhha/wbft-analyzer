@@ -1472,6 +1472,91 @@
         ],
         "type": "object"
       },
+      "MessagesLegacyAssociationProof": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "anchors": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesLegacyHeadAnchor"
+            },
+            "type": "array"
+          },
+          "from_t": {
+            "type": "string"
+          },
+          "head_anchors": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input": {
+            "type": "string"
+          },
+          "native_input": {
+            "type": "string"
+          },
+          "native_sha256": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "records": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "to_t": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "anchors",
+          "from_t",
+          "head_anchors",
+          "input",
+          "native_input",
+          "native_sha256",
+          "node",
+          "records",
+          "sha256",
+          "status",
+          "to_t"
+        ],
+        "type": "object"
+      },
+      "MessagesLegacyHeadAnchor": {
+        "additionalProperties": false,
+        "properties": {
+          "hash": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "legacy": {
+            "$ref": "#/components/schemas/MessagesSource"
+          },
+          "native": {
+            "$ref": "#/components/schemas/MessagesSource"
+          }
+        },
+        "required": [
+          "hash",
+          "height",
+          "legacy",
+          "native"
+        ],
+        "type": "object"
+      },
       "MessagesPair": {
         "additionalProperties": false,
         "properties": {
@@ -1865,6 +1950,9 @@
       "MessagesSource": {
         "additionalProperties": false,
         "properties": {
+          "association": {
+            "type": "string"
+          },
           "clock_source": {
             "type": "string"
           },
@@ -5037,6 +5125,12 @@
           "issues": {
             "format": "int64",
             "type": "integer"
+          },
+          "legacy_associations": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesLegacyAssociationProof"
+            },
+            "type": "array"
           },
           "pairs": {
             "format": "int64",

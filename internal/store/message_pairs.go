@@ -19,18 +19,19 @@ var ErrPairWindow = errors.New("message pair window exceeds 100000 rows; narrow 
 var ErrPairSource = errors.New("message pairing exceeds one million source records or projected endpoints")
 
 type PairIndex struct {
-	Snapshot     string                    `json:"snapshot"`
-	EventDataset int64                     `json:"event_dataset,omitempty"`
-	Association  *derived.AssociationProof `json:"association,omitempty"`
-	Version      string                    `json:"version"`
-	Records      int64                     `json:"records"`
-	Pairs        int64                     `json:"pairs"`
-	Issues       int64                     `json:"issues"`
-	Status       string                    `json:"dataset_status"`
-	Diagnostics  map[string]int64          `json:"diagnostics"`
-	From         *string                   `json:"from_t"`
-	To           *string                   `json:"to_t"`
-	Coverage     []PairCoverage            `json:"coverage"`
+	LegacyAssociations []derived.LegacyAssociationProof `json:"legacy_associations,omitempty"`
+	Snapshot           string                           `json:"snapshot"`
+	EventDataset       int64                            `json:"event_dataset,omitempty"`
+	Association        *derived.AssociationProof        `json:"association,omitempty"`
+	Version            string                           `json:"version"`
+	Records            int64                            `json:"records"`
+	Pairs              int64                            `json:"pairs"`
+	Issues             int64                            `json:"issues"`
+	Status             string                           `json:"dataset_status"`
+	Diagnostics        map[string]int64                 `json:"diagnostics"`
+	From               *string                          `json:"from_t"`
+	To                 *string                          `json:"to_t"`
+	Coverage           []PairCoverage                   `json:"coverage"`
 }
 
 type PairCoverage struct {
@@ -253,6 +254,48 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 			out.Association = &proof
 			out.Records += sourceProgress
 			associatedRecords, associatedEvents := derived.AssociatedSources(records, events, proof)
+			var declarations struct {
+				Legacy []logs.LegacyAssociation `json:"legacy_associations"`
+			}
+			if e = json.Unmarshal(sourceMeta, &declarations); e != nil {
+				return e
+			}
+
+			inputRows, inputErr := tx.Query(ctx, `SELECT input_id,node,kind,profile,sha256 FROM log_inputs WHERE dataset_id=$1`, out.EventDataset)
+			if inputErr != nil {
+				return inputErr
+			}
+			inputMeta := map[string]logs.InputSummary{}
+			for inputRows.Next() {
+				var in logs.InputSummary
+				if e = inputRows.Scan(&in.ID, &in.Node, &in.Kind, &in.Profile, &in.SHA256); e != nil {
+					inputRows.Close()
+					return e
+				}
+				inputMeta[in.ID] = in
+			}
+			e = inputRows.Err()
+			inputRows.Close()
+			if e != nil {
+				return e
+			}
+			usedLegacy, legacyHashes := map[string]bool{}, map[string]bool{}
+			for _, d := range declarations.Legacy {
+				a, aok := inputMeta[d.Input]
+				b, bok := inputMeta[d.NativeInput]
+				if !aok || !bok || a.Kind != "log" || a.Profile != "gstable@740526d03" || b.Kind != "events" || a.SHA256 != d.SHA256 || b.SHA256 != d.NativeSHA256 || usedLegacy[d.Input] || legacyHashes[d.SHA256] {
+					return errors.New("legacy association input snapshot mismatch")
+				}
+				usedLegacy[d.Input] = true
+				legacyHashes[d.SHA256] = true
+			}
+			legacyEvents, legacyProofs, legacyErr := derived.DeclaredLegacyEvents(events, associatedEvents, declarations.Legacy)
+			if legacyErr != nil {
+				return legacyErr
+			}
+			out.LegacyAssociations = legacyProofs
+			associatedEvents = append(associatedEvents, legacyEvents...)
+
 			projection = derived.ProjectRecords(associatedRecords)
 			projection.Counts["unassociated_message_records"] = int64(len(records) - len(associatedRecords))
 			projection.Counts["unassociated_event_records"] = int64(len(events) - len(associatedEvents))
@@ -278,13 +321,47 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 				projection.Issues[i].Source.DatasetID = id
 			}
 			for i := range other.Endpoints {
+				for _, p := range legacyProofs {
+					if other.Endpoints[i].Source.Input == p.Input {
+						other.Endpoints[i].Source.Association = p.Status
+					}
+				}
+
 				other.Endpoints[i].Source.DatasetID = out.EventDataset
 			}
 			for i := range other.Issues {
 				other.Issues[i].Source.DatasetID = out.EventDataset
 			}
+
+			for i := range out.LegacyAssociations {
+				for j := range out.LegacyAssociations[i].Anchors {
+					out.LegacyAssociations[i].Anchors[j].Legacy.DatasetID = out.EventDataset
+					out.LegacyAssociations[i].Anchors[j].Native.DatasetID = out.EventDataset
+				}
+			}
 			xs := append(projection.Endpoints, other.Endpoints...)
+
+			aliases := map[string]string{}
+			for _, p := range legacyProofs {
+				if old, ok := aliases[p.Address]; ok && old != p.Node {
+					return errors.New("legacy address has ambiguous recording labels")
+				}
+				aliases[p.Address] = p.Node
+			}
+			for i := range xs {
+				if n, ok := aliases[xs[i].Sender]; ok {
+					xs[i].Sender = n
+				}
+				if n, ok := aliases[xs[i].Receiver]; ok {
+					xs[i].Receiver = n
+				}
+			}
 			xs = derived.EnrichEvents(xs, records)
+			for i := range xs {
+				if n, ok := aliases[xs[i].Author]; ok {
+					xs[i].Author = n
+				}
+			}
 			mixed := derived.MixProjection(xs)
 			projection.Endpoints = mixed.Endpoints
 			projection.Issues = append(projection.Issues, other.Issues...)
@@ -521,6 +598,13 @@ func readPairIndex(ctx context.Context, tx pgx.Tx, id int64) (PairIndex, error) 
 		return index, e
 	}
 
+	for _, p := range index.LegacyAssociations {
+		var a, b string
+		err := tx.QueryRow(ctx, `SELECT (SELECT sha256 FROM log_inputs WHERE dataset_id=$1 AND input_id=$2),(SELECT sha256 FROM log_inputs WHERE dataset_id=$1 AND input_id=$3)`, index.EventDataset, p.Input, p.NativeInput).Scan(&a, &b)
+		if err != nil || a != p.SHA256 || b != p.NativeSHA256 {
+			return index, ErrPairIndex
+		}
+	}
 	return index, nil
 }
 

@@ -40,14 +40,15 @@ type File struct {
 	SHA256  string `json:"sha256,omitempty"`
 }
 type Manifest struct {
-	Format   string  `json:"format"`
-	Name     string  `json:"name"`
-	Run      string  `json:"run"`
-	Network  Network `json:"network"`
-	Clock    string  `json:"clock"`
-	FromWall string  `json:"from_t,omitempty"`
-	ToWall   string  `json:"to_t,omitempty"`
-	Inputs   []File  `json:"inputs"`
+	LegacyAssociations []LegacyAssociation `json:"legacy_associations,omitempty"`
+	Format             string              `json:"format"`
+	Name               string              `json:"name"`
+	Run                string              `json:"run"`
+	Network            Network             `json:"network"`
+	Clock              string              `json:"clock"`
+	FromWall           string              `json:"from_t,omitempty"`
+	ToWall             string              `json:"to_t,omitempty"`
+	Inputs             []File              `json:"inputs"`
 }
 
 // InputSummary is safe import metadata. The path is local-only on PreparedInput.
@@ -210,6 +211,20 @@ func Prepare(ctx context.Context, m Manifest) (Plan, error) {
 		}
 		p.Inputs = append(p.Inputs, PreparedInput{Summary: InputSummary{Kind: f.Kind, ID: f.ID, Node: f.Node, Profile: profile.ID, ProfileSHA256: profile.SHA256, SHA256: sha, Bytes: size}, Path: f.Path, Profile: profile})
 	}
+
+	for i := range m.LegacyAssociations {
+		d := &m.LegacyAssociations[i]
+		d.Address = strings.ToLower(d.Address)
+		if t, e := time.Parse(time.RFC3339Nano, d.From); e == nil {
+			d.From = t.UTC().Format(time.RFC3339Nano)
+		}
+		if t, e := time.Parse(time.RFC3339Nano, d.To); e == nil {
+			d.To = t.UTC().Format(time.RFC3339Nano)
+		}
+	}
+	if err := validateLegacyAssociations(m.LegacyAssociations, p.Inputs); err != nil {
+		return p, err
+	}
 	sort.Slice(p.Inputs, func(i, j int) bool { return p.Inputs[i].Summary.ID < p.Inputs[j].Summary.ID })
 	inputs := []InputSummary{}
 	for _, f := range p.Inputs {
@@ -222,15 +237,16 @@ func Prepare(ctx context.Context, m Manifest) (Plan, error) {
 		}
 	}
 	p.Metadata, _ = json.Marshal(struct {
-		EventsNormalizer string `json:"events_normalizer,omitempty"`
-		Format           string `json:"format"`
-		Normalizer       string `json:"normalizer"`
-		Run              string `json:"run"`
-		Clock            string `json:"clock"`
-		From             string `json:"from_t"`
-		To               string `json:"to_t"`
-		Inputs           []InputSummary
-	}{eventsNormalizer, m.Format, NormalizerVersion, m.Run, m.Clock, p.Manifest.FromWall, p.Manifest.ToWall, inputs})
+		EventsNormalizer   string              `json:"events_normalizer,omitempty"`
+		LegacyAssociations []LegacyAssociation `json:"legacy_associations,omitempty"`
+		Format             string              `json:"format"`
+		Normalizer         string              `json:"normalizer"`
+		Run                string              `json:"run"`
+		Clock              string              `json:"clock"`
+		From               string              `json:"from_t"`
+		To                 string              `json:"to_t"`
+		Inputs             []InputSummary
+	}{eventsNormalizer, m.LegacyAssociations, m.Format, NormalizerVersion, m.Run, m.Clock, p.Manifest.FromWall, p.Manifest.ToWall, inputs})
 	return p, nil
 }
 

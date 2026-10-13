@@ -13,6 +13,7 @@ import (
 )
 
 type Source struct {
+	Association string  `json:"association,omitempty"`
 	DatasetID   int64   `json:"dataset_id,omitempty"`
 	Kind        string  `json:"kind,omitempty"`
 	Input       string  `json:"input"`

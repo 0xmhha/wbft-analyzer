@@ -29,6 +29,14 @@ func eventPhase(e logs.Event) string {
 	}
 	return ""
 }
+
+// Legacy extra-seal entries record processing after consensus. They are weak
+// receipt evidence, not native outcomes or transport arrival timestamps.
+func messageEvent(e logs.Event) bool {
+	return e.Record.Kind == event.Send || e.Record.Kind == event.MsgOutcome ||
+		(e.Record.Src == "log" && e.Record.Kind == event.ExtraSeal)
+}
+
 func eventSource(e logs.Event) Source {
 	kind := "log"
 	if e.Record.Src == "event" {
@@ -88,7 +96,7 @@ func ProjectEvents(events []logs.Event) Projection {
 	}
 	for _, e := range events {
 		p.Counts["records"]++
-		if e.Record.Kind != event.Send && e.Record.Kind != event.MsgOutcome {
+		if !messageEvent(e) {
 			continue
 		}
 		x := Endpoint{Source: eventSource(e), Phase: eventPhase(e), Key: value(e, "dedup_key"), Digest: value(e, "digest"), Cause: value(e, "cause")}
