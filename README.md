@@ -725,6 +725,17 @@ requested height complete; a digest match alone is insufficient. The child repor
 `env_exhausted`; other errors remain `replay_error`. It never infers exhaustion
 from arbitrary error text.
 
+For a middle-height selection, replay still executes the retained prefix from
+its recorded engine start. The `warmup` summary reports this policy, original
+source bounds, separate counts and the first prefix issue. A prefix output or
+validator-set mismatch prevents reproduction even when every selected output
+matches. Incomplete prefix evidence remains partial; an application failure
+before the selected range retains its verified original position separately.
+These counts do not inflate selected-step totals. The screen can open that
+original prefix record. Older stored results without this optional metadata
+remain explicitly unverified for prefix handling. Missing engine starts are
+not reconstructed; bounded approximate warmup is not implemented.
+
 Bounds: 10000 active canonical heights, 100000 steps, one million journal
 records, a 256 MiB chain file, 64 KiB protocol lines, 64 MiB helper output and
 a 5 minute default deadline (`--timeout`, up to 30 minutes). Chain indices must

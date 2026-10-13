@@ -1628,6 +1628,7 @@ export interface components {
             steps: number;
             version: string;
             version_status: string;
+            warmup?: components["schemas"]["ReexecWarmup"] | null;
         };
         ReexecSources: {
             enabled: boolean;
@@ -1660,6 +1661,23 @@ export interface components {
             t_mono_ns?: string;
             t_wall?: string;
             writer_run: string;
+        };
+        ReexecWarmup: {
+            first_difference?: components["schemas"]["ReexecStep"] | null;
+            /** Format: int64 */
+            first_source_ordinal?: number | null;
+            /** Format: int64 */
+            last_source_ordinal?: number | null;
+            /** Format: int64 */
+            matches: number;
+            /** Format: int64 */
+            mismatches: number;
+            /** Format: int64 */
+            not_comparable: number;
+            policy: string;
+            status: string;
+            /** Format: int64 */
+            steps: number;
         };
         ReplayCounter: {
             count: string;

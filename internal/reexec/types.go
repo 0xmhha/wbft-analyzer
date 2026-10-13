@@ -55,6 +55,7 @@ type Plan struct {
 }
 
 type Result struct {
+	Warmup         *Warmup  `json:"warmup,omitempty"`
 	Mode           string   `json:"mode,omitempty"`
 	BinaryVersion  string   `json:"binary_version"`
 	HelperSHA      string   `json:"helper_sha256"`
@@ -72,4 +73,18 @@ type Result struct {
 	NotComparable  int64    `json:"not_comparable"`
 	FirstMismatch  *int64   `json:"first_mismatch_ordinal,omitempty"`
 	Issue          string   `json:"issue,omitempty"`
+}
+
+// Warmup describes the verified original prefix preceding the selected range.
+// It is separate from selected-step counters and contains no input payload.
+type Warmup struct {
+	Policy          string `json:"policy"`
+	Status          string `json:"status"`
+	Steps           int64  `json:"steps"`
+	Matches         int64  `json:"matches"`
+	Mismatches      int64  `json:"mismatches"`
+	NotComparable   int64  `json:"not_comparable"`
+	FirstSource     *int64 `json:"first_source_ordinal,omitempty"`
+	LastSource      *int64 `json:"last_source_ordinal,omitempty"`
+	FirstDifference *Step  `json:"first_difference,omitempty"`
 }
