@@ -42,6 +42,7 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/issues", id: "listMessageIssues", summary: "Unprojected observations and original source pointers; snapshot and source-filter bound pages.", params: issueParams(), answers: map[int]any{200: MessageIssuePage{}}, handle: (*Server).messageIssues},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/series", id: "getMessageTimeSeries", summary: "Raw-pair UTC series with exact full views and separate evidence dimensions; at most 2000 buckets/views.", params: pairParams(false), answers: map[int]any{200: PairTimeSeries{}}, handle: (*Server).pairSeries},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/source", id: "getMessageSource", summary: "One original metadata record by immutable input, file and ordinal; no payload bytes.", params: append(runParams(), param{name: "input", in: "query", doc: "original input ID", typ: "string", required: true}, param{name: "file", in: "query", doc: "original journal/frame file name", typ: "string", required: true}, param{name: "ordinal", in: "query", doc: "positive original source ordinal", typ: "integer", format: "int64", required: true}), answers: map[int]any{200: sourcemessages.Record{}}, handle: (*Server).messageSource},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/pairs", id: "listMessagePairs", summary: "Directional source-linked message pairs; matching uses the entire dataset before window filtering. Reindex required.", params: pairParams(true), answers: map[int]any{200: PairPage{}}, handle: (*Server).pairSamples},
@@ -148,4 +149,8 @@ func pairParams(pages bool) []param {
 		out = append(out, param{name: "threshold", in: "query", doc: "p50/p90/p95/p99; requires one phase, strength, path and clock", typ: "string"}, param{name: "limit", in: "query", doc: "page size 1..1000", typ: "integer"}, param{name: "cursor", in: "query", doc: "snapshot and filter bound cursor", typ: "string"})
 	}
 	return out
+}
+
+func issueParams() []param {
+	return append(runParams(), param{name: "node", in: "query", doc: "recording source node", typ: "string"}, param{name: "reason", in: "query", doc: "exact projection diagnostic reason", typ: "string"}, param{name: "source_dataset", in: "query", doc: "original source dataset ID", typ: "integer", format: "int64"}, param{name: "limit", in: "query", doc: "page size 1..1000", typ: "integer"}, param{name: "cursor", in: "query", doc: "snapshot and source-filter bound cursor", typ: "string"})
 }

@@ -83,6 +83,9 @@ func TestMixedReindexUsesVerifiedDependencyAndRollsBackConflict(t *testing.T) {
 	if _, e = s.pool.Exec(ctx, `UPDATE datasets SET progress=4 WHERE id=$1`, r.ID); e != nil {
 		t.Fatal(e)
 	}
+	if _, _, _, e = s.MessageIssueData(ctx, m.ID, IssueFilter{}, 0, 10); !errors.Is(e, ErrPairIndex) {
+		t.Fatal("stale companion issues accepted", e)
+	}
 	if _, _, e = s.MessagePairData(ctx, m.ID, PairFilter{}); !errors.Is(e, ErrPairIndex) {
 		t.Fatal("dependent append not invalidated", e)
 	}
@@ -97,6 +100,9 @@ func TestMixedReindexUsesVerifiedDependencyAndRollsBackConflict(t *testing.T) {
 	}
 	if _, e = s.pool.Exec(ctx, `DELETE FROM datasets WHERE id=$1`, r.ID); e != nil {
 		t.Fatal(e)
+	}
+	if _, _, _, e = s.MessageIssueData(ctx, m.ID, IssueFilter{}, 0, 10); !errors.Is(e, ErrPairIndex) {
+		t.Fatal("stale companion issues accepted", e)
 	}
 	if _, _, e = s.MessagePairData(ctx, m.ID, PairFilter{}); !errors.Is(e, ErrPairIndex) {
 		t.Fatal("deleted source not invalidated", e)

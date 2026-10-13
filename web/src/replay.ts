@@ -62,3 +62,10 @@ export function quorumCues(events:Record[]):Cue[]{
  for(const c of out){const f=c.quorum.fields as {[key:string]:unknown},step=text(f.step);if(step){const xs=byStep.get(`${c.quorum.node}:${c.quorum.input}:${c.quorum.run}:${step}`)||[];if(xs.length===1){c.message=xs[0]!;c.confidence="step"}}}
  return out;
 }
+
+/** Seek through one exact record; a node filter can hide it while its time remains the cursor. */
+export function sourcePosition(model:Projection,focus:Record|undefined):{index:number;selected:Record|null;at:string|null} {
+ if(!focus)return {index:0,selected:null,at:null};
+ const i=model.window.events.findIndex(e=>e.input===focus.input && e.line===focus.line);
+ return {index:i>=0?i+1:model.indexAt(stampNs(focus.t_wall)),selected:i>=0?model.window.events[i]!:null,at:focus.t_wall};
+}

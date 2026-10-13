@@ -1,3 +1,4 @@
+import { eventFocus, type EventFocus } from "./sourceLink";
 import { useCallback, useEffect, useState } from "react";
 import { setToken } from "./api/client";
 import { MessageLatency } from "./views/MessageLatency";
@@ -8,12 +9,13 @@ import { Overview } from "./views/Overview";
 import { Trends } from "./views/Trends";
 import { Verdicts } from "./views/Verdicts";
 
-type Route = { view: "overview" } | { view: "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency"; net: number };
+type Route = { view: "overview" } | { view: "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency"; net: number; focus?: EventFocus; sourceError?:string };
 
 /** Reads the route from the hash: #/, #/networks/N/verdicts, #/networks/N/trends. */
 export function parseRoute(hash: string): Route {
-  const m = /^#\/networks\/(\d+)\/(verdicts|trends|headers|events|messages|message-latency)$/.exec(hash);
-  if (m && m[1] && m[2]) return { view: m[2] as "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency", net: Number(m[1]) };
+  const [path, query] = hash.split("?");
+  const m = /^#\/networks\/(\d+)\/(verdicts|trends|headers|events|messages|message-latency)$/.exec(path || "");
+  if (m && m[1] && m[2] && Number.isSafeInteger(Number(m[1])) && Number(m[1]) > 0) return { view: m[2] as "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency", net: Number(m[1]), ...(m[2] === "events" ? eventFocus(query || "") : {}) };
   return { view: "overview" };
 }
 
@@ -52,7 +54,7 @@ export function App() {
       <main key={epoch}>
         {route.view === "overview" && <Overview onAuth={onAuth} />}
         {route.view === "verdicts" && <Verdicts net={route.net} onAuth={onAuth} />}
-        {route.view === "events" && <Events net={route.net} onAuth={onAuth} />}
+        {route.view === "events" && <Events key={`${route.net}:${JSON.stringify(route.focus)}:${route.sourceError}`} net={route.net} focus={route.focus} sourceError={route.sourceError} onAuth={onAuth} />}
  {route.view === "message-latency" && <MessageLatency key={route.net} net={route.net} onAuth={onAuth} />}
  {route.view === "messages" && <Messages key={route.net} net={route.net} onAuth={onAuth} />}
         {route.view === "headers" && <Headers net={route.net} onAuth={onAuth} />}

@@ -50,6 +50,10 @@ func TestAssociatedSourcesExcludeUnverifiedRuns(t *testing.T) {
 	if len(r) != 2 || len(e) != 1 {
 		t.Fatal("unverified runs contributed endpoints", r, e)
 	}
+	rr, ee := UnassociatedEvidence(rs, es, r, e)
+	if len(rr) != 1 || len(ee) != 1 || rr[0].Source.Run != "journal-only" || ee[0].Source.Run != "event-only" || ee[0].Reason != "unassociated_run" {
+		t.Fatal("excluded message observations lost their source", rr, ee)
+	}
 	proof.Status = "partial"
 	r, e = AssociatedSources(rs, es, proof)
 	if len(r) != 0 || len(e) != 0 {

@@ -1,27 +1,32 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { get } from "../api/client";
 import { Pending, useLoad } from "../ui";
-import { Projection, nsStamp, quorumCues, stampNs } from "../replay";
+import { Projection, nsStamp, quorumCues, stampNs, sourcePosition } from "../replay";
 import type { Record, Window, ReplayState } from "../replay";
 
 const colours: {[kind:string]:string}={ROUND_ENTER:"#2563eb",SEND:"#d97706",QUORUM:"#9333ea",NEW_HEAD:"#16a34a",TIMER_FIRE:"#dc2626",STATE:"#0891b2",MSG_OUTCOME:"#6b7280"};
-export function VisualReplay(props:{net:number;dataset:number;times:{from_t:string;to_t:string};node:string;onAuth:()=>void;onPoint:(input:string,line:number)=>void}){
- const [open,setOpen]=useState(false);
- return <details onToggle={(e)=>setOpen(e.currentTarget.open)}><summary>Visual replay, node state and quorum race</summary>{open&&<ReplayLoader {...props}/>}</details>;
+export function VisualReplay(props:{net:number;dataset:number;times:{from_t:string;to_t:string};node:string;focus?:Record;onAuth:()=>void;onPoint:(input:string,line:number)=>void}){
+ const [open,setOpen]=useState(Boolean(props.focus));
+ useEffect(()=>{if(props.focus)setOpen(true)},[props.focus?.input,props.focus?.line]);
+ return <details open={open} onToggle={(e)=>setOpen(e.currentTarget.open)}><summary>Visual replay, node state and quorum race</summary>{open&&<ReplayLoader {...props}/>}</details>;
 }
-function ReplayLoader({net,dataset,times,node,onAuth,onPoint}:{net:number;dataset:number;times:{from_t:string;to_t:string};node:string;onAuth:()=>void;onPoint:(input:string,line:number)=>void}){
- const [source,setSource]=useState({input:"",line:""}),[endpoint,setEndpoint]=useState<Record|null>(null),[error,setError]=useState("");
- const load=useLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/replay/window",{path:{net,dataset},query:{...times,...(node?{node}:{}),...(endpoint?{to_t:endpoint.t_wall,to_input:endpoint.input,to_line:endpoint.line}:{})}}),[net,dataset,times.from_t,times.to_t,node,endpoint?.input,endpoint?.line]);
- return <><form className="controls" onSubmit={async(e)=>{e.preventDefault();setError("");try{const row=await get("/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}",{path:{net,dataset,input:source.input,line:Number(source.line)}});setEndpoint(row)}catch(err){setError(String(err))}}}><label>Replay end source input <input value={source.input} onChange={(e)=>setSource({...source,input:e.target.value})}/></label><label>Replay end source line <input inputMode="numeric" value={source.line} onChange={(e)=>setSource({...source,line:e.target.value})}/></label><button>Use exact source end</button><button type="button" onClick={()=>setEndpoint(null)}>Use time window end</button></form>{error&&<p className="error">{error}</p>}{endpoint&&<p>End source {endpoint.input}:{endpoint.line} · {endpoint.t_wall}. Records later in this same timestamp are excluded.</p>}<Pending load={load} onAuth={onAuth}/>{load.state==="done"&&<ReplayPlayer key={`${net}:${dataset}:${times.from_t}:${times.to_t}:${node}`} data={load.data} times={{...times,...(endpoint?{to_t:endpoint.t_wall}:{})}} onPoint={onPoint}/>}</>;
+function ReplayLoader({net,dataset,times,node,focus,onAuth,onPoint}:{net:number;dataset:number;times:{from_t:string;to_t:string};node:string;focus?:Record;onAuth:()=>void;onPoint:(input:string,line:number)=>void}){
+ const [source,setSource]=useState({input:"",line:""}),[endpoint,setEndpoint]=useState<Record|null>(focus || null),[error,setError]=useState("");
+ useEffect(()=>{if(focus)setEndpoint(focus)},[focus?.input,focus?.line]);
+ const load=useLoad(async()=>endpoint && (stampNs(endpoint.t_wall)<stampNs(times.from_t) || stampNs(endpoint.t_wall)>stampNs(times.to_t)) ? null : get("/v1/networks/{net}/datasets/{dataset}/replay/window",{path:{net,dataset},query:{...times,...(node?{node}:{}),...(endpoint?{to_t:endpoint.t_wall,to_input:endpoint.input,to_line:endpoint.line}:{})}}),[net,dataset,times.from_t,times.to_t,node,endpoint?.input,endpoint?.line]);
+ return <><form className="controls" onSubmit={async(e)=>{e.preventDefault();setError("");try{const row=await get("/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}",{path:{net,dataset,input:source.input,line:Number(source.line)}});setEndpoint(row)}catch(err){setError(String(err))}}}><label>Replay end source input <input value={source.input} onChange={(e)=>setSource({...source,input:e.target.value})}/></label><label>Replay end source line <input inputMode="numeric" value={source.line} onChange={(e)=>setSource({...source,line:e.target.value})}/></label><button>Use exact source end</button><button type="button" onClick={()=>setEndpoint(null)}>Use time window end</button></form>{error&&<p className="error">{error}</p>}{endpoint&&<p>End source {endpoint.input}:{endpoint.line} · {endpoint.t_wall}. Records later in this same timestamp are excluded.</p>}<Pending load={load} onAuth={onAuth}/>{load.state==="done"&&load.data&&<ReplayPlayer focus={endpoint || undefined} key={`${net}:${dataset}:${times.from_t}:${times.to_t}:${node}:${endpoint?.input}:${endpoint?.line}`} data={load.data} times={{...times,...(endpoint?{to_t:endpoint.t_wall}:{})}} onPoint={onPoint}/>}</>;
 }
-export function ReplayPlayer({data,times,onPoint}:{data:Window;times:{from_t:string;to_t:string};onPoint:(input:string,line:number)=>void}){
+export function ReplayPlayer({data,times,focus,onPoint}:{data:Window;times:{from_t:string;to_t:string};focus?:Record;onPoint:(input:string,line:number)=>void}){
  const model=useMemo(()=>new Projection(data),[data]);
  const sources=useMemo(()=>new Map(data.events.map((e)=>[`${e.input}:${e.line}`,e])),[data]);
  const cues=useMemo(()=>quorumCues(data.events),[data]);
- const [position,setPosition]=useState(()=>stampNs(times.from_t));
- const [index,setIndex]=useState(0),[playing,setPlaying]=useState(false),[speed,setSpeed]=useState(1),[mode,setMode]=useState("time"),[loop,setLoop]=useState(false),[selectedNode,setSelectedNode]=useState("");
+ const initial=sourcePosition(model,focus),focusIndex=initial.index;
+ const [position,setPosition]=useState(()=>stampNs(initial.at || times.from_t));
+ const [index,setIndex]=useState(focusIndex),[playing,setPlaying]=useState(false),[speed,setSpeed]=useState(1),[mode,setMode]=useState("time"),[loop,setLoop]=useState(false),[selectedNode,setSelectedNode]=useState("");
  const [loopFrom,setLoopFrom]=useState(0),[loopTo,setLoopTo]=useState(data.events.length),[trail,setTrail]=useState(5);
- const [selected,setSelected]=useState<Record|null>(null);
+ const [selected,setSelected]=useState<Record|null>(initial.selected);
+ const section=useRef<HTMLElement>(null);
+ useEffect(()=>{if(!focus)return;const frame=requestAnimationFrame(()=>section.current?.scrollIntoView({block:"start",behavior:"instant"}));return()=>cancelAnimationFrame(frame)},[data,focus?.input,focus?.line]);
  const canvas=useRef<HTMLCanvasElement>(null),base=useRef<HTMLCanvasElement|null>(null);
  const current=useRef(index),playingRef=useRef(playing),lastPaint=useRef(0),durations=useRef<number[]>([]);
  const [frames,setFrames]=useState<{count:number;p95:number;fps:number}|null>(null);
@@ -67,7 +72,7 @@ export function ReplayPlayer({data,times,onPoint}:{data:Window;times:{from_t:str
  const step=(kind:string)=>{let i=index;const old=data.events[Math.max(0,index-1)]?.height;while(i<data.events.length){const e=data.events[i]!;if((!selectedNode||e.node===selectedNode)&&(kind==="event"||kind==="round"&&e.kind==="ROUND_ENTER"||kind==="height"&&e.kind==="ROUND_ENTER"&&e.height!==old)){seek(i+1);setSelected(e);return}i++}seek(data.events.length)};
  const selectPoint=(e:Record)=>{setSelected(e);onPoint(e.input,e.line)};
  const renderedTime=nsStamp(position);
- return <section className="replay"><p>{data.events.length.toLocaleString()} source records · {data.version}. Points are recorded facts; send/handle logs do not prove wire receipt. State and timer gaps stay unknown. Event streams retain mono timestamps; this visual cross-node axis uses wall time. Clock skew and source regressions can affect order. Message pairing and link arrows are added in A3.</p>
+ return <section ref={section} className="replay">{focus&&!initial.selected&&<p>The source is outside the selected node scope. The cursor uses its recorded time; no point is invented.</p>}<p>{data.events.length.toLocaleString()} source records · {data.version}. Points are recorded facts; send/handle logs do not prove wire receipt. State and timer gaps stay unknown. Event streams retain mono timestamps; this visual cross-node axis uses wall time. Clock skew and source regressions can affect order. Message pairing and link arrows are added in A3.</p>
   <div className="controls"><button type="button" onClick={()=>setPlaying(!playing)}>{playing?"Pause replay":"Play replay"}</button><button type="button" onClick={()=>seek(0)}>Rewind replay</button><button type="button" onClick={()=>step("event")}>Next event</button><button type="button" onClick={()=>step("height")}>Next height</button><button type="button" onClick={()=>step("round")}>Next round entry</button>
    <label>Step node <select value={selectedNode} onChange={(e)=>setSelectedNode(e.target.value)}><option value="">All nodes</option>{data.nodes.map((n)=><option key={n.node}>{n.node}</option>)}</select></label>
    <label>Replay speed <select value={speed} onChange={(e)=>setSpeed(Number(e.target.value))}>{[.1,.5,1,2,10,100].map((s)=><option key={s} value={s}>{s}×</option>)}</select></label>

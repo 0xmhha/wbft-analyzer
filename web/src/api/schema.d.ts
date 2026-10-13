@@ -192,6 +192,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/messages/issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unprojected observations and original source pointers; snapshot and source-filter bound pages. */
+        get: operations["listMessageIssues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/messages/pairs": {
         parameters: {
             query?: never;
@@ -847,6 +864,13 @@ export interface components {
         MessageInputList: {
             inputs: components["schemas"]["StoreMessageInput"][];
         };
+        MessageIssuePage: {
+            index: components["schemas"]["StorePairIndex"];
+            issues: components["schemas"]["StoreMessageIssue"][];
+            next: string | null;
+            /** Format: int64 */
+            total: number;
+        };
         MessagePage: {
             next: string | null;
             records: components["schemas"]["MessagesRecord"][];
@@ -900,6 +924,10 @@ export interface components {
             scope: string;
             sender: string;
             strength: string;
+        };
+        MessagesIssue: {
+            reason: string;
+            source: components["schemas"]["MessagesSource"];
         };
         MessagesPair: {
             at: string;
@@ -1350,6 +1378,11 @@ export interface components {
             stats: components["schemas"]["MessagesStats"];
             summary: components["schemas"]["MessagesSummary"];
         };
+        StoreMessageIssue: {
+            issue: components["schemas"]["MessagesIssue"];
+            /** Format: int64 */
+            ordinal: number;
+        };
         StorePairCoverage: {
             /** Format: int64 */
             dataset_id?: number;
@@ -1382,6 +1415,7 @@ export interface components {
             pairs: number;
             /** Format: int64 */
             records: number;
+            snapshot: string;
             to_t: string | null;
             version: string;
         };
@@ -1968,6 +2002,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageInputList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listMessageIssues: {
+        parameters: {
+            query?: {
+                /** @description recording source node */
+                node?: string;
+                /** @description exact projection diagnostic reason */
+                reason?: string;
+                /** @description original source dataset ID */
+                source_dataset?: number;
+                /** @description page size 1..1000 */
+                limit?: number;
+                /** @description snapshot and source-filter bound cursor */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageIssuePage"];
                 };
             };
             /** @description the request failed */

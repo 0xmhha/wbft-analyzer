@@ -5,7 +5,7 @@ import (
 	"sort"
 )
 
-const Version = "wbft-message-pairing/4"
+const Version = "wbft-message-pairing/5"
 
 type Issue struct {
 	Source Source `json:"source"`

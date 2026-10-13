@@ -1166,6 +1166,37 @@
         ],
         "type": "object"
       },
+      "MessageIssuePage": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "$ref": "#/components/schemas/StorePairIndex"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/StoreMessageIssue"
+            },
+            "type": "array"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index",
+          "issues",
+          "next",
+          "total"
+        ],
+        "type": "object"
+      },
       "MessagePage": {
         "additionalProperties": false,
         "properties": {
@@ -1368,6 +1399,22 @@
           "scope",
           "sender",
           "strength"
+        ],
+        "type": "object"
+      },
+      "MessagesIssue": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/MessagesSource"
+          }
+        },
+        "required": [
+          "reason",
+          "source"
         ],
         "type": "object"
       },
@@ -3092,6 +3139,23 @@
         ],
         "type": "object"
       },
+      "StoreMessageIssue": {
+        "additionalProperties": false,
+        "properties": {
+          "issue": {
+            "$ref": "#/components/schemas/MessagesIssue"
+          },
+          "ordinal": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "issue",
+          "ordinal"
+        ],
+        "type": "object"
+      },
       "StorePairCoverage": {
         "additionalProperties": false,
         "properties": {
@@ -3199,6 +3263,9 @@
             "format": "int64",
             "type": "integer"
           },
+          "snapshot": {
+            "type": "string"
+          },
           "to_t": {
             "type": [
               "string",
@@ -3217,6 +3284,7 @@
           "issues",
           "pairs",
           "records",
+          "snapshot",
           "to_t",
           "version"
         ],
@@ -4242,6 +4310,112 @@
           }
         },
         "summary": "Immutable journal/frame file hashes and normalization diagnostics; no payload bytes."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/messages/issues": {
+      "get": {
+        "operationId": "listMessageIssues",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "recording source node",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact projection diagnostic reason",
+            "in": "query",
+            "name": "reason",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "original source dataset ID",
+            "in": "query",
+            "name": "source_dataset",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "page size 1..1000",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "snapshot and source-filter bound cursor",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageIssuePage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Unprojected observations and original source pointers; snapshot and source-filter bound pages."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/messages/pairs": {
