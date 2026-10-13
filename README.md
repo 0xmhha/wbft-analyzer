@@ -525,6 +525,12 @@ A recorded send is an attempt, not proof of delivery. Accepted outcomes are loca
 processing evidence. Complete receiver coverage requires closed native views and
 quorum; wire records and imported headers cannot establish this coverage.
 
+Native coverage requires event normalization version 5, which retains inbound-loss
+HEALTH conditions. Older or unrecognized normalization cannot establish sender or
+receiver coverage; positive seals and recorded sends remain usable. Existing
+classification indexes require `reindex missing`. To recover previously discarded
+conditions, ingest the original sources under a new dataset name before rebuilding.
+
 `NOT_SENT` requires a closed active native view or a complete active event capture
 with matching canonical head bounds and known send identities. An observer,
 open prefix, lost records or opaque identity remains unknown. Active sign-floor

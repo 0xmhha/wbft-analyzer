@@ -42,7 +42,11 @@ func missingFixture(t *testing.T, s *Store) (Dataset, Dataset, []headers.Fact) {
 	if e = s.FinishRange(ctx, hd.ID, 3, ""); e != nil {
 		t.Fatal(e)
 	}
-	d, release, e := s.BeginRun(ctx, key, "events", json.RawMessage(`{}`))
+	metadata, e := json.Marshal(map[string]string{"events_normalizer": logs.EventNormalizer})
+	if e != nil {
+		t.Fatal(e)
+	}
+	d, release, e := s.BeginRun(ctx, key, "events", metadata)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -66,6 +70,39 @@ func missingFixture(t *testing.T, s *Store) (Dataset, Dataset, []headers.Fact) {
 		t.Fatal(e)
 	}
 	return d, hd, facts
+}
+
+func TestMissingRequiresHealthPreservingNormalizerForAbsence(t *testing.T) {
+	s, _ := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	d, _, _ := missingFixture(t, s)
+	index, err := s.RebuildMissing(ctx, d.ID, 0, 1, 2)
+	if err != nil || index.Counts["NOT_SENT"] != 4 {
+		t.Fatal(index, err)
+	}
+	// A pre-fix index is never served merely because its source is unchanged.
+	if _, err = s.pool.Exec(ctx, `UPDATE missing_indexes SET version='wbft-missing/1' WHERE dataset_id=$1`, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err = s.MissingData(ctx, d.ID, MissingFilter{From: 1, To: 2}, 0, 100); !errors.Is(err, ErrMissingIndex) {
+		t.Fatal("old index remained ready", err)
+	}
+	for _, version := range []string{"", "wbft-event-normalization/4", "unrecognized"} {
+		metadata, err := json.Marshal(map[string]string{"events_normalizer": version})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = s.pool.Exec(ctx, `UPDATE datasets SET metadata=$2 WHERE id=$1`, d.ID, metadata); err != nil {
+			t.Fatal(err)
+		}
+		index, err = s.RebuildMissing(ctx, d.ID, 0, 1, 2)
+		if err != nil || index.Counts["NOT_SENT"] != 0 || index.Counts["UNKNOWN"] != 4 || index.Counts["SEALED"] != 12 {
+			t.Fatal("unproven normalization granted absence or lost positive seals", version, index, err)
+		}
+	}
 }
 func TestMissingAtomicHeaderScopeAndSourceStaleness(t *testing.T) {
 	s, _ := testStore(t)

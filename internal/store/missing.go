@@ -68,7 +68,7 @@ func missingHash(x any) string {
 	return hex.EncodeToString(s[:])
 }
 
-func missingEvents(ctx context.Context, tx pgx.Tx, id int64, status string) ([]logs.Event, []missing.Input, error) {
+func missingEvents(ctx context.Context, tx pgx.Tx, id int64, status string, healthPreserved bool) ([]logs.Event, []missing.Input, error) {
 	inputs := []missing.Input{}
 	rows, e := tx.Query(ctx, `SELECT input_id,kind,stats FROM log_inputs WHERE dataset_id=$1 ORDER BY input_id`, id)
 	if e != nil {
@@ -86,7 +86,9 @@ func missingEvents(ctx context.Context, tx pgx.Tx, id int64, status string) ([]l
 			rows.Close()
 			return nil, nil, e
 		}
-		in.Complete = status == "complete" && kind == "events"
+		// Earlier normalizers discarded inbound-loss HEALTH conditions. Their
+		// positive records remain usable, but cannot prove clean native coverage.
+		in.Complete = status == "complete" && kind == "events" && healthPreserved
 		inputs = append(inputs, in)
 	}
 	e = rows.Err()
@@ -241,7 +243,13 @@ func (s *Store) RebuildMissing(ctx context.Context, id, messageID int64, from, t
 		if d.Kind != "run" {
 			return ErrMissingScope
 		}
-		events, inputs, e := missingEvents(ctx, tx, id, d.Status)
+		var metadata struct {
+			EventsNormalizer string `json:"events_normalizer"`
+		}
+		if e = json.Unmarshal(d.Metadata, &metadata); e != nil {
+			return e
+		}
+		events, inputs, e := missingEvents(ctx, tx, id, d.Status, metadata.EventsNormalizer == logs.EventNormalizer)
 		if e != nil {
 			return e
 		}
