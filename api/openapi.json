@@ -1151,6 +1151,40 @@
         ],
         "type": "object"
       },
+      "MessageFlow": {
+        "additionalProperties": false,
+        "properties": {
+          "from_t": {
+            "type": "string"
+          },
+          "index": {
+            "$ref": "#/components/schemas/StorePairIndex"
+          },
+          "nodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "pairs": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesPair"
+            },
+            "type": "array"
+          },
+          "to_t": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_t",
+          "index",
+          "nodes",
+          "pairs",
+          "to_t"
+        ],
+        "type": "object"
+      },
       "MessageInputList": {
         "additionalProperties": false,
         "properties": {
@@ -1222,6 +1256,9 @@
       "MessagesAssociationAnchor": {
         "additionalProperties": false,
         "properties": {
+          "clock_basis": {
+            "type": "string"
+          },
           "events": {
             "items": {
               "$ref": "#/components/schemas/MessagesSource"
@@ -1248,6 +1285,7 @@
           }
         },
         "required": [
+          "clock_basis",
           "events",
           "journal",
           "node",
@@ -1458,6 +1496,18 @@
           "metric": {
             "type": "string"
           },
+          "observed_from": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "observed_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "path": {
             "type": "string"
           },
@@ -1546,6 +1596,8 @@
           "id",
           "lower_seconds",
           "metric",
+          "observed_from",
+          "observed_to",
           "path",
           "phase",
           "raw_seconds",
@@ -4250,6 +4302,195 @@
           }
         },
         "summary": "Immutable log input hashes, byte counts and normalization diagnostics."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/messages/flow": {
+      "get": {
+        "operationId": "getMessageFlow",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "optional inclusive RFC3339 start; requires to_t, at most 24h",
+            "in": "query",
+            "name": "from_t",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "optional inclusive RFC3339 end; requires from_t",
+            "in": "query",
+            "name": "to_t",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "sender",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "receiver",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "phase",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "height",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "round",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "strength",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "clock",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "metric",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "event run dataset ID for the same verified execution",
+            "in": "query",
+            "name": "events",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageFlow"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Source-linked message observations overlapping a bounded event execution window; verified companion required, at most 2000 groups."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/messages/inputs": {

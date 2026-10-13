@@ -121,3 +121,18 @@ func TestWallNanosecondsAndNonSaturatingInterval(t *testing.T) {
 		t.Fatal("duration saturated", p)
 	}
 }
+
+func TestObservationBoundsIncludeEveryCandidateBeyondPreview(t *testing.T) {
+	xs := []Endpoint{endpoint("receive", "a", "b", "1", "bytes", 1)}
+	for i := 0; i < 24; i++ {
+		x := endpoint("send", "a", "b", "1", "bytes", i)
+		x.Source.Ordinal = int64(i + 1)
+		x.Source.Wall = time.Date(2020, 1, 1, 0, 0, 0, i*1000000, time.UTC).Format(time.RFC3339Nano)
+		xs = append(xs, x)
+	}
+	pairs := PairEndpoints(xs, Clock{Model: "shared-host"})
+	p := pairs[0]
+	if p.Status != "ambiguous" || len(p.Candidates) != 16 || p.ObservedFrom == nil || p.ObservedTo == nil || *p.ObservedTo != xs[len(xs)-1].Source.Wall {
+		t.Fatal("candidate preview truncated time coverage", p)
+	}
+}

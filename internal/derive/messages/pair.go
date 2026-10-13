@@ -51,6 +51,8 @@ type Clock struct {
 	SkewMS int64
 }
 type Pair struct {
+	ObservedFrom      *string  `json:"observed_from"`
+	ObservedTo        *string  `json:"observed_to"`
 	Metric            string   `json:"metric"`
 	ID                string   `json:"id"`
 	At                string   `json:"at"`
@@ -192,6 +194,28 @@ func PairEndpoints(xs []Endpoint, clock Clock) []Pair {
 			return p.Views[i].Round < p.Views[j].Round
 		})
 		for _, x := range groups[k] {
+			if at, e := time.Parse(time.RFC3339Nano, x.Source.Wall); e == nil {
+				if p.ObservedFrom == nil {
+					v := x.Source.Wall
+					p.ObservedFrom = &v
+				} else {
+					old, _ := time.Parse(time.RFC3339Nano, *p.ObservedFrom)
+					if at.Before(old) {
+						v := x.Source.Wall
+						p.ObservedFrom = &v
+					}
+				}
+				if p.ObservedTo == nil {
+					v := x.Source.Wall
+					p.ObservedTo = &v
+				} else {
+					old, _ := time.Parse(time.RFC3339Nano, *p.ObservedTo)
+					if at.After(old) {
+						v := x.Source.Wall
+						p.ObservedTo = &v
+					}
+				}
+			}
 			p.Candidates = append(p.Candidates, x.Source)
 		}
 		sort.Slice(p.Candidates, func(i, j int) bool {

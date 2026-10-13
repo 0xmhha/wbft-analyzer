@@ -175,6 +175,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/messages/flow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Source-linked message observations overlapping a bounded event execution window; verified companion required, at most 2000 groups. */
+        get: operations["getMessageFlow"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/messages/inputs": {
         parameters: {
             query?: never;
@@ -861,6 +878,13 @@ export interface components {
             /** Format: int64 */
             unknown: number;
         };
+        MessageFlow: {
+            from_t: string;
+            index: components["schemas"]["StorePairIndex"];
+            nodes: string[];
+            pairs: components["schemas"]["MessagesPair"][];
+            to_t: string;
+        };
         MessageInputList: {
             inputs: components["schemas"]["StoreMessageInput"][];
         };
@@ -876,6 +900,7 @@ export interface components {
             records: components["schemas"]["MessagesRecord"][];
         };
         MessagesAssociationAnchor: {
+            clock_basis: string;
             events: components["schemas"]["MessagesSource"][];
             journal: components["schemas"]["MessagesSource"][];
             node: string;
@@ -941,6 +966,8 @@ export interface components {
             /** Format: double */
             lower_seconds: number | null;
             metric: string;
+            observed_from: string | null;
+            observed_to: string | null;
             path: string;
             phase: string;
             /** Format: double */
@@ -1959,6 +1986,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LogInputList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getMessageFlow: {
+        parameters: {
+            query: {
+                /** @description optional inclusive RFC3339 start; requires to_t, at most 24h */
+                from_t?: string;
+                /** @description optional inclusive RFC3339 end; requires from_t */
+                to_t?: string;
+                /** @description exact message evidence filter */
+                sender?: string;
+                /** @description exact message evidence filter */
+                receiver?: string;
+                /** @description exact message evidence filter */
+                node?: string;
+                /** @description exact message evidence filter */
+                phase?: string;
+                /** @description exact message evidence filter */
+                height?: string;
+                /** @description exact message evidence filter */
+                round?: string;
+                /** @description exact message evidence filter */
+                strength?: string;
+                /** @description exact message evidence filter */
+                path?: string;
+                /** @description exact message evidence filter */
+                clock?: string;
+                /** @description exact message evidence filter */
+                status?: string;
+                /** @description exact message evidence filter */
+                metric?: string;
+                /** @description event run dataset ID for the same verified execution */
+                events: number;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageFlow"];
                 };
             };
             /** @description the request failed */

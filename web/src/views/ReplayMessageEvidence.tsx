@@ -1,0 +1,6 @@
+import type { Schemas } from "../api/client";
+import { eventSourceLink } from "../sourceLink";
+import { seconds } from "./PhaseLatency";
+export function ReplayMessageEvidence({net,dataset,pair,onSource}:{net:number;dataset:number;pair:Schemas["MessagesPair"];onSource:(s:Schemas["MessagesSource"])=>void}) {
+ return <aside><h3>Recorded message relationship</h3><p>{pair.sender} → {pair.receiver} · {pair.phase} · full height {pair.height||"unknown"} / round {pair.round||"unknown"}</p><p>{pair.strength} / {pair.path} / {pair.metric} / {pair.clock} · {pair.status} · {pair.send_candidates} send / {pair.receive_candidates} receive candidates. Valid {seconds(pair.seconds)}, raw {seconds(pair.raw_seconds)}, uncertainty [{seconds(pair.lower_seconds)}, {seconds(pair.upper_seconds)}].</p><div className="controls">{pair.candidates.map((s,i)=>{const link=eventSourceLink(net,s,dataset);return <span key={i}><button type="button" onClick={()=>onSource(s)}>{s.kind} {s.input}:{s.file?`${s.file}:`:""}{s.ordinal}</button>{link&&<a href={link}>Open event source</a>}</span>})}</div><p>Candidate preview is bounded; counts include all records. Arrows connect unique recorded endpoints. An ambiguous or missing group keeps endpoint markers only.</p></aside>;
+}

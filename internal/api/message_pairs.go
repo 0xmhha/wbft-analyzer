@@ -61,13 +61,13 @@ func oneOf(x string, values ...string) bool {
 	return false
 }
 
-func (s *Server) pairData(w http.ResponseWriter, r *http.Request) (store.PairIndex, []derived.Pair, int, bool) {
+func (s *Server) pairData(w http.ResponseWriter, r *http.Request, flow ...bool) (store.PairIndex, []derived.Pair, int, bool) {
 	d, ok := s.lookupDataset(w, r, "message-evidence")
 	if !ok {
 		return store.PairIndex{}, nil, 0, false
 	}
 	q := r.URL.Query()
-	allowed := map[string]bool{"from_t": true, "to_t": true, "sender": true, "receiver": true, "node": true, "phase": true, "height": true, "round": true, "strength": true, "path": true, "clock": true, "status": true, "limit": true, "cursor": true, "threshold": true, "metric": true}
+	allowed := map[string]bool{"from_t": true, "to_t": true, "sender": true, "receiver": true, "node": true, "phase": true, "height": true, "round": true, "strength": true, "path": true, "clock": true, "status": true, "limit": true, "cursor": true, "threshold": true, "metric": true, "events": len(flow) > 0}
 	bad := func(message string) (store.PairIndex, []derived.Pair, int, bool) {
 		writeError(w, 400, message)
 		return store.PairIndex{}, nil, 0, false
@@ -108,12 +108,19 @@ func (s *Server) pairData(w http.ResponseWriter, r *http.Request) (store.PairInd
 		}
 		limit = n
 	}
+	if len(flow) > 0 {
+		f.Overlap = true
+		f.MaxPairs = 2000
+	}
 	index, pairs, e := s.Store.MessagePairData(r.Context(), d.ID, f)
 	if errors.Is(e, store.ErrPairIndex) {
 		writeError(w, 409, e.Error())
 		return index, nil, 0, false
 	}
 	if errors.Is(e, store.ErrPairWindow) {
+		if len(flow) > 0 {
+			return bad("message flow exceeds 2000 groups; narrow the filters")
+		}
 		return bad(e.Error())
 	}
 	if e != nil {

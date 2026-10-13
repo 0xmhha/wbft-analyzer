@@ -119,3 +119,18 @@ func TestSequenceGapAndMonoRegressionStayVisible(t *testing.T) {
 		t.Fatal(st, err, records)
 	}
 }
+
+func TestNativeAppendRunBoundaryPreservesOriginalLines(t *testing.T) {
+	first := `{"v":1,"node":"0x0000000000000000000000000000000000000001","run":"r1","seq":0,"t_wall":"2020-01-01T00:00:00Z","t_mono_ns":100,"kind":"NODE_START","validator":true,"impl":"wbft","mode":"standalone","sign_floor":null,"wal_recovery":{"records":0,"torn_bytes":0,"corrupted":0},"handshake":"start"}`
+	second := strings.ReplaceAll(strings.ReplaceAll(first, `"r1"`, `"r2"`), `"t_mono_ns":100`, `"t_mono_ns":0`)
+	var rows []logs.Event
+	stats, e := Read(context.Background(), strings.NewReader(first+"\n"+second), "0x0000000000000000000000000000000000000001", "events", func(r logs.Event) error { rows = append(rows, r); return nil })
+	if e != nil || len(rows) != 2 || rows[1].Line != 2 || rows[1].Run != "r2" || stats.MonotonicRegressions != 0 || stats.SequenceGaps != 0 {
+		t.Fatal(stats, rows, e)
+	}
+	for _, bad := range []string{strings.Replace(second, `"seq":0`, `"seq":1`, 1), second + "\n" + first} {
+		if _, e = Read(context.Background(), strings.NewReader(first+"\n"+bad), "0x0000000000000000000000000000000000000001", "events", func(logs.Event) error { return nil }); e == nil {
+			t.Fatal("invalid or reused run accepted")
+		}
+	}
+}
