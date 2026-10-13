@@ -165,7 +165,12 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 	}
 	expected := []Step{}
 	started := false
+	writer := ""
 	for _, s := range p.Steps {
+		if s.Run != writer {
+			writer = s.Run
+			started = false
+		}
 		if s.Input == "start" {
 			started = true
 		}
@@ -180,6 +185,17 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 		if row.Status != "complete" {
 			allComplete = false
 		}
+	}
+	firstSelected := len(expected)
+	for i, s := range expected {
+		if _, ok := selected[s.Height]; ok {
+			firstSelected = i
+			break
+		}
+	}
+	res.Warmup = &Warmup{Policy: "recorded_start", Status: "pending"}
+	if firstSelected == 0 {
+		res.Warmup.Status = "not_required"
 	}
 	index := 0
 	var rawBad int64
@@ -207,6 +223,15 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 				s := expected[index]
 				if r.Writer != s.Run || strconv.FormatUint(r.Engine, 10) != s.Engine || strconv.FormatUint(r.Step, 10) != s.Number {
 					return res, ErrHelper
+				}
+				if index < firstSelected {
+					s.Class = "not_comparable"
+					if r.Code == "env_exhausted" || r.Code == "input_gap" {
+						s.Class = r.Code
+					}
+					s.Issues = addIssue(s.Issues, res.Issue)
+					recordWarmup(res.Warmup, s)
+					res.Warmup.Status = "failed"
 				}
 				if _, included := selected[s.Height]; included {
 					s.Class = "not_comparable"
@@ -242,37 +267,34 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			if !*r.Match {
 				rawBad++
 			}
-			row, included := selected[s.Height]
-			if !included {
-				continue
+			if *r.Match && r.Digest != s.Recorded {
+				return res, ErrHelper
 			}
-			res.Total++
 			s.Omitted = r.Omitted
 			if r.Omitted != (h.OmitMissing && s.Capture != "" && onlyMissingCapture(s.Issues)) {
 				return res, ErrHelper
 			}
-			if !comparableStep(s, row, h.OmitMissing) {
-				s.Class = "not_comparable"
-				res.NotComparable++
-			} else {
-				s.Replayed = r.Digest
-				if *r.Match {
-					if r.Digest != s.Recorded {
-						return res, ErrHelper
-					}
-					s.Class = "match"
-					res.Matches++
-				} else {
-					s.Class = "output_diverged"
-					if s.Recorded == r.Digest {
-						s.Class = "env_mismatch"
-					}
-					res.Mismatches++
-					if res.FirstMismatch == nil {
-						n := s.Ordinal
-						res.FirstMismatch = &n
-					}
+			row, included := selected[s.Height]
+			if !included {
+				if index <= firstSelected {
+					s = classifyStep(s, r, s.Completeness == "complete")
+					recordWarmup(res.Warmup, s)
 				}
+				continue
+			}
+			res.Total++
+			s = classifyStep(s, r, comparableStep(s, row, h.OmitMissing))
+			switch s.Class {
+			case "match":
+				res.Matches++
+			case "output_diverged", "env_mismatch":
+				res.Mismatches++
+				if res.FirstMismatch == nil {
+					n := s.Ordinal
+					res.FirstMismatch = &n
+				}
+			default:
+				res.NotComparable++
 			}
 			if e = yield(s); e != nil {
 				return res, e
@@ -312,11 +334,18 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 				res.Issue = "input_changed"
 				return res, ErrHelper
 			}
+			finishWarmup(res.Warmup)
 			if res.Total == 0 {
 				res.Status = "not_possible"
 				res.Issue = "no_replayed_steps"
 			} else if h.OmitMissing {
 				res.Status = "counterfactual"
+			} else if res.Warmup.Status == "partial" {
+				res.Status = "partial"
+				res.Issue = "warmup_incomplete"
+			} else if res.Warmup.Status == "diverged" {
+				res.Status = "diverged"
+				res.Issue = "warmup_diverged"
 			} else if res.NotComparable > 0 || !allComplete {
 				res.Status = "partial"
 			} else if res.VersionStatus != "matched" {

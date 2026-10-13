@@ -23,7 +23,7 @@ import (
 
 func TestProtocolChild(t *testing.T) {
 	mode := os.Args[len(os.Args)-1]
-	if mode != "valid" && mode != "oversize" && mode != "bad_id" && mode != "stall" && mode != "core" && mode != "env_error" && mode != "bad_writer" && mode != "generic_error" {
+	if !strings.HasPrefix(mode, "warmup_") && mode != "valid" && mode != "oversize" && mode != "bad_id" && mode != "stall" && mode != "core" && mode != "env_error" && mode != "bad_writer" && mode != "generic_error" {
 		return
 	}
 	if mode == "core" {
@@ -49,6 +49,29 @@ func TestProtocolChild(t *testing.T) {
 	_ = enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": strings.Repeat("a", 40)})
 	if decoder.Decode(&request) != nil {
 		os.Exit(2)
+	}
+	if strings.HasPrefix(mode, "warmup_") {
+		if mode == "warmup_error" {
+			_ = enc.Encode(map[string]any{"type": "error", "id": 1, "code": "env_exhausted", "writer_run": "synthetic-source", "engine_run": uint64(18446744073709551615), "step": 1})
+		} else {
+			match, digest := true, "0x"+strings.Repeat("b", 64)
+			if mode == "warmup_diverged" {
+				match = false
+				digest = "0x" + strings.Repeat("c", 64)
+			}
+			if mode == "warmup_bad_digest" {
+				digest = "0x" + strings.Repeat("c", 64)
+			}
+			_ = enc.Encode(map[string]any{"type": "step", "id": 1, "writer_run": "synthetic-source", "engine_run": uint64(18446744073709551615), "step": 1, "input": "start", "out_digest": digest, "match": match, "outputs": 0})
+			_ = enc.Encode(map[string]any{"type": "step", "id": 1, "writer_run": "synthetic-source", "engine_run": uint64(18446744073709551615), "step": 2, "input": "timer", "out_digest": "0x" + strings.Repeat("b", 64), "match": true, "outputs": 0})
+			bad := 0
+			if !match {
+				bad = 1
+			}
+			_ = enc.Encode(map[string]any{"type": "done", "id": 1, "steps": 2, "mismatches": bad})
+		}
+		_ = decoder.Decode(&request)
+		os.Exit(0)
 	}
 	if mode == "env_error" || mode == "generic_error" {
 		code := "env_exhausted"

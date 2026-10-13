@@ -3096,6 +3096,16 @@
           },
           "version_status": {
             "type": "string"
+          },
+          "warmup": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReexecWarmup"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -3231,6 +3241,66 @@
           "recorded_digest",
           "step",
           "writer_run"
+        ],
+        "type": "object"
+      },
+      "ReexecWarmup": {
+        "additionalProperties": false,
+        "properties": {
+          "first_difference": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReexecStep"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_source_ordinal": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "last_source_ordinal": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "matches": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "mismatches": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "not_comparable": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "steps": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "matches",
+          "mismatches",
+          "not_comparable",
+          "policy",
+          "status",
+          "steps"
         ],
         "type": "object"
       },
