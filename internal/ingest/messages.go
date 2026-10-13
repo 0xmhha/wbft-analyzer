@@ -19,9 +19,21 @@ type MessageResult struct {
 }
 
 func Messages(ctx context.Context, s *store.Store, m messages.Manifest) (res MessageResult, err error) {
+	return MessagesWithInputs(ctx, s, m, "")
+}
+
+// MessagesWithInputs optionally retains original files outside PostgreSQL.
+func MessagesWithInputs(ctx context.Context, s *store.Store, m messages.Manifest, directory string) (res MessageResult, err error) {
 	plan, meta, e := messages.Prepare(ctx, m)
 	if e != nil {
 		return res, e
+	}
+	var archived map[string][]messages.ArchivedFile
+	if directory != "" {
+		archived, e = messages.Archive(ctx, directory, plan)
+		if e != nil {
+			return res, e
+		}
 	}
 	network := logs.SafeNetwork(m.Network)
 	d, release, e := s.BeginMessages(ctx, store.NetworkKey{ChainID: network.ChainID, GenesisHash: network.GenesisHash, Name: network.Name}, m.Name, meta)
@@ -38,10 +50,25 @@ func Messages(ctx context.Context, s *store.Store, m messages.Manifest) (res Mes
 		if err != nil {
 			detail = "message import incomplete; see local diagnostics"
 		}
-		if e := s.FinishRange(cleanup, d.ID, res.Records, detail); err == nil {
+		progress := res.Records
+		if d.Status == "complete" {
+			progress, detail = d.Progress, ""
+		}
+		if e := s.FinishRange(cleanup, d.ID, progress, detail); err == nil {
 			err = e
 		}
 	}()
+	for _, p := range plan {
+		if len(archived[p.Input.ID]) == 0 {
+			continue
+		}
+		if e = s.PutMessageInput(ctx, d.ID, p.Summary); e != nil {
+			return res, e
+		}
+		if e = s.PutInputFiles(ctx, d.ID, p.Input.ID, archived[p.Input.ID]); e != nil {
+			return res, e
+		}
+	}
 	if d.Status == "complete" {
 		res.Records = d.Progress
 		res.Skipped = true

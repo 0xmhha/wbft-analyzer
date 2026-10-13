@@ -49,6 +49,32 @@ func TestMessageDatasetRetryIdentityAndPrefix(t *testing.T) {
 	if strings.Contains(string(b), `"payload":`) || strings.Contains(string(b), `"reason":`) {
 		t.Fatal("payload persisted")
 	}
+	// Retention can be added to a completed metadata import without duplicating rows.
+	archive := filepath.Join(t.TempDir(), "inputs")
+	retained, e := MessagesWithInputs(ctx, s, m, archive)
+	if e != nil || !retained.Skipped || retained.DatasetID != one.DatasetID {
+		t.Fatal(retained, e)
+	}
+	files, e := s.InputFiles(ctx, one.DatasetID, "journal")
+	if e != nil || len(files) == 0 {
+		t.Fatal(files, e)
+	}
+	for _, f := range files {
+		if filepath.Dir(f.Path) != archive || filepath.Base(f.Path) != f.SHA256 {
+			t.Fatal(f)
+		}
+		if _, e = os.Stat(f.Path); e != nil {
+			t.Fatal(e)
+		}
+	}
+	if _, e = MessagesWithInputs(ctx, s, m, filepath.Join(t.TempDir(), "inputs")); e == nil {
+		t.Fatal("storage path conflict accepted")
+	}
+	// Storage refusal must not invalidate an already complete metadata dataset.
+	dsBefore, e := s.Datasets(ctx, one.NetworkID)
+	if e != nil || dsBefore[0].Status != "complete" {
+		t.Fatal(dsBefore, e)
+	}
 	ds, e := s.Datasets(ctx, one.NetworkID)
 	if e != nil || ds[0].Kind != "messages" || len(ds[0].Nodes) != 1 || ds[0].Status != "complete" {
 		t.Fatal(ds, e)

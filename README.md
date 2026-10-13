@@ -156,6 +156,19 @@ or R-01 frame directories. The manifest format is
 or `ntp`; only `ntp` takes a required nonnegative `skew_ms` bound.
 An optional input `sha256` checks the canonical, sorted file manifest hash.
 
+To retain original inputs for subsequent replay, pass `--inputs-dir DIR`.
+The directory must be private (mode 0700); a missing directory is created.
+Files are copied as `DIR/<sha256>` with mode 0600 and verified against the
+manifest fingerprint. Objects are published without overwriting existing
+files; existing objects must verify too. Each file is bounded to 256 MiB
+and a retention request to 16 GiB. Keep this directory outside the checkout.
+PostgreSQL migration 16 stores only file names, SHA256, sizes and local paths
+in `input_files`; paths and bytes are not exposed through HTTP. Retention
+can be added to a completed metadata import using the same manifest and
+storage directory. Retention does not prove replay input completeness.
+A database dump does not contain these objects; back up the private directory
+separately and preserve its path for replay lookups.
+
 The journal reader and message codec come from the pinned WBFT module.
 Only decoded metadata, source file hashes and original positions enter
 PostgreSQL. Signer recovery does not assert validator membership. Payloads,
