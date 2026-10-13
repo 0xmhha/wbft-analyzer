@@ -132,6 +132,36 @@ func low(s string) string {
 // processing outcomes. Callers must validate any companion's execution scope.
 // Header/source adapters must bind validator identities before calling Build.
 func Build(heights []Height, events []logs.Event, records []source.Record, inputs []Input) ([]Cell, error) {
+	return build(heights, heights, events, records, inputs)
+}
+
+// BuildRange bounds output before allocation while retaining all canonical heads
+// and source records for identity and absence proofs outside the displayed range.
+func BuildRange(heights []Height, events []logs.Event, records []source.Record, inputs []Input, from, to uint64) ([]Cell, error) {
+	if to < from || to-from >= 1024 {
+		return nil, fmt.Errorf("invalid classification range")
+	}
+	target := []Height{}
+	for _, h := range heights {
+		i, e := strconv.ParseUint(h.Index, 10, 64)
+		if e != nil {
+			return nil, e
+		}
+		if i >= from && i <= to {
+			target = append(target, h)
+		}
+	}
+	return build(heights, target, events, records, inputs)
+}
+
+func build(heights, target []Height, events []logs.Event, records []source.Record, inputs []Input) ([]Cell, error) {
+	count := 0
+	for _, h := range target {
+		if len(h.Validators) > 50000 || count > 100000-2*len(h.Validators) {
+			return nil, fmt.Errorf("classification exceeds 100000 cells")
+		}
+		count += 2 * len(h.Validators)
+	}
 	clean := map[string]bool{}
 	for _, in := range inputs {
 		clean[in.ID] = in.Complete && in.Stats.Malformed == 0 && in.Stats.SequenceGaps == 0 && in.Stats.Unknown == 0
@@ -280,9 +310,9 @@ func Build(heights []Height, events []logs.Event, records []source.Record, input
 		}
 		return false
 	})
-	captures := senderCaptures(ordered, clean, heights)
-	cells := []Cell{}
-	for _, h := range heights {
+	captures := senderCaptures(ordered, clean, heights, target)
+	cells := make([]Cell, 0, count)
+	for _, h := range target {
 		for _, who := range h.Validators {
 			who = canonical(who)
 			for _, ph := range []string{"PREPARE", "COMMIT"} {
@@ -512,7 +542,7 @@ func validSeal(h Height, s Seal) bool {
 // bracket that range; a terminal NODE_STOP and clean source diagnostics prove
 // the event capture's end. This is sender coverage only: imported headers never
 // establish receiver coverage, and opaque SEND identities block absence.
-func senderCaptures(events []logs.Event, clean map[string]bool, heights []Height) map[string]map[string][]Evidence {
+func senderCaptures(events []logs.Event, clean map[string]bool, heights, target []Height) map[string]map[string][]Evidence {
 	out := map[string]map[string][]Evidence{}
 	hashes := map[string]string{}
 	for _, h := range heights {
@@ -587,7 +617,7 @@ func senderCaptures(events []logs.Event, clean map[string]bool, heights []Height
 		}
 		r.heads = valid
 		sort.SliceStable(r.heads, func(i, j int) bool { return cmpHeight(r.heads[i].height, r.heads[j].height) < 0 })
-		for _, h := range heights {
+		for _, h := range target {
 			pos := sort.Search(len(r.heads), func(i int) bool { return cmpHeight(r.heads[i].height, h.Number) >= 0 })
 			var lo, hi *head
 			if pos < len(r.heads) {

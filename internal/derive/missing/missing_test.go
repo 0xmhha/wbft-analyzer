@@ -281,3 +281,45 @@ func TestLateEarlierHeightSendDoesNotBorrowCurrentView(t *testing.T) {
 		}
 	}
 }
+
+func TestRangeBoundsCellsBeforeAllocationAndKeepsCanonicalHeads(t *testing.T) {
+	heights := make([]Height, 12501)
+	for i := range heights {
+		h := baseHeight()
+		h.Index = fmt.Sprint(i + 1)
+		h.Number = h.Index
+		heights[i] = h
+	}
+	if _, e := Build(heights, nil, nil, nil); e == nil {
+		t.Fatal("unbounded cell allocation accepted")
+	}
+	cells, e := BuildRange(heights, nil, nil, nil, 2, 2)
+	if e != nil || len(cells) != 8 {
+		t.Fatal("range bound failed", len(cells), e)
+	}
+	node := address(4)
+	wall := "2020-01-01T00:00:00Z"
+	rows := []logs.Event{}
+	for i, k := range []event.Kind{event.NodeStart, event.NewHead, event.NewHead, event.NodeStop} {
+		fields := map[string]any{"seq": fmt.Sprint(i), "validator": true}
+		var v *event.View
+		if k == event.NewHead {
+			number := "1"
+			if i == 2 {
+				number = "3"
+			}
+			v = &event.View{Seq: number, Round: "0"}
+			fields["hash"] = heights[0].Hash
+		}
+		rows = append(rows, logs.Event{Input: "events", Node: node, Run: "r", Line: int64(i + 1), Wall: wall, Record: event.Record{Src: "event", Kind: k, View: v, Fields: fields}})
+	}
+	cells, e = BuildRange(heights[:3], rows, nil, []Input{{ID: "events", Complete: true}}, 2, 2)
+	if e != nil {
+		t.Fatal(e)
+	}
+	for _, c := range cells {
+		if c.Validator == node && (c.Class != "NOT_SENT" || c.Reason != "complete_active_event_capture") {
+			t.Fatal("outside-range canonical heads lost", c)
+		}
+	}
+}

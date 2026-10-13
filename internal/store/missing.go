@@ -295,7 +295,7 @@ func (s *Store) RebuildMissing(ctx context.Context, id, messageID int64, from, t
 		if e != nil {
 			return e
 		}
-		cells, e := missing.Build(heights, events, records, inputs)
+		cells, e := missing.BuildRange(heights, events, records, inputs, from, to)
 		if e != nil {
 			return e
 		}
