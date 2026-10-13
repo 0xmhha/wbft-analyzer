@@ -181,6 +181,11 @@ func missingHeaders(ctx context.Context, tx pgx.Tx, network int64, from, to uint
 	if e != nil {
 		return nil, nil, "", e
 	}
+	// Observation-derived copies are eligible only while their complete structural
+	// source/canonical dependency snapshot remains current.
+	if e := checkObservationCopies(ctx, tx, network); e != nil {
+		return nil, nil, "", e
+	}
 	rows, e = tx.Query(ctx, `SELECT hc.dataset_id,hc.copy FROM header_copies hc JOIN datasets d ON d.id=hc.dataset_id WHERE d.network_id=$1 AND hc.index_ BETWEEN $2::numeric AND $3::numeric ORDER BY hc.dataset_id,hc.index_,hc.node LIMIT 100001`, network, strconv.FormatUint(from, 10), strconv.FormatUint(to, 10))
 	if e != nil {
 		return nil, nil, "", e

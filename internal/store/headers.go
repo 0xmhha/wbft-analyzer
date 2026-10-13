@@ -186,41 +186,57 @@ func hasIndex(xs []int64, n int64) bool {
 // the next height's immutable previous seals. The next height is read even
 // when it is outside the displayed window.
 func (s *Store) HeaderRows(ctx context.Context, networkID int64, from, to string, datasetID *int64, node string) ([]headers.Row, error) {
-	rows, err := s.pool.Query(ctx, `SELECT h.fact,c.fact,hc.copy FROM heights h LEFT JOIN heights c ON c.network_id=h.network_id AND c.index_=h.index_+1 LEFT JOIN header_copies hc ON hc.dataset_id=$4 AND hc.node=$5 AND hc.index_=h.index_ WHERE h.network_id=$1 AND h.index_ BETWEEN $2::numeric AND $3::numeric ORDER BY h.index_ LIMIT 1024`, networkID, from, to, datasetID, node)
-	if err != nil {
-		return nil, err
-	}
-	return collect(rows, func(r pgx.CollectableRow) (headers.Row, error) {
-		var raw, child, copy []byte
-		if err := r.Scan(&raw, &child, &copy); err != nil {
-			return headers.Row{}, err
-		}
-		var f headers.Fact
-		if err := json.Unmarshal(raw, &f); err != nil {
-			return headers.Row{}, err
-		}
-		var ch *headers.Fact
-		var c *headers.Copy
-		if len(child) > 0 {
-			if err := json.Unmarshal(child, &ch); err != nil {
-				return headers.Row{}, err
+	var result []headers.Row
+	err := pgx.BeginTxFunc(ctx, s.pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
+		if datasetID != nil {
+			var kind string
+			if e := tx.QueryRow(ctx, `SELECT kind FROM datasets WHERE id=$1 AND network_id=$2`, *datasetID, networkID).Scan(&kind); e != nil {
+				return e
+			}
+			if kind == "observations" {
+				if _, e := readObservationHeaderIndex(ctx, tx, *datasetID); e != nil {
+					return e
+				}
 			}
 		}
-		if len(copy) > 0 {
-			if err := json.Unmarshal(copy, &c); err != nil {
-				return headers.Row{}, err
-			}
-		}
-		p, err := strconv.ParseUint(f.Policy, 10, 64)
+		rows, err := tx.Query(ctx, `SELECT h.fact,c.fact,hc.copy FROM heights h LEFT JOIN heights c ON c.network_id=h.network_id AND c.index_=h.index_+1 LEFT JOIN header_copies hc ON hc.dataset_id=$4 AND hc.node=$5 AND hc.index_=h.index_ WHERE h.network_id=$1 AND h.index_ BETWEEN $2::numeric AND $3::numeric ORDER BY h.index_ LIMIT 1024`, networkID, from, to, datasetID, node)
 		if err != nil {
-			return headers.Row{}, err
+			return err
 		}
-		var last types.Address
-		if err := last.UnmarshalText([]byte(f.LastProposer)); err != nil {
-			return headers.Row{}, err
-		}
-		return headers.Derive(f, ch, c, &types.ProposerPolicy{ID: p}, last)
+		result, err = collect(rows, func(r pgx.CollectableRow) (headers.Row, error) {
+			var raw, child, copy []byte
+			if err := r.Scan(&raw, &child, &copy); err != nil {
+				return headers.Row{}, err
+			}
+			var f headers.Fact
+			if err := json.Unmarshal(raw, &f); err != nil {
+				return headers.Row{}, err
+			}
+			var ch *headers.Fact
+			var c *headers.Copy
+			if len(child) > 0 {
+				if err := json.Unmarshal(child, &ch); err != nil {
+					return headers.Row{}, err
+				}
+			}
+			if len(copy) > 0 {
+				if err := json.Unmarshal(copy, &c); err != nil {
+					return headers.Row{}, err
+				}
+			}
+			p, err := strconv.ParseUint(f.Policy, 10, 64)
+			if err != nil {
+				return headers.Row{}, err
+			}
+			var last types.Address
+			if err := last.UnmarshalText([]byte(f.LastProposer)); err != nil {
+				return headers.Row{}, err
+			}
+			return headers.Derive(f, ch, c, &types.ProposerPolicy{ID: p}, last)
+		})
+		return err
 	})
+	return result, err
 }
 
 type HeaderBounds struct {

@@ -5,7 +5,7 @@ import type { HeaderRow, Evidence } from "../headers";
 import { Pending, useLoad } from "../ui";
 
 /** Immutable header participation with optional, explicitly scoped node copies. */
-export function Headers({ net, onAuth }: { net: number; onAuth: () => void }) {
+export function Headers({ net, onAuth, focus, sourceError }: { net: number; onAuth: () => void; focus?:{index:string;dataset:number;node:string}; sourceError?:string }) {
   const overview = useLoad(async () => {
     const [bounds, datasets] = await Promise.all([
       get("/v1/networks/{net}/header-bounds", { path: { net } }),
@@ -13,10 +13,10 @@ export function Headers({ net, onAuth }: { net: number; onAuth: () => void }) {
     ]);
     return { bounds, datasets: datasets.datasets };
   }, [net]);
-  const [start, setStart] = useState("");
-  const [draft, setDraft] = useState("");
-  const [dataset, setDataset] = useState(0);
-  const [node, setNode] = useState("");
+  const [start, setStart] = useState(focus?.index||"");
+  const [draft, setDraft] = useState(focus?.index||"");
+  const [dataset, setDataset] = useState(focus?.dataset||0);
+  const [node, setNode] = useState(focus?.node||"");
   const [selected, setSelected] = useState<HeaderRow | null>(null);
   const [validator, setValidator] = useState<string | undefined>(undefined);
   const [view, setView] = useState<"participation" | "proposers" | "epochs">("participation");
@@ -39,7 +39,7 @@ export function Headers({ net, onAuth }: { net: number; onAuth: () => void }) {
   const choose = (r: HeaderRow, address?: string) => {setSelected(r);setValidator(address)};
   const move = (delta: bigint) => { const n = BigInt(from) + delta; setStart(String(n < BigInt(bounds?.from || "0") ? BigInt(bounds?.from || "0") : n)); setSelected(null); };
   return <section>
-    <h1>What do the agreed headers show?</h1>
+    <h1>What do the agreed headers show?</h1>{sourceError&&<p role="alert">{sourceError}</p>}
     <p className="muted">Participation at h uses the previous seals in h+1. Absent inclusion is normal for some validators. Headers show the decision round, without timeout or message causes.</p>
     <Pending load={overview} onAuth={onAuth} />
     {bounds && <p>{bounds.count.toLocaleString()} stored headers · indices {bounds.from ?? "none"}–{bounds.to ?? "none"} · {(bounds.bytes / 1048576).toFixed(1)} MiB of header facts</p>}

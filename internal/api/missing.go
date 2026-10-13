@@ -72,7 +72,7 @@ func (s *Server) missingCells(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	index, cells, total, e := s.Store.MissingData(r.Context(), d.ID, f, int64(c.Offset), limit)
-	if errors.Is(e, store.ErrMissingIndex) {
+	if errors.Is(e, store.ErrMissingIndex) || errors.Is(e, store.ErrObservationHeaderIndex) {
 		writeError(w, 409, e.Error())
 		return
 	}
@@ -116,7 +116,7 @@ func (s *Server) missingIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	index, e := s.Store.MissingIndex(r.Context(), d.ID)
-	if errors.Is(e, store.ErrMissingIndex) {
+	if errors.Is(e, store.ErrMissingIndex) || errors.Is(e, store.ErrObservationHeaderIndex) {
 		writeError(w, 409, e.Error())
 		return
 	}

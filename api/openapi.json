@@ -2331,6 +2331,136 @@
         ],
         "type": "object"
       },
+      "ObservationBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "call_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationCheck"
+            },
+            "type": "array"
+          },
+          "copy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HeadersCopy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hash": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "own_round": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "proof": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationProof"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "call_ordinal",
+          "checks",
+          "copy",
+          "hash",
+          "height",
+          "kind",
+          "own_round",
+          "proof",
+          "source_ordinal",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ObservationCheck": {
+        "additionalProperties": false,
+        "properties": {
+          "expected": {
+            "description": "a JSON value admitted by the source or report reader"
+          },
+          "field": {
+            "type": "string"
+          },
+          "recorded": {
+            "description": "a JSON value admitted by the source or report reader"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected",
+          "field",
+          "recorded",
+          "required",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ObservationHeaderPage": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "$ref": "#/components/schemas/StoreObservationHeaderIndex"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationBinding"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index",
+          "next",
+          "rows",
+          "total"
+        ],
+        "type": "object"
+      },
       "ObservationList": {
         "additionalProperties": false,
         "properties": {
@@ -2374,6 +2504,150 @@
           "rows",
           "snapshot",
           "total"
+        ],
+        "type": "object"
+      },
+      "ObservationProof": {
+        "additionalProperties": false,
+        "properties": {
+          "child_hash": {
+            "type": "string"
+          },
+          "child_index": {
+            "type": "string"
+          },
+          "epoch": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "last_proposer": {
+            "type": "string"
+          },
+          "network_round": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "number": {
+            "type": "string"
+          },
+          "parent_hash": {
+            "type": "string"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "validators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "child_hash",
+          "child_index",
+          "epoch",
+          "hash",
+          "index",
+          "last_proposer",
+          "network_round",
+          "number",
+          "parent_hash",
+          "policy",
+          "validators"
+        ],
+        "type": "object"
+      },
+      "ObservationSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationCheck"
+            },
+            "type": "array"
+          },
+          "covered": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "definitions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "requested": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "validators": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationTotals"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "checks",
+          "covered",
+          "definitions",
+          "requested",
+          "status",
+          "validators"
+        ],
+        "type": "object"
+      },
+      "ObservationTotals": {
+        "additionalProperties": false,
+        "properties": {
+          "heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "missed_rounds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "previous_committed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "previous_prepared": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "proposed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "proposer_rounds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "validator": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "heights",
+          "missed_rounds",
+          "previous_committed",
+          "previous_prepared",
+          "proposed",
+          "proposer_rounds",
+          "validator"
         ],
         "type": "object"
       },
@@ -3762,6 +4036,63 @@
           "source_kind",
           "source_sha256",
           "to"
+        ],
+        "type": "object"
+      },
+      "StoreObservationHeaderIndex": {
+        "additionalProperties": false,
+        "properties": {
+          "bound_copies": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "counts": {
+            "additionalProperties": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from": {
+            "type": "string"
+          },
+          "proof_level": {
+            "type": "string"
+          },
+          "rows": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ObservationSummary"
+          },
+          "to": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bound_copies",
+          "counts",
+          "dataset_id",
+          "from",
+          "proof_level",
+          "rows",
+          "snapshot",
+          "summary",
+          "to",
+          "version"
         ],
         "type": "object"
       },
@@ -6477,6 +6808,180 @@
           }
         },
         "summary": "One normalized read-only RPC request/result with captured envelope hash; arbitrary properties and error messages are stripped."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/observations/headers": {
+      "get": {
+        "operationId": "listObservationHeaderBindings",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "first full decimal height, not a low64 index",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "last full decimal height, at most 1024 heights",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "page size 1..1000",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "immutable capture and range-bound cursor",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "head, copy or participation",
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "matched, different or unknown",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationHeaderPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Canonical full-number/hash/parent/validator comparisons with original RPC pointers; no signature or event-completeness claim."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/observations/headers/index": {
+      "get": {
+        "operationId": "getObservationHeaderIndex",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreObservationHeaderIndex"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Stored structural metadata bindings and independent canonical totals; source/header changes require explicit reindex."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/observations/participation": {

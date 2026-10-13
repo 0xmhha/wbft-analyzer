@@ -10,8 +10,8 @@ import (
 )
 
 func runReindex(args []string, stdout, stderr io.Writer) int {
-	if len(args) == 0 || args[0] != "replay" && args[0] != "messages" && args[0] != "missing" {
-		fmt.Fprintln(stderr, "Usage: wbft-analyzer reindex replay|messages|missing --db DSN --dataset ID")
+	if len(args) == 0 || args[0] != "replay" && args[0] != "messages" && args[0] != "missing" && args[0] != "observations" {
+		fmt.Fprintln(stderr, "Usage: wbft-analyzer reindex replay|messages|missing|observations --db DSN --dataset ID")
 		return exitUsage
 	}
 	fs := flag.NewFlagSet("reindex "+args[0], flag.ContinueOnError)
@@ -35,6 +35,15 @@ func runReindex(args []string, stdout, stderr io.Writer) int {
 	if _, err = s.Migrate(ctx); err != nil {
 		fmt.Fprintln(stderr, err)
 		return exitInternal
+	}
+	if args[0] == "observations" {
+		out, e := s.RebuildObservationHeaders(ctx, *id)
+		if e != nil {
+			fmt.Fprintln(stderr, e)
+			return exitDataErr
+		}
+		fmt.Fprintf(stdout, "dataset=%d rows=%d bound_copies=%d snapshot=%s version=%s\n", *id, out.Rows, out.BoundCopies, out.Snapshot, out.Version)
+		return exitOK
 	}
 	if args[0] == "missing" {
 		provided := map[string]bool{}
