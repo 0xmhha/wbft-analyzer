@@ -2346,6 +2346,121 @@
         ],
         "type": "object"
       },
+      "ObservationPage": {
+        "additionalProperties": false,
+        "properties": {
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/StoreObservationRow"
+            },
+            "type": "array"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "next",
+          "rows",
+          "snapshot",
+          "total"
+        ],
+        "type": "object"
+      },
+      "ObserveCall": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "description": "a JSON value admitted by the source or report reader"
+          },
+          "error_code": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "params": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data",
+          "method",
+          "ordinal",
+          "params",
+          "sha256",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ObserveComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "computed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ParticipationSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "different_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "reported": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ParticipationSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "computed",
+          "different_fields",
+          "reported",
+          "status"
+        ],
+        "type": "object"
+      },
       "PairPage": {
         "additionalProperties": false,
         "properties": {
@@ -2414,6 +2529,118 @@
         "required": [
           "index",
           "series"
+        ],
+        "type": "object"
+      },
+      "ParticipationDelay": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "meanMs": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "count",
+          "meanMs"
+        ],
+        "type": "object"
+      },
+      "ParticipationSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "gaps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "local": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "to": {
+            "type": "string"
+          },
+          "validators": {
+            "items": {
+              "$ref": "#/components/schemas/ParticipationValidatorSummary"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "from",
+          "gaps",
+          "heights",
+          "local",
+          "to",
+          "validators"
+        ],
+        "type": "object"
+      },
+      "ParticipationValidatorSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "delays": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ParticipationDelay"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "evidence": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "late": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "missed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "proposed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "proposerRounds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sealed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "validator": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "delays",
+          "evidence",
+          "heights",
+          "late",
+          "missed",
+          "proposed",
+          "proposerRounds",
+          "sealed",
+          "validator"
         ],
         "type": "object"
       },
@@ -3448,6 +3675,250 @@
           "snapshot",
           "to",
           "version"
+        ],
+        "type": "object"
+      },
+      "StoreObservationCall": {
+        "additionalProperties": false,
+        "properties": {
+          "error_code": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "params": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "method",
+          "ordinal",
+          "params",
+          "sha256",
+          "status"
+        ],
+        "type": "object"
+      },
+      "StoreObservationCapture": {
+        "additionalProperties": false,
+        "properties": {
+          "calls": {
+            "items": {
+              "$ref": "#/components/schemas/StoreObservationCall"
+            },
+            "type": "array"
+          },
+          "comparison": {
+            "$ref": "#/components/schemas/ObserveComparison"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from": {
+            "type": "string"
+          },
+          "node": {
+            "$ref": "#/components/schemas/StoreObservationNode"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "source_kind": {
+            "type": "string"
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "calls",
+          "comparison",
+          "dataset_id",
+          "from",
+          "node",
+          "snapshot",
+          "source_kind",
+          "source_sha256",
+          "to"
+        ],
+        "type": "object"
+      },
+      "StoreObservationImprovement": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "source"
+        ],
+        "type": "object"
+      },
+      "StoreObservationNode": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "bls_public_key": {
+            "type": "string"
+          },
+          "build": {
+            "type": "string"
+          },
+          "chain_id": {
+            "type": "string"
+          },
+          "genesis_hash": {
+            "type": "string"
+          },
+          "head_hash": {
+            "type": "string"
+          },
+          "head_number": {
+            "type": "string"
+          },
+          "impl": {
+            "type": "string"
+          },
+          "improvements": {
+            "items": {
+              "$ref": "#/components/schemas/StoreObservationImprovement"
+            },
+            "type": "array"
+          },
+          "log_profile": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "rule_activations": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "rules_digest": {
+            "type": "string"
+          },
+          "sign_floor": {
+            "type": "string"
+          },
+          "validator": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "bls_public_key",
+          "build",
+          "chain_id",
+          "genesis_hash",
+          "head_hash",
+          "head_number",
+          "impl",
+          "improvements",
+          "log_profile",
+          "mode",
+          "rule_activations",
+          "rules_digest",
+          "sign_floor",
+          "validator",
+          "version"
+        ],
+        "type": "object"
+      },
+      "StoreObservationRow": {
+        "additionalProperties": false,
+        "properties": {
+          "call_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "data": {
+            "description": "a JSON value admitted by the source or report reader"
+          },
+          "gap": {
+            "type": "boolean"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "local_arrivals": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "proposer": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "rounds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          },
+          "source_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "validators": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "call_ordinal",
+          "data",
+          "gap",
+          "hash",
+          "height",
+          "local_arrivals",
+          "proposer",
+          "round",
+          "rounds",
+          "source",
+          "source_ordinal",
+          "validators"
         ],
         "type": "object"
       },
@@ -5876,6 +6347,232 @@
           }
         },
         "summary": "The stored classification scope and source snapshot; never builds a projection."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/observations": {
+      "get": {
+        "operationId": "getObservationCapture",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreObservationCapture"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Native RPC node metadata, request availability and reported versus recomputed participation summary; never event completeness evidence."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/observations/calls/{ordinal}": {
+      "get": {
+        "operationId": "getObservationCall",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "positive original request ordinal",
+            "in": "path",
+            "name": "ordinal",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObserveCall"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "One normalized read-only RPC request/result with captured envelope hash; arbitrary properties and error messages are stripped."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/observations/participation": {
+      "get": {
+        "operationId": "listObservedParticipation",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "first full decimal height, not a low64 index",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "last full decimal height, at most 1024 heights",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "page size 1..1000",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "immutable capture and range-bound cursor",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Original full-height participation claims, preserving local/header/gap source and immutable request pointers."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/phases/samples": {

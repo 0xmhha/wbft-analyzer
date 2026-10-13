@@ -544,3 +544,50 @@ and disclose the total count. Blank positions on a filtered cursor page do not
 mean missing votes. Last-head uncertainty remains visible when its child has not
 been captured. This projection does not import live observation RPC or implement
 follow mode or closed re-execution.
+
+
+## Native node observation captures
+
+Import a bounded read-only native RPC range, or a saved capture:
+
+```sh
+wbft-analyzer ingest observe --db "$DSN" --name node-observation-1 --rpc http://127.0.0.1:8545 --from 1 --to 56
+wbft-analyzer ingest observe --db "$DSN" --name archived-observation-1 --archive capture.json
+```
+
+`wbft-analyzer-observe/1` archives contain `from`, `to` and `replies`, each with
+`method`, string `params` and a JSON-RPC `response` envelope. Native node identity,
+participation and summary requests are required; per-method error/null responses
+remain unavailable. Live collection also requests configuration at each full
+height and a header copy for every recorded non-gap hash. The node page exposes
+request availability and parameters, node role/version/profile/rules metadata,
+full-height participation claims and reported versus recomputed validator totals.
+Configuration at one archived height does not establish the entire range.
+
+Collections are not atomic node snapshots. Captured participation records are
+aggregated with the pinned public WBFT definition; mismatched fields remain
+visible. `source=local`, `source=header` and gap records stay distinct. Header-only
+records cannot claim local message arrivals. None of these records establishes
+complete native event coverage or send absence, including node sign-floor
+metadata. These RPC claims do not replace canonical header facts or automatically
+bind header copies to the canonical header overlay.
+
+Migration 13 keeps observations separate from event/journal datasets. Imports
+are atomic and immutable; retrying a complete identical source skips it, while
+changing its content or network under the same name is refused. Node URLs, local
+file paths, arbitrary properties, RPC error messages and aggregate signature
+bytes are not persisted. Hashes bind the supplied capture/envelope representation;
+live envelopes are reconstructed from the client result/error and are not claimed
+to be original network packet bytes.
+
+`GET /v1/networks/{net}/datasets/{dataset}/observations` returns node metadata,
+request provenance and both summaries. `/observations/participation?from=1&to=56`
+returns source-linked rows with bounded, capture/range-bound cursors; full heights
+are decimal strings and may exceed uint64. `/observations/calls/{ordinal}` returns
+one normalized request/result. Every participation range must return exactly one
+record per requested height, including explicit gaps. Queries cannot exceed the
+captured range or cross network/dataset scopes. Limits are 1024 heights, 4096 calls
+and 32 MiB of response envelopes per collection. Duplicate JSON keys, duplicate
+requests, malformed identities and delay aggregates outside int64 are refused.
+Live follow, canonical/header comparison and actual takeover sign-floor acceptance
+remain separate work.

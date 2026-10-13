@@ -63,10 +63,17 @@ stop() {
 
 # capture PORT DIR writes the answers of the read endpoints to DIR.
 capture() {
-	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report baseline_net baseline_ids message_net message_id missing_id
+	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report baseline_net baseline_ids message_net message_id missing_id observation_net observation_id
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
+
+ observation_net=$(jq -r '.networks[]|select(.chain_id=="8" and .genesis_hash=="0x1111111111111111111111111111111111111111111111111111111111111111")|.id' "$dir/networks.json")
+ get "/networks/$observation_net/datasets" observation-datasets
+ observation_id=$(jq -r '.datasets[]|select(.kind=="observations")|.id' "$dir/observation-datasets.json")
+ get "/networks/$observation_net/datasets/$observation_id/observations" observation-capture
+ get "/networks/$observation_net/datasets/$observation_id/observations/participation?from=1&to=2&limit=1000" observation-participation
+ get "/networks/$observation_net/datasets/$observation_id/observations/calls/5" observation-copy-source
 	header_net=$(jq -r --arg genesis "$(jq -r .hash "$root/internal/source/headers/testdata/0.json")" '.networks[] | select(.chain_id == "8283" and .genesis_hash == $genesis) | .id' "$dir/networks.json")
 	test -n "$header_net"
 	get "/networks/$header_net/datasets" header-datasets
@@ -182,6 +189,7 @@ base['observations']=[dict(id='log-source',kind='round_change_f_plus_one',count=
 Path(sys.argv[2]).write_text(json.dumps(base)+'\n')
 PYLOG
 "$bin" ingest reports --db "$src" "$work/log-report.json" >"$out/log-report.log"
+"$bin" ingest observe --db "$src" --name synthetic-observation-dump --archive "$root/internal/source/observe/testdata/capture.json" >"$out/observation-ingest.log"
 capture 18091 "$out/source"
 stop
 

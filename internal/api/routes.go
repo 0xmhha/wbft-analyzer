@@ -5,6 +5,7 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/derive/latency"
 	"github.com/0xmhha/wbft-analyzer/internal/derive/rounds"
 	sourcemessages "github.com/0xmhha/wbft-analyzer/internal/source/messages"
+	"github.com/0xmhha/wbft-analyzer/internal/source/observe"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
 	"net/http"
 )
@@ -42,6 +43,10 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/observations", id: "getObservationCapture", summary: "Native RPC node metadata, request availability and reported versus recomputed participation summary; never event completeness evidence.", params: runParams(), answers: map[int]any{200: store.ObservationCapture{}}, handle: (*Server).observationCapture},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/observations/participation", id: "listObservedParticipation", summary: "Original full-height participation claims, preserving local/header/gap source and immutable request pointers.", params: observationParams(), answers: map[int]any{200: ObservationPage{}}, handle: (*Server).observationRows},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/observations/calls/{ordinal}", id: "getObservationCall", summary: "One normalized read-only RPC request/result with captured envelope hash; arbitrary properties and error messages are stripped.", params: append(runParams(), param{name: "ordinal", in: "path", doc: "positive original request ordinal", typ: "integer", format: "int64", required: true}), answers: map[int]any{200: observe.Call{}}, handle: (*Server).observationCall},
+
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/missing/index", id: "getMissingIndex", summary: "The stored classification scope and source snapshot; never builds a projection.", params: runParams(), answers: map[int]any{200: store.MissingIndex{}}, handle: (*Server).missingIndex},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/missing", id: "listMissingCells", summary: "Source-backed participation classifications over an explicitly indexed canonical range; stale inputs or headers require reindexing.", params: missingParams(), answers: map[int]any{200: MissingPage{}}, handle: (*Server).missingCells},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/flow", id: "getMessageFlow", summary: "Source-linked message observations overlapping a bounded event execution window; verified companion required, at most 2000 groups.", params: append(pairParams(false), param{name: "events", in: "query", doc: "event run dataset ID for the same verified execution", typ: "integer", format: "int64", required: true}), answers: map[int]any{200: MessageFlow{}}, handle: (*Server).messageFlow},
