@@ -176,3 +176,27 @@ func TestRawSampleOverallAndSeparatedEvidenceDimensions(t *testing.T) {
 		t.Fatal(summary)
 	}
 }
+
+func TestMissingWireReceiveFallsBackToProcessingStamp(t *testing.T) {
+	records := []source.Record{
+		{Input: "journal-a", File: "00000000000000000000.wal", Ordinal: 1, Node: "a", Run: "writer-a", Type: "frame", Dir: "out", Peer: "b", Signer: "a", Phase: "PREPARE", Height: "1", Round: "0", Key: "bytes", Decode: "decoded", Write: "ok", Wall: "2020-01-01T00:00:00Z"},
+		{Input: "journal-b", File: "00000000000000000000.wal", Ordinal: 2, Node: "b", Run: "writer-b", Type: "frame", Dir: "in", Peer: "a", Signer: "a", Phase: "PREPARE", Height: "1", Round: "0", Key: "bytes", Decode: "decoded", Wall: "2020-01-01T00:00:00.010Z"},
+	}
+	events := []logs.Event{
+		{Input: "event-a", Node: "a", Run: "writer-a", Line: 1, Record: event.Record{Src: "event", Kind: event.EngineStart}},
+		{Input: "event-b", Node: "b", Run: "writer-b", Line: 17, Wall: "2020-01-01T00:00:00.040Z", Record: event.Record{Src: "event", Kind: event.MsgOutcome, View: &event.View{Seq: "1", Round: "0"}, Fields: map[string]any{"code": "19", "dedup_key": "bytes", "peer": "a", "outcome": "ACCEPT"}}},
+	}
+	projected := ProjectEvents(events)
+	pairs := func(rs []source.Record) []Pair {
+		wire := ProjectRecords(rs)
+		return PairEndpoints(MixEndpoints(EnrichEvents(append(wire.Endpoints, projected.Endpoints...), rs)), Clock{Model: "shared-host"})
+	}
+	baseline := pairs(records)
+	if len(baseline) != 1 || baseline[0].Strength != "link" || baseline[0].Metric != "link" || baseline[0].Status != "valid" || baseline[0].Seconds == nil || *baseline[0].Seconds != .01 {
+		t.Fatal(baseline)
+	}
+	fallback := pairs(records[:1])
+	if len(fallback) != 1 || fallback[0].Strength != "node" || fallback[0].Metric != "propagation_processing" || fallback[0].Status != "valid" || fallback[0].Seconds == nil || *fallback[0].Seconds != .04 || fallback[0].Receive == nil || fallback[0].Receive.Kind != "event" || fallback[0].Receive.Ordinal != 17 || fallback[0].Receive.Wall != events[1].Wall {
+		t.Fatal("processing fallback was lost or presented as wire arrival", fallback)
+	}
+}
