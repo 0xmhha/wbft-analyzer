@@ -456,3 +456,22 @@ bucket aggregates original valid pairs and preserves all evidence dimensions.
 Absent buckets are not interpolated. The series view links a selected point to
 its bucket, full view, table and charts, with mouse or keyboard selection. The
 API refuses more than 2,000 bucket/view groups instead of truncating results.
+
+
+`/messages/issues` exposes source observations that could not be projected,
+lower-grade alternatives and message observations from unassociated runs.
+State and timer records remain coverage rather than missing-message claims.
+Pages have at most 1,000 rows and filter by recording node, diagnostic reason
+or original source dataset. Cursors bind to a content snapshot of the complete
+pair/issue projection and source metadata; changed sources or companions return
+409 until reindexing. Identical rebuilt projections retain the same snapshot.
+Reindex existing pairing snapshots to version 5 before using this endpoint.
+
+The latency view offers p50/p90/p95/p99 raw tails and up to 20 non-local
+directional p95 candidates within each evidence dimension, with valid sample
+counts. These are recorded latency candidates, not causal bottleneck verdicts.
+An event or log source opens its own dataset, original input/line and exact
+source cut in the event/replay view. The cursor seeks through that record,
+including records that share a wall timestamp. A filtered-out point remains
+absent. Journal/frame pointers still resolve original metadata; they are not
+converted into event pointers without association evidence.

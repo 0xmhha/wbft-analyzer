@@ -1,3 +1,4 @@
+import type { EventFocus } from "../sourceLink";
 import { useEffect, useState, useRef } from "react";
 import { get } from "../api/client";
 import type { Schemas } from "../api/client";
@@ -11,9 +12,9 @@ import { RoundBaselines } from "./RoundBaselines";
 type Filter = { node: string; kind: string; phase: string; height: string; round: string };
 const emptyFilter: Filter = { node: "", kind: "", phase: "", height: "", round: "" };
 
-export function Events({ net, onAuth }: { net: number; onAuth: () => void }) {
+export function Events({ net, focus, sourceError, onAuth }: { net: number; focus?:EventFocus; sourceError?:string; onAuth: () => void }) {
   const datasets = useLoad(async () => (await get("/v1/networks/{net}/datasets", { path: { net } })).datasets.filter((d) => d.kind === "run"), [net]);
-  const [chosen, choose] = useState(0);
+  const [chosen, choose] = useState(focus?.dataset || 0);
   const id = chosen || (datasets.state === "done" ? datasets.data.at(-1)?.id : 0) || 0;
   const run = datasets.state === "done" ? datasets.data.find((d) => d.id === id) : undefined;
   const info = useLoad(async () => {
@@ -30,7 +31,8 @@ export function Events({ net, onAuth }: { net: number; onAuth: () => void }) {
   const [draft, setDraft] = useState<Filter>(emptyFilter);
   const [cursors, setCursors] = useState<string[]>([]);
   const [selected, setSelected] = useState<LogEvent | null>(null);
- const [pointer,setPointer]=useState<{input:string;line:number}|null>(null);
+ const [pointer,setPointer]=useState<{input:string;line:number}|null>(focus ? {input:focus.input,line:focus.line}:null);
+ const [replaySource,setReplaySource]=useState<LogEvent|null>(null);
  const select=(e:LogEvent|null)=>{setProof(null);setPointer(null);setSelected(e)};
  const detail=useLoad(async()=>pointer?get("/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}",{path:{net,dataset:id,...pointer}}):null,[net,id,pointer?.input,pointer?.line]);
  const [proof,setProof]=useState<{report:string;observation:string;index:number}|null>(null);
@@ -40,11 +42,13 @@ export function Events({ net, onAuth }: { net: number; onAuth: () => void }) {
   const times = bounds?.from_t && bounds.to_t ? timeWindow(anchor ?? Date.parse(bounds.from_t), span, bounds) : null;
   const cursor = cursors.at(-1);
   const scope = `${net}:${id}:${times?.from_t}:${times?.to_t}:${JSON.stringify(filter)}`;
-  const retainProof=useRef(false);
- useEffect(() => { setCursors([]); if(retainProof.current){retainProof.current=false}else{select(null)} }, [scope]);
+  const windowScope=`${id}:${times?.from_t}:${times?.to_t}`;
+ const retainProof=useRef(false), previousScope=useRef(scope), previousWindow=useRef(windowScope), initializingSource=useRef(Boolean(focus));
+ useEffect(() => { if(previousScope.current===scope)return;previousScope.current=scope;const windowChanged=previousWindow.current!==windowScope;previousWindow.current=windowScope;setCursors([]); if(retainProof.current){retainProof.current=false}else if(!(pointer && (initializingSource.current || !windowChanged))){select(null);setReplaySource(null)} }, [scope]);
+ useEffect(()=>{if(focus?.replay && detail.state==="done" && detail.data && pointer?.input===focus.input && pointer?.line===focus.line)setReplaySource(detail.data)},[focus,detail,pointer?.input,pointer?.line]);
  useEffect(()=>{if(proof&&evidence.state==="done"&&evidence.data?.event&&times){const t=Date.parse(evidence.data.event.t_wall);if(t<Date.parse(times.from_t)||t>Date.parse(times.to_t)){retainProof.current=true;setAnchor(t-span/2)}}},[proof,evidence,times?.from_t,times?.to_t,span]);
- useEffect(()=>{if(pointer&&detail.state==="done"&&detail.data&&times){const t=Date.parse(detail.data.t_wall);if(t<Date.parse(times.from_t)||t>Date.parse(times.to_t)){retainProof.current=true;setAnchor(t-span/2)}}},[pointer,detail,times?.from_t,times?.to_t,span]);
- useEffect(()=>{choose(0);setAnchor(null);setDraft(emptyFilter);setFilter(emptyFilter)},[net]);
+ useEffect(()=>{if(pointer&&detail.state==="done"&&detail.data&&times){const t=Date.parse(detail.data.t_wall);if(t<Date.parse(times.from_t)||t>Date.parse(times.to_t)){retainProof.current=true;setAnchor(t-span/2)}else{initializingSource.current=false}}},[pointer,detail,times?.from_t,times?.to_t,span]);
+
   const page = useLoad(async () => {
     if (!times) return null;
     const query = { ...times, ...Object.fromEntries(Object.entries(filter).filter(([, v]) => v)), limit: 500, ...(cursor ? { cursor } : {}) };
@@ -53,9 +57,10 @@ export function Events({ net, onAuth }: { net: number; onAuth: () => void }) {
   const rounds = useLoad(async () => times ? get("/v1/networks/{net}/datasets/{dataset}/rounds/distribution", { path: { net, dataset: id }, query: times }) : null, [net, id, times?.from_t, times?.to_t]);
   const data = page.state === "done" ? page.data : null;
   const nodes = info.state === "done" && info.data ? [...new Set(info.data.inputs.map((i) => i.node))].sort().filter((n) => !filter.node || filter.node === n) : [];
-  const resetDataset = (value: number) => { choose(value); setAnchor(null); setCursors([]); select(null); };
+  const resetDataset = (value: number) => { choose(value); setAnchor(null); setCursors([]); setReplaySource(null); select(null); };
   return <section>
     <h1>How did each WBFT node progress?</h1>
+    {sourceError && <p className="error">{sourceError}</p>}
     <p className="muted">Points are metadata from node logs or schema-validated event streams. A send records an attempt; a handle records processing. Missing points do not prove a missing message. Time alignment uses wall timestamps; event intervals can retain a monotonic clock.</p>
     <Pending load={datasets} onAuth={onAuth} />
     {datasets.state === "done" && <>
@@ -84,9 +89,9 @@ export function Events({ net, onAuth }: { net: number; onAuth: () => void }) {
         <div className="event-table table-scroll"><table><thead><tr><th>Source</th><th>Node</th><th>Wall time</th><th>Full height / round</th><th>Kind / message</th><th>View source</th></tr></thead><tbody>{data.events.map((e) => <tr key={eventKey(e)} className={chosenEvent && eventKey(chosenEvent) === eventKey(e) ? "selected" : ""}><td><button type="button" onClick={() => select(e)}>{e.input}:{e.line}</button></td><td>{e.node}</td><td className="mono">{e.t_wall}</td><td>{e.height || "unknown"} / {e.round || "unknown"}</td><td>{e.kind} / {field(e, "phase") || "—"}</td><td>{e.view_inferred ? "carried within engine run" : "recorded / unavailable"}</td></tr>)}</tbody></table></div>
       </>}
       {pointer && <Pending load={detail} onAuth={onAuth} />}
-      {chosenEvent && <aside><h2>{chosenEvent.kind}: {chosenEvent.node}</h2>{data && !data.events.some((e)=>eventKey(e)===eventKey(chosenEvent)) && <p>This source event was fetched separately and is highlighted alongside the current filtered page.</p>}<p>Source {chosenEvent.input}:{chosenEvent.line} · {chosenEvent.run} · {chosenEvent.profile} · {chosenEvent.source || "log"}-{chosenEvent.level}</p><p className="mono">{chosenEvent.t_wall} · full height {chosenEvent.height || "unknown"} / round {chosenEvent.round || "unknown"}</p><p>{chosenEvent.view_inferred ? "View is inferred from this engine run's latest round." : "View is recorded in this line or unavailable."} {chosenEvent.t_mono_ns !== undefined ? `Monotonic time: ${chosenEvent.t_mono_ns} ns.` : "No monotonic timestamp is present."}</p><pre>{JSON.stringify(chosenEvent.fields, null, 2)}</pre><a href={`#/networks/${net}/headers`}>Compare header participation and missed proposer opportunities</a></aside>}
+      {chosenEvent && <aside><h2>{chosenEvent.kind}: {chosenEvent.node}</h2>{data && !data.events.some((e)=>eventKey(e)===eventKey(chosenEvent)) && <p>This source event was fetched separately and is highlighted alongside the current filtered page.</p>}<p>Source {chosenEvent.input}:{chosenEvent.line} · {chosenEvent.run} · {chosenEvent.profile} · {chosenEvent.source || "log"}-{chosenEvent.level}</p><p className="mono">{chosenEvent.t_wall} · full height {chosenEvent.height || "unknown"} / round {chosenEvent.round || "unknown"}</p><p>{chosenEvent.view_inferred ? "View is inferred from this engine run's latest round." : "View is recorded in this line or unavailable."} {chosenEvent.t_mono_ns !== undefined ? `Monotonic time: ${chosenEvent.t_mono_ns} ns.` : "No monotonic timestamp is present."}</p><pre>{JSON.stringify(chosenEvent.fields, null, 2)}</pre><button type="button" onClick={()=>setReplaySource(chosenEvent)}>Show this source in replay</button><a href={`#/networks/${net}/headers`}>Compare header participation and missed proposer opportunities</a></aside>}
       {proof && <><Pending load={evidence} onAuth={onAuth}/>{evidence.state==="done"&&evidence.data&&<p>Inspector source: {evidence.data.status} · {evidence.data.report_input} → {evidence.data.dataset_input || "unavailable"}:{evidence.data.line} · SHA256 {evidence.data.sha256 || "unavailable"}</p>}</>}
-      <VisualReplay net={net} dataset={id} times={times} node={filter.node} onAuth={onAuth} onPoint={(input,line)=>{setProof(null);setSelected(null);setPointer({input,line});}} />
+      <VisualReplay key={`${id}:${replaySource?.input}:${replaySource?.line}`} focus={replaySource || undefined} net={net} dataset={id} times={times} node={filter.node} onAuth={onAuth} onPoint={(input,line)=>{setProof(null);setSelected(null);setPointer({input,line});}} />
       <PhaseLatency net={net} dataset={id} times={times} node={filter.node} height={filter.height} round={filter.round} onAuth={onAuth} onPoint={(input,line)=>{setProof(null);setSelected(null);setPointer({input,line});}} />
       <LogOverlay net={net} dataset={id} onAuth={onAuth} onEvidence={(p)=>{setSelected(null);setPointer(null);setProof(p)}}/>
       <Pending load={rounds} onAuth={onAuth} />

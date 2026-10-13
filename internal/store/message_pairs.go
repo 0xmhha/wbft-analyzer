@@ -2,12 +2,15 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	derived "github.com/0xmhha/wbft-analyzer/internal/derive/messages"
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
 	source "github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/jackc/pgx/v5"
+	"sort"
 	"time"
 )
 
@@ -16,6 +19,7 @@ var ErrPairWindow = errors.New("message pair window exceeds 100000 rows; narrow 
 var ErrPairSource = errors.New("message pairing exceeds one million source records or projected endpoints")
 
 type PairIndex struct {
+	Snapshot     string                    `json:"snapshot"`
 	EventDataset int64                     `json:"event_dataset,omitempty"`
 	Association  *derived.AssociationProof `json:"association,omitempty"`
 	Version      string                    `json:"version"`
@@ -55,6 +59,7 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		var kind string
 		var meta []byte
+		var companionMeta []byte
 		var progress int64
 		if e := tx.QueryRow(ctx, `SELECT kind,metadata,progress,status FROM datasets WHERE id=$1 FOR UPDATE`, id).Scan(&kind, &meta, &progress, &out.Status); e != nil {
 			return e
@@ -219,6 +224,7 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 			if e := tx.QueryRow(ctx, `SELECT network_id FROM datasets WHERE id=$1`, id).Scan(&targetNetwork); e != nil {
 				return e
 			}
+			companionMeta = sourceMeta
 			if sourceKind != "run" || sourceStatus != "complete" || out.Status != "complete" || sourceNetwork != targetNetwork {
 				return errors.New("association requires completed sources on one network")
 			}
@@ -250,8 +256,16 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 			projection = derived.ProjectRecords(associatedRecords)
 			projection.Counts["unassociated_message_records"] = int64(len(records) - len(associatedRecords))
 			projection.Counts["unassociated_event_records"] = int64(len(events) - len(associatedEvents))
+			excludedRecords, excludedEvents := derived.UnassociatedEvidence(records, events, associatedRecords, associatedEvents)
+			projection.Issues = append(projection.Issues, excludedRecords...)
+			projection.Counts["unassociated_message_observations"] = int64(len(excludedRecords))
 			records = associatedRecords
-			other := derived.ProjectEvents(associatedEvents)
+			other, e := projectMessageEvents(associatedEvents)
+			if e != nil {
+				return e
+			}
+			other.Issues = append(other.Issues, excludedEvents...)
+			other.Counts["unassociated_message_observations"] = int64(len(excludedEvents))
 			coverage, e := readEventCoverage(ctx, tx, out.EventDataset, sourceStatus)
 			if e != nil {
 				return e
@@ -301,22 +315,12 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 			}
 		}
 		if kind == "run" {
-			nodes := map[string]bool{}
-			sends, outcomes := int64(0), int64(0)
-			for _, e := range events {
-				nodes[e.Node] = true
-				if e.Record.Kind == "SEND" {
-					sends++
-				}
-				if e.Record.Kind == "MSG_OUTCOME" {
-					outcomes++
-				}
+			projection, e = projectMessageEvents(events)
+			if e != nil {
+				return e
 			}
-			if sends*int64(len(nodes))+outcomes > 1000000 {
-				return ErrPairSource
-			}
-			projection = derived.ProjectEvents(events)
 		}
+
 		if len(projection.Endpoints) > 1000000 {
 			return ErrPairSource
 		}
@@ -325,6 +329,11 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 		pairs := derived.PairEndpoints(projection.Endpoints, clock)
 		out.Pairs = int64(len(pairs))
 		out.Issues = int64(len(projection.Issues))
+		sort.Slice(projection.Issues, func(i, j int) bool {
+			a, _ := json.Marshal(projection.Issues[i])
+			b, _ := json.Marshal(projection.Issues[j])
+			return string(a) < string(b)
+		})
 		for _, table := range []string{"message_pairs", "message_pair_issues"} {
 			if _, e := tx.Exec(ctx, `DELETE FROM `+table+` WHERE dataset_id=$1`, id); e != nil {
 				return e
@@ -370,6 +379,28 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 				return e
 			}
 		}
+		h := sha256.New()
+		enc := json.NewEncoder(h)
+		if e := enc.Encode(json.RawMessage(meta)); e != nil {
+			return e
+		}
+		if e := enc.Encode(json.RawMessage(companionMeta)); e != nil {
+			return e
+		}
+		if e := enc.Encode(out); e != nil {
+			return e
+		}
+		for _, p := range pairs {
+			if e := enc.Encode(p); e != nil {
+				return e
+			}
+		}
+		for _, x := range projection.Issues {
+			if e := enc.Encode(x); e != nil {
+				return e
+			}
+		}
+		out.Snapshot = hex.EncodeToString(h.Sum(nil))
 		info, e := json.Marshal(out)
 		if e != nil {
 			return e
@@ -396,19 +427,9 @@ func (s *Store) MessagePairData(ctx context.Context, id int64, f PairFilter) (Pa
 	var index PairIndex
 	pairs := []derived.Pair{}
 	err := pgx.BeginTxFunc(ctx, s.pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
-		var info []byte
-		var ready bool
-		e := tx.QueryRow(ctx, `SELECT i.info,coalesce(i.version=$2 AND i.progress=d.progress AND i.status=d.status AND i.metadata=d.metadata AND NOT EXISTS(SELECT 1 FROM message_pair_dependencies p LEFT JOIN datasets s ON s.id=p.source_id WHERE p.dataset_id=d.id AND (s.id IS NULL OR p.progress<>s.progress OR p.status<>s.status OR p.metadata<>s.metadata)),false) FROM datasets d LEFT JOIN message_pair_indexes i ON i.dataset_id=d.id WHERE d.id=$1`, id, derived.Version).Scan(&info, &ready)
+		var e error
+		index, e = readPairIndex(ctx, tx, id)
 		if e != nil {
-			if errors.Is(e, pgx.ErrNoRows) {
-				return ErrNotFound
-			}
-			return e
-		}
-		if !ready {
-			return ErrPairIndex
-		}
-		if e = json.Unmarshal(info, &index); e != nil {
 			return e
 		}
 		var from, to any
@@ -443,17 +464,51 @@ func (s *Store) MessagePairData(ctx context.Context, id int64, f PairFilter) (Pa
 }
 
 func (s *Store) MessagePairIssues(ctx context.Context, id, after int64, limit int) ([]derived.Issue, error) {
-	rows, e := s.pool.Query(ctx, `SELECT issue FROM message_pair_issues WHERE dataset_id=$1 AND ordinal>$2 ORDER BY ordinal LIMIT $3`, id, after, limit)
-	if e != nil {
-		return nil, e
+	_, rows, _, e := s.MessageIssueData(ctx, id, IssueFilter{}, after, limit)
+	out := []derived.Issue{}
+	for _, r := range rows[:min(len(rows), limit)] {
+		out = append(out, r.Issue)
 	}
-	return collect(rows, func(r pgx.CollectableRow) (derived.Issue, error) {
-		var b []byte
-		var x derived.Issue
-		e := r.Scan(&b)
-		if e == nil {
-			e = json.Unmarshal(b, &x)
+	return out, e
+}
+
+func readPairIndex(ctx context.Context, tx pgx.Tx, id int64) (PairIndex, error) {
+	var index PairIndex
+	var info []byte
+	var ready bool
+	e := tx.QueryRow(ctx, `SELECT i.info,coalesce(i.version=$2 AND i.progress=d.progress AND i.status=d.status AND i.metadata=d.metadata AND NOT EXISTS(SELECT 1 FROM message_pair_dependencies p LEFT JOIN datasets s ON s.id=p.source_id WHERE p.dataset_id=d.id AND (s.id IS NULL OR p.progress<>s.progress OR p.status<>s.status OR p.metadata<>s.metadata)),false) FROM datasets d LEFT JOIN message_pair_indexes i ON i.dataset_id=d.id WHERE d.id=$1`, id, derived.Version).Scan(&info, &ready)
+	if e != nil {
+		if errors.Is(e, pgx.ErrNoRows) {
+			return index, ErrNotFound
 		}
-		return x, e
-	})
+		return index, e
+	}
+	if !ready {
+		return index, ErrPairIndex
+	}
+	if e = json.Unmarshal(info, &index); e != nil {
+		return index, e
+	}
+
+	return index, nil
+}
+
+// Bound broadcast expansion before allocating either standalone or companion
+// endpoint projections. Counting the maximum fanout also covers partial input.
+func projectMessageEvents(events []logs.Event) (derived.Projection, error) {
+	nodes := map[string]bool{}
+	sends, outcomes := int64(0), int64(0)
+	for _, e := range events {
+		nodes[e.Node] = true
+		if e.Record.Kind == "SEND" {
+			sends++
+		}
+		if e.Record.Kind == "MSG_OUTCOME" {
+			outcomes++
+		}
+	}
+	if sends*int64(len(nodes))+outcomes > 1000000 {
+		return derived.Projection{}, ErrPairSource
+	}
+	return derived.ProjectEvents(events), nil
 }
