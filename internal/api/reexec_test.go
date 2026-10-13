@@ -77,4 +77,24 @@ func TestReexecSourceScopePagesAndFinalisation(t *testing.T) {
 	if c.do("GET", fmt.Sprintf("/v1/networks/999/datasets/%d/reexec/%d", d.ID, id), nil, nil) != 404 {
 		t.Fatal("cross-network run exposed")
 	}
+	result.Mode, result.Status = "counterfactual", "running"
+	loss, err := s.BeginReexec(ctx, d.ID, "journal", "1", "1", "/private/synthetic-chain-object", result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	omitted := reexec.Step{Ordinal: 7, Height: "1", Input: "captured_message", Capture: "18446744073709551615", Omitted: true, Class: "output_diverged", Completeness: "partial", Issues: []string{"missing_capture"}}
+	if err = s.PutReexecStep(ctx, loss, omitted); err != nil {
+		t.Fatal(err)
+	}
+	result.Status = "counterfactual"
+	if err = s.FinishReexec(ctx, loss, result); err != nil {
+		t.Fatal(err)
+	}
+	if c.do("GET", fmt.Sprintf("%s/%d", base, loss), nil, &got) != 200 || got.Status != "counterfactual" || got.Summary.Mode != "counterfactual" || got.Summary.Mismatches != 1 {
+		t.Fatal(got)
+	}
+	if c.do("GET", fmt.Sprintf("%s/%d/steps", base, loss), nil, &page) != 200 || len(page.Steps) != 1 || !page.Steps[0].Omitted || page.Steps[0].Capture != omitted.Capture {
+		t.Fatal(page)
+	}
+
 }

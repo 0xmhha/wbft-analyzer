@@ -10,5 +10,10 @@ describe("closed replay evidence",()=>{
  const html=renderToStaticMarkup(<ReexecSummary run={run}/>);
  expect(html).toContain("Regression comparison");expect(html).toContain("18446744073709551616");expect(html).toContain("wire_association");expect(html).toContain("not comparable");expect(html).not.toContain("reproduced");
  });
+ it("labels intentional input loss independently of version identity",()=>{
+ const run:Schemas["StoreReexecRun"]={id:3,dataset_id:2,input_id:"journal",from_height:"1",to_height:"1",created_at:"2026-01-01T00:00:00Z",finished_at:null,status:"counterfactual",summary:{mode:"counterfactual",version:"wbft-closed-reexec/1",status:"counterfactual",helper_version:"same",binary_version:"same",helper_sha256:"a".repeat(64),version_status:"matched",source_sha256:"b".repeat(64),chain_sha256:"c".repeat(64),source_versions:["same"],heights:[],steps:1,matches:0,mismatches:1,not_comparable:0}};
+ const html=renderToStaticMarkup(<ReexecSummary run={run}/>);
+ expect(html).toContain("Counterfactual input loss");expect(html).toContain("cannot establish reproduction");expect(html).toContain("recorded application answers");
+ });
  it("routes core replay separately from recorded event playback",()=>{expect(parseRoute("#/networks/7/reexec")).toEqual({view:"reexec",net:7});expect(parseRoute("#/networks/7/events").view).toBe("events")});
 });

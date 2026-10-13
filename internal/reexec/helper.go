@@ -43,32 +43,38 @@ func LinkedVersion() string {
 }
 
 type Helper struct {
-	Path    string
-	Args    []string
-	Timeout time.Duration
+	OmitMissing bool
+	Path        string
+	Args        []string
+	Timeout     time.Duration
 }
 
 type reply struct {
-	Type       string `json:"type"`
-	ID         uint64 `json:"id"`
-	Protocol   string `json:"protocol"`
-	Impl       string `json:"impl"`
-	Version    string `json:"version"`
-	Engine     uint64 `json:"engine_run"`
-	Step       uint64 `json:"step"`
-	Input      string `json:"input"`
-	Digest     string `json:"out_digest"`
-	Match      *bool  `json:"match"`
-	Outputs    int64  `json:"outputs"`
-	Steps      int64  `json:"steps"`
-	Mismatches int64  `json:"mismatches"`
-	Code       string `json:"code"`
+	Omitted        bool   `json:"omitted"`
+	Counterfactual bool   `json:"counterfactual"`
+	Type           string `json:"type"`
+	ID             uint64 `json:"id"`
+	Protocol       string `json:"protocol"`
+	Impl           string `json:"impl"`
+	Version        string `json:"version"`
+	Engine         uint64 `json:"engine_run"`
+	Step           uint64 `json:"step"`
+	Input          string `json:"input"`
+	Digest         string `json:"out_digest"`
+	Match          *bool  `json:"match"`
+	Outputs        int64  `json:"outputs"`
+	Steps          int64  `json:"steps"`
+	Mismatches     int64  `json:"mismatches"`
+	Code           string `json:"code"`
 }
 
 // Execute bounds time, line size, total output and emitted steps. Only source
 // coordinates, known classifications and digests cross the result boundary.
 func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res Result, err error) {
-	res = Result{Version: Version, Status: "failed", HelperVersion: "unknown", BinaryVersion: "unknown", VersionStatus: "unknown", ChainSHA: p.ChainSHA, SourceSHA: p.Input.Summary.SHA256, SourceVersions: p.SourceVersions, Heights: p.Heights}
+	res = Result{Mode: "closed", Version: Version, Status: "failed", HelperVersion: "unknown", BinaryVersion: "unknown", VersionStatus: "unknown", ChainSHA: p.ChainSHA, SourceSHA: p.Input.Summary.SHA256, SourceVersions: p.SourceVersions, Heights: p.Heights}
+	if h.OmitMissing {
+		res.Mode = "counterfactual"
+	}
 	if h.Timeout <= 0 || h.Timeout > 30*time.Minute {
 		return res, errors.New("helper timeout must be positive and at most 30 minutes")
 	}
@@ -137,7 +143,7 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 	} else if res.HelperVersion != "unknown" && sameVersion(res.BinaryVersion, res.HelperVersion) && len(p.SourceVersions) > 0 && p.SourceVersions[0] != "unknown" {
 		res.VersionStatus = "different"
 	}
-	if e = encoder.Encode(map[string]any{"type": "replay", "id": uint64(1), "journal": p.Input.Input.Path, "chain": p.Chain, "from_step": 0, "to_step": 0, "with_vars": false}); e != nil {
+	if e = encoder.Encode(map[string]any{"type": "replay", "id": uint64(1), "journal": p.Input.Input.Path, "chain": p.Chain, "from_step": 0, "to_step": 0, "with_vars": false, "omit_missing_captures": h.OmitMissing}); e != nil {
 		return res, ErrHelper
 	}
 	expected := []Step{}
@@ -171,6 +177,9 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 		switch r.Type {
 		case "error":
 			res.Issue = "replay_error"
+			if r.Code == "env_exhausted" {
+				res.Issue = "env_exhausted"
+			}
 			if r.Code == "input_gap" {
 				res.Issue = "input_gap"
 			}
@@ -192,7 +201,11 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 				continue
 			}
 			res.Total++
-			if row.Status != "complete" || s.Completeness != "complete" {
+			s.Omitted = r.Omitted
+			if r.Omitted != (h.OmitMissing && s.Capture != "" && onlyMissingCapture(s.Issues)) {
+				return res, ErrHelper
+			}
+			if !comparableStep(s, row, h.OmitMissing) {
 				s.Class = "not_comparable"
 				res.NotComparable++
 			} else {
@@ -219,6 +232,9 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 				return res, e
 			}
 		case "done":
+			if h.OmitMissing != r.Counterfactual {
+				return res, ErrHelper
+			}
 			if r.Steps != int64(index) || index != len(expected) || r.Mismatches != rawBad {
 				return res, ErrHelper
 			}
@@ -253,6 +269,8 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			if res.Total == 0 {
 				res.Status = "not_possible"
 				res.Issue = "no_replayed_steps"
+			} else if h.OmitMissing {
+				res.Status = "counterfactual"
 			} else if res.NotComparable > 0 || !allComplete {
 				res.Status = "partial"
 			} else if res.VersionStatus != "matched" {
@@ -280,11 +298,12 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 			return err
 		}
 		var r struct {
-			Type     string `json:"type"`
-			Protocol string `json:"protocol"`
-			ID       uint64 `json:"id"`
-			Journal  string `json:"journal"`
-			Chain    string `json:"chain"`
+			Type        string `json:"type"`
+			Protocol    string `json:"protocol"`
+			ID          uint64 `json:"id"`
+			Journal     string `json:"journal"`
+			Chain       string `json:"chain"`
+			OmitMissing bool   `json:"omit_missing_captures"`
 		}
 		if err := json.Unmarshal(sc.Bytes(), &r); err != nil {
 			return ErrHelper
@@ -300,7 +319,7 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 		case "bye":
 			return nil
 		case "replay":
-			if err := serveReplay(ctx, r.Journal, r.Chain, r.ID, enc); err != nil {
+			if err := serveReplay(ctx, r.Journal, r.Chain, r.ID, r.OmitMissing, enc); err != nil {
 				return err
 			}
 		default:
@@ -358,4 +377,25 @@ func binarySHA(path string) (string, error) {
 		return "", ErrHelper
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func onlyMissingCapture(issues []string) bool {
+	if len(issues) == 0 {
+		return false
+	}
+	for _, issue := range issues {
+		if issue != "missing_capture" {
+			return false
+		}
+	}
+	return true
+}
+func comparableStep(s Step, h Height, omit bool) bool {
+	if s.Completeness == "complete" && h.Status == "complete" {
+		return true
+	}
+	if !omit || h.Status == "not_possible" || !onlyMissingCapture(h.Issues) {
+		return false
+	}
+	return s.Completeness == "complete" || s.Completeness == "partial" && onlyMissingCapture(s.Issues)
 }

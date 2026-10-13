@@ -712,7 +712,8 @@ comparisons. Inputs and the helper file are reverified after execution.
 Active height means the recorded application head plus one. Completeness
 requires contiguous steps from a recorded engine start, readable journal
 records, the preceding/current/following canonical headers, and a unique
-peer-message content/time witness. Asynchronously sampled native timestamps
+received-frame capture reference for peer messages. Legacy inline inputs need
+a unique content/time witness. Asynchronously sampled legacy timestamps
 or duplicate witnesses remain partial; peer identity and cross-node clock
 alignment are not inferred. A gap or changed core configuration prevents
 reproduction. This does not reconstruct a missing input from its inline step.
@@ -720,9 +721,9 @@ reproduction. This does not reconstruct a missing input from its inline step.
 A run reports output digest matches, `output_diverged`, validator-set-only
 `env_mismatch`, or `not_comparable`. Arbitrary helper errors and payloads are
 not persisted. `reproduced` requires matching verified versions and every
-requested height complete; a digest match alone is insufficient. The current
-child reports other replay errors as `replay_error`; it does not infer an
-`env_exhausted` classification from arbitrary error text.
+requested height complete; a digest match alone is insufficient. The child reports actual exhausted recorded application answers as
+`env_exhausted`; other errors remain `replay_error`. It never infers exhaustion
+from arbitrary error text.
 
 Bounds: 10000 active canonical heights, 100000 steps, one million journal
 records, a 256 MiB chain file, 64 KiB protocol lines, 64 MiB helper output and
@@ -740,8 +741,14 @@ completeness, a source-order difference strip, the first difference and the
 exact original journal record. HTTP reads do not execute a replay; start a
 run with the local command.
 
-Wire deletion detection currently marks incomplete input rather than inventing
-an output difference or an application response failure. Full closed replay
+A missing referenced received frame fails closed with `input_gap`. The explicit
+`--omit-missing-captures` option instead runs a counterfactual loss experiment:
+it omits that input, compares the actual empty output at the original step,
+and continues with recorded application answers. Invalid or ambiguous capture
+references are still refused. Migration 18 accepts the separate
+`counterfactual` status, and the screen labels omitted inputs and this mode.
+Even matching outputs and versions cannot turn this experiment into original
+reproduction. Full closed replay
 acceptance still requires the complete simulation/restart bundle,
 cross-architecture comparisons and the remaining received-message mutation
 criteria. Visual event playback is separate from core execution.

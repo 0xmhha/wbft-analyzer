@@ -26,7 +26,8 @@ import (
 )
 
 // Inspect uses two passes: asynchronous wire records may follow their steps.
-// A unique content/time witness is required; weaker native associations stay partial.
+// Explicit capture references bind new inputs; legacy inputs require a unique
+// content/time witness, and weaker associations stay partial.
 func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis string, from, to uint64) (Plan, error) {
 	out := Plan{Input: p, Chain: chain, SourceVersions: []string{}, Heights: []Height{}, Steps: []Step{}}
 	if from < 1 || to < from || to-from >= 10000 {
@@ -188,6 +189,8 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		}
 		if len(b.Input) > 16<<20 {
 			markStep(&step, "partial", "payload")
+		} else if b.InputKind == inputlog.KindCapturedMessage {
+			inspectCaptured(rd, run, b, &step)
 		} else if decoded, e := inputlog.Decode(b.InputKind, b.Input, nil); e != nil {
 			markStep(&step, "partial", "input_decode")
 		} else if m, ok := decoded.(consensus.Message); ok {
@@ -285,7 +288,7 @@ func addIssue(xs []string, s string) []string {
 }
 func safeInput(s string) string {
 	switch s {
-	case inputlog.KindStart, inputlog.KindStop, inputlog.KindNewHead, inputlog.KindRequest, inputlog.KindMessage, inputlog.KindBacklog, inputlog.KindTimeout, inputlog.KindCommitResult, inputlog.KindBroadcastFailed, inputlog.KindPeerConnected:
+	case inputlog.KindStart, inputlog.KindStop, inputlog.KindNewHead, inputlog.KindRequest, inputlog.KindMessage, inputlog.KindCapturedMessage, inputlog.KindBacklog, inputlog.KindTimeout, inputlog.KindCommitResult, inputlog.KindBroadcastFailed, inputlog.KindPeerConnected:
 		return s
 	default:
 		return "unknown"
@@ -320,4 +323,43 @@ func decodedMessage(s *Step, in consensus.Message) {
 	if m.Proposal != nil && m.Proposal.Header != nil {
 		s.MessageDigest = strings.ToLower(codec.BlockHash(m.Proposal.Header).Hex())
 	}
+}
+
+func inspectCaptured(reader *journal.Reader, run string, record *journal.StepRec, step *Step) {
+	ref, err := inputlog.CapturedReference(record.Input)
+	if err != nil {
+		markStep(step, "not_possible", "invalid_capture")
+		return
+	}
+	step.Capture = strconv.FormatUint(ref, 10)
+	frame, err := reader.ResolveCapture(run, ref)
+	if err != nil {
+		if errors.Is(err, journal.ErrCaptureMissing) {
+			markStep(step, "partial", "missing_capture")
+		} else {
+			markStep(step, "not_possible", "invalid_capture")
+		}
+		return
+	}
+	payload, code, action, _ := transport.DecodeFrame(frame.Record.Code, frame.Record.Payload)
+	if action != transport.FrameDeliver {
+		markStep(step, "not_possible", "invalid_capture")
+		return
+	}
+	in, err := inputlog.Decode(record.InputKind, record.Input, func(id uint64) ([]byte, error) {
+		if id != ref {
+			return nil, journal.ErrCapture
+		}
+		return payload, nil
+	})
+	if err != nil {
+		markStep(step, "not_possible", "invalid_capture")
+		return
+	}
+	message, ok := in.(consensus.Message)
+	if !ok || uint64(message.Code) != code || message.Peer != frame.Peer {
+		markStep(step, "not_possible", "invalid_capture")
+		return
+	}
+	decodedMessage(step, message)
 }

@@ -39,6 +39,7 @@ func runReexec(args []string, stdout, stderr io.Writer) int {
 	chain := fs.String("chain", "", "recorded canonical chain.rlp")
 	from := fs.Uint64("from", 0, "first active height (inclusive)")
 	to := fs.Uint64("to", 0, "last active height (inclusive)")
+	omit := fs.Bool("omit-missing-captures", false, "counterfactual: omit missing referenced received inputs")
 	helper := fs.String("helper", "", "versioned wbft-replay executable; default: linked core in a child")
 	timeout := fs.Duration("timeout", 5*time.Minute, "helper deadline, at most 30m")
 	if fs.Parse(args) != nil || fs.NArg() != 0 || *dsn == "" || *dataset < 1 || !logs.Identifier(*input) || *chain == "" || *from < 1 || *to < *from || *to-*from >= 10000 || *timeout <= 0 || *timeout > 30*time.Minute {
@@ -109,7 +110,11 @@ func runReexec(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return exitDataErr
 	}
-	initial := reexec.Result{Version: reexec.Version, Status: "running", HelperVersion: "unknown", VersionStatus: "unknown", ChainSHA: plan.ChainSHA, SourceSHA: summary.SHA256, SourceVersions: plan.SourceVersions, Heights: plan.Heights}
+	mode := "closed"
+	if *omit {
+		mode = "counterfactual"
+	}
+	initial := reexec.Result{Mode: mode, Version: reexec.Version, Status: "running", HelperVersion: "unknown", VersionStatus: "unknown", ChainSHA: plan.ChainSHA, SourceSHA: summary.SHA256, SourceVersions: plan.SourceVersions, Heights: plan.Heights}
 	id, err := s.BeginReexec(ctx, d.ID, *input, strconv.FormatUint(*from, 10), strconv.FormatUint(*to, 10), chainObject.Path, initial)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
@@ -125,7 +130,7 @@ func runReexec(args []string, stdout, stderr io.Writer) int {
 	}
 	result := initial
 	if err == nil {
-		result, err = reexec.Execute(ctx, plan, reexec.Helper{Path: executable, Args: helperArgs, Timeout: *timeout}, func(step reexec.Step) error { return s.PutReexecStep(ctx, id, step) })
+		result, err = reexec.Execute(ctx, plan, reexec.Helper{Path: executable, Args: helperArgs, Timeout: *timeout, OmitMissing: *omit}, func(step reexec.Step) error { return s.PutReexecStep(ctx, id, step) })
 	}
 	if err != nil && result.Issue == "" {
 		result.Status = "failed"

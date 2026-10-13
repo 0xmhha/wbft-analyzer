@@ -1185,6 +1185,7 @@ export interface components {
             percentile_method: string;
         };
         MessagesRecord: {
+            capture_id?: string;
             cause?: string;
             check?: string;
             clock_source?: string;
@@ -1562,6 +1563,7 @@ export interface components {
             matches: number;
             /** Format: int64 */
             mismatches: number;
+            mode?: string;
             /** Format: int64 */
             not_comparable: number;
             source_sha256: string;
@@ -1573,6 +1575,7 @@ export interface components {
             version_status: string;
         };
         ReexecStep: {
+            capture_id?: string;
             class: string;
             completeness: string;
             engine_run: string;
@@ -1585,6 +1588,7 @@ export interface components {
             message_height?: string;
             /** Format: int64 */
             offset?: number | null;
+            omitted?: boolean;
             /** Format: int64 */
             ordinal: number;
             payload_sha256?: string;

@@ -10,6 +10,8 @@ const MaxSteps = 100000
 const MaxRecords = 1000000
 
 type Step struct {
+	Capture       string `json:"capture_id,omitempty"`
+	Omitted       bool   `json:"omitted,omitempty"`
 	Mono          string `json:"t_mono_ns,omitempty"`
 	Wall          string `json:"t_wall,omitempty"`
 	Offset        *int64 `json:"offset,omitempty"`
@@ -53,6 +55,7 @@ type Plan struct {
 }
 
 type Result struct {
+	Mode           string   `json:"mode,omitempty"`
 	BinaryVersion  string   `json:"binary_version"`
 	HelperSHA      string   `json:"helper_sha256"`
 	Version        string   `json:"version"`
