@@ -643,3 +643,36 @@ Local delay/evidence counters cannot be independently reconstructed from headers
 Bindings are bounded to 4096 rows and 6144 canonical dependencies; overflow is
 refused. These bindings remain metadata analysis and do not establish complete
 event capture or historical send absence.
+
+## Native follow
+
+`follow` continuously captures bounded header ranges and native WBFT participation.
+Each source has a separate durable cursor. RPC outages, participation gaps and a
+changing summary retain the cursor for retry. Network, node, configuration and
+parent-hash conflicts stop that source. Full recorded heights stay distinct from
+canonical uint64 indices; no height or round is converted through floating point.
+
+```sh
+wbft-analyzer follow --db "$WBFT_ANALYZER_DB" --config genesis.json \
+  --name local-follow --from 1 --rpc http://127.0.0.1:8545 --node validator-a \
+  --rpc http://127.0.0.1:8546 --node validator-b --poll 5s
+```
+
+Repeat the same name, ordered source labels, start index and configuration to
+resume. Endpoints may change; their native identities must match. URLs are never
+stored. The default runs until SIGINT/SIGTERM; `--duration 1m` bounds a check.
+This mode requires native observation RPCs and a non-genesis start index. It
+does not infer participation from a legacy endpoint or invent expired records.
+
+A batch advances only after its header dataset and immutable normalized native
+observation dataset are complete and their hashes/height coverage agree. A crash
+before cursor commit can retry without skipping heights. Committed companions
+cannot be deleted while a cursor references them. Payload bytes are not stored.
+
+The follow screen shows each source's stored position, last commit, retry issue
+and latest 100 committed batches. `GET /v1/networks/{net}/datasets/{dataset}/follow`
+returns the same state. Stored importing status is not a process-liveness proof,
+and native RPC claims do not prove event capture or message-delivery completeness.
+
+The 72-hour acceptance run with a node restart and RPC interruption remains a
+separate runtime check; short regression tests do not complete that requirement.

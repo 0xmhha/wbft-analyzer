@@ -43,6 +43,7 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/follow", id: "getFollowState", summary: "Durable native follow cursor and latest completed header/observation companions; no event completeness claim.", params: runParams(), answers: map[int]any{200: store.FollowState{}}, handle: (*Server).followState},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/observations/headers/index", id: "getObservationHeaderIndex", summary: "Stored structural metadata bindings and independent canonical totals; source/header changes require explicit reindex.", params: runParams(), answers: map[int]any{200: store.ObservationHeaderIndex{}}, handle: (*Server).observationHeaderIndex},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/observations/headers", id: "listObservationHeaderBindings", summary: "Canonical full-number/hash/parent/validator comparisons with original RPC pointers; no signature or event-completeness claim.", params: observationHeaderParams(), answers: map[int]any{200: ObservationHeaderPage{}}, handle: (*Server).observationHeaderRows},
 
