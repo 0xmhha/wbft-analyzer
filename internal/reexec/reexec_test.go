@@ -46,9 +46,49 @@ func TestProtocolChild(t *testing.T) {
 		os.Exit(0)
 	}
 	enc := json.NewEncoder(os.Stdout)
-	_ = enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": strings.Repeat("a", 40)})
+	features := []string{}
+	if strings.HasPrefix(mode, "warmup_bounded_") && mode != "warmup_bounded_old" {
+		features = append(features, "bounded_warmup_v1")
+	}
+	_ = enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": strings.Repeat("a", 40), "features": features})
 	if decoder.Decode(&request) != nil {
 		os.Exit(2)
+	}
+	if strings.HasPrefix(mode, "warmup_bounded_") {
+		if request["warmup_from_height"] != float64(1) || request["compare_from_height"] != float64(3) {
+			os.Exit(2)
+		}
+		bad := 0
+		for i := 1; i <= 4; i++ {
+			if i == 3 && mode == "warmup_bounded_env_error" {
+				_ = enc.Encode(map[string]any{"type": "error", "id": 1, "code": "env_exhausted", "writer_run": "synthetic-source", "engine_run": uint64(18446744073709551615), "step": 3, "approximate": true})
+				_ = decoder.Decode(&request)
+				os.Exit(0)
+			}
+			approximate := i < 4
+			prefix := i < 3
+			if mode == "warmup_bounded_bad_marker" && i == 3 {
+				approximate = false
+			}
+			match := mode != "warmup_bounded_suspect" || i != 3
+			out := "0x" + strings.Repeat("b", 64)
+			if !match {
+				out = "0x" + strings.Repeat("c", 64)
+				bad++
+			}
+			input, writer, step := "timer", "synthetic-source", i
+			if i == 4 {
+				input, writer, step = "start", "writer-reset", 1
+			}
+			_ = enc.Encode(map[string]any{"type": "step", "id": 1, "writer_run": writer, "engine_run": uint64(18446744073709551615), "step": step, "input": input, "out_digest": out, "match": match, "outputs": 0, "approximate": approximate, "warmup": prefix})
+		}
+		approx := 3
+		if mode == "warmup_bounded_bad_count" {
+			approx = 2
+		}
+		_ = enc.Encode(map[string]any{"type": "done", "id": 1, "steps": 4, "mismatches": bad, "approximate_steps": approx, "warmup_steps": 2})
+		_ = decoder.Decode(&request)
+		os.Exit(0)
 	}
 	if strings.HasPrefix(mode, "warmup_") {
 		if mode == "warmup_error" {

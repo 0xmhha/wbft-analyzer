@@ -29,7 +29,7 @@ func TestReexecSourceScopePagesAndFinalisation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i, class := range []string{"match", "output_diverged", "not_comparable"} {
+	for i, class := range []string{"match", "output_diverged", "not_comparable", "warmup_suspect"} {
 		step := reexec.Step{Ordinal: int64(i + 1), File: "00000000000000000000.wal", Run: "synthetic", Engine: "18446744073709551615", Number: fmt.Sprint(i + 1), Height: "1", Input: "message", Recorded: "0x" + strings.Repeat("a", 64), Class: class, Completeness: "complete", Issues: []string{}}
 		if err = s.PutReexecStep(ctx, id, step); err != nil {
 			t.Fatal(err)
@@ -41,7 +41,7 @@ func TestReexecSourceScopePagesAndFinalisation(t *testing.T) {
 		t.Fatal(err)
 	}
 	row, err := s.ReexecRun(ctx, d.ID, id)
-	if err != nil || row.Summary.Total != 3 || row.Summary.Mismatches != 1 || row.Summary.NotComparable != 1 || row.Summary.FirstMismatch == nil || *row.Summary.FirstMismatch != 2 {
+	if err != nil || row.Summary.Total != 4 || row.Summary.WarmupSuspect != 1 || row.Summary.Mismatches != 1 || row.Summary.NotComparable != 1 || row.Summary.FirstMismatch == nil || *row.Summary.FirstMismatch != 2 {
 		t.Fatal(row, err)
 	}
 	if err = s.PutReexecStep(ctx, id, reexec.Step{Ordinal: 4, Height: "1", Class: "match"}); !errors.Is(err, store.ErrReexecFinished) {
@@ -67,6 +67,9 @@ func TestReexecSourceScopePagesAndFinalisation(t *testing.T) {
 		t.Fatal(page)
 	}
 	if c.do("GET", path+"?after=1&class=output_diverged", nil, &page) != 200 || len(page.Steps) != 1 || page.Steps[0].Ordinal != 2 || page.Next != nil {
+		t.Fatal(page)
+	}
+	if c.do("GET", path+"?class=warmup_suspect", nil, &page) != 200 || len(page.Steps) != 1 || page.Steps[0].Class != "warmup_suspect" {
 		t.Fatal(page)
 	}
 	for _, suffix := range []string{"?after=-1", "?limit=1001", "?class=unsupported", "?after=1&after=2", "?height=NaN", "?class=match%7Coutput_diverged", "?after%7Climit=1"} {

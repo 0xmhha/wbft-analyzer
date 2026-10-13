@@ -35,7 +35,7 @@ type RunResult struct {
 // Run snapshots retained inputs and uses the same core path for CLI and jobs.
 func Run(ctx context.Context, s *store.Store, o RunOptions, onBegin func(int64) error) (RunResult, error) {
 	var out RunResult
-	if o.Dataset < 1 || !logs.Identifier(o.Input) || o.From < 1 || o.To < o.From || o.To-o.From >= 10000 {
+	if o.Dataset < 1 || !logs.Identifier(o.Input) || o.From < 1 || o.To < o.From || o.To-o.From >= 10000 || o.Helper.WarmupHeights > 10000 {
 		return out, errors.New("invalid replay scope")
 	}
 	d, network, err := s.ReexecDataset(ctx, o.Dataset)
@@ -99,7 +99,7 @@ func Run(ctx context.Context, s *store.Store, o RunOptions, onBegin func(int64) 
 	if o.Helper.OmitMissing {
 		mode = "counterfactual"
 	}
-	initial := reexec.Result{Mode: mode, Version: reexec.Version, Status: "running", HelperVersion: "unknown", VersionStatus: "unknown", ChainSHA: plan.ChainSHA, SourceSHA: summary.SHA256, SourceVersions: plan.SourceVersions, Heights: plan.Heights}
+	initial := reexec.Result{WarmupHeights: int(o.Helper.WarmupHeights), Mode: mode, Version: reexec.Version, Status: "running", HelperVersion: "unknown", VersionStatus: "unknown", ChainSHA: plan.ChainSHA, SourceSHA: summary.SHA256, SourceVersions: plan.SourceVersions, Heights: plan.Heights}
 	id, err := s.BeginReexec(ctx, d.ID, o.Input, strconv.FormatUint(o.From, 10), strconv.FormatUint(o.To, 10), chain.Path, initial)
 	if err != nil {
 		return out, errors.Join(ErrStore, err)

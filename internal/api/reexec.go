@@ -115,7 +115,7 @@ func (s *Server) reexecSteps(w http.ResponseWriter, r *http.Request) {
 
 func reexecClass(s string) bool {
 	switch s {
-	case "match", "output_diverged", "env_mismatch", "env_exhausted", "input_gap", "not_comparable":
+	case "match", "output_diverged", "env_mismatch", "env_exhausted", "input_gap", "not_comparable", "warmup_suspect":
 		return true
 	default:
 		return false

@@ -1629,12 +1629,17 @@ export interface components {
             version: string;
             version_status: string;
             warmup?: components["schemas"]["ReexecWarmup"] | null;
+            /** Format: int64 */
+            warmup_heights?: number;
+            /** Format: int64 */
+            warmup_suspect: number;
         };
         ReexecSources: {
             enabled: boolean;
             sources: components["schemas"]["ReplayjobSourceInfo"][];
         };
         ReexecStep: {
+            approximate?: boolean;
             capture_id?: string;
             class: string;
             completeness: string;
@@ -1660,12 +1665,15 @@ export interface components {
             step: string;
             t_mono_ns?: string;
             t_wall?: string;
+            warmup?: boolean;
             writer_run: string;
         };
         ReexecWarmup: {
+            compare_from_height?: string;
             first_difference?: components["schemas"]["ReexecStep"] | null;
             /** Format: int64 */
             first_source_ordinal?: number | null;
+            from_height?: string;
             /** Format: int64 */
             last_source_ordinal?: number | null;
             /** Format: int64 */
@@ -1678,6 +1686,8 @@ export interface components {
             status: string;
             /** Format: int64 */
             steps: number;
+            /** Format: int64 */
+            suspects?: number;
         };
         ReplayCounter: {
             count: string;
@@ -1740,6 +1750,8 @@ export interface components {
             mode: "closed" | "counterfactual";
             source_id: string;
             to_height: string;
+            /** Format: int64 */
+            warmup_heights?: number | null;
         };
         ReplayjobSourceInfo: {
             id: string;
@@ -2122,6 +2134,8 @@ export interface components {
             started_at: string | null;
             status: string;
             to_height: string;
+            /** Format: int64 */
+            warmup_heights: number;
         };
         StoreReexecRun: {
             /** Format: date-time */
@@ -3975,7 +3989,7 @@ export interface operations {
                 after?: number;
                 /** @description page size 1..1000 */
                 limit?: number;
-                /** @description match, output_diverged, env_mismatch, env_exhausted, input_gap or not_comparable */
+                /** @description match, output_diverged, env_mismatch, env_exhausted, input_gap, warmup_suspect or not_comparable */
                 class?: string;
                 /** @description full recorded active height */
                 height?: string;

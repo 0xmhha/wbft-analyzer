@@ -180,7 +180,7 @@ func issueParams() []param {
 func reexecParams(steps bool) []param {
 	out := append(runParams(), param{name: "reexec", in: "path", doc: "closed replay run ID belonging to this dataset", typ: "integer", format: "int64", required: true})
 	if steps {
-		out = append(out, param{name: "after", in: "query", doc: "exclusive original source ordinal", typ: "integer", format: "int64"}, param{name: "limit", in: "query", doc: "page size 1..1000", typ: "integer"}, param{name: "class", in: "query", doc: "match, output_diverged, env_mismatch, env_exhausted, input_gap or not_comparable", typ: "string"}, param{name: "height", in: "query", doc: "full recorded active height", typ: "string"})
+		out = append(out, param{name: "after", in: "query", doc: "exclusive original source ordinal", typ: "integer", format: "int64"}, param{name: "limit", in: "query", doc: "page size 1..1000", typ: "integer"}, param{name: "class", in: "query", doc: "match, output_diverged, env_mismatch, env_exhausted, input_gap, warmup_suspect or not_comparable", typ: "string"}, param{name: "height", in: "query", doc: "full recorded active height", typ: "string"})
 	}
 	return out
 }

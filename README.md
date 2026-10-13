@@ -733,8 +733,20 @@ matches. Incomplete prefix evidence remains partial; an application failure
 before the selected range retains its verified original position separately.
 These counts do not inflate selected-step totals. The screen can open that
 original prefix record. Older stored results without this optional metadata
-remain explicitly unverified for prefix handling. Missing engine starts are
-not reconstructed; bounded approximate warmup is not implemented.
+remain explicitly unverified for prefix handling.
+
+When a recorded engine start is missing, `--warmup-heights` defaults to 2
+preceding active heights; set 0 to disable or choose at most 10000. The official
+helper must advertise `bounded_warmup_v1`. The first retained step must reach
+exactly the requested prefix floor. Missing bytes, inconsistent recorded head
+identity, journal gaps and unavailable application answers are not repaired.
+The bounded state starts from the recorded head and validator set, with unknown
+prior backlog, view and timer state. Steps remain `approximate` until an actual
+recorded engine start restores exact state. Matching approximate outputs cannot
+establish reproduction; differences are `warmup_suspect`, counted separately
+from exact mismatches. The original missing-start completeness issue is retained.
+Prefix counts, approximate differences and original source pointers remain
+separate from selected-step counts. Older helpers are refused for this mode.
 
 Bounds: 10000 active canonical heights, 100000 steps, one million journal
 records, a 256 MiB chain file, 64 KiB protocol lines, 64 MiB helper output and
@@ -777,7 +789,9 @@ Under `/v1/networks/{net}/datasets/{dataset}`, `GET /reexec-sources` lists
 enabled source IDs, and `POST /reexec-jobs` accepts `source_id`, decimal-string
 `from_height` and `to_height`, and `mode` (`closed` by default). The strict
 request limit is 4 KiB. Heights fit uint64, and the inclusive range is at most
-10000 heights. The existing bearer token, loopback and same-origin JSON checks
+10000 heights. Optional integer `warmup_heights` defaults to 2, accepts 0 to
+disable, and is bounded to 10000. Migration 20 durably stores the chosen depth
+and the separate `warmup_suspect` step class. The existing bearer token, loopback and same-origin JSON checks
 apply. The response is 202 with a durable job ID. `GET /reexec-jobs` lists the
 latest 100 jobs, and `GET /reexec-jobs/{job}` returns one scoped job.
 

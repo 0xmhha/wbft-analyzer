@@ -165,3 +165,46 @@ func TestReexecJobRecoveryAndMatchingResult(t *testing.T) {
 		t.Fatal(r, err)
 	}
 }
+
+func TestReexecWarmupDepthPersistsAndMatchesLinkedRun(t *testing.T) {
+	s, _ := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	d := jobDataset(t, s)
+	for _, depth := range []int{0, 2, 10000} {
+		req := testJob(d)
+		req.WarmupHeights = depth
+		j, err := s.EnqueueReexec(ctx, req)
+		if err != nil || j.WarmupHeights != depth {
+			t.Fatal(j, err)
+		}
+		got, err := s.ClaimReexecJob(ctx, "depth-owner")
+		if err != nil || got.ID != j.ID || got.WarmupHeights != depth {
+			t.Fatal(got, err)
+		}
+		run, err := s.BeginReexec(ctx, d, "journal", "1", "2", "private-chain", reexec.Result{Mode: "closed", WarmupHeights: depth + 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = s.LinkReexecJob(ctx, j.ID, "depth-owner", run); !errors.Is(err, ErrReexecJobState) {
+			t.Fatal("wrong prefix linked", err)
+		}
+		run, err = s.BeginReexec(ctx, d, "journal", "1", "2", "private-chain", reexec.Result{Mode: "closed", WarmupHeights: depth})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = s.LinkReexecJob(ctx, j.ID, "depth-owner", run); err != nil {
+			t.Fatal(err)
+		}
+		if err = s.FinishReexecJob(ctx, j.ID, "depth-owner", "failed", "synthetic_test"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	req := testJob(d)
+	req.WarmupHeights = 10001
+	if _, err := s.EnqueueReexec(ctx, req); err == nil {
+		t.Fatal("oversized prefix persisted")
+	}
+}

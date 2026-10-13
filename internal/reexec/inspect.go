@@ -29,7 +29,7 @@ import (
 // Explicit capture references bind new inputs; legacy inputs require a unique
 // content/time witness, and weaker associations stay partial.
 func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis string, from, to uint64) (Plan, error) {
-	out := Plan{Input: p, Chain: chain, SourceVersions: []string{}, Heights: []Height{}, Steps: []Step{}}
+	out := Plan{From: from, To: to, Input: p, Chain: chain, SourceVersions: []string{}, Heights: []Height{}, Steps: []Step{}}
 	if from < 1 || to < from || to-from >= 10000 {
 		return out, errors.New("reexec height range must contain 1..10000 heights starting at 1 or later")
 	}
@@ -47,6 +47,7 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		return out, errors.New("recorded chain genesis mismatch")
 	}
 	headers := map[string]bool{}
+	headerHashes := map[string]string{}
 	for i, b := range blocks {
 		if b == nil || b.Header == nil || !b.Header.Number.IsUint64() || b.Header.Number.Big().Uint64() != uint64(i) {
 			return out, errors.New("recorded chain is not consecutive canonical indices")
@@ -55,6 +56,7 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 			return out, errors.New("recorded chain parent mismatch")
 		}
 		headers[b.Header.Number.String()] = true
+		headerHashes[b.Header.Number.String()] = strings.ToLower(codec.BlockHash(b.Header).Hex())
 	}
 	_, readErr := messages.Read(ctx, p, chainID, genesis, func(messages.Record) error { return nil })
 	if readErr != nil {
@@ -151,6 +153,7 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		if seg, ok := rec.Body.(*journal.SegmentRec); ok && seg.Run != run {
 			run = seg.Run
 			lastSeq = 0
+			lastStep, engine = 0, 0
 			started = false
 			lost = false
 		}
@@ -183,12 +186,21 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 			engine = b.EngineRun
 			lastStep = 0
 		}
-		if !started || b.Step == 0 || b.EngineRun != engine || b.Step != lastStep+1 {
+		if !started && lastStep == 0 {
+			engine = b.EngineRun
+		}
+		if b.Step == 0 || b.EngineRun != engine || (lastStep != 0 && b.Step != lastStep+1) {
 			lost = true
 		}
 		lastStep = b.Step
+		if !started {
+			markStep(&step, "not_possible", "missing_engine_start")
+		}
 		if lost {
 			markStep(&step, "not_possible", "step_or_journal_gap")
+		}
+		if head, exists := headerHashes[b.HeadNumber.String()]; exists && head != strings.ToLower(b.HeadHash.Hex()) {
+			markStep(&step, "not_possible", "head_identity")
 		}
 		if len(b.Input) > 16<<20 {
 			markStep(&step, "partial", "payload")
