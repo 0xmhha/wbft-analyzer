@@ -7,6 +7,7 @@ import (
 )
 
 type GroupKey struct {
+	Metric   string `json:"metric"`
 	Scope    string `json:"scope"`
 	Sender   string `json:"sender"`
 	Receiver string `json:"receiver"`
@@ -33,7 +34,7 @@ type PairStatistics struct {
 func Summarize(pairs []Pair) PairStatistics {
 	grouped := map[GroupKey][]Pair{}
 	for _, p := range pairs {
-		common := GroupKey{Phase: p.Phase, Strength: p.Strength, Path: p.Path, Clock: p.Clock}
+		common := GroupKey{Phase: p.Phase, Strength: p.Strength, Path: p.Path, Clock: p.Clock, Metric: p.Metric}
 		k := common
 		k.Scope = "overall"
 		grouped[k] = append(grouped[k], p)

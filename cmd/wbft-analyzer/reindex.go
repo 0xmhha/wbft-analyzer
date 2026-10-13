@@ -18,7 +18,8 @@ func runReindex(args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	dsn := fs.String("db", os.Getenv("WBFT_ANALYZER_DB"), "PostgreSQL DSN")
 	id := fs.Int64("dataset", 0, "run dataset ID")
-	if fs.Parse(args[1:]) != nil || fs.NArg() != 0 || *dsn == "" || *id <= 0 {
+	events := fs.Int64("events", 0, "explicit native event dataset for journal association")
+	if fs.Parse(args[1:]) != nil || fs.NArg() != 0 || *dsn == "" || *id <= 0 || *events < 0 || args[0] != "messages" && *events != 0 {
 		return exitUsage
 	}
 	ctx := context.Background()
@@ -33,7 +34,11 @@ func runReindex(args []string, stdout, stderr io.Writer) int {
 		return exitInternal
 	}
 	if args[0] == "messages" {
-		out, e := s.RebuildMessagePairs(ctx, *id)
+		var refs []int64
+		if *events > 0 {
+			refs = append(refs, *events)
+		}
+		out, e := s.RebuildMessagePairs(ctx, *id, refs...)
 		if e != nil {
 			fmt.Fprintln(stderr, e)
 			return exitDataErr

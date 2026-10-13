@@ -226,6 +226,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/messages/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Raw-pair UTC series with exact full views and separate evidence dimensions; at most 2000 buckets/views. */
+        get: operations["getMessageTimeSeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/messages/source": {
         parameters: {
             query?: never;
@@ -834,6 +851,32 @@ export interface components {
             next: string | null;
             records: components["schemas"]["MessagesRecord"][];
         };
+        MessagesAssociationAnchor: {
+            events: components["schemas"]["MessagesSource"][];
+            journal: components["schemas"]["MessagesSource"][];
+            node: string;
+            run: string;
+            status: string;
+            step: string;
+        };
+        MessagesAssociationProof: {
+            anchors: components["schemas"]["MessagesAssociationAnchor"][];
+            /** Format: int64 */
+            conflicting_anchors: number;
+            /** Format: int64 */
+            event_only_runs: number;
+            /** Format: int64 */
+            journal_only_runs: number;
+            /** Format: int64 */
+            matched_anchors: number;
+            /** Format: int64 */
+            missing_anchors: number;
+            /** Format: int64 */
+            shared_runs: number;
+            status: string;
+            /** Format: int64 */
+            unanchored_runs: number;
+        };
         MessagesFile: {
             /** Format: int64 */
             bytes: number;
@@ -849,6 +892,7 @@ export interface components {
         };
         MessagesGroupKey: {
             clock: string;
+            metric: string;
             node: string;
             path: string;
             phase: string;
@@ -868,6 +912,7 @@ export interface components {
             id: string;
             /** Format: double */
             lower_seconds: number | null;
+            metric: string;
             path: string;
             phase: string;
             /** Format: double */
@@ -947,8 +992,16 @@ export interface components {
             wire_code?: string | null;
             write?: string;
         };
+        MessagesSeriesPoint: {
+            at: string;
+            groups: components["schemas"]["MessagesGroup"][];
+            height: string;
+            round: string;
+        };
         MessagesSource: {
             clock_source?: string;
+            /** Format: int64 */
+            dataset_id?: number;
             file?: string;
             input: string;
             kind?: string;
@@ -991,6 +1044,14 @@ export interface components {
             kind: string;
             node: string;
             sha256: string;
+        };
+        MessagesTimeSeries: {
+            /** Format: int64 */
+            bucket_seconds: number;
+            method: string;
+            /** Format: int64 */
+            pairs: number;
+            points: components["schemas"]["MessagesSeriesPoint"][];
         };
         MessagesView: {
             height: string;
@@ -1037,6 +1098,10 @@ export interface components {
         PairSummary: {
             index: components["schemas"]["StorePairIndex"];
             summary: components["schemas"]["MessagesPairStatistics"];
+        };
+        PairTimeSeries: {
+            index: components["schemas"]["StorePairIndex"];
+            series: components["schemas"]["MessagesTimeSeries"];
         };
         PhasePage: {
             next: string | null;
@@ -1287,6 +1352,8 @@ export interface components {
         };
         StorePairCoverage: {
             /** Format: int64 */
+            dataset_id?: number;
+            /** Format: int64 */
             gap_records: number;
             input: string;
             kind: string;
@@ -1300,11 +1367,14 @@ export interface components {
             wall_clock_regressions: number | null;
         };
         StorePairIndex: {
+            association?: components["schemas"]["MessagesAssociationProof"] | null;
             coverage: components["schemas"]["StorePairCoverage"][];
             dataset_status: string;
             diagnostics: {
                 [key: string]: number;
             };
+            /** Format: int64 */
+            event_dataset?: number;
             from_t: string | null;
             /** Format: int64 */
             issues: number;
@@ -1947,6 +2017,8 @@ export interface operations {
                 clock?: string;
                 /** @description exact message evidence filter */
                 status?: string;
+                /** @description exact message evidence filter */
+                metric?: string;
                 /** @description p50/p90/p95/p99; requires one phase, strength, path and clock */
                 threshold?: string;
                 /** @description page size 1..1000 */
@@ -2054,6 +2126,76 @@ export interface operations {
             };
         };
     };
+    getMessageTimeSeries: {
+        parameters: {
+            query?: {
+                /** @description optional inclusive RFC3339 start; requires to_t, at most 24h */
+                from_t?: string;
+                /** @description optional inclusive RFC3339 end; requires from_t */
+                to_t?: string;
+                /** @description exact message evidence filter */
+                sender?: string;
+                /** @description exact message evidence filter */
+                receiver?: string;
+                /** @description exact message evidence filter */
+                node?: string;
+                /** @description exact message evidence filter */
+                phase?: string;
+                /** @description exact message evidence filter */
+                height?: string;
+                /** @description exact message evidence filter */
+                round?: string;
+                /** @description exact message evidence filter */
+                strength?: string;
+                /** @description exact message evidence filter */
+                path?: string;
+                /** @description exact message evidence filter */
+                clock?: string;
+                /** @description exact message evidence filter */
+                status?: string;
+                /** @description exact message evidence filter */
+                metric?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairTimeSeries"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     getMessageSource: {
         parameters: {
             query: {
@@ -2131,6 +2273,8 @@ export interface operations {
                 clock?: string;
                 /** @description exact message evidence filter */
                 status?: string;
+                /** @description exact message evidence filter */
+                metric?: string;
             };
             header?: never;
             path: {

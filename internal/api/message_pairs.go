@@ -26,6 +26,29 @@ type PairPage struct {
 	Next      *string         `json:"next"`
 }
 
+type PairTimeSeries struct {
+	Index  store.PairIndex    `json:"index"`
+	Series derived.TimeSeries `json:"series"`
+}
+
+func (s *Server) pairSeries(w http.ResponseWriter, r *http.Request) {
+	index, pairs, _, ok := s.pairData(w, r)
+	if !ok {
+		return
+	}
+	q := r.URL.Query()
+	if q.Has("cursor") || q.Has("limit") || q.Has("threshold") {
+		writeError(w, 400, "series does not accept sample paging or threshold")
+		return
+	}
+	series := derived.Series(pairs, 1)
+	if len(series.Points) > 2000 {
+		writeError(w, 400, "message series exceeds 2000 buckets/views; narrow the filters")
+		return
+	}
+	writeJSON(w, 200, PairTimeSeries{index, series})
+}
+
 func oneOf(x string, values ...string) bool {
 	if x == "" {
 		return true
@@ -44,7 +67,7 @@ func (s *Server) pairData(w http.ResponseWriter, r *http.Request) (store.PairInd
 		return store.PairIndex{}, nil, 0, false
 	}
 	q := r.URL.Query()
-	allowed := map[string]bool{"from_t": true, "to_t": true, "sender": true, "receiver": true, "node": true, "phase": true, "height": true, "round": true, "strength": true, "path": true, "clock": true, "status": true, "limit": true, "cursor": true, "threshold": true}
+	allowed := map[string]bool{"from_t": true, "to_t": true, "sender": true, "receiver": true, "node": true, "phase": true, "height": true, "round": true, "strength": true, "path": true, "clock": true, "status": true, "limit": true, "cursor": true, "threshold": true, "metric": true}
 	bad := func(message string) (store.PairIndex, []derived.Pair, int, bool) {
 		writeError(w, 400, message)
 		return store.PairIndex{}, nil, 0, false
@@ -54,7 +77,7 @@ func (s *Server) pairData(w http.ResponseWriter, r *http.Request) (store.PairInd
 			return bad("invalid message pair query")
 		}
 	}
-	f := store.PairFilter{Sender: q.Get("sender"), Receiver: q.Get("receiver"), Node: q.Get("node"), Phase: q.Get("phase"), Height: q.Get("height"), Round: q.Get("round"), Strength: q.Get("strength"), Path: q.Get("path"), Clock: q.Get("clock"), Status: q.Get("status")}
+	f := store.PairFilter{Sender: q.Get("sender"), Receiver: q.Get("receiver"), Node: q.Get("node"), Phase: q.Get("phase"), Height: q.Get("height"), Round: q.Get("round"), Strength: q.Get("strength"), Path: q.Get("path"), Clock: q.Get("clock"), Status: q.Get("status"), Metric: q.Get("metric")}
 	for _, n := range []string{f.Sender, f.Receiver, f.Node} {
 		if n != "" && !logs.Identifier(n) {
 			return bad("invalid message node")
@@ -62,6 +85,9 @@ func (s *Server) pairData(w http.ResponseWriter, r *http.Request) (store.PairInd
 	}
 	if f.Height != "" && !fullDecimal.MatchString(f.Height) || f.Round != "" && !fullDecimal.MatchString(f.Round) {
 		return bad("invalid full message view")
+	}
+	if !oneOf(f.Metric, "link", "propagation_processing", "broadcast_to_receipt") {
+		return bad("unknown message boundary metric")
 	}
 	if !oneOf(f.Phase, "PRE-PREPARE", "PREPARE", "COMMIT", "ROUND-CHANGE") || !oneOf(f.Strength, "link", "node", "key") || !oneOf(f.Path, "local", "direct", "relay", "propagation_processing") || !oneOf(f.Clock, "shared-host", "ntp", "monotonic", "unknown", "unavailable") || !oneOf(f.Status, "valid", "ambiguous", "missing_send", "missing_receive", "unconfirmed_write", "unknown_clock", "clock_overlap", "negative", "missing_clock", "invalid_clock") {
 		return bad("unknown message pair filter")
@@ -119,10 +145,12 @@ func (s *Server) pairSamples(w http.ResponseWriter, r *http.Request) {
 			writeError(w, 400, "threshold needs one phase, strength, path and clock")
 			return
 		}
+		overallGroups := 0
 		for _, g := range derived.Summarize(pairs).Groups {
 			if g.Key.Scope != "overall" {
 				continue
 			}
+			overallGroups++
 			switch name {
 			case "p50":
 				threshold = g.Distribution.P50
@@ -133,6 +161,10 @@ func (s *Server) pairSamples(w http.ResponseWriter, r *http.Request) {
 			case "p99":
 				threshold = g.Distribution.P99
 			}
+		}
+		if overallGroups > 1 {
+			writeError(w, 400, "threshold needs one boundary metric")
+			return
 		}
 	}
 	selected := []derived.Pair{}

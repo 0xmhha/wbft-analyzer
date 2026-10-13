@@ -13,6 +13,7 @@ import (
 )
 
 type Source struct {
+	DatasetID   int64   `json:"dataset_id,omitempty"`
 	Kind        string  `json:"kind,omitempty"`
 	Input       string  `json:"input"`
 	File        string  `json:"file,omitempty"`
@@ -30,6 +31,8 @@ type Source struct {
 // the wire nodes at link strength and the origin/processing nodes otherwise.
 // Key tuples must already have full values retained alongside their low64 key.
 type Endpoint struct {
+	Author   string `json:"author,omitempty"`
+	Metric   string `json:"metric,omitempty"`
 	Source   Source `json:"source"`
 	Role     string `json:"role"`
 	Strength string `json:"strength"`
@@ -48,6 +51,7 @@ type Clock struct {
 	SkewMS int64
 }
 type Pair struct {
+	Metric            string   `json:"metric"`
 	ID                string   `json:"id"`
 	At                string   `json:"at"`
 	Key               string   `json:"dedup_key,omitempty"`
@@ -79,7 +83,7 @@ type View struct {
 	Height string `json:"height"`
 	Round  string `json:"round"`
 }
-type key struct{ Sender, Receiver, Phase, Height, Round, Strength, Identity string }
+type key struct{ Sender, Receiver, Phase, Height, Round, Strength, Identity, Metric string }
 
 // PairEndpoints requires a unique send and receive for an identity. Repeated
 // writes or receives remain ambiguous: timestamp proximity cannot identify
@@ -128,7 +132,14 @@ func PairEndpoints(xs []Endpoint, clock Clock) []Pair {
 				weakBytes[wk][x.Key] = true
 			}
 		}
-		k := key{x.Sender, x.Receiver, x.Phase, height, round, x.Strength, identity}
+		metric := x.Metric
+		if metric == "" {
+			metric = "link"
+			if x.Strength != "link" {
+				metric = "propagation_processing"
+			}
+		}
+		k := key{x.Sender, x.Receiver, x.Phase, height, round, x.Strength, identity, metric}
 		groups[k] = append(groups[k], x)
 	}
 	keys := []key{}
@@ -137,7 +148,7 @@ func PairEndpoints(xs []Endpoint, clock Clock) []Pair {
 	}
 	sort.Slice(keys, func(i, j int) bool {
 		a, b := keys[i], keys[j]
-		return strings.Join([]string{a.Sender, a.Receiver, a.Phase, a.Height, a.Round, a.Strength, a.Identity}, "\x00") < strings.Join([]string{b.Sender, b.Receiver, b.Phase, b.Height, b.Round, b.Strength, b.Identity}, "\x00")
+		return strings.Join([]string{a.Sender, a.Receiver, a.Phase, a.Height, a.Round, a.Strength, a.Identity, a.Metric}, "\x00") < strings.Join([]string{b.Sender, b.Receiver, b.Phase, b.Height, b.Round, b.Strength, b.Identity, b.Metric}, "\x00")
 	})
 	out := []Pair{}
 	for _, k := range keys {
@@ -158,6 +169,7 @@ func PairEndpoints(xs []Endpoint, clock Clock) []Pair {
 			}
 		}
 		p := Pair{Sender: k.Sender, Receiver: k.Receiver, Phase: k.Phase, Height: k.Height, Round: k.Round, Strength: k.Strength, Path: "direct", Status: "ambiguous", Clock: "unavailable", SendCandidates: len(sends), ReceiveCandidates: len(receives)}
+		p.Metric = k.Metric
 		if k.Strength != "link" {
 			p.Path = "propagation_processing"
 		}

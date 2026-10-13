@@ -1188,6 +1188,98 @@
         ],
         "type": "object"
       },
+      "MessagesAssociationAnchor": {
+        "additionalProperties": false,
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesSource"
+            },
+            "type": "array"
+          },
+          "journal": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesSource"
+            },
+            "type": "array"
+          },
+          "node": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "step": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "events",
+          "journal",
+          "node",
+          "run",
+          "status",
+          "step"
+        ],
+        "type": "object"
+      },
+      "MessagesAssociationProof": {
+        "additionalProperties": false,
+        "properties": {
+          "anchors": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesAssociationAnchor"
+            },
+            "type": "array"
+          },
+          "conflicting_anchors": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "event_only_runs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "journal_only_runs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "matched_anchors": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "missing_anchors": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "shared_runs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "unanchored_runs": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "anchors",
+          "conflicting_anchors",
+          "event_only_runs",
+          "journal_only_runs",
+          "matched_anchors",
+          "missing_anchors",
+          "shared_runs",
+          "status",
+          "unanchored_runs"
+        ],
+        "type": "object"
+      },
       "MessagesFile": {
         "additionalProperties": false,
         "properties": {
@@ -1241,6 +1333,9 @@
           "clock": {
             "type": "string"
           },
+          "metric": {
+            "type": "string"
+          },
           "node": {
             "type": "string"
           },
@@ -1265,6 +1360,7 @@
         },
         "required": [
           "clock",
+          "metric",
           "node",
           "path",
           "phase",
@@ -1311,6 +1407,9 @@
               "number",
               "null"
             ]
+          },
+          "metric": {
+            "type": "string"
           },
           "path": {
             "type": "string"
@@ -1399,6 +1498,7 @@
           "height",
           "id",
           "lower_seconds",
+          "metric",
           "path",
           "phase",
           "raw_seconds",
@@ -1617,11 +1717,42 @@
         ],
         "type": "object"
       },
+      "MessagesSeriesPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesGroup"
+            },
+            "type": "array"
+          },
+          "height": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "groups",
+          "height",
+          "round"
+        ],
+        "type": "object"
+      },
       "MessagesSource": {
         "additionalProperties": false,
         "properties": {
           "clock_source": {
             "type": "string"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
           },
           "file": {
             "type": "string"
@@ -1761,6 +1892,35 @@
           "kind",
           "node",
           "sha256"
+        ],
+        "type": "object"
+      },
+      "MessagesTimeSeries": {
+        "additionalProperties": false,
+        "properties": {
+          "bucket_seconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "method": {
+            "type": "string"
+          },
+          "pairs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesSeriesPoint"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "bucket_seconds",
+          "method",
+          "pairs",
+          "points"
         ],
         "type": "object"
       },
@@ -1954,6 +2114,22 @@
         "required": [
           "index",
           "summary"
+        ],
+        "type": "object"
+      },
+      "PairTimeSeries": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "$ref": "#/components/schemas/StorePairIndex"
+          },
+          "series": {
+            "$ref": "#/components/schemas/MessagesTimeSeries"
+          }
+        },
+        "required": [
+          "index",
+          "series"
         ],
         "type": "object"
       },
@@ -2919,6 +3095,10 @@
       "StorePairCoverage": {
         "additionalProperties": false,
         "properties": {
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
           "gap_records": {
             "format": "int64",
             "type": "integer"
@@ -2969,6 +3149,16 @@
       "StorePairIndex": {
         "additionalProperties": false,
         "properties": {
+          "association": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesAssociationProof"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "coverage": {
             "items": {
               "$ref": "#/components/schemas/StorePairCoverage"
@@ -2986,6 +3176,10 @@
             "properties": {},
             "required": [],
             "type": "object"
+          },
+          "event_dataset": {
+            "format": "int64",
+            "type": "integer"
           },
           "from_t": {
             "type": [
@@ -4185,6 +4379,15 @@
             }
           },
           {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "metric",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "description": "p50/p90/p95/p99; requires one phase, strength, path and clock",
             "in": "query",
             "name": "threshold",
@@ -4377,6 +4580,185 @@
           }
         },
         "summary": "Source-ordered message metadata with snapshot/filter-bound cursor; at most 1000 rows."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/messages/series": {
+      "get": {
+        "operationId": "getMessageTimeSeries",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "optional inclusive RFC3339 start; requires to_t, at most 24h",
+            "in": "query",
+            "name": "from_t",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "optional inclusive RFC3339 end; requires from_t",
+            "in": "query",
+            "name": "to_t",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "sender",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "receiver",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "phase",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "height",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "round",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "strength",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "clock",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "metric",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairTimeSeries"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Raw-pair UTC series with exact full views and separate evidence dimensions; at most 2000 buckets/views."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/messages/source": {
@@ -4596,6 +4978,15 @@
             "description": "exact message evidence filter",
             "in": "query",
             "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact message evidence filter",
+            "in": "query",
+            "name": "metric",
             "required": false,
             "schema": {
               "type": "string"
