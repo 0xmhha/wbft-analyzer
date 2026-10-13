@@ -370,6 +370,18 @@
         ],
         "type": "object"
       },
+      "DeleteDatasetRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirm_name"
+        ],
+        "type": "object"
+      },
       "EpochList": {
         "additionalProperties": false,
         "properties": {
@@ -4032,6 +4044,77 @@
         ],
         "type": "object"
       },
+      "StoreDatasetDeletion": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "finished_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "input_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_files": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "network_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "dataset_id",
+          "finished_at",
+          "input_bytes",
+          "input_files",
+          "name",
+          "network_id",
+          "status"
+        ],
+        "type": "object"
+      },
+      "StoreDatasetInputStorage": {
+        "additionalProperties": false,
+        "properties": {
+          "input_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_files": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "input_bytes",
+          "input_files",
+          "state"
+        ],
+        "type": "object"
+      },
       "StoreEpoch": {
         "additionalProperties": false,
         "properties": {
@@ -5693,6 +5776,136 @@
         "summary": "Datasets and their import status, progress and errors."
       }
     },
+    "/v1/networks/{net}/datasets/{dataset}": {
+      "delete": {
+        "operationId": "deleteDataset",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteDatasetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreDatasetDeletion"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Delete dataset rows and owned input bytes after exact name confirmation; active or shared sources are refused."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/deletion": {
+      "get": {
+        "operationId": "getDatasetDeletion",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreDatasetDeletion"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Durable deletion status, including a completed dataset deletion."
+      }
+    },
     "/v1/networks/{net}/datasets/{dataset}/event-bounds": {
       "get": {
         "operationId": "getEventBounds",
@@ -6120,6 +6333,66 @@
           }
         },
         "summary": "Durable native follow cursor and latest completed header/observation companions; no event completeness claim."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/input-storage": {
+      "get": {
+        "operationId": "getDatasetInputStorage",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreDatasetInputStorage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Retained input ownership and object counts; no paths or owner identities."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/inputs": {

@@ -34,7 +34,7 @@ export function Overview({ onAuth }: { onAuth: () => void }) {
                   </td>
                   <td className="num">{n.reports}</td>
                   <td>
-                    <a href={`#/networks/${n.id}/verdicts`}>verdicts</a> · <a href={`#/networks/${n.id}/headers`}>headers</a> · <a href={`#/networks/${n.id}/events`}>events</a> · <a href={`#/networks/${n.id}/messages`}>messages</a> · <a href={`#/networks/${n.id}/trends`}>trends</a> · <a href={`#/networks/${n.id}/follow`}>follow</a>
+                    <a href={`#/networks/${n.id}/verdicts`}>verdicts</a> · <a href={`#/networks/${n.id}/headers`}>headers</a> · <a href={`#/networks/${n.id}/events`}>events</a> · <a href={`#/networks/${n.id}/messages`}>messages</a> · <a href={`#/networks/${n.id}/trends`}>trends</a> · <a href={`#/networks/${n.id}/follow`}>follow</a> · <a href={`#/networks/${n.id}/datasets`}>datasets</a>
                   </td>
                 </tr>
               ))}

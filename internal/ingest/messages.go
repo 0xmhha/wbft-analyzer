@@ -28,13 +28,7 @@ func MessagesWithInputs(ctx context.Context, s *store.Store, m messages.Manifest
 	if e != nil {
 		return res, e
 	}
-	var archived map[string][]messages.ArchivedFile
-	if directory != "" {
-		archived, e = messages.Archive(ctx, directory, plan)
-		if e != nil {
-			return res, e
-		}
-	}
+
 	network := logs.SafeNetwork(m.Network)
 	d, release, e := s.BeginMessages(ctx, store.NetworkKey{ChainID: network.ChainID, GenesisHash: network.GenesisHash, Name: network.Name}, m.Name, meta)
 	if e != nil {
@@ -58,6 +52,18 @@ func MessagesWithInputs(ctx context.Context, s *store.Store, m messages.Manifest
 			err = e
 		}
 	}()
+	var archived map[string][]messages.ArchivedFile
+	if directory != "" {
+		n, claimErr := s.ClaimInputStorage(ctx, d.ID, directory)
+		if claimErr != nil {
+			return res, claimErr
+		}
+		archived, e = messages.Archive(ctx, n.Directory(), plan)
+		if e != nil {
+			return res, e
+		}
+	}
+
 	for _, p := range plan {
 		if len(archived[p.Input.ID]) == 0 {
 			continue

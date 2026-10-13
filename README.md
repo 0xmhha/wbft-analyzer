@@ -849,3 +849,38 @@ remains unavailable. At most 1000 original events are returned; excess sources
 are refused rather than truncated. Each link opens the exact original event and
 its visual playback position. Event association does not change stored replay
 classifications or establish core reproduction.
+
+### Dataset deletion and retained input ownership
+
+New retained inputs use a private namespace for each dataset under the chosen
+`--inputs-dir`. Equal SHA objects in another dataset remain independent. Chain
+objects retained for replay use the same namespace. Namespace ownership is bound
+to the database, schema and server endpoint; a restored database cannot delete
+its source database's bytes.
+
+The datasets screen shows input ownership. Confirm the exact dataset name to
+delete its records, replay results and owned input objects. Active imports or
+replays and referenced follow captures block deletion. Queued replay jobs are
+cancelled. Canonical network header facts and the original external source files
+are preserved. There is no automatic retention timer.
+
+`dataset delete --db DSN --network N --dataset N --confirm-name NAME` uses the
+same operation as `DELETE /v1/networks/{net}/datasets/{dataset}` with JSON
+`{"confirm_name":"NAME"}`. Deletion intent is committed before file cleanup;
+interrupted cleanup remains `deleting` and retries with the same name. The
+`dataset deletion` command and `/deletion` endpoint retain the completed result.
+Only validated objects in the owned namespace are removed. Arbitrary files,
+symlinks and changed ownership refuse cleanup. An empty ownership marker remains
+for retry verification; it contains no journal or chain bytes.
+
+A database dump contains metadata and references; retained input objects need
+their own filesystem backup. Adoption requires the source objects to remain
+available.
+
+Older shared inputs and inputs restored from another database must first be
+copied and verified with `dataset adopt-inputs --db DSN --network N --dataset N
+--inputs-dir /private/inputs`. References change atomically after all source
+objects verify; the original shared or source-database objects are preserved.
+Interrupted adoption retains its candidate namespace and resumes with the same
+root. Other imports and deletion wait for adoption to finish. Paths and ownership
+identities are not exposed by the API.
