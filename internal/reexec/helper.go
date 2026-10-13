@@ -17,6 +17,8 @@ import (
 	"runtime/debug"
 	"strconv"
 	"time"
+
+	"github.com/0xmhha/wbft/conformance/stepdriver"
 )
 
 var versionPattern = regexp.MustCompile(`^([0-9a-f]{40}|v[0-9]+\.[0-9]+\.[0-9]+(-[0-9]{14}-[0-9a-f]{12})?)$`)
@@ -456,15 +458,16 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 			return err
 		}
 		var r struct {
-			AnswerScope string `json:"answer_scope"`
-			Type        string `json:"type"`
-			Protocol    string `json:"protocol"`
-			ID          uint64 `json:"id"`
-			Journal     string `json:"journal"`
-			Chain       string `json:"chain"`
-			OmitMissing bool   `json:"omit_missing_captures"`
-			WarmupFrom  uint64 `json:"warmup_from_height"`
-			CompareFrom uint64 `json:"compare_from_height"`
+			Schedule    *stepdriver.TraceSchedule `json:"input_schedule"`
+			AnswerScope string                    `json:"answer_scope"`
+			Type        string                    `json:"type"`
+			Protocol    string                    `json:"protocol"`
+			ID          uint64                    `json:"id"`
+			Journal     string                    `json:"journal"`
+			Chain       string                    `json:"chain"`
+			OmitMissing bool                      `json:"omit_missing_captures"`
+			WarmupFrom  uint64                    `json:"warmup_from_height"`
+			CompareFrom uint64                    `json:"compare_from_height"`
 		}
 		if err := json.Unmarshal(sc.Bytes(), &r); err != nil {
 			return ErrHelper
@@ -474,13 +477,13 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 			if r.Protocol != Protocol {
 				return ErrHelper
 			}
-			if err := enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": LinkedVersion(), "features": []string{"bounded_warmup_v1", "context_answers_v1"}}); err != nil {
+			if err := enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": LinkedVersion(), "features": []string{"bounded_warmup_v1", "context_answers_v1", "input_schedule_v1"}}); err != nil {
 				return err
 			}
 		case "bye":
 			return nil
 		case "replay":
-			if err := serveReplay(ctx, r.Journal, r.Chain, r.ID, r.OmitMissing, r.WarmupFrom, r.CompareFrom, r.AnswerScope, enc); err != nil {
+			if err := serveReplay(ctx, r.Journal, r.Chain, r.ID, r.OmitMissing, r.WarmupFrom, r.CompareFrom, r.AnswerScope, r.Schedule, enc); err != nil {
 				return err
 			}
 		default:

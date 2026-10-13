@@ -760,6 +760,21 @@ Context lookup always reports `counterfactual`, even with original inputs and
 matching outputs. It does not reconstruct unrecorded application execution or
 the reactions of other nodes. Missing-input omission is a separate policy.
 
+The linked `reexec-helper` advertises `input_schedule_v1` and delegates
+`input_schedule` requests to the pinned WBFT replay driver. An explicit context
+answer scope and a complete recorded start are required. Missing-input omission
+and bounded warmup cannot be combined with scheduling. The driver supports
+external-input drop, delay, and receipt-proven swap; original source coordinates,
+execution positions, and suppression reasons are returned separately. Completed
+experiments remain counterfactual even when all output digests match. Recorded
+receipt clocks and source files are preserved. Timer-policy rescheduling and
+other-node reactions are separate requirements.
+
+The stored replay command and job worker currently accept original input order
+only. Schedule requests use the helper protocol; stored experiment jobs and their
+execution-order screen are pending. The helper capability alone does not establish
+full what-if acceptance.
+
 Bounds: 10000 active canonical heights, 100000 steps, one million journal
 records, a 256 MiB chain file, 64 KiB protocol lines, 64 MiB helper output and
 a 5 minute default deadline (`--timeout`, up to 30 minutes). Chain indices must
