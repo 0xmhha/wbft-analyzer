@@ -743,8 +743,45 @@ structured positions retain a run-level issue without an inferred step.
 
 The core replay screen shows versions,
 completeness, a source-order difference strip, the first difference and the
-exact original journal record. HTTP reads do not execute a replay; start a
-run with the local command.
+exact original journal record. HTTP reads do not execute a replay. Start a
+run with the local command or enable the bounded job worker below.
+
+Operators can start `serve --reexec-sources /private/sources.json`. This is
+a private regular JSON file (0600, at most 64 KiB) containing 1–16 entries:
+
+```json
+[{"id":"retained-node","dataset":1,"input":"journal-node",
+  "chain":"chain.rlp","timeout":"5m","allow_loss":false}]
+```
+
+Paths are resolved relative to this file. An optional `helper` selects an
+operator-owned executable; otherwise the linked core helper is used.
+The configuration binds retained input, node, chain and helper fingerprints,
+deadline and allowed modes. A changed source fails closed. Each HTTP execution
+uses a verified private executable snapshot; clients cannot choose paths,
+commands or arguments. `allow_loss` explicitly permits the separately labelled
+counterfactual mode. It does not permit original reproduction claims.
+
+Under `/v1/networks/{net}/datasets/{dataset}`, `GET /reexec-sources` lists
+enabled source IDs, and `POST /reexec-jobs` accepts `source_id`, decimal-string
+`from_height` and `to_height`, and `mode` (`closed` by default). The strict
+request limit is 4 KiB. Heights fit uint64, and the inclusive range is at most
+10000 heights. The existing bearer token, loopback and same-origin JSON checks
+apply. The response is 202 with a durable job ID. `GET /reexec-jobs` lists the
+latest 100 jobs, and `GET /reexec-jobs/{job}` returns one scoped job.
+
+Migration 19 stores this queue. At most 32 jobs may be queued or running across
+the database/schema, and one worker owns a dedicated database lease. Execution
+uses the same stored runner as the CLI and links its result ID. Queue success
+means execution finished; the linked result independently reports version,
+completeness and reproduction. On restart, queued jobs remain queued; interrupted
+running jobs fail with `worker_interrupted`, unless their linked result had
+already finished. They are never silently rerun. A clean worker stop records
+`cancelled` for its active job. Stored summaries and raw retained inputs need
+their usual separate backups; the source configuration is also operator-managed.
+
+The core replay screen queues registered sources, updates active job status
+every two seconds, and opens the linked result and original-record evidence.
 
 A missing referenced received frame fails closed with `input_gap`. The explicit
 `--omit-missing-captures` option instead runs a counterfactual loss experiment:

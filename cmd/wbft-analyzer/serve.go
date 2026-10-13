@@ -16,6 +16,7 @@ import (
 
 	"github.com/0xmhha/wbft-analyzer/internal/api"
 	"github.com/0xmhha/wbft-analyzer/internal/ingest"
+	"github.com/0xmhha/wbft-analyzer/internal/replayjob"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
 	"github.com/0xmhha/wbft-analyzer/internal/web"
 )
@@ -26,6 +27,8 @@ Serves the REST API under /v1: networks, inspector reports with their
 results and observations, observation trends, alert rules and alerts.
 POST /v1/reports loads a report as "ingest reports" does. Every other path
 serves the web front end built into the binary.
+--reexec-sources enables durable bounded replay jobs for operator-registered
+retained journals; without it replay results are read-only over HTTP.
 
 The server listens on 127.0.0.1 by default and then needs no
 authentication; it answers only to a loopback host name. To listen on any
@@ -44,6 +47,7 @@ func runServe(args []string, _, stderr io.Writer) int {
 	fs.Usage = func() { fmt.Fprint(stderr, serveUsage); fs.PrintDefaults() }
 	dsn := fs.String("db", os.Getenv("WBFT_ANALYZER_DB"), "PostgreSQL DSN (default $WBFT_ANALYZER_DB)")
 	listen := fs.String("listen", "127.0.0.1:8080", "address to listen on")
+	sources := fs.String("reexec-sources", "", "private replay source configuration; enables bounded HTTP jobs")
 	auth := fs.String("auth", "", `authentication: "token" (bearer token from $WBFT_ANALYZER_TOKEN)`)
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
@@ -85,9 +89,28 @@ func runServe(args []string, _, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return exitInternal
 	}
+
+	var jobs *replayjob.Worker
+	if *sources != "" {
+		executable, e := os.Executable()
+		if e != nil {
+			return exitInternal
+		}
+		jobs, err = replayjob.Load(ctx, s, *sources, executable)
+		if err != nil {
+			fmt.Fprintln(stderr, "invalid retained replay source configuration")
+			return exitUsage
+		}
+		stopJobs, e := jobs.Start(ctx)
+		if e != nil {
+			fmt.Fprintln(stderr, "replay worker unavailable")
+			return exitUnavailable
+		}
+		defer stopJobs()
+	}
 	log := slog.New(slog.NewTextHandler(stderr, nil))
 	srv := &http.Server{
-		Handler: (&api.Server{Store: s, Reporter: &ingest.Reporter{Store: s}, Token: token, Log: log,
+		Handler: (&api.Server{Jobs: jobs, Store: s, Reporter: &ingest.Reporter{Store: s}, Token: token, Log: log,
 			Web: web.Handler()}).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       2 * time.Minute,

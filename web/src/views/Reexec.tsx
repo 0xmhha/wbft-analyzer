@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { get, type Schemas } from "../api/client";
 import { Pending, useLoad } from "../ui";
+import { ReexecJobs } from "./ReexecJobs";
 
 type Run = Schemas["StoreReexecRun"];
 type Step = Schemas["ReexecStep"];
@@ -11,9 +12,9 @@ export function Reexec({net,onAuth}:{net:number;onAuth:()=>void}) {
  return <section><h1>Core replay</h1><p>Compare original journal inputs with the actual WBFT core. Visual playback shows recorded events; these runs execute the core. Incomplete inputs and a different or unknown source version cannot establish reproduction.</p><button type="button" onClick={()=>setRefresh(n=>n+1)}>Refresh runs</button><Pending load={datasets} onAuth={onAuth}/>{datasets.state==="done"&&<><label>Journal dataset <select value={dataset} onChange={e=>setDataset(Number(e.target.value))}><option value={0}>Select a dataset</option>{datasets.data.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>{datasets.data.filter(d=>d.id===dataset).map(d=><Dataset key={d.id} net={net} dataset={d.id} name={d.name} refresh={refresh} onAuth={onAuth}/>)}</>}</section>;
 }
 function Dataset({net,dataset,name,refresh,onAuth}:{net:number;dataset:number;name:string;refresh:number;onAuth:()=>void}) {
- const [selected,setSelected]=useState(0);
- const load=useLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/reexec",{path:{net,dataset}}),[net,dataset,refresh]);
- return <article><h2>{name}</h2><Pending load={load} onAuth={onAuth}/>{load.state==="done"&&(load.data.runs.length?<><label>Replay run <select value={selected} onChange={e=>setSelected(Number(e.target.value))}><option value={0}>Select a run</option>{load.data.runs.map(r=><option key={r.id} value={r.id}>{r.id}: {r.input_id} · {r.from_height}–{r.to_height} · {r.status}</option>)}</select></label>{load.data.runs.filter(r=>r.id===selected).map(r=><RunDetails key={r.id} net={net} dataset={dataset} run={r} refresh={refresh} onAuth={onAuth}/>)}</>:<p>No stored core replay. Retain the journal inputs and run the reexec command.</p>)}</article>;
+ const [selected,setSelected]=useState(0),[jobRefresh,setJobRefresh]=useState(0);
+ const load=useLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/reexec",{path:{net,dataset}}),[net,dataset,refresh,jobRefresh]);
+ return <article><h2>{name}</h2><ReexecJobs net={net} dataset={dataset} refresh={refresh} onAuth={onAuth} onResult={id=>{setSelected(id);setJobRefresh(n=>n+1)}}/><Pending load={load} onAuth={onAuth}/>{load.state==="done"&&(load.data.runs.length?<><label>Replay run <select value={selected} onChange={e=>setSelected(Number(e.target.value))}><option value={0}>Select a run</option>{load.data.runs.map(r=><option key={r.id} value={r.id}>{r.id}: {r.input_id} · {r.from_height}–{r.to_height} · {r.status}</option>)}</select></label>{load.data.runs.filter(r=>r.id===selected).map(r=><RunDetails key={r.id} net={net} dataset={dataset} run={r} refresh={refresh+jobRefresh} onAuth={onAuth}/>)}</>:<p>No stored core replay.</p>)}</article>;
 }
 export function ReexecSummary({run}:{run:Run}) {
  const s=run.summary;
