@@ -10,6 +10,8 @@ const MaxSteps = 100000
 const MaxRecords = 1000000
 
 type Step struct {
+	Approximate   bool   `json:"approximate,omitempty"`
+	Warmup        bool   `json:"warmup,omitempty"`
 	Capture       string `json:"capture_id,omitempty"`
 	Omitted       bool   `json:"omitted,omitempty"`
 	Mono          string `json:"t_mono_ns,omitempty"`
@@ -45,6 +47,7 @@ type Height struct {
 }
 
 type Plan struct {
+	From, To       uint64            `json:"-"`
 	Input          messages.Prepared `json:"-"`
 	Chain          string            `json:"-"`
 	ChainSHA       string            `json:"chain_sha256"`
@@ -55,6 +58,8 @@ type Plan struct {
 }
 
 type Result struct {
+	WarmupHeights  int      `json:"warmup_heights,omitempty"`
+	WarmupSuspect  int64    `json:"warmup_suspect"`
 	Warmup         *Warmup  `json:"warmup,omitempty"`
 	Mode           string   `json:"mode,omitempty"`
 	BinaryVersion  string   `json:"binary_version"`
@@ -78,13 +83,16 @@ type Result struct {
 // Warmup describes the verified original prefix preceding the selected range.
 // It is separate from selected-step counters and contains no input payload.
 type Warmup struct {
-	Policy          string `json:"policy"`
-	Status          string `json:"status"`
-	Steps           int64  `json:"steps"`
-	Matches         int64  `json:"matches"`
-	Mismatches      int64  `json:"mismatches"`
-	NotComparable   int64  `json:"not_comparable"`
-	FirstSource     *int64 `json:"first_source_ordinal,omitempty"`
-	LastSource      *int64 `json:"last_source_ordinal,omitempty"`
-	FirstDifference *Step  `json:"first_difference,omitempty"`
+	Suspects          int64  `json:"suspects,omitempty"`
+	FromHeight        string `json:"from_height,omitempty"`
+	CompareFromHeight string `json:"compare_from_height,omitempty"`
+	Policy            string `json:"policy"`
+	Status            string `json:"status"`
+	Steps             int64  `json:"steps"`
+	Matches           int64  `json:"matches"`
+	Mismatches        int64  `json:"mismatches"`
+	NotComparable     int64  `json:"not_comparable"`
+	FirstSource       *int64 `json:"first_source_ordinal,omitempty"`
+	LastSource        *int64 `json:"last_source_ordinal,omitempty"`
+	FirstDifference   *Step  `json:"first_difference,omitempty"`
 }

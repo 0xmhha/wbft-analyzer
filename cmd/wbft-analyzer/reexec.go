@@ -35,10 +35,11 @@ func runReexec(args []string, stdout, stderr io.Writer) int {
 	chain := fs.String("chain", "", "recorded canonical chain.rlp")
 	from := fs.Uint64("from", 0, "first active height (inclusive)")
 	to := fs.Uint64("to", 0, "last active height (inclusive)")
+	warmup := fs.Uint64("warmup-heights", 2, "bounded prefix heights when the recorded engine start is missing; 0 disables, at most 10000")
 	omit := fs.Bool("omit-missing-captures", false, "counterfactual: omit missing referenced received inputs")
 	helper := fs.String("helper", "", "versioned wbft-replay executable; default: linked core in a child")
 	timeout := fs.Duration("timeout", 5*time.Minute, "helper deadline, at most 30m")
-	if fs.Parse(args) != nil || fs.NArg() != 0 || *dsn == "" || *dataset < 1 || !logs.Identifier(*input) || *chain == "" || *from < 1 || *to < *from || *to-*from >= 10000 || *timeout <= 0 || *timeout > 30*time.Minute {
+	if fs.Parse(args) != nil || fs.NArg() != 0 || *dsn == "" || *dataset < 1 || !logs.Identifier(*input) || *chain == "" || *from < 1 || *to < *from || *to-*from >= 10000 || *timeout <= 0 || *timeout > 30*time.Minute || *warmup > 10000 {
 		fs.Usage()
 		return exitUsage
 	}
@@ -64,7 +65,7 @@ func runReexec(args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		return exitInternal
 	}
-	result, runErr := replayjob.Run(ctx, s, replayjob.RunOptions{Dataset: *dataset, Input: *input, Chain: *chain, From: *from, To: *to, Helper: reexec.Helper{Path: executable, Args: helperArgs, Timeout: *timeout, OmitMissing: *omit}}, nil)
+	result, runErr := replayjob.Run(ctx, s, replayjob.RunOptions{Dataset: *dataset, Input: *input, Chain: *chain, From: *from, To: *to, Helper: reexec.Helper{Path: executable, Args: helperArgs, Timeout: *timeout, OmitMissing: *omit, WarmupHeights: *warmup}}, nil)
 	if errors.Is(runErr, replayjob.ErrStore) {
 		fmt.Fprintln(stderr, "replay storage failed")
 		return exitInternal

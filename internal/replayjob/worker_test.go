@@ -11,8 +11,11 @@ import (
 func TestSubmitRejectsScopeBeforeEnqueue(t *testing.T) {
 	w := &Worker{sources: map[string]source{"registered": {info: SourceInfo{ID: "registered", Input: "journal", Modes: []string{"closed"}}, network: 1, dataset: 2}}}
 	w.running.Store(true)
+	tooDeep, negative := 10001, -1
 	valid := Request{Source: "registered", From: "1", To: "2", Mode: "closed"}
 	for _, r := range []Request{
+		{Source: "registered", From: "1", To: "2", Mode: "closed", WarmupHeights: &negative},
+		{Source: "registered", From: "1", To: "2", Mode: "closed", WarmupHeights: &tooDeep},
 		{Source: "registered", From: "01", To: "2", Mode: "closed"},
 		{Source: "registered", From: "0", To: "2", Mode: "closed"},
 		{Source: "registered", From: "2", To: "1", Mode: "closed"},

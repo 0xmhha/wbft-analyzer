@@ -45,10 +45,11 @@ type source struct {
 	helper                      reexec.Helper
 }
 type Request struct {
-	Source string `json:"source_id"`
-	From   string `json:"from_height"`
-	To     string `json:"to_height"`
-	Mode   string `json:"mode" enum:"closed,counterfactual"`
+	WarmupHeights *int   `json:"warmup_heights,omitempty"`
+	Source        string `json:"source_id"`
+	From          string `json:"from_height"`
+	To            string `json:"to_height"`
+	Mode          string `json:"mode" enum:"closed,counterfactual"`
 }
 type Worker struct {
 	store   *store.Store
@@ -184,6 +185,13 @@ func (w *Worker) Submit(ctx context.Context, network, dataset int64, r Request) 
 	if e1 != nil || e2 != nil || strconv.FormatUint(from, 10) != r.From || strconv.FormatUint(to, 10) != r.To || from < 1 || to < from || to-from >= 10000 {
 		return store.ReexecJob{}, ErrScope
 	}
+	warmup := 2
+	if r.WarmupHeights != nil {
+		warmup = *r.WarmupHeights
+	}
+	if warmup < 0 || warmup > 10000 {
+		return store.ReexecJob{}, ErrScope
+	}
 	allowed := false
 	for _, mode := range source.info.Modes {
 		if r.Mode == mode {
@@ -193,7 +201,7 @@ func (w *Worker) Submit(ctx context.Context, network, dataset int64, r Request) 
 	if !allowed {
 		return store.ReexecJob{}, ErrScope
 	}
-	job, err := w.store.EnqueueReexec(ctx, store.ReexecJob{Dataset: dataset, Input: source.info.Input, Source: r.Source, SourceSHA: source.hash, From: r.From, To: r.To, Mode: r.Mode})
+	job, err := w.store.EnqueueReexec(ctx, store.ReexecJob{Dataset: dataset, Input: source.info.Input, Source: r.Source, SourceSHA: source.hash, From: r.From, To: r.To, Mode: r.Mode, WarmupHeights: warmup})
 	if err == nil {
 		select {
 		case w.wake <- struct{}{}:
@@ -296,6 +304,7 @@ func (w *Worker) execute(ctx context.Context, job store.ReexecJob, owner string)
 			helper := source.helper
 			helper.ExpectedSHA = source.helperSHA
 			helper.OmitMissing = job.Mode == "counterfactual"
+			helper.WarmupHeights = uint64(job.WarmupHeights)
 			_, err = Run(ctx, w.store, RunOptions{Dataset: job.Dataset, Input: job.Input, Chain: source.chain, From: from, To: to, Helper: helper, ExpectedInputSHA: source.inputSHA, ExpectedNode: source.node, ExpectedChainSHA: source.chainSHA}, func(id int64) error { return w.store.LinkReexecJob(ctx, job.ID, owner, id) })
 			if err == nil {
 				status, issue = "succeeded", ""

@@ -54,7 +54,7 @@ func (s *Store) FinishReexec(ctx context.Context, id int64, result reexec.Result
 		if state != "running" {
 			return ErrReexecFinished
 		}
-		if err := tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER(WHERE class='match'),count(*) FILTER(WHERE class IN ('output_diverged','env_mismatch','env_exhausted')),count(*) FILTER(WHERE class IN ('not_comparable','input_gap')),min(ordinal) FILTER(WHERE class IN ('output_diverged','env_mismatch','env_exhausted')) FROM reexec_steps WHERE run_id=$1`, id).Scan(&result.Total, &result.Matches, &result.Mismatches, &result.NotComparable, &result.FirstMismatch); err != nil {
+		if err := tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER(WHERE class='match'),count(*) FILTER(WHERE class IN ('output_diverged','env_mismatch','env_exhausted')),count(*) FILTER(WHERE class IN ('not_comparable','input_gap')),count(*) FILTER(WHERE class='warmup_suspect'),min(ordinal) FILTER(WHERE class IN ('output_diverged','env_mismatch','env_exhausted')) FROM reexec_steps WHERE run_id=$1`, id).Scan(&result.Total, &result.Matches, &result.Mismatches, &result.NotComparable, &result.WarmupSuspect, &result.FirstMismatch); err != nil {
 			return err
 		}
 		raw, err := json.Marshal(result)

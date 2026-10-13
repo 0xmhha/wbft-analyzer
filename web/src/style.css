@@ -127,3 +127,5 @@ article pre { overflow: auto; max-height: 24rem; }
 .reexec-tick.output_diverged, .reexec-tick.env_mismatch { background: #c44747; }
 .reexec-tick.not_comparable { background: repeating-linear-gradient(45deg,#687585,#687585 3px,#d6dbe1 3px,#d6dbe1 6px); }
 .first-difference { outline: 2px solid #c28c12; outline-offset: 2px; }
+
+.reexec-tick.warmup_suspect { background: #b9791b; border-bottom: 4px solid #644614; }

@@ -3106,6 +3106,14 @@
                 "type": "null"
               }
             ]
+          },
+          "warmup_heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "warmup_suspect": {
+            "format": "int64",
+            "type": "integer"
           }
         },
         "required": [
@@ -3122,7 +3130,8 @@
           "status",
           "steps",
           "version",
-          "version_status"
+          "version_status",
+          "warmup_suspect"
         ],
         "type": "object"
       },
@@ -3148,6 +3157,9 @@
       "ReexecStep": {
         "additionalProperties": false,
         "properties": {
+          "approximate": {
+            "type": "boolean"
+          },
           "capture_id": {
             "type": "string"
           },
@@ -3225,6 +3237,9 @@
           "t_wall": {
             "type": "string"
           },
+          "warmup": {
+            "type": "boolean"
+          },
           "writer_run": {
             "type": "string"
           }
@@ -3247,6 +3262,9 @@
       "ReexecWarmup": {
         "additionalProperties": false,
         "properties": {
+          "compare_from_height": {
+            "type": "string"
+          },
           "first_difference": {
             "anyOf": [
               {
@@ -3263,6 +3281,9 @@
               "integer",
               "null"
             ]
+          },
+          "from_height": {
+            "type": "string"
           },
           "last_source_ordinal": {
             "format": "int64",
@@ -3290,6 +3311,10 @@
             "type": "string"
           },
           "steps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "suspects": {
             "format": "int64",
             "type": "integer"
           }
@@ -3558,6 +3583,13 @@
           },
           "to_height": {
             "type": "string"
+          },
+          "warmup_heights": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
           }
         },
         "required": [
@@ -4945,6 +4977,10 @@
           },
           "to_height": {
             "type": "string"
+          },
+          "warmup_heights": {
+            "format": "int64",
+            "type": "integer"
           }
         },
         "required": [
@@ -4960,7 +4996,8 @@
           "source_sha256",
           "started_at",
           "status",
-          "to_height"
+          "to_height",
+          "warmup_heights"
         ],
         "type": "object"
       },
@@ -8487,7 +8524,7 @@
             }
           },
           {
-            "description": "match, output_diverged, env_mismatch, env_exhausted, input_gap or not_comparable",
+            "description": "match, output_diverged, env_mismatch, env_exhausted, input_gap, warmup_suspect or not_comparable",
             "in": "query",
             "name": "class",
             "required": false,

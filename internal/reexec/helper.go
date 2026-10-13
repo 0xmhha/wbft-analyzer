@@ -43,39 +43,54 @@ func LinkedVersion() string {
 }
 
 type Helper struct {
-	ExpectedSHA string
-	OmitMissing bool
-	Path        string
-	Args        []string
-	Timeout     time.Duration
+	WarmupHeights uint64
+	ExpectedSHA   string
+	OmitMissing   bool
+	Path          string
+	Args          []string
+	Timeout       time.Duration
 }
 
 type reply struct {
-	Writer         string `json:"writer_run"`
-	Omitted        bool   `json:"omitted"`
-	Counterfactual bool   `json:"counterfactual"`
-	Type           string `json:"type"`
-	ID             uint64 `json:"id"`
-	Protocol       string `json:"protocol"`
-	Impl           string `json:"impl"`
-	Version        string `json:"version"`
-	Engine         uint64 `json:"engine_run"`
-	Step           uint64 `json:"step"`
-	Input          string `json:"input"`
-	Digest         string `json:"out_digest"`
-	Match          *bool  `json:"match"`
-	Outputs        int64  `json:"outputs"`
-	Steps          int64  `json:"steps"`
-	Mismatches     int64  `json:"mismatches"`
-	Code           string `json:"code"`
+	Features         []string `json:"features"`
+	Approximate      bool     `json:"approximate"`
+	Warmup           bool     `json:"warmup"`
+	ApproximateSteps int64    `json:"approximate_steps"`
+	WarmupSteps      int64    `json:"warmup_steps"`
+	Writer           string   `json:"writer_run"`
+	Omitted          bool     `json:"omitted"`
+	Counterfactual   bool     `json:"counterfactual"`
+	Type             string   `json:"type"`
+	ID               uint64   `json:"id"`
+	Protocol         string   `json:"protocol"`
+	Impl             string   `json:"impl"`
+	Version          string   `json:"version"`
+	Engine           uint64   `json:"engine_run"`
+	Step             uint64   `json:"step"`
+	Input            string   `json:"input"`
+	Digest           string   `json:"out_digest"`
+	Match            *bool    `json:"match"`
+	Outputs          int64    `json:"outputs"`
+	Steps            int64    `json:"steps"`
+	Mismatches       int64    `json:"mismatches"`
+	Code             string   `json:"code"`
 }
 
 // Execute bounds time, line size, total output and emitted steps. Only source
 // coordinates, known classifications and digests cross the result boundary.
 func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res Result, err error) {
-	res = Result{Mode: "closed", Version: Version, Status: "failed", HelperVersion: "unknown", BinaryVersion: "unknown", VersionStatus: "unknown", ChainSHA: p.ChainSHA, SourceSHA: p.Input.Summary.SHA256, SourceVersions: p.SourceVersions, Heights: p.Heights}
+	res = Result{WarmupHeights: int(h.WarmupHeights), Mode: "closed", Version: Version, Status: "failed", HelperVersion: "unknown", BinaryVersion: "unknown", VersionStatus: "unknown", ChainSHA: p.ChainSHA, SourceSHA: p.Input.Summary.SHA256, SourceVersions: p.SourceVersions, Heights: p.Heights}
 	if h.OmitMissing {
 		res.Mode = "counterfactual"
+	}
+	for _, s := range p.Steps {
+		if hasIssue(s.Issues, "head_identity") {
+			res.Issue = "head_identity"
+			return res, ErrHelper
+		}
+	}
+	if h.WarmupHeights > 10000 {
+		return res, ErrHelper
 	}
 	if h.Timeout <= 0 || h.Timeout > 30*time.Minute {
 		return res, errors.New("helper timeout must be positive and at most 30 minutes")
@@ -160,24 +175,20 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 	} else if res.HelperVersion != "unknown" && sameVersion(res.BinaryVersion, res.HelperVersion) && len(p.SourceVersions) > 0 && p.SourceVersions[0] != "unknown" {
 		res.VersionStatus = "different"
 	}
-	if e = encoder.Encode(map[string]any{"type": "replay", "id": uint64(1), "journal": p.Input.Input.Path, "chain": p.Chain, "from_step": 0, "to_step": 0, "with_vars": false, "omit_missing_captures": h.OmitMissing}); e != nil {
+	execution := planExecution(p, h.WarmupHeights)
+	if execution.bounded && !hasIssue(hello.Features, "bounded_warmup_v1") {
+		res.Issue = "warmup_unsupported"
 		return res, ErrHelper
 	}
-	expected := []Step{}
-	started := false
-	writer := ""
-	for _, s := range p.Steps {
-		if s.Run != writer {
-			writer = s.Run
-			started = false
-		}
-		if s.Input == "start" {
-			started = true
-		}
-		if started {
-			expected = append(expected, s)
-		}
+	request := map[string]any{"type": "replay", "id": uint64(1), "journal": p.Input.Input.Path, "chain": p.Chain, "from_step": 0, "to_step": 0, "with_vars": false, "omit_missing_captures": h.OmitMissing}
+	if execution.bounded {
+		request["warmup_from_height"] = execution.from
+		request["compare_from_height"] = execution.compare
 	}
+	if e = encoder.Encode(request); e != nil {
+		return res, ErrHelper
+	}
+	expected := execution.steps
 	allComplete := true
 	selected := map[string]Height{}
 	for _, row := range p.Heights {
@@ -186,19 +197,20 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			allComplete = false
 		}
 	}
-	firstSelected := len(expected)
-	for i, s := range expected {
-		if _, ok := selected[s.Height]; ok {
-			firstSelected = i
-			break
-		}
-	}
+	firstSelected := execution.firstSelected
 	res.Warmup = &Warmup{Policy: "recorded_start", Status: "pending"}
 	if firstSelected == 0 {
 		res.Warmup.Status = "not_required"
 	}
+	if execution.bounded {
+		res.Warmup.Policy = "bounded"
+		res.Warmup.Status = "approximate"
+		res.Warmup.FromHeight = strconv.FormatUint(execution.from, 10)
+		res.Warmup.CompareFromHeight = strconv.FormatUint(execution.compare, 10)
+	}
 	index := 0
-	var rawBad int64
+	var rawBad, rawApproximate, rawWarmup int64
+	selectedApproximate := false
 	for {
 		r, e := next()
 		if e != nil {
@@ -216,6 +228,10 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			if r.Code == "input_gap" {
 				res.Issue = "input_gap"
 			}
+			if r.Code == "warmup_unavailable" {
+				res.Issue = "warmup_unavailable"
+				res.Warmup.Status = "failed"
+			}
 			if r.Writer != "" {
 				if index >= len(expected) {
 					return res, ErrHelper
@@ -224,10 +240,17 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 				if r.Writer != s.Run || strconv.FormatUint(r.Engine, 10) != s.Engine || strconv.FormatUint(r.Step, 10) != s.Number {
 					return res, ErrHelper
 				}
+				if r.Code != "warmup_unavailable" && r.Approximate != s.Approximate {
+					return res, ErrHelper
+				}
+				s.Approximate = r.Approximate
 				if index < firstSelected {
 					s.Class = "not_comparable"
 					if r.Code == "env_exhausted" || r.Code == "input_gap" {
 						s.Class = r.Code
+						if s.Approximate && r.Code == "env_exhausted" {
+							s.Class = "warmup_suspect"
+						}
 					}
 					s.Issues = addIssue(s.Issues, res.Issue)
 					recordWarmup(res.Warmup, s)
@@ -237,10 +260,15 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 					s.Class = "not_comparable"
 					if r.Code == "env_exhausted" || r.Code == "input_gap" {
 						s.Class = r.Code
+						if s.Approximate && r.Code == "env_exhausted" {
+							s.Class = "warmup_suspect"
+						}
 					}
 					s.Issues = addIssue(s.Issues, res.Issue)
 					res.Total++
-					if r.Code == "env_exhausted" {
+					if s.Class == "warmup_suspect" {
+						res.WarmupSuspect++
+					} else if r.Code == "env_exhausted" {
 						res.Mismatches++
 						if res.FirstMismatch == nil {
 							n := s.Ordinal
@@ -260,6 +288,15 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 				return res, ErrHelper
 			}
 			s := expected[index]
+			if (execution.unavailable && execution.unavailableAt == s.Ordinal) || r.Approximate != s.Approximate || r.Warmup != s.Warmup {
+				return res, ErrHelper
+			}
+			if r.Approximate {
+				rawApproximate++
+			}
+			if r.Warmup {
+				rawWarmup++
+			}
 			index++
 			if r.Writer != "" && r.Writer != s.Run || strconv.FormatUint(r.Engine, 10) != s.Engine || strconv.FormatUint(r.Step, 10) != s.Number || r.Input != s.Input {
 				return res, ErrHelper
@@ -276,17 +313,22 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			}
 			row, included := selected[s.Height]
 			if !included {
-				if index <= firstSelected {
-					s = classifyStep(s, r, s.Completeness == "complete")
+				if index <= firstSelected || execution.bounded && s.Warmup {
+					s = classifyStep(s, r, s.Completeness == "complete" || approximateComparable(s))
 					recordWarmup(res.Warmup, s)
 				}
 				continue
 			}
 			res.Total++
-			s = classifyStep(s, r, comparableStep(s, row, h.OmitMissing))
+			s = classifyStep(s, r, comparableStep(s, row, h.OmitMissing) || approximateComparable(s) || execution.bounded && restoredComparable(s, row))
+			if s.Approximate {
+				selectedApproximate = true
+			}
 			switch s.Class {
 			case "match":
 				res.Matches++
+			case "warmup_suspect":
+				res.WarmupSuspect++
 			case "output_diverged", "env_mismatch":
 				res.Mismatches++
 				if res.FirstMismatch == nil {
@@ -301,6 +343,9 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			}
 		case "done":
 			if h.OmitMissing != r.Counterfactual {
+				return res, ErrHelper
+			}
+			if execution.bounded && (r.ApproximateSteps != rawApproximate || r.WarmupSteps != rawWarmup) {
 				return res, ErrHelper
 			}
 			if r.Steps != int64(index) || index != len(expected) || r.Mismatches != rawBad {
@@ -334,12 +379,19 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 				res.Issue = "input_changed"
 				return res, ErrHelper
 			}
-			finishWarmup(res.Warmup)
+			if execution.bounded {
+				res.Warmup.Status = "approximate"
+			} else {
+				finishWarmup(res.Warmup)
+			}
 			if res.Total == 0 {
 				res.Status = "not_possible"
 				res.Issue = "no_replayed_steps"
 			} else if h.OmitMissing {
 				res.Status = "counterfactual"
+			} else if selectedApproximate {
+				res.Status = "partial"
+				res.Issue = "approximate_state"
 			} else if res.Warmup.Status == "partial" {
 				res.Status = "partial"
 				res.Issue = "warmup_incomplete"
@@ -379,6 +431,8 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 			Journal     string `json:"journal"`
 			Chain       string `json:"chain"`
 			OmitMissing bool   `json:"omit_missing_captures"`
+			WarmupFrom  uint64 `json:"warmup_from_height"`
+			CompareFrom uint64 `json:"compare_from_height"`
 		}
 		if err := json.Unmarshal(sc.Bytes(), &r); err != nil {
 			return ErrHelper
@@ -388,13 +442,13 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 			if r.Protocol != Protocol {
 				return ErrHelper
 			}
-			if err := enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": LinkedVersion()}); err != nil {
+			if err := enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": LinkedVersion(), "features": []string{"bounded_warmup_v1"}}); err != nil {
 				return err
 			}
 		case "bye":
 			return nil
 		case "replay":
-			if err := serveReplay(ctx, r.Journal, r.Chain, r.ID, r.OmitMissing, enc); err != nil {
+			if err := serveReplay(ctx, r.Journal, r.Chain, r.ID, r.OmitMissing, r.WarmupFrom, r.CompareFrom, enc); err != nil {
 				return err
 			}
 		default:

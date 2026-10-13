@@ -11,6 +11,8 @@ func recordWarmup(w *Warmup, s Step) {
 	switch s.Class {
 	case "match":
 		w.Matches++
+	case "warmup_suspect":
+		w.Suspects++
 	case "output_diverged", "env_mismatch", "env_exhausted":
 		w.Mismatches++
 	default:
@@ -47,6 +49,9 @@ func classifyStep(s Step, r reply, comparable bool) Step {
 		if s.Recorded == r.Digest {
 			s.Class = "env_mismatch"
 		}
+	}
+	if s.Approximate && (s.Class == "output_diverged" || s.Class == "env_mismatch") {
+		s.Class = "warmup_suspect"
 	}
 	return s
 }
