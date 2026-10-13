@@ -105,3 +105,15 @@ article pre { overflow: auto; max-height: 24rem; }
 .no-motion figure rect { animation: none; }
 .no-motion button { transition: none; }
 @media (prefers-reduced-motion: reduce) { .message-latency figure rect { animation: none; } .message-latency button { transition: none; } }
+
+.missing-cell { min-width: 2.5rem; border: 1px solid #555; }
+.missing-legend { display:flex; flex-wrap:wrap; gap:1rem; }
+.missing-legend span { padding:.3rem; }
+.missing-SEALED { background:#dcfce7; color:#14532d; }
+.missing-SENT_ACCEPTED_NOT_SEALED { background:#dbeafe; color:#1e3a8a; }
+.missing-SENT_REJECTED { background:#fee2e2; color:#7f1d1d; }
+.missing-SENT_UNSEEN { background:#fef3c7; color:#78350f; }
+.missing-NOT_SENT { background:#f3e8ff; color:#581c87; }
+.missing-UNKNOWN { background:repeating-linear-gradient(45deg,#eee,#eee 3px,#fff 3px,#fff 6px); color:#333; }
+
+.missing-cell[aria-pressed="true"] { outline: 3px solid #7954c7; outline-offset: 2px; }
