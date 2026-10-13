@@ -19,7 +19,7 @@ import (
 )
 
 const EventProfile = "wbft@events-v1"
-const EventNormalizer = "wbft-event-normalization/4"
+const EventNormalizer = "wbft-event-normalization/5"
 
 const ManifestFormat = "wbft-analyzer-run/1"
 

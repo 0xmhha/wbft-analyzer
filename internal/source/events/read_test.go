@@ -162,3 +162,40 @@ func TestSignFloorMetadataIsTypedAndSurvivesPersistence(t *testing.T) {
 		t.Fatal("health height truncated")
 	}
 }
+
+func TestNativeHealthConditionsSurviveMetadataBoundaries(t *testing.T) {
+	for _, what := range []string{"head_mismatch", "peer_inbound_overflow", "peer_inbound_disconnect", "privval_refusal", "sign_floor_skip",
+		"snapshot_missing_at_preprepare", "snapshot_missing_at_head", "consensus_halted", "disconnect"} {
+		t.Run(what, func(t *testing.T) {
+			var raw map[string]json.RawMessage
+			err := json.Unmarshal([]byte(`{"kind":"HEALTH","what":"`+what+`","h":"18446744073709551617","error":"private text"}`), &raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i := 0; i < 2; i++ {
+				safe := Metadata(raw)
+				if safe["what"] != what || safe["h"] != "18446744073709551617" || safe["error"] != nil {
+					t.Fatal(safe)
+				}
+				b, err := json.Marshal(safe)
+				if err != nil {
+					t.Fatal(err)
+				}
+				raw = map[string]json.RawMessage{}
+				if err = json.Unmarshal(b, &raw); err != nil {
+					t.Fatal(err)
+				}
+				raw["kind"] = json.RawMessage(`"HEALTH"`)
+			}
+		})
+	}
+	for _, pair := range [][2]string{{"HEALTH", "PREPARE"}, {"HEALTH", "unrecognized"}, {"QUORUM", "sign_floor_skip"}, {"SEND", "peer_inbound_overflow"}} {
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(`{"kind":"`+pair[0]+`","what":"`+pair[1]+`"}`), &raw); err != nil {
+			t.Fatal(err)
+		}
+		if safe := Metadata(raw); safe["what"] != nil {
+			t.Fatal("condition crossed kind or allowlist", safe)
+		}
+	}
+}
