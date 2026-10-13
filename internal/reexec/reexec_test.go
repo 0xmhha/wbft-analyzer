@@ -23,7 +23,7 @@ import (
 
 func TestProtocolChild(t *testing.T) {
 	mode := os.Args[len(os.Args)-1]
-	if mode != "valid" && mode != "oversize" && mode != "bad_id" && mode != "stall" && mode != "core" {
+	if mode != "valid" && mode != "oversize" && mode != "bad_id" && mode != "stall" && mode != "core" && mode != "env_error" && mode != "bad_writer" && mode != "generic_error" {
 		return
 	}
 	if mode == "core" {
@@ -50,11 +50,24 @@ func TestProtocolChild(t *testing.T) {
 	if decoder.Decode(&request) != nil {
 		os.Exit(2)
 	}
+	if mode == "env_error" || mode == "generic_error" {
+		code := "env_exhausted"
+		if mode == "generic_error" {
+			code = "replay_error"
+		}
+		_ = enc.Encode(map[string]any{"type": "error", "id": 1, "code": code, "writer_run": "synthetic-source", "engine_run": uint64(18446744073709551615), "step": 1})
+		_ = decoder.Decode(&request)
+		os.Exit(0)
+	}
 	id := 1
 	if mode == "bad_id" {
 		id = 2
 	}
-	_ = enc.Encode(map[string]any{"type": "step", "id": id, "engine_run": uint64(18446744073709551615), "step": 1, "input": "start", "out_digest": "0x" + strings.Repeat("b", 64), "match": true, "outputs": 0})
+	writer := ""
+	if mode == "bad_writer" {
+		writer = "wrong-writer"
+	}
+	_ = enc.Encode(map[string]any{"writer_run": writer, "type": "step", "id": id, "engine_run": uint64(18446744073709551615), "step": 1, "input": "start", "out_digest": "0x" + strings.Repeat("b", 64), "match": true, "outputs": 0})
 	_ = enc.Encode(map[string]any{"type": "done", "id": 1, "steps": 1, "mismatches": 0})
 	_ = decoder.Decode(&request)
 	os.Exit(0)
@@ -88,6 +101,21 @@ func TestHelperBoundsIdentityAndMissingHeight(t *testing.T) {
 	r, err := Execute(context.Background(), p, testHelper(t, "valid"), func(s Step) error { got = append(got, s); return nil })
 	if err != nil || r.Status != "regression" || r.Matches != 1 || got[0].Engine != "18446744073709551615" {
 		t.Fatal(r, got, err)
+	}
+	p.Steps[0].Run = "synthetic-source"
+	got = nil
+	failed, e := Execute(context.Background(), p, testHelper(t, "env_error"), func(s Step) error { got = append(got, s); return nil })
+	if e == nil || failed.Issue != "env_exhausted" || len(got) != 1 || got[0].Class != "env_exhausted" || got[0].Run != "synthetic-source" || failed.FirstMismatch == nil || *failed.FirstMismatch != 2 {
+		t.Fatal(failed, got, e)
+	}
+
+	got = nil
+	generic, e := Execute(context.Background(), p, testHelper(t, "generic_error"), func(s Step) error { got = append(got, s); return nil })
+	if e == nil || generic.Issue != "replay_error" || len(got) != 1 || got[0].Class != "not_comparable" || generic.Mismatches != 0 {
+		t.Fatal("generic error falsely classified", generic, got, e)
+	}
+	if _, e = Execute(context.Background(), p, testHelper(t, "bad_writer"), func(Step) error { t.Fatal("wrong writer accepted"); return nil }); e == nil {
+		t.Fatal("wrong writer accepted")
 	}
 	p.Heights = append(p.Heights, Height{Number: "2", Status: "not_possible", Issues: []string{"no_recorded_steps"}})
 	r, err = Execute(context.Background(), p, testHelper(t, "valid"), func(Step) error { return nil })

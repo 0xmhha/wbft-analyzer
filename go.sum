@@ -1,5 +1,5 @@
-github.com/0xmhha/wbft v0.0.0-20261013133630-5019c338f65d h1:MnSg5T4i8EIop6elUZIJmhmzNvDNFEitV8IKjiuLG2s=
-github.com/0xmhha/wbft v0.0.0-20261013133630-5019c338f65d/go.mod h1:VrznJCTRhaXNJHDEJ5Bt3Oz+ULbl6UWFm+oaPuqv2TA=
+github.com/0xmhha/wbft v0.0.0-20261013151625-02386947ecd7 h1:rHZ5rWH3zdTdX4Ic87qGzj8o3eK1apvPQMMSpmf9g4k=
+github.com/0xmhha/wbft v0.0.0-20261013151625-02386947ecd7/go.mod h1:VrznJCTRhaXNJHDEJ5Bt3Oz+ULbl6UWFm+oaPuqv2TA=
 github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608-1fe7b43fc4d6 h1:1zYrtlhrZ6/b6SAjLSfKzWtdgqK0U+HtH/VcBWh1BaU=
 github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608-1fe7b43fc4d6/go.mod h1:ioLG6R+5bUSO1oeGSDxOV3FADARuMoytZCSX6MEMQkI=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

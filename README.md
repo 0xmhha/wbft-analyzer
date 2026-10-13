@@ -715,8 +715,8 @@ records, the preceding/current/following canonical headers, and a unique
 received-frame capture reference for peer messages. Legacy inline inputs need
 a unique content/time witness. Asynchronously sampled legacy timestamps
 or duplicate witnesses remain partial; peer identity and cross-node clock
-alignment are not inferred. A gap or changed core configuration prevents
-reproduction. This does not reconstruct a missing input from its inline step.
+alignment are not inferred. A gap or a configuration change within the same writer prevents
+reproduction. New writers load their own recorded options. This does not reconstruct a missing input from its inline step.
 
 A run reports output digest matches, `output_diverged`, validator-set-only
 `env_mismatch`, or `not_comparable`. Arbitrary helper errors and payloads are
@@ -736,7 +736,12 @@ canonical network facts. Finished runs are immutable.
 Read the latest 100 runs at `/networks/{net}/datasets/{dataset}/reexec`, one
 summary at `/reexec/{reexec}`, and bounded original-ordinal pages at
 `/reexec/{reexec}/steps?after=0&limit=500&class=match&height=1` (paths below the
-same network/dataset prefix). The core replay screen shows versions,
+same network/dataset prefix). Structured helper failures identify their original writer, engine and step.
+Recorded input gaps and exhausted application answers retain that exact source
+position; generic failures remain not comparable. Older helpers without
+structured positions retain a run-level issue without an inferred step.
+
+The core replay screen shows versions,
 completeness, a source-order difference strip, the first difference and the
 exact original journal record. HTTP reads do not execute a replay; start a
 run with the local command.

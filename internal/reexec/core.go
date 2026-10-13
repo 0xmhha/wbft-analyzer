@@ -39,7 +39,7 @@ func serveReplay(ctx context.Context, dir, chain string, id uint64, omit bool, e
 		if !s.Match {
 			bad++
 		}
-		return enc.Encode(map[string]any{"type": "step", "id": id, "engine_run": s.EngineRun, "step": s.Step, "input": s.RecordedInputKind, "omitted": s.Omitted, "out_digest": digest(s.OutDigest), "match": s.Match, "outputs": len(s.Outputs)})
+		return enc.Encode(map[string]any{"type": "step", "id": id, "writer_run": s.WriterRun, "engine_run": s.EngineRun, "step": s.Step, "input": s.RecordedInputKind, "omitted": s.Omitted, "out_digest": digest(s.OutDigest), "match": s.Match, "outputs": len(s.Outputs)})
 	})
 	if err != nil {
 		code := "replay_error"
@@ -48,7 +48,14 @@ func serveReplay(ctx context.Context, dir, chain string, id uint64, omit bool, e
 		} else if errors.Is(err, stepdriver.ErrTraceEnvExhausted) {
 			code = "env_exhausted"
 		}
-		return enc.Encode(map[string]any{"type": "error", "id": id, "code": code})
+		reply := map[string]any{"type": "error", "id": id, "code": code}
+		var failed *stepdriver.TraceError
+		if errors.As(err, &failed) {
+			reply["writer_run"] = failed.WriterRun
+			reply["engine_run"] = failed.EngineRun
+			reply["step"] = failed.Step
+		}
+		return enc.Encode(reply)
 	}
 	return enc.Encode(map[string]any{"type": "done", "id": id, "steps": count, "mismatches": bad, "counterfactual": omit})
 }
