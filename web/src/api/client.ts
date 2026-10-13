@@ -103,3 +103,16 @@ export async function post<P extends PostPath>(path: P, values: PostParams<P>, b
   }
   return (await r.json()) as PostAnswer<P>;
 }
+
+type DeletePath = {[P in keyof paths]: paths[P] extends {delete:{requestBody:unknown;responses:{200:unknown}}}?P:never}[keyof paths];
+type DeleteBody<P extends DeletePath> = paths[P] extends {delete:{requestBody:{content:{"application/json":infer B}}}}?B:never;
+type DeleteAnswer<P extends DeletePath> = paths[P] extends {delete:{responses:{200:{content:{"application/json":infer A}}}}}?A:never;
+type DeleteParams<P extends DeletePath> = paths[P] extends {delete:{parameters:{path:infer A}}}?A:never;
+
+/** Deletes a scoped resource only with its documented confirmation body. */
+export async function remove<P extends DeletePath>(path:P,values:DeleteParams<P>,body:DeleteBody<P>):Promise<DeleteAnswer<P>>{
+ const headers:Record<string,string>={Accept:"application/json","Content-Type":"application/json"};if(token)headers.Authorization=`Bearer ${token}`;
+ const r=await fetch(fill(path,values as Record<string,string|number>),{method:"DELETE",headers,body:JSON.stringify(body)});
+ if(!r.ok){let message=r.statusText;try{message=((await r.json()) as Schemas["Error"]).error}catch{/* Keep HTTP status text. */}throw new ApiError(r.status,message)}
+ return await r.json() as DeleteAnswer<P>;
+}

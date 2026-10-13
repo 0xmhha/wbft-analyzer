@@ -59,8 +59,12 @@ func TestMessageDatasetRetryIdentityAndPrefix(t *testing.T) {
 	if e != nil || len(files) == 0 {
 		t.Fatal(files, e)
 	}
+	canonicalArchive, canonicalErr := filepath.EvalSymlinks(archive)
+	if canonicalErr != nil {
+		t.Fatal(canonicalErr)
+	}
 	for _, f := range files {
-		if filepath.Dir(f.Path) != archive || filepath.Base(f.Path) != f.SHA256 {
+		if filepath.Dir(filepath.Dir(f.Path)) != filepath.Join(canonicalArchive, "datasets") || filepath.Base(f.Path) != f.SHA256 {
 			t.Fatal(f)
 		}
 		if _, e = os.Stat(f.Path); e != nil {

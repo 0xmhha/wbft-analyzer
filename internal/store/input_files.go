@@ -3,15 +3,39 @@ package store
 import (
 	"context"
 	"errors"
+	"github.com/0xmhha/wbft-analyzer/internal/inputs"
 
 	"github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/jackc/pgx/v5"
 )
 
 func (s *Store) PutInputFiles(ctx context.Context, dataset int64, input string, files []messages.ArchivedFile) error {
+	n, namespaceErr := s.inputNamespace(ctx, dataset)
+	owned := namespaceErr == nil
+	if namespaceErr != nil && !errors.Is(namespaceErr, ErrNotFound) {
+		return namespaceErr
+	}
+	if owned {
+		owner, e := s.StorageOwner(ctx)
+		if e != nil {
+			return e
+		}
+		if owner != n.Owner {
+			return inputs.ErrOwnership
+		}
+		if e = n.Verify(); e != nil {
+			return e
+		}
+		for _, f := range files {
+			if !ownedPath(n, f.Path, f.SHA256) {
+				return inputs.ErrOwnership
+			}
+		}
+	}
+
 	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		for _, f := range files {
-			tag, err := tx.Exec(ctx, `INSERT INTO input_files(dataset_id,input_id,name,sha256,bytes,path) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(dataset_id,input_id,name) DO UPDATE SET path=input_files.path WHERE input_files.sha256=EXCLUDED.sha256 AND input_files.bytes=EXCLUDED.bytes AND input_files.path=EXCLUDED.path`, dataset, input, f.Name, f.SHA256, f.Bytes, f.Path)
+			tag, err := tx.Exec(ctx, `INSERT INTO input_files(dataset_id,input_id,name,sha256,bytes,path) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(dataset_id,input_id,name) DO UPDATE SET path=EXCLUDED.path WHERE input_files.sha256=EXCLUDED.sha256 AND input_files.bytes=EXCLUDED.bytes AND (input_files.path=EXCLUDED.path OR $7)`, dataset, input, f.Name, f.SHA256, f.Bytes, f.Path, owned)
 			if err != nil {
 				return err
 			}

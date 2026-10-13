@@ -107,6 +107,23 @@ func (s *Store) beginDataset(ctx context.Context, k NetworkKey, name, kind strin
 		release()
 		return d, nil, err
 	}
+	var adopting bool
+	if err = conn.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM dataset_storage_adoptions WHERE dataset_id=$1)`, id).Scan(&adopting); err != nil || adopting {
+		release()
+		if err != nil {
+			return d, nil, err
+		}
+		return d, nil, ErrDatasetBusy
+	}
+	var deleting bool
+	if err = conn.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM dataset_deletions WHERE dataset_id=$1)`, id).Scan(&deleting); err != nil || deleting {
+		release()
+		if err != nil {
+			return d, nil, err
+		}
+		return d, nil, ErrDatasetDeleting
+	}
+
 	var a, b any
 	_ = json.Unmarshal(d.Metadata, &a)
 	_ = json.Unmarshal(metadata, &b)

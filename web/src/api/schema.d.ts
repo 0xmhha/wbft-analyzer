@@ -90,6 +90,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete dataset rows and owned input bytes after exact name confirmation; active or shared sources are refused. */
+        delete: operations["deleteDataset"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/deletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Durable deletion status, including a completed dataset deletion. */
+        get: operations["getDatasetDeletion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/event-bounds": {
         parameters: {
             query?: never;
@@ -167,6 +201,23 @@ export interface paths {
         };
         /** Durable native follow cursor and latest completed header/observation companions; no event completeness claim. */
         get: operations["getFollowState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/input-storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Retained input ownership and object counts; no paths or owner identities. */
+        get: operations["getDatasetInputStorage"];
         put?: never;
         post?: never;
         delete?: never;
@@ -942,6 +993,9 @@ export interface components {
         };
         DatasetList: {
             datasets: components["schemas"]["StoreDataset"][];
+        };
+        DeleteDatasetRequest: {
+            confirm_name: string;
         };
         EpochList: {
             epochs: components["schemas"]["StoreEpoch"][];
@@ -1889,6 +1943,29 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        StoreDatasetDeletion: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: int64 */
+            dataset_id: number;
+            /** Format: date-time */
+            finished_at: string | null;
+            /** Format: int64 */
+            input_bytes: number;
+            /** Format: int64 */
+            input_files: number;
+            name: string;
+            /** Format: int64 */
+            network_id: number;
+            status: string;
+        };
+        StoreDatasetInputStorage: {
+            /** Format: int64 */
+            input_bytes: number;
+            /** Format: int64 */
+            input_files: number;
+            state: string;
+        };
         StoreEpoch: {
             added: string[];
             candidates: components["schemas"]["StoreEpochCandidate"][];
@@ -2516,6 +2593,96 @@ export interface operations {
             };
         };
     };
+    deleteDataset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteDatasetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreDatasetDeletion"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getDatasetDeletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreDatasetDeletion"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     getEventBounds: {
         parameters: {
             query?: never;
@@ -2739,6 +2906,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreFollowState"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getDatasetInputStorage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreDatasetInputStorage"];
                 };
             };
             /** @description the request failed */

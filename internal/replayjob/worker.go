@@ -112,7 +112,18 @@ func Load(ctx context.Context, s *store.Store, path, linked string) (*Worker, er
 		if !filepath.IsAbs(chainPath) {
 			chainPath = filepath.Join(filepath.Dir(path), chainPath)
 		}
-		chain, err := RetainChain(ctx, chainPath, filepath.Dir(refs[0].Path))
+		storage, storageErr := s.InputStorageDirectory(ctx, spec.Dataset)
+		if errors.Is(storageErr, store.ErrNotFound) {
+			storage = filepath.Dir(refs[0].Path)
+		} else if storageErr != nil {
+			return nil, ErrSource
+		}
+		release, leaseErr := s.DatasetReadLease(ctx, spec.Dataset)
+		if leaseErr != nil {
+			return nil, ErrSource
+		}
+		chain, err := RetainChain(ctx, chainPath, storage)
+		release()
 		if err != nil {
 			return nil, ErrSource
 		}

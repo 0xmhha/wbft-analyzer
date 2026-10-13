@@ -38,6 +38,12 @@ func Run(ctx context.Context, s *store.Store, o RunOptions, onBegin func(int64) 
 	if o.Dataset < 1 || !logs.Identifier(o.Input) || o.From < 1 || o.To < o.From || o.To-o.From >= 10000 || o.Helper.WarmupHeights > 10000 {
 		return out, errors.New("invalid replay scope")
 	}
+	release, leaseErr := s.DatasetReadLease(ctx, o.Dataset)
+	if leaseErr != nil {
+		return out, leaseErr
+	}
+	defer release()
+
 	d, network, err := s.ReexecDataset(ctx, o.Dataset)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
@@ -70,7 +76,13 @@ func Run(ctx context.Context, s *store.Store, o RunOptions, onBegin func(int64) 
 	if len(refs) == 0 {
 		return out, errors.New("retained input unavailable")
 	}
-	chain, err := RetainChain(ctx, o.Chain, filepath.Dir(refs[0].Path))
+	storage, err := s.InputStorageDirectory(ctx, d.ID)
+	if errors.Is(err, store.ErrNotFound) {
+		storage = filepath.Dir(refs[0].Path)
+	} else if err != nil {
+		return out, err
+	}
+	chain, err := RetainChain(ctx, o.Chain, storage)
 	if err != nil {
 		return out, err
 	}
@@ -134,6 +146,7 @@ func Run(ctx context.Context, s *store.Store, o RunOptions, onBegin func(int64) 
 	return out, err
 }
 
+// RetainChain callers hold a dataset lease when writing owned storage.
 func RetainChain(ctx context.Context, path, directory string) (messages.ArchivedFile, error) {
 	info, err := os.Lstat(path)
 	if err != nil || !info.Mode().IsRegular() || info.Size() > 256<<20 {

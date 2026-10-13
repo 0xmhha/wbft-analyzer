@@ -49,6 +49,21 @@ func (s *Store) EnqueueReexec(ctx context.Context, j ReexecJob) (ReexecJob, erro
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext(current_schema()),1463969364)`); err != nil {
 			return err
 		}
+		var allowed bool
+		if err := tx.QueryRow(ctx, `SELECT pg_try_advisory_xact_lock_shared(hashtextextended('wbft-analyzer:range:'||current_schema()||':'||$1::bigint::text,0))`, j.Dataset).Scan(&allowed); err != nil {
+			return err
+		}
+		if !allowed {
+			return ErrDatasetBusy
+		}
+		var deleting bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM dataset_deletions WHERE dataset_id=$1)`, j.Dataset).Scan(&deleting); err != nil {
+			return err
+		}
+		if deleting {
+			return ErrDatasetDeleting
+		}
+
 		var count int
 		if err := tx.QueryRow(ctx, `SELECT count(*) FROM reexec_jobs WHERE status IN ('queued','running')`).Scan(&count); err != nil {
 			return err

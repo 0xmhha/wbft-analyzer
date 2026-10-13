@@ -60,6 +60,8 @@ func (s *Server) postReexecJob(w http.ResponseWriter, r *http.Request) {
 	}
 	job, err := s.Jobs.Submit(r.Context(), d.NetworkID, d.ID, request)
 	switch {
+	case errors.Is(err, store.ErrDatasetBusy), errors.Is(err, store.ErrDatasetDeleting):
+		writeError(w, 409, "dataset is busy or being deleted")
 	case errors.Is(err, store.ErrReexecQueueFull):
 		writeError(w, 429, "replay queue is full")
 	case errors.Is(err, replayjob.ErrSource):
