@@ -16,7 +16,7 @@ import (
 	"github.com/0xmhha/wbft/observe/event"
 )
 
-const Version = "wbft-missing/1"
+const Version = "wbft-missing/2"
 
 type Seal struct {
 	Validator string `json:"validator"`

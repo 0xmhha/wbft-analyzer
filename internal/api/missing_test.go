@@ -36,7 +36,11 @@ func TestMissingCursorScopeReadinessAndEvidence(t *testing.T) {
 	if e = s.PutHeaders(ctx, hd.ID, hd.NetworkID, facts, copies, 3); e != nil {
 		t.Fatal(e)
 	}
-	d, release, e := s.BeginRun(ctx, key, "missing-run", json.RawMessage(`{}`))
+	metadata, e := json.Marshal(map[string]string{"events_normalizer": logs.EventNormalizer})
+	if e != nil {
+		t.Fatal(e)
+	}
+	d, release, e := s.BeginRun(ctx, key, "missing-run", metadata)
 	if e != nil {
 		t.Fatal(e)
 	}
