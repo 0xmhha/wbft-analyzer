@@ -2,6 +2,7 @@ import { eventFocus, type EventFocus } from "./sourceLink";
 import { useCallback, useEffect, useState } from "react";
 import { setToken } from "./api/client";
 import { MessageLatency } from "./views/MessageLatency";
+import { Missing } from "./views/Missing";
 import { Messages } from "./views/Messages";
 import { Events } from "./views/Events";
 import { Headers } from "./views/Headers";
@@ -9,13 +10,13 @@ import { Overview } from "./views/Overview";
 import { Trends } from "./views/Trends";
 import { Verdicts } from "./views/Verdicts";
 
-type Route = { view: "overview" } | { view: "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency"; net: number; focus?: EventFocus; sourceError?:string };
+type Route = { view: "overview" } | { view: "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency" | "missing"; net: number; focus?: EventFocus; sourceError?:string };
 
 /** Reads the route from the hash: #/, #/networks/N/verdicts, #/networks/N/trends. */
 export function parseRoute(hash: string): Route {
   const [path, query] = hash.split("?");
-  const m = /^#\/networks\/(\d+)\/(verdicts|trends|headers|events|messages|message-latency)$/.exec(path || "");
-  if (m && m[1] && m[2] && Number.isSafeInteger(Number(m[1])) && Number(m[1]) > 0) return { view: m[2] as "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency", net: Number(m[1]), ...(m[2] === "events" ? eventFocus(query || "") : {}) };
+  const m = /^#\/networks\/(\d+)\/(verdicts|trends|headers|events|messages|message-latency|missing)$/.exec(path || "");
+  if (m && m[1] && m[2] && Number.isSafeInteger(Number(m[1])) && Number(m[1]) > 0) return { view: m[2] as "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency" | "missing", net: Number(m[1]), ...(m[2] === "events" ? eventFocus(query || "") : {}) };
   return { view: "overview" };
 }
 
@@ -38,7 +39,7 @@ export function App() {
         {route.view !== "overview" && (
           <nav>
             network {route.net}: <a href={`#/networks/${route.net}/verdicts`} className={route.view === "verdicts" ? "here" : ""}>verdicts</a>{" "}
-            · <a href={`#/networks/${route.net}/headers`} className={route.view === "headers" ? "here" : ""}>headers</a>{" "} · <a href={`#/networks/${route.net}/events`}>events</a> · <a href={`#/networks/${route.net}/messages`}>messages</a> · <a href={`#/networks/${route.net}/message-latency`}>message latency</a> · <a href={`#/networks/${route.net}/trends`} className={route.view === "trends" ? "here" : ""}>trends</a>
+            · <a href={`#/networks/${route.net}/headers`} className={route.view === "headers" ? "here" : ""}>headers</a>{" "} · <a href={`#/networks/${route.net}/events`}>events</a> · <a href={`#/networks/${route.net}/messages`}>messages</a> · <a href={`#/networks/${route.net}/message-latency`}>message latency</a> · <a href={`#/networks/${route.net}/missing`}>vote evidence</a> · <a href={`#/networks/${route.net}/trends`} className={route.view === "trends" ? "here" : ""}>trends</a>
           </nav>
         )}
       </header>
@@ -56,6 +57,7 @@ export function App() {
         {route.view === "verdicts" && <Verdicts net={route.net} onAuth={onAuth} />}
         {route.view === "events" && <Events key={`${route.net}:${JSON.stringify(route.focus)}:${route.sourceError}`} net={route.net} focus={route.focus} sourceError={route.sourceError} onAuth={onAuth} />}
  {route.view === "message-latency" && <MessageLatency key={route.net} net={route.net} onAuth={onAuth} />}
+ {route.view === "missing" && <Missing key={route.net} net={route.net} onAuth={onAuth} />}
  {route.view === "messages" && <Messages key={route.net} net={route.net} onAuth={onAuth} />}
         {route.view === "headers" && <Headers net={route.net} onAuth={onAuth} />}
         {route.view === "trends" && <Trends net={route.net} onAuth={onAuth} />}

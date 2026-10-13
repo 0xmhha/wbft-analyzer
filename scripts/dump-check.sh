@@ -63,7 +63,7 @@ stop() {
 
 # capture PORT DIR writes the answers of the read endpoints to DIR.
 capture() {
-	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report baseline_net baseline_ids message_net message_id
+	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report baseline_net baseline_ids message_net message_id missing_id
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
@@ -74,6 +74,9 @@ capture() {
 	get "/networks/$header_net/headers?from=0&to=3&dataset=1&node=fixture" header-rows
 	get "/networks/$header_net/headers/summary?from=0&to=3" header-summary
 	get "/networks/$header_net/epochs?from=0&to=3" header-epochs
+ missing_id=$(jq -r '.datasets[] | select(.kind=="run" and .name=="synthetic-vote-evidence") | .id' "$dir/header-datasets.json")
+ get "/networks/$header_net/datasets/$missing_id/missing/index" missing-index
+ get "/networks/$header_net/datasets/$missing_id/missing?from=1&to=2&phase=PREPARE&limit=1000" missing-cells
 	run_net=$(jq -r '.networks[] | select(.genesis_hash == "0xe4dbf0369f658041a30759c9341973c7239e0467fdeecd1c21790e15c32c086f") | .id' "$dir/networks.json")
  get "/networks/$run_net/datasets" run-datasets
  run_id=$(jq -r '.datasets[] | select(.kind=="run" and .name=="g7-excerpt") | .id' "$dir/run-datasets.json")
@@ -136,6 +139,27 @@ for i in $(seq 1 $((${#counts[@]} - 1))); do
 	curl -sf -X POST -H 'Content-Type: application/json' --data-binary "@$work/r$i.json" http://127.0.0.1:18091/v1/reports >/dev/null
 done
 "$bin" ingest range --db "$src" --blocks "$root/internal/source/headers/testdata" --config "$root/internal/source/headers/testdata/config.json" --from 0 --to 3 --name dump-headers --node fixture >"$out/headers.log"
+# Hand-authored native events share only the existing synthetic header network.
+python3 - "$root" "$work" <<'PYMISSING'
+import hashlib,json,sys
+from pathlib import Path
+root,work=map(Path,sys.argv[1:])
+config=json.loads((root/'internal/source/headers/testdata/config.json').read_text())
+node=config['anzeon']['init']['validators'][0]
+common=dict(v=1,node=node,run='synthetic-votes',t_wall='2020-01-01T00:00:00Z')
+rows=[dict(kind='NODE_START',impl='wbft',mode='standalone',validator=True,sign_floor=None,wal_recovery=dict(records=0,torn_bytes=0,corrupted=0)),
+      dict(kind='ROUND_ENTER',view=dict(seq='1',round='0'),step=1,branch='INITIAL',cause='start',is_proposer=False,proposer=node,requested_round='0',valset_digest='0x'+'0'*64),
+      dict(kind='ROUND_ENTER',view=dict(seq='2',round='0'),step=2,branch='INITIAL',cause='new_head',is_proposer=False,proposer=node,requested_round='0',valset_digest='0x'+'0'*64),
+      dict(kind='NODE_STOP',reason='operator')]
+raw=''.join(json.dumps(dict(common,seq=i,t_mono_ns=i,**r))+'\n' for i,r in enumerate(rows)).encode()
+(work/'synthetic-votes.jsonl').write_bytes(raw)
+genesis=json.loads((root/'internal/source/headers/testdata/0.json').read_text())['hash']
+manifest=dict(format='wbft-analyzer-run/1',name='synthetic-vote-evidence',run='synthetic-votes',network=dict(chain_id='8283',genesis_hash=genesis,name='synthetic-headers'),clock='shared-host',inputs=[dict(id='votes',node=node,kind='events',path='synthetic-votes.jsonl',sha256=hashlib.sha256(raw).hexdigest())])
+(work/'synthetic-votes.json').write_text(json.dumps(manifest)+'\n')
+PYMISSING
+"$bin" ingest run --db "$src" --manifest "$work/synthetic-votes.json" >"$out/missing-run.log"
+missing_dataset_id=$(sed -n 's/^dataset=\([0-9][0-9]*\).*/\1/p' "$out/missing-run.log")
+"$bin" reindex missing --db "$src" --dataset "$missing_dataset_id" --from 1 --to 2 >"$out/missing-index.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/g7/manifest.json" >"$out/run.log"
 run_dataset_id=$(sed -n 's/^dataset=\([0-9][0-9]*\).*/\1/p' "$out/run.log")
 "$bin" reindex messages --db "$src" --dataset "$run_dataset_id" >"$out/run-pair-index.log"

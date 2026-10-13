@@ -134,3 +134,31 @@ func TestNativeAppendRunBoundaryPreservesOriginalLines(t *testing.T) {
 		}
 	}
 }
+
+func TestSignFloorMetadataIsTypedAndSurvivesPersistence(t *testing.T) {
+	var raw map[string]json.RawMessage
+	_ = json.Unmarshal([]byte(`{"kind":"NODE_START","sign_floor":{"height":"18446744073709551617","status":"kept","unexpected":"secret"},"payload":"secret"}`), &raw)
+	safe := Metadata(raw)
+	if safe["sign_floor_height"] != "18446744073709551617" || safe["sign_floor_status"] != "kept" {
+		t.Fatal(safe)
+	}
+	b, _ := json.Marshal(safe)
+	if strings.Contains(string(b), "secret") {
+		t.Fatal(string(b))
+	}
+	raw = map[string]json.RawMessage{}
+	_ = json.Unmarshal(b, &raw)
+	raw["kind"] = json.RawMessage(`"NODE_START"`)
+	if again := Metadata(raw); again["sign_floor_height"] != safe["sign_floor_height"] {
+		t.Fatal("persistence dropped floor", again)
+	}
+	raw["sign_floor_status"] = json.RawMessage(`"unknown"`)
+	if Metadata(raw)["sign_floor_height"] != nil {
+		t.Fatal("invalid floor status preserved")
+	}
+	raw["kind"] = json.RawMessage(`"HEALTH"`)
+	raw["h"] = json.RawMessage(`"18446744073709551617"`)
+	if Metadata(raw)["h"] != "18446744073709551617" {
+		t.Fatal("health height truncated")
+	}
+}

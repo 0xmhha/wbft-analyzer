@@ -465,7 +465,7 @@ Pages have at most 1,000 rows and filter by recording node, diagnostic reason
 or original source dataset. Cursors bind to a content snapshot of the complete
 pair/issue projection and source metadata; changed sources or companions return
 409 until reindexing. Identical rebuilt projections retain the same snapshot.
-Reindex existing pairing snapshots to version 6 before using this endpoint.
+Reindex existing pairing snapshots to version 7 before using this endpoint.
 
 The latency view offers p50/p90/p95/p99 raw tails and up to 20 non-local
 directional p95 candidates within each evidence dimension, with valid sample
@@ -499,3 +499,48 @@ intact. Mixed execution association verifies complete outcome multisets and
 both clocks. Step-entry event stamps may lie within adjacent recorded journal
 completion stamps; that basis is exposed as `completed_step_interval`. No clock
 tolerance or timestamp correction is applied, and absent bounds remain unproven.
+
+
+## Recorded vote participation
+
+`reindex missing` stores one explicit canonical index range per event dataset:
+
+```sh
+wbft-analyzer reindex messages --db "$DSN" --dataset "$MESSAGES" --events "$EVENTS"
+wbft-analyzer reindex missing --db "$DSN" --dataset "$EVENTS" --messages "$MESSAGES" --from 1 --to 55
+```
+
+The optional journal must have a verified association with the event execution.
+Association separates engine restarts within a node run using recorded engine
+boundaries and journal step completions. Pairing version 7 requires a rebuild.
+Native event normalization version 4 preserves active validator and sign-floor
+metadata; reimport older inputs to obtain these fields.
+
+The vote evidence page distinguishes `SEALED`, `SENT_ACCEPTED_NOT_SEALED`,
+`SENT_REJECTED`, `SENT_UNSEEN`, `NOT_SENT` and `UNKNOWN` for each full height,
+validator and PREPARE/COMMIT phase. Canonical own-copy or child-carried seals take
+priority. Child participation requires the parent hash/index to match; an absent
+child cannot establish a network decision round. Own-copy round remains separate.
+A recorded send is an attempt, not proof of delivery. Accepted outcomes are local
+processing evidence. Complete receiver coverage requires closed native views and
+quorum; wire records and imported headers cannot establish this coverage.
+
+`NOT_SENT` requires a closed active native view or a complete active event capture
+with matching canonical head bounds and known send identities. An observer,
+open prefix, lost records or opaque identity remains unknown. Active sign-floor
+metadata retains its original node-start evidence. Sender capture coverage is
+never counted as receiver coverage. Original event and header pointers remain
+available from a selected matrix cell, including a replay link.
+
+Read-only endpoints `GET /v1/networks/{net}/datasets/{dataset}/missing/index` and
+`.../missing?from=1&to=55` serve the stored snapshot. Cell queries support
+`validator`, `phase`, `class`, `reason`, `limit` and a snapshot/filter-bound cursor.
+GET never builds an index. Source metadata/progress/diagnostics, verified journal
+snapshot or header participation changes invalidate it (409); explicitly rebuild.
+A failed rebuild preserves the prior projection. Each range permits at most 1024
+indices, one million source events/journal records and 100000 cells; overflow is
+refused rather than truncated. Evidence previews retain at most 32 event pointers
+and disclose the total count. Blank positions on a filtered cursor page do not
+mean missing votes. Last-head uncertainty remains visible when its child has not
+been captured. This projection does not import live observation RPC or implement
+follow mode or closed re-execution.

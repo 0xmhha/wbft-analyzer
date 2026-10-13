@@ -1259,6 +1259,9 @@
           "clock_basis": {
             "type": "string"
           },
+          "engine_run": {
+            "type": "string"
+          },
           "events": {
             "items": {
               "$ref": "#/components/schemas/MessagesSource"
@@ -1286,6 +1289,7 @@
         },
         "required": [
           "clock_basis",
+          "engine_run",
           "events",
           "journal",
           "node",
@@ -2036,6 +2040,187 @@
         "required": [
           "height",
           "round"
+        ],
+        "type": "object"
+      },
+      "MissingCell": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "class": {
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/MissingEvidence"
+            },
+            "type": "array"
+          },
+          "evidence_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "height": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "quorum": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "receiver_coverage": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rejected": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "round": {
+            "type": "string"
+          },
+          "seals": {
+            "items": {
+              "$ref": "#/components/schemas/MissingSeal"
+            },
+            "type": "array"
+          },
+          "sends": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "strength": {
+            "type": "string"
+          },
+          "unlinked_receipts": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "validator": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accepted",
+          "class",
+          "evidence",
+          "evidence_count",
+          "height",
+          "index",
+          "phase",
+          "quorum",
+          "reason",
+          "receiver_coverage",
+          "rejected",
+          "round",
+          "seals",
+          "sends",
+          "strength",
+          "unlinked_receipts",
+          "validator"
+        ],
+        "type": "object"
+      },
+      "MissingEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "dedup_key": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/MessagesSource"
+          }
+        },
+        "required": [
+          "role",
+          "source"
+        ],
+        "type": "object"
+      },
+      "MissingPage": {
+        "additionalProperties": false,
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/MissingCell"
+            },
+            "type": "array"
+          },
+          "index": {
+            "$ref": "#/components/schemas/StoreMissingIndex"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cells",
+          "index",
+          "next",
+          "total"
+        ],
+        "type": "object"
+      },
+      "MissingSeal": {
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "validator": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "basis",
+          "hash",
+          "index",
+          "phase",
+          "round",
+          "validator"
         ],
         "type": "object"
       },
@@ -3205,6 +3390,64 @@
         "required": [
           "issue",
           "ordinal"
+        ],
+        "type": "object"
+      },
+      "StoreMissingIndex": {
+        "additionalProperties": false,
+        "properties": {
+          "cells": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "counts": {
+            "additionalProperties": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "event_records": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from": {
+            "type": "string"
+          },
+          "message_records": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "messages": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cells",
+          "counts",
+          "dataset_id",
+          "event_records",
+          "from",
+          "message_records",
+          "snapshot",
+          "to",
+          "version"
         ],
         "type": "object"
       },
@@ -5441,6 +5684,198 @@
           }
         },
         "summary": "Raw-pair distributions separated by direction, matching strength, path and clock; coverage remains explicit."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/missing": {
+      "get": {
+        "operationId": "listMissingCells",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "first decimal canonical index (uint64)",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "last decimal canonical index, included",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "one validator address",
+            "in": "query",
+            "name": "validator",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "PREPARE or COMMIT",
+            "in": "query",
+            "name": "phase",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "one missing classification",
+            "in": "query",
+            "name": "class",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "one evidence reason",
+            "in": "query",
+            "name": "reason",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "page size 1..1000",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "snapshot and filter-bound cursor",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissingPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Source-backed participation classifications over an explicitly indexed canonical range; stale inputs or headers require reindexing."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/missing/index": {
+      "get": {
+        "operationId": "getMissingIndex",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreMissingIndex"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "The stored classification scope and source snapshot; never builds a projection."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/phases/samples": {

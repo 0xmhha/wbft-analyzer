@@ -82,3 +82,17 @@ func TestAssociationUsesRecordedCompletedStepBounds(t *testing.T) {
 		t.Fatal("missing recorded bound became identity proof")
 	}
 }
+
+func TestAssociationSeparatesEngineRestartsWithinNodeRun(t *testing.T) {
+	mono1, mono2 := "10", "20"
+	records := []source.Record{{Input: "j", Node: "a", Run: "r", Ordinal: 1, Type: "outcome", Step: "1", Key: "first", Phase: "PREPARE", Outcome: "ACCEPT"}, {Input: "j", Node: "a", Run: "r", Ordinal: 2, Type: "step", Step: "1", EngineRun: "1", Mono: &mono1, Wall: "2020-01-01T00:00:00.000000010Z"}, {Input: "j", Node: "a", Run: "r", Ordinal: 3, Type: "outcome", Step: "1", Key: "second", Phase: "PREPARE", Outcome: "ACCEPT"}, {Input: "j", Node: "a", Run: "r", Ordinal: 4, Type: "step", Step: "1", EngineRun: "2", Mono: &mono2, Wall: "2020-01-01T00:00:00.000000020Z"}}
+	events := []logs.Event{{Input: "e", Node: "a", Run: "r", Line: 1, Record: event.Record{Src: "event", Kind: event.EngineStart, Fields: map[string]any{"engine_run": "1"}}}, {Input: "e", Node: "a", Run: "r", Line: 2, Wall: records[1].Wall, Mono: &mono1, Record: event.Record{Src: "event", Kind: event.MsgOutcome, Fields: map[string]any{"step": "1", "dedup_key": "first", "phase": "PREPARE", "outcome": "ACCEPT"}}}, {Input: "e", Node: "a", Run: "r", Line: 3, Record: event.Record{Src: "event", Kind: event.EngineStart, Fields: map[string]any{"engine_run": "2"}}}, {Input: "e", Node: "a", Run: "r", Line: 4, Wall: records[3].Wall, Mono: &mono2, Record: event.Record{Src: "event", Kind: event.MsgOutcome, Fields: map[string]any{"step": "1", "dedup_key": "second", "phase": "PREPARE", "outcome": "ACCEPT"}}}}
+	p := VerifyAssociation(records, events)
+	if p.Status != "matched" || p.MatchedAnchors != 2 || p.Anchors[0].EngineRun == p.Anchors[1].EngineRun {
+		t.Fatal("engine step reuse collided", p)
+	}
+	events[2].Record.Fields["engine_run"] = "1"
+	if p := VerifyAssociation(records, events); p.Status == "matched" {
+		t.Fatal("wrong engine namespace proved identity", p)
+	}
+}

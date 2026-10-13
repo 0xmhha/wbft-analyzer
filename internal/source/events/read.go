@@ -187,6 +187,40 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 			out[k] = strconv.FormatUint(v, 10)
 		}
 	}
+	// Flatten only the schema-defined sign floor, including the already-flat
+	// form when metadata is reapplied at persistence. No arbitrary nested map
+	// crosses this boundary.
+	if kind == event.NodeStart {
+		var validator bool
+		if json.Unmarshal(m["validator"], &validator) == nil {
+			out["validator"] = validator
+		}
+		var floor struct {
+			Height string `json:"height"`
+			Status string `json:"status"`
+		}
+		_ = json.Unmarshal(m["sign_floor"], &floor)
+		if floor.Height == "" {
+			_ = json.Unmarshal(m["sign_floor_height"], &floor.Height)
+			_ = json.Unmarshal(m["sign_floor_status"], &floor.Status)
+		}
+		if len(floor.Height) > 156 {
+			floor.Height = ""
+		}
+		if n, ok := new(big.Int).SetString(floor.Height, 10); len(floor.Height) <= 156 && ok && n.Sign() >= 0 && n.String() == floor.Height && (floor.Status == "set" || floor.Status == "kept" || floor.Status == "cleared") {
+			out["sign_floor_height"], out["sign_floor_status"] = floor.Height, floor.Status
+		}
+	}
+	if kind == event.Health {
+		var height string
+		_ = json.Unmarshal(m["h"], &height)
+		if len(height) > 156 {
+			height = ""
+		}
+		if n, ok := new(big.Int).SetString(height, 10); ok && n.Sign() >= 0 && n.String() == height && len(height) <= 156 {
+			out["h"] = height
+		}
+	}
 	var round string
 	if json.Unmarshal(m["requested_round"], &round) == nil && len(round) <= 156 {
 		if n, ok := new(big.Int).SetString(round, 10); ok && n.Sign() >= 0 && n.String() == round {

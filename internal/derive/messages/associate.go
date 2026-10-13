@@ -25,6 +25,7 @@ type AssociationProof struct {
 }
 type AssociationAnchor struct {
 	ClockBasis string   `json:"clock_basis"`
+	EngineRun  string   `json:"engine_run"`
 	Node       string   `json:"node"`
 	Run        string   `json:"run"`
 	Step       string   `json:"step"`
@@ -38,7 +39,7 @@ type outcomeAnchor struct {
 	wall, mono string
 	clocks     int
 }
-type anchorKey struct{ node, run, step string }
+type anchorKey struct{ node, run, engine, step string }
 
 func canonicalNode(n string) string {
 	if len(n) == 42 && strings.HasPrefix(n, "0x") {
@@ -54,6 +55,7 @@ func canonicalNode(n string) string {
 // seeds can reuse node/run IDs across different scenarios. Missing anchors
 // do not prove identity, and a contradictory anchor refuses the association.
 func VerifyAssociation(records []source.Record, events []logs.Event) AssociationProof {
+	journalEngines, eventEngines := associationEngines(records, events)
 	j, e := map[anchorKey]*outcomeAnchor{}, map[anchorKey]*outcomeAnchor{}
 	jruns, eruns := map[[2]string]bool{}, map[[2]string]bool{}
 	ensure := func(m map[anchorKey]*outcomeAnchor, k anchorKey) *outcomeAnchor {
@@ -66,13 +68,13 @@ func VerifyAssociation(records []source.Record, events []logs.Event) Association
 		b, _ := json.Marshal([]string{key, phase, outcome})
 		return string(b)
 	}
-	for _, r := range records {
+	for i, r := range records {
 		n := canonicalNode(r.Node)
 		jruns[[2]string{n, r.Run}] = true
 		if r.Step == "" {
 			continue
 		}
-		k := anchorKey{n, r.Run, r.Step}
+		k := anchorKey{n, r.Run, journalEngines[i], r.Step}
 		a := ensure(j, k)
 		if r.Type == "outcome" && r.Key != "" {
 			a.signatures = append(a.signatures, signature(r.Key, r.Phase, r.Outcome))
@@ -87,7 +89,7 @@ func VerifyAssociation(records []source.Record, events []logs.Event) Association
 			a.pointers = append(a.pointers, recordSource(r))
 		}
 	}
-	for _, r := range events {
+	for i, r := range events {
 		if r.Record.Src != "event" {
 			continue
 		}
@@ -96,7 +98,7 @@ func VerifyAssociation(records []source.Record, events []logs.Event) Association
 		if r.Record.Kind != event.MsgOutcome || value(r, "step") == "" || value(r, "dedup_key") == "" {
 			continue
 		}
-		k := anchorKey{n, r.Run, value(r, "step")}
+		k := anchorKey{n, r.Run, eventEngines[i], value(r, "step")}
 		a := ensure(e, k)
 		a.signatures = append(a.signatures, signature(value(r, "dedup_key"), eventPhase(r), value(r, "outcome")))
 		a.pointers = append(a.pointers, eventSource(r))
@@ -113,10 +115,10 @@ func VerifyAssociation(records []source.Record, events []logs.Event) Association
 		}
 	}
 	previous := map[anchorKey]*outcomeAnchor{}
-	perRun := map[[2]string][]anchorKey{}
+	perRun := map[[3]string][]anchorKey{}
 	for k, a := range j {
 		if a.clocks > 0 {
-			perRun[[2]string{k.node, k.run}] = append(perRun[[2]string{k.node, k.run}], k)
+			perRun[[3]string{k.node, k.run, k.engine}] = append(perRun[[3]string{k.node, k.run, k.engine}], k)
 		}
 	}
 	for _, ks := range perRun {
@@ -169,11 +171,14 @@ func VerifyAssociation(records []source.Record, events []logs.Event) Association
 		if a.run != b.run {
 			return a.run < b.run
 		}
+		if a.engine != b.engine {
+			return a.engine < b.engine
+		}
 		return a.step < b.step
 	})
 	for _, k := range ordered {
 		a, b := j[k], e[k]
-		x := AssociationAnchor{Node: k.node, Run: k.run, Step: k.step, Status: "missing", Journal: []Source{}, Events: []Source{}}
+		x := AssociationAnchor{Node: k.node, Run: k.run, EngineRun: k.engine, Step: k.step, Status: "missing", Journal: []Source{}, Events: []Source{}}
 		if a != nil {
 			x.Journal = a.pointers
 		}
@@ -255,4 +260,74 @@ func withinCompletedStep(previous, end, at *outcomeAnchor) bool {
 	b, e5 := time.Parse(time.RFC3339Nano, end.wall)
 	t, e6 := time.Parse(time.RFC3339Nano, at.wall)
 	return e1 == nil && e2 == nil && e3 == nil && e4 == nil && e5 == nil && e6 == nil && lo <= v && v <= hi && !t.Before(a) && !t.After(b) && !b.Before(a)
+}
+
+// Outcomes precede their completion record. Only that next same-input/run
+// completion may supply its engine namespace. Native events retain the explicit
+// ENGINE_START boundary in source-line order, never a timestamp tolerance.
+func associationEngines(records []source.Record, events []logs.Event) ([]string, []string) {
+	jr := make([]string, len(records))
+	er := make([]string, len(events))
+	type sourceKey struct{ input, node, run string }
+	type completion struct{ step, engine string }
+	order := make([]int, len(records))
+	for i := range order {
+		order[i] = i
+	}
+	sort.SliceStable(order, func(i, j int) bool {
+		a, b := records[order[i]], records[order[j]]
+		if a.Input != b.Input {
+			return a.Input < b.Input
+		}
+		if a.Ordinal != b.Ordinal {
+			return a.Ordinal < b.Ordinal
+		}
+		return order[i] < order[j]
+	})
+	next := map[sourceKey]completion{}
+	for n := len(order) - 1; n >= 0; n-- {
+		i := order[n]
+		r := records[i]
+		k := sourceKey{r.Input, canonicalNode(r.Node), r.Run}
+		if r.Type == "step" {
+			next[k] = completion{r.Step, r.EngineRun}
+			jr[i] = r.EngineRun
+			continue
+		}
+		if r.Step != "" {
+			if c, ok := next[k]; ok && c.step == r.Step {
+				jr[i] = c.engine
+			}
+		}
+	}
+	order = make([]int, len(events))
+	for i := range order {
+		order[i] = i
+	}
+	sort.SliceStable(order, func(i, j int) bool {
+		a, b := events[order[i]], events[order[j]]
+		if a.Input != b.Input {
+			return a.Input < b.Input
+		}
+		if a.Line != b.Line {
+			return a.Line < b.Line
+		}
+		return order[i] < order[j]
+	})
+	current := map[sourceKey]string{}
+	for _, i := range order {
+		e := events[i]
+		k := sourceKey{e.Input, canonicalNode(e.Node), e.Run}
+		if e.Record.Kind == event.NodeStart {
+			delete(current, k)
+		}
+		if e.Record.Kind == event.EngineStart {
+			current[k] = value(e, "engine_run")
+		}
+		er[i] = current[k]
+		if explicit := value(e, "engine_run"); explicit != "" {
+			er[i] = explicit
+		}
+	}
+	return jr, er
 }

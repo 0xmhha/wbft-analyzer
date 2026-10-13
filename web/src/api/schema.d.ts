@@ -311,6 +311,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/missing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Source-backed participation classifications over an explicitly indexed canonical range; stale inputs or headers require reindexing. */
+        get: operations["listMissingCells"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/missing/index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The stored classification scope and source snapshot; never builds a projection. */
+        get: operations["getMissingIndex"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/phases/samples": {
         parameters: {
             query?: never;
@@ -901,6 +935,7 @@ export interface components {
         };
         MessagesAssociationAnchor: {
             clock_basis: string;
+            engine_run: string;
             events: components["schemas"]["MessagesSource"][];
             journal: components["schemas"]["MessagesSource"][];
             node: string;
@@ -1111,6 +1146,56 @@ export interface components {
         MessagesView: {
             height: string;
             round: string;
+        };
+        MissingCell: {
+            /** Format: int64 */
+            accepted: number;
+            class: string;
+            evidence: components["schemas"]["MissingEvidence"][];
+            /** Format: int64 */
+            evidence_count: number;
+            height: string;
+            index: string;
+            phase: string;
+            /** Format: int64 */
+            quorum: number;
+            reason: string;
+            /** Format: int64 */
+            receiver_coverage: number;
+            /** Format: int64 */
+            rejected: number;
+            round: string;
+            seals: components["schemas"]["MissingSeal"][];
+            /** Format: int64 */
+            sends: number;
+            strength: string;
+            /** Format: int64 */
+            unlinked_receipts: number;
+            validator: string;
+        };
+        MissingEvidence: {
+            dedup_key?: string;
+            outcome?: string;
+            role: string;
+            source: components["schemas"]["MessagesSource"];
+        };
+        MissingPage: {
+            cells: components["schemas"]["MissingCell"][];
+            index: components["schemas"]["StoreMissingIndex"];
+            next: string | null;
+            /** Format: int64 */
+            total: number;
+        };
+        MissingSeal: {
+            basis: string;
+            /** Format: int64 */
+            dataset_id?: number;
+            hash: string;
+            index: string;
+            node?: string;
+            phase: string;
+            round: string;
+            validator: string;
         };
         Network: {
             chain_id: string;
@@ -1409,6 +1494,25 @@ export interface components {
             issue: components["schemas"]["MessagesIssue"];
             /** Format: int64 */
             ordinal: number;
+        };
+        StoreMissingIndex: {
+            /** Format: int64 */
+            cells: number;
+            counts: {
+                [key: string]: number;
+            };
+            /** Format: int64 */
+            dataset_id: number;
+            /** Format: int64 */
+            event_records: number;
+            from: string;
+            /** Format: int64 */
+            message_records: number;
+            /** Format: int64 */
+            messages?: number;
+            snapshot: string;
+            to: string;
+            version: string;
         };
         StorePairCoverage: {
             /** Format: int64 */
@@ -2481,6 +2585,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PairSummary"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listMissingCells: {
+        parameters: {
+            query: {
+                /** @description first decimal canonical index (uint64) */
+                from: string;
+                /** @description last decimal canonical index, included */
+                to: string;
+                /** @description one validator address */
+                validator?: string;
+                /** @description PREPARE or COMMIT */
+                phase?: string;
+                /** @description one missing classification */
+                class?: string;
+                /** @description one evidence reason */
+                reason?: string;
+                /** @description page size 1..1000 */
+                limit?: number;
+                /** @description snapshot and filter-bound cursor */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MissingPage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getMissingIndex: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreMissingIndex"];
                 };
             };
             /** @description the request failed */
