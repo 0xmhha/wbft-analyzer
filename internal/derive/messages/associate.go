@@ -7,7 +7,9 @@ import (
 	source "github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/0xmhha/wbft/observe/event"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type AssociationProof struct {
@@ -22,12 +24,13 @@ type AssociationProof struct {
 	Anchors            []AssociationAnchor `json:"anchors"`
 }
 type AssociationAnchor struct {
-	Node    string   `json:"node"`
-	Run     string   `json:"run"`
-	Step    string   `json:"step"`
-	Status  string   `json:"status"`
-	Journal []Source `json:"journal"`
-	Events  []Source `json:"events"`
+	ClockBasis string   `json:"clock_basis"`
+	Node       string   `json:"node"`
+	Run        string   `json:"run"`
+	Step       string   `json:"step"`
+	Status     string   `json:"status"`
+	Journal    []Source `json:"journal"`
+	Events     []Source `json:"events"`
 }
 type outcomeAnchor struct {
 	signatures []string
@@ -109,6 +112,23 @@ func VerifyAssociation(records []source.Record, events []logs.Event) Association
 			a.clocks++
 		}
 	}
+	previous := map[anchorKey]*outcomeAnchor{}
+	perRun := map[[2]string][]anchorKey{}
+	for k, a := range j {
+		if a.clocks > 0 {
+			perRun[[2]string{k.node, k.run}] = append(perRun[[2]string{k.node, k.run}], k)
+		}
+	}
+	for _, ks := range perRun {
+		sort.Slice(ks, func(i, j int) bool {
+			a, _ := strconv.ParseUint(ks[i].step, 10, 64)
+			b, _ := strconv.ParseUint(ks[j].step, 10, 64)
+			return a < b
+		})
+		for i := 1; i < len(ks); i++ {
+			previous[ks[i]] = j[ks[i-1]]
+		}
+	}
 	out := AssociationProof{Status: "insufficient", Anchors: []AssociationAnchor{}}
 	shared := map[[2]string]bool{}
 	for k := range jruns {
@@ -167,7 +187,15 @@ func VerifyAssociation(records []source.Record, events []logs.Event) Association
 			sort.Strings(b.signatures)
 			aa, _ := json.Marshal(a.signatures)
 			bb, _ := json.Marshal(b.signatures)
-			if string(aa) != string(bb) || a.clocks != 1 || b.clocks != 1 || a.wall != b.wall || a.mono != b.mono {
+			clockOK := a.wall == b.wall && a.mono == b.mono
+			if clockOK {
+				x.ClockBasis = "exact_stamp"
+			} else if withinCompletedStep(previous[k], a, b) {
+				clockOK = true
+				x.ClockBasis = "completed_step_interval"
+				x.Journal = append(append([]Source(nil), x.Journal...), previous[k].pointers...)
+			}
+			if string(aa) != string(bb) || a.clocks != 1 || b.clocks != 1 || !clockOK {
 				x.Status = "conflict"
 				out.ConflictingAnchors++
 			} else {
@@ -211,4 +239,20 @@ func AssociatedSources(records []source.Record, events []logs.Event, proof Assoc
 		}
 	}
 	return rs, es
+}
+
+// Native runners stamp events at step entry and journal the step after handling
+// its outputs. Both clocks must lie within adjacent recorded completion stamps;
+// this is a source boundary proof, never a tolerance or timestamp correction.
+func withinCompletedStep(previous, end, at *outcomeAnchor) bool {
+	if previous == nil || previous.clocks != 1 || end.clocks != 1 || at.clocks != 1 {
+		return false
+	}
+	lo, e1 := strconv.ParseInt(previous.mono, 10, 64)
+	hi, e2 := strconv.ParseInt(end.mono, 10, 64)
+	v, e3 := strconv.ParseInt(at.mono, 10, 64)
+	a, e4 := time.Parse(time.RFC3339Nano, previous.wall)
+	b, e5 := time.Parse(time.RFC3339Nano, end.wall)
+	t, e6 := time.Parse(time.RFC3339Nano, at.wall)
+	return e1 == nil && e2 == nil && e3 == nil && e4 == nil && e5 == nil && e6 == nil && lo <= v && v <= hi && !t.Before(a) && !t.After(b) && !b.Before(a)
 }

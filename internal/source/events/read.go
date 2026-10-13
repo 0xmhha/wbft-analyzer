@@ -24,8 +24,10 @@ const Normalizer = logs.EventNormalizer
 
 func SchemaHash() string { x := sha256.Sum256(schema.File()); return hex.EncodeToString(x[:]) }
 
-// Read refuses duplicate keys, cross-node/run files and repeated/decreasing
-// sequence numbers. Sequence gaps and monotonic regressions stay diagnostic;
+// Read refuses duplicate keys, cross-node identities and repeated/decreasing
+// sequence numbers within a run. A new run requires a unique NODE_START at
+// sequence zero; native apps append these boundaries across restarts.
+// Sequence gaps and monotonic regressions stay diagnostic;
 // timestamps are never corrected. Diagnostics do not echo raw records.
 func Read(ctx context.Context, r io.Reader, node, input string, emit func(logs.Event) error) (logs.Stats, error) {
 	var stats logs.Stats
@@ -37,6 +39,7 @@ func Read(ctx context.Context, r io.Reader, node, input string, emit func(logs.E
 	sc := bufio.NewScanner(io.TeeReader(r, h))
 	sc.Buffer(make([]byte, 64<<10), 4<<20)
 	var run string
+	seenRuns := map[string]bool{}
 	var lastSeq, lastMono uint64
 	var previous time.Time
 	for sc.Scan() {
@@ -63,10 +66,17 @@ func Read(ctx context.Context, r io.Reader, node, input string, emit func(logs.E
 			return stats, errors.New("event source identity or numeric clock is invalid")
 		}
 		if run != "" {
-			if engine != run || seq <= lastSeq {
+			if engine != run {
+				var kind event.Kind
+				_ = json.Unmarshal(m["kind"], &kind)
+				if seq != 0 || kind != event.NodeStart || seenRuns[engine] {
+					return stats, errors.New("event source run or sequence order is invalid")
+				}
+				lastMono = mono
+			} else if seq <= lastSeq {
 				return stats, errors.New("event source run or sequence order is invalid")
 			}
-			if seq != lastSeq+1 {
+			if engine == run && seq != lastSeq+1 {
 				stats.SequenceGaps++
 			}
 			if mono < lastMono {
@@ -76,6 +86,7 @@ func Read(ctx context.Context, r io.Reader, node, input string, emit func(logs.E
 			stats.SequenceGaps++
 		}
 		run = engine
+		seenRuns[engine] = true
 		lastSeq = seq
 		lastMono = mono
 		t, err := time.Parse(time.RFC3339Nano, wall)

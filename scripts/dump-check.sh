@@ -104,6 +104,7 @@ capture() {
  get "/networks/$run_net/datasets/$run_id/messages/summary" run-message-summary
  get "/networks/$run_net/datasets/$run_id/messages/series?metric=propagation_processing" run-message-series
  get "/networks/$run_net/datasets/$run_id/messages/issues?limit=1000" run-message-issues
+ get "/networks/$run_net/datasets/$run_id/messages/flow?events=$run_id&from_t=2026-10-12T17:22:56Z&to_t=2026-10-12T17:23:10Z" run-message-flow
  get "/networks/$run_net/datasets/$run_id/messages/pairs?limit=1000" run-message-pairs
  get /reports reports
  log_report=$(jq -r '.reports[] | select(.run_id=="log-evidence-dump") | .id' "$dir/reports.json")

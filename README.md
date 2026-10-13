@@ -465,7 +465,7 @@ Pages have at most 1,000 rows and filter by recording node, diagnostic reason
 or original source dataset. Cursors bind to a content snapshot of the complete
 pair/issue projection and source metadata; changed sources or companions return
 409 until reindexing. Identical rebuilt projections retain the same snapshot.
-Reindex existing pairing snapshots to version 5 before using this endpoint.
+Reindex existing pairing snapshots to version 6 before using this endpoint.
 
 The latency view offers p50/p90/p95/p99 raw tails and up to 20 non-local
 directional p95 candidates within each evidence dimension, with valid sample
@@ -475,3 +475,27 @@ source cut in the event/replay view. The cursor seeks through that record,
 including records that share a wall timestamp. A filtered-out point remains
 absent. Journal/frame pointers still resolve original metadata; they are not
 converted into event pointers without association evidence.
+
+
+The replay view overlays message relationships from its own event run or an
+explicitly verified journal companion. `/messages/flow` selects groups whose
+complete candidate time range overlaps the window, so a send before the window
+and receive after it still remain visible. All candidates affect those bounds,
+including candidates beyond the original-pointer preview. The API refuses more
+than 2,000 groups; ordinary latency sample filters still use the send timestamp.
+
+Solid lines identify valid link measurements; dashed lines preserve weaker
+identity or uncertain clocks. Ambiguous or missing endpoints remain markers.
+Only unique valid link endpoints support packet interpolation. The motion
+switch and reduced-motion preference disable it while keeping recorded facts.
+NTP bands show elapsed uncertainty relative to the recorded send without
+correcting node timestamps. Event-ordinal replay retains evidence in the table;
+message geometry uses the wall-time axis. Each relationship opens exact original
+pointers in the evidence dataset or its verified event companion.
+
+Native event files may append another node run only at a new `NODE_START` with
+sequence zero. Original line numbers, timestamps and clock regressions remain
+intact. Mixed execution association verifies complete outcome multisets and
+both clocks. Step-entry event stamps may lie within adjacent recorded journal
+completion stamps; that basis is exposed as `completed_step_interval`. No clock
+tolerance or timestamp correction is applied, and absent bounds remain unproven.

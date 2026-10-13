@@ -328,6 +328,12 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 		out.Diagnostics = projection.Counts
 		pairs := derived.PairEndpoints(projection.Endpoints, clock)
 		out.Pairs = int64(len(pairs))
+		out.Diagnostics["unpositioned_pairs"] = 0
+		for _, p := range pairs {
+			if p.ObservedFrom == nil || p.ObservedTo == nil {
+				out.Diagnostics["unpositioned_pairs"]++
+			}
+		}
 		out.Issues = int64(len(projection.Issues))
 		sort.Slice(projection.Issues, func(i, j int) bool {
 			a, _ := json.Marshal(projection.Issues[i])
@@ -359,7 +365,22 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 						out.To = &x
 					}
 				}
-				batch.Queue(`INSERT INTO message_pairs(dataset_id,id,axis_ns,sender,receiver,phase,height,round,strength,path,clock,status,pair) VALUES($1,$2,$3::numeric,$4,$5,$6,nullif($7,'')::numeric,nullif($8,'')::numeric,$9,$10,$11,$12,$13)`, id, p.ID, axis, p.Sender, p.Receiver, p.Phase, p.Height, p.Round, p.Strength, p.Path, p.Clock, p.Status, b)
+				var observedFrom, observedTo any
+				if p.ObservedFrom != nil {
+					at, e := time.Parse(time.RFC3339Nano, *p.ObservedFrom)
+					if e != nil {
+						return e
+					}
+					observedFrom = axisNS(at)
+				}
+				if p.ObservedTo != nil {
+					at, e := time.Parse(time.RFC3339Nano, *p.ObservedTo)
+					if e != nil {
+						return e
+					}
+					observedTo = axisNS(at)
+				}
+				batch.Queue(`INSERT INTO message_pairs(dataset_id,id,axis_ns,sender,receiver,phase,height,round,strength,path,clock,status,pair,observed_from_ns,observed_to_ns) VALUES($1,$2,$3::numeric,$4,$5,$6,nullif($7,'')::numeric,nullif($8,'')::numeric,$9,$10,$11,$12,$13,$14::numeric,$15::numeric)`, id, p.ID, axis, p.Sender, p.Receiver, p.Phase, p.Height, p.Round, p.Strength, p.Path, p.Clock, p.Status, b, observedFrom, observedTo)
 			}
 			if e := tx.SendBatch(ctx, batch).Close(); e != nil {
 				return e
@@ -417,6 +438,8 @@ func beforeWall(a, b string) bool {
 }
 
 type PairFilter struct {
+	Overlap                                                                             bool
+	MaxPairs                                                                            int
 	From, To                                                                            time.Time
 	Sender, Receiver, Node, Phase, Height, Round, Strength, Path, Clock, Status, Metric string
 }
@@ -439,7 +462,15 @@ func (s *Store) MessagePairData(ctx context.Context, id int64, f PairFilter) (Pa
 		if !f.To.IsZero() {
 			to = axisNS(f.To)
 		}
-		rows, e := tx.Query(ctx, `SELECT pair FROM message_pairs WHERE dataset_id=$1 AND ($2::numeric IS NULL OR axis_ns>=$2) AND ($3::numeric IS NULL OR axis_ns<=$3) AND ($4='' OR sender=$4) AND ($5='' OR receiver=$5) AND ($6='' OR sender=$6 OR receiver=$6) AND ($7='' OR phase=$7) AND (($8='' AND $9='') OR EXISTS(SELECT 1 FROM jsonb_array_elements(pair->'views') v WHERE ($8='' OR v->>'height'=$8) AND ($9='' OR v->>'round'=$9))) AND ($10='' OR strength=$10) AND ($11='' OR path=$11) AND ($12='' OR clock=$12) AND ($13='' OR status=$13) AND ($14='' OR pair->>'metric'=$14) ORDER BY axis_ns NULLS LAST,id LIMIT 100001`, id, from, to, f.Sender, f.Receiver, f.Node, f.Phase, f.Height, f.Round, f.Strength, f.Path, f.Clock, f.Status, f.Metric)
+		timePredicate := `($2::numeric IS NULL OR axis_ns>=$2) AND ($3::numeric IS NULL OR axis_ns<=$3)`
+		if f.Overlap {
+			timePredicate = `($2::numeric IS NULL OR observed_to_ns>=$2) AND ($3::numeric IS NULL OR observed_from_ns<=$3)`
+		}
+		maxPairs := 100000
+		if f.MaxPairs > 0 && f.MaxPairs < maxPairs {
+			maxPairs = f.MaxPairs
+		}
+		rows, e := tx.Query(ctx, `SELECT pair FROM message_pairs WHERE dataset_id=$1 AND `+timePredicate+` AND ($4='' OR sender=$4) AND ($5='' OR receiver=$5) AND ($6='' OR sender=$6 OR receiver=$6) AND ($7='' OR phase=$7) AND (($8='' AND $9='') OR EXISTS(SELECT 1 FROM jsonb_array_elements(pair->'views') v WHERE ($8='' OR v->>'height'=$8) AND ($9='' OR v->>'round'=$9))) AND ($10='' OR strength=$10) AND ($11='' OR path=$11) AND ($12='' OR clock=$12) AND ($13='' OR status=$13) AND ($14='' OR pair->>'metric'=$14) ORDER BY axis_ns NULLS LAST,id LIMIT $15`, id, from, to, f.Sender, f.Receiver, f.Node, f.Phase, f.Height, f.Round, f.Strength, f.Path, f.Clock, f.Status, f.Metric, maxPairs+1)
 		if e != nil {
 			return e
 		}
@@ -454,7 +485,7 @@ func (s *Store) MessagePairData(ctx context.Context, id int64, f PairFilter) (Pa
 				return e
 			}
 			pairs = append(pairs, p)
-			if len(pairs) > 100000 {
+			if len(pairs) > maxPairs {
 				return ErrPairWindow
 			}
 		}

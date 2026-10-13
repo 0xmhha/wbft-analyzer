@@ -60,3 +60,25 @@ func TestAssociatedSourcesExcludeUnverifiedRuns(t *testing.T) {
 		t.Fatal("partial proof authorized projection", r, e)
 	}
 }
+
+func TestAssociationUsesRecordedCompletedStepBounds(t *testing.T) {
+	lo, hi, mid, outside := "10", "30", "20", "31"
+	rs := []source.Record{{Node: "a", Run: "r", Type: "step", Step: "1", Wall: "2020-01-01T00:00:00.000000010Z", Mono: &lo}, {Node: "a", Run: "r", Type: "outcome", Step: "2", Key: "k", Phase: "PREPARE", Outcome: "ACCEPT"}, {Node: "a", Run: "r", Type: "step", Step: "2", Wall: "2020-01-01T00:00:00.000000030Z", Mono: &hi}}
+	es := []logs.Event{{Node: "a", Run: "r", Wall: "2020-01-01T00:00:00.000000020Z", Mono: &mid, Record: event.Record{Src: "event", Kind: event.MsgOutcome, Fields: map[string]any{"step": "2", "dedup_key": "k", "phase": "PREPARE", "outcome": "ACCEPT"}}}}
+	proof := VerifyAssociation(rs, es)
+	if proof.Status != "matched" || proof.Anchors[0].ClockBasis != "completed_step_interval" || len(proof.Anchors[0].Journal) != 3 {
+		t.Fatal("native step boundaries not proven", proof)
+	}
+	es[0].Mono = &outside
+	if VerifyAssociation(rs, es).Status != "conflict" {
+		t.Fatal("out-of-step clock accepted")
+	}
+	es[0].Mono = &mid
+	es[0].Wall = "2020-01-01T00:00:00.000000031Z"
+	if VerifyAssociation(rs, es).Status != "conflict" {
+		t.Fatal("mono-only clock match accepted")
+	}
+	if VerifyAssociation(rs[1:], es).Status == "matched" {
+		t.Fatal("missing recorded bound became identity proof")
+	}
+}
