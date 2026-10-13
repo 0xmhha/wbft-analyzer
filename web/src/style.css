@@ -120,3 +120,10 @@ article pre { overflow: auto; max-height: 24rem; }
 
 .node-observations pre { overflow:auto; max-height:24rem; }
 .node-observations button[aria-pressed="true"] { outline:2px solid #7954c7; }
+
+.reexec-strip { display: flex; overflow-x: auto; padding: 6px; gap: 2px; }
+.reexec-tick { flex: 0 0 5px; width: 5px; min-width: 5px; height: 26px; padding: 0; border: 0; background: #687585; }
+.reexec-tick.match { background: #32875d; }
+.reexec-tick.output_diverged, .reexec-tick.env_mismatch { background: #c44747; }
+.reexec-tick.not_comparable { background: repeating-linear-gradient(45deg,#687585,#687585 3px,#d6dbe1 3px,#d6dbe1 6px); }
+.first-difference { outline: 2px solid #c28c12; outline-offset: 2px; }

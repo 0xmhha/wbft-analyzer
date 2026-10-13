@@ -42,6 +42,7 @@ Commands:
   serve     serve the REST API and the web front end
   ingest    load a dataset: inspector reports, a chainbench run, or a range of blocks
   follow    load the blocks of a network as they come
+  reexec    compare recorded journal steps with the actual WBFT core
   reindex   rebuild the derived tables of a dataset
   export    write a dataset to a directory
   version   print the version
@@ -51,11 +52,13 @@ Run "wbft-analyzer <command> -h" for the flags of a command.
 
 // commands are the commands and whether they are built.
 var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
-	"serve":   runServe,
-	"ingest":  runIngest,
-	"follow":  runFollow,
-	"reindex": runReindex,
-	"export":  notYet("export"),
+	"serve":         runServe,
+	"ingest":        runIngest,
+	"follow":        runFollow,
+	"reindex":       runReindex,
+	"reexec":        runReexec,
+	"reexec-helper": runReexecHelper,
+	"export":        notYet("export"),
 }
 
 func main() {

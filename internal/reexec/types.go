@@ -1,0 +1,72 @@
+// Package reexec drives the public WBFT replay library and versioned helpers.
+// It stores only bounded source metadata and output digests, never payloads.
+package reexec
+
+import "github.com/0xmhha/wbft-analyzer/internal/source/messages"
+
+const Version = "wbft-closed-reexec/1"
+const Protocol = "wbft-replay/1"
+const MaxSteps = 100000
+const MaxRecords = 1000000
+
+type Step struct {
+	Mono          string `json:"t_mono_ns,omitempty"`
+	Wall          string `json:"t_wall,omitempty"`
+	Offset        *int64 `json:"offset,omitempty"`
+	Phase         string `json:"phase,omitempty"`
+	MessageHeight string `json:"message_height,omitempty"`
+	Round         string `json:"round,omitempty"`
+	MessageDigest string `json:"message_digest,omitempty"`
+	Peer          string `json:"input_peer,omitempty"`
+	PayloadSHA    string `json:"payload_sha256,omitempty"`
+	ValsetDigest  string `json:"recorded_valset_digest,omitempty"`
+
+	Ordinal      int64    `json:"ordinal"`
+	File         string   `json:"file"`
+	Run          string   `json:"writer_run"`
+	Engine       string   `json:"engine_run"`
+	Number       string   `json:"step"`
+	Height       string   `json:"height"`
+	Input        string   `json:"input"`
+	Recorded     string   `json:"recorded_digest"`
+	Replayed     string   `json:"replayed_digest,omitempty"`
+	Class        string   `json:"class"`
+	Completeness string   `json:"completeness"`
+	Issues       []string `json:"issues"`
+}
+
+type Height struct {
+	Number string   `json:"height"`
+	Status string   `json:"status"`
+	Issues []string `json:"issues"`
+	Steps  int64    `json:"steps"`
+}
+
+type Plan struct {
+	Input          messages.Prepared `json:"-"`
+	Chain          string            `json:"-"`
+	ChainSHA       string            `json:"chain_sha256"`
+	SourceVersions []string          `json:"source_versions"`
+	Heights        []Height          `json:"heights"`
+	Steps          []Step            `json:"-"`
+	JournalIssue   string            `json:"journal_issue,omitempty"`
+}
+
+type Result struct {
+	BinaryVersion  string   `json:"binary_version"`
+	HelperSHA      string   `json:"helper_sha256"`
+	Version        string   `json:"version"`
+	Status         string   `json:"status"`
+	HelperVersion  string   `json:"helper_version"`
+	VersionStatus  string   `json:"version_status"`
+	ChainSHA       string   `json:"chain_sha256"`
+	SourceSHA      string   `json:"source_sha256"`
+	SourceVersions []string `json:"source_versions"`
+	Heights        []Height `json:"heights"`
+	Total          int64    `json:"steps"`
+	Matches        int64    `json:"matches"`
+	Mismatches     int64    `json:"mismatches"`
+	NotComparable  int64    `json:"not_comparable"`
+	FirstMismatch  *int64   `json:"first_mismatch_ordinal,omitempty"`
+	Issue          string   `json:"issue,omitempty"`
+}

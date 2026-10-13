@@ -43,6 +43,10 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reexec", id: "listReexecRuns", summary: "Latest 100 closed replay observations, separate from visual playback and canonical facts.", params: runParams(), answers: map[int]any{200: ReexecList{}}, handle: (*Server).reexecList},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}", id: "getReexecRun", summary: "Version identity, source completeness and output comparison; no payloads or filesystem paths.", params: reexecParams(false), answers: map[int]any{200: store.ReexecRun{}}, handle: (*Server).reexecSummary},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}/steps", id: "listReexecSteps", summary: "Immutable source-ordinal pages of output digests and known classifications, at most 1000 rows.", params: reexecParams(true), answers: map[int]any{200: ReexecPage{}}, handle: (*Server).reexecSteps},
+
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/follow", id: "getFollowState", summary: "Durable native follow cursor and latest completed header/observation companions; no event completeness claim.", params: runParams(), answers: map[int]any{200: store.FollowState{}}, handle: (*Server).followState},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/observations/headers/index", id: "getObservationHeaderIndex", summary: "Stored structural metadata bindings and independent canonical totals; source/header changes require explicit reindex.", params: runParams(), answers: map[int]any{200: store.ObservationHeaderIndex{}}, handle: (*Server).observationHeaderIndex},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/observations/headers", id: "listObservationHeaderBindings", summary: "Canonical full-number/hash/parent/validator comparisons with original RPC pointers; no signature or event-completeness claim.", params: observationHeaderParams(), answers: map[int]any{200: ObservationHeaderPage{}}, handle: (*Server).observationHeaderRows},
@@ -165,4 +169,12 @@ func pairParams(pages bool) []param {
 
 func issueParams() []param {
 	return append(runParams(), param{name: "node", in: "query", doc: "recording source node", typ: "string"}, param{name: "reason", in: "query", doc: "exact projection diagnostic reason", typ: "string"}, param{name: "source_dataset", in: "query", doc: "original source dataset ID", typ: "integer", format: "int64"}, param{name: "limit", in: "query", doc: "page size 1..1000", typ: "integer"}, param{name: "cursor", in: "query", doc: "snapshot and source-filter bound cursor", typ: "string"})
+}
+
+func reexecParams(steps bool) []param {
+	out := append(runParams(), param{name: "reexec", in: "path", doc: "closed replay run ID belonging to this dataset", typ: "integer", format: "int64", required: true})
+	if steps {
+		out = append(out, param{name: "after", in: "query", doc: "exclusive original source ordinal", typ: "integer", format: "int64"}, param{name: "limit", in: "query", doc: "page size 1..1000", typ: "integer"}, param{name: "class", in: "query", doc: "match, output_diverged, env_mismatch, env_exhausted, input_gap or not_comparable", typ: "string"}, param{name: "height", in: "query", doc: "full recorded active height", typ: "string"})
+	}
+	return out
 }
