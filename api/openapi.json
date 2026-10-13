@@ -2945,6 +2945,249 @@
         ],
         "type": "object"
       },
+      "ReexecHeight": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "type": "string"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "steps": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "height",
+          "issues",
+          "status",
+          "steps"
+        ],
+        "type": "object"
+      },
+      "ReexecList": {
+        "additionalProperties": false,
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/StoreReexecRun"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "runs"
+        ],
+        "type": "object"
+      },
+      "ReexecPage": {
+        "additionalProperties": false,
+        "properties": {
+          "next": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ReexecStep"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "next",
+          "steps"
+        ],
+        "type": "object"
+      },
+      "ReexecResult": {
+        "additionalProperties": false,
+        "properties": {
+          "binary_version": {
+            "type": "string"
+          },
+          "chain_sha256": {
+            "type": "string"
+          },
+          "first_mismatch_ordinal": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "heights": {
+            "items": {
+              "$ref": "#/components/schemas/ReexecHeight"
+            },
+            "type": "array"
+          },
+          "helper_sha256": {
+            "type": "string"
+          },
+          "helper_version": {
+            "type": "string"
+          },
+          "issue": {
+            "type": "string"
+          },
+          "matches": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "mismatches": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "not_comparable": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "source_versions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "steps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "version": {
+            "type": "string"
+          },
+          "version_status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "binary_version",
+          "chain_sha256",
+          "heights",
+          "helper_sha256",
+          "helper_version",
+          "matches",
+          "mismatches",
+          "not_comparable",
+          "source_sha256",
+          "source_versions",
+          "status",
+          "steps",
+          "version",
+          "version_status"
+        ],
+        "type": "object"
+      },
+      "ReexecStep": {
+        "additionalProperties": false,
+        "properties": {
+          "class": {
+            "type": "string"
+          },
+          "completeness": {
+            "type": "string"
+          },
+          "engine_run": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "input_peer": {
+            "type": "string"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "message_digest": {
+            "type": "string"
+          },
+          "message_height": {
+            "type": "string"
+          },
+          "offset": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "payload_sha256": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "recorded_digest": {
+            "type": "string"
+          },
+          "recorded_valset_digest": {
+            "type": "string"
+          },
+          "replayed_digest": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "step": {
+            "type": "string"
+          },
+          "t_mono_ns": {
+            "type": "string"
+          },
+          "t_wall": {
+            "type": "string"
+          },
+          "writer_run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "class",
+          "completeness",
+          "engine_run",
+          "file",
+          "height",
+          "input",
+          "issues",
+          "ordinal",
+          "recorded_digest",
+          "step",
+          "writer_run"
+        ],
+        "type": "object"
+      },
       "ReplayCounter": {
         "additionalProperties": false,
         "properties": {
@@ -4473,6 +4716,57 @@
           "snapshot",
           "to_t",
           "version"
+        ],
+        "type": "object"
+      },
+      "StoreReexecRun": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "finished_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "from_height": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ReexecResult"
+          },
+          "to_height": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "dataset_id",
+          "finished_at",
+          "from_height",
+          "id",
+          "input_id",
+          "status",
+          "summary",
+          "to_height"
         ],
         "type": "object"
       },
@@ -7504,6 +7798,243 @@
           }
         },
         "summary": "WBFT consecutive phase distributions, counts and raw-sample overall percentiles; missing and negative samples remain explicit."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/reexec": {
+      "get": {
+        "operationId": "listReexecRuns",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReexecList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Latest 100 closed replay observations, separate from visual playback and canonical facts."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}": {
+      "get": {
+        "operationId": "getReexecRun",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "closed replay run ID belonging to this dataset",
+            "in": "path",
+            "name": "reexec",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreReexecRun"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Version identity, source completeness and output comparison; no payloads or filesystem paths."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}/steps": {
+      "get": {
+        "operationId": "listReexecSteps",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "closed replay run ID belonging to this dataset",
+            "in": "path",
+            "name": "reexec",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "exclusive original source ordinal",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "page size 1..1000",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "match, output_diverged, env_mismatch, env_exhausted, input_gap or not_comparable",
+            "in": "query",
+            "name": "class",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "full recorded active height",
+            "in": "query",
+            "name": "height",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReexecPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Immutable source-ordinal pages of output digests and known classifications, at most 1000 rows."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/replay/keyframe": {

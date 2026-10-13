@@ -481,6 +481,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/reexec": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest 100 closed replay observations, separate from visual playback and canonical facts. */
+        get: operations["listReexecRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Version identity, source completeness and output comparison; no payloads or filesystem paths. */
+        get: operations["getReexecRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}/steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Immutable source-ordinal pages of output digests and known classifications, at most 1000 rows. */
+        get: operations["listReexecSteps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/replay/keyframe": {
         parameters: {
             query?: never;
@@ -1483,6 +1534,70 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        ReexecHeight: {
+            height: string;
+            issues: string[];
+            status: string;
+            /** Format: int64 */
+            steps: number;
+        };
+        ReexecList: {
+            runs: components["schemas"]["StoreReexecRun"][];
+        };
+        ReexecPage: {
+            /** Format: int64 */
+            next: number | null;
+            steps: components["schemas"]["ReexecStep"][];
+        };
+        ReexecResult: {
+            binary_version: string;
+            chain_sha256: string;
+            /** Format: int64 */
+            first_mismatch_ordinal?: number | null;
+            heights: components["schemas"]["ReexecHeight"][];
+            helper_sha256: string;
+            helper_version: string;
+            issue?: string;
+            /** Format: int64 */
+            matches: number;
+            /** Format: int64 */
+            mismatches: number;
+            /** Format: int64 */
+            not_comparable: number;
+            source_sha256: string;
+            source_versions: string[];
+            status: string;
+            /** Format: int64 */
+            steps: number;
+            version: string;
+            version_status: string;
+        };
+        ReexecStep: {
+            class: string;
+            completeness: string;
+            engine_run: string;
+            file: string;
+            height: string;
+            input: string;
+            input_peer?: string;
+            issues: string[];
+            message_digest?: string;
+            message_height?: string;
+            /** Format: int64 */
+            offset?: number | null;
+            /** Format: int64 */
+            ordinal: number;
+            payload_sha256?: string;
+            phase?: string;
+            recorded_digest: string;
+            recorded_valset_digest?: string;
+            replayed_digest?: string;
+            round?: string;
+            step: string;
+            t_mono_ns?: string;
+            t_wall?: string;
+            writer_run: string;
+        };
         ReplayCounter: {
             count: string;
             quorum: string;
@@ -1892,6 +2007,21 @@ export interface components {
             snapshot: string;
             to_t: string | null;
             version: string;
+        };
+        StoreReexecRun: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: int64 */
+            dataset_id: number;
+            /** Format: date-time */
+            finished_at: string | null;
+            from_height: string;
+            /** Format: int64 */
+            id: number;
+            input_id: string;
+            status: string;
+            summary: components["schemas"]["ReexecResult"];
+            to_height: string;
         };
         StoreReplayNode: {
             initial: components["schemas"]["StoreReplayState"];
@@ -3435,6 +3565,148 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LatencySummary"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listReexecRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReexecList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getReexecRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description closed replay run ID belonging to this dataset */
+                reexec: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreReexecRun"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listReexecSteps: {
+        parameters: {
+            query?: {
+                /** @description exclusive original source ordinal */
+                after?: number;
+                /** @description page size 1..1000 */
+                limit?: number;
+                /** @description match, output_diverged, env_mismatch, env_exhausted, input_gap or not_comparable */
+                class?: string;
+                /** @description full recorded active height */
+                height?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description closed replay run ID belonging to this dataset */
+                reexec: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReexecPage"];
                 };
             };
             /** @description the request failed */

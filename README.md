@@ -689,3 +689,59 @@ and native RPC claims do not prove event capture or message-delivery completenes
 
 The 72-hour acceptance run with a node restart and RPC interruption remains a
 separate runtime check; short regression tests do not complete that requirement.
+
+
+### Closed core replay
+
+Retain a journal with `ingest messages --inputs-dir DIR`, then run:
+
+```sh
+wbft-analyzer reexec --db DSN --dataset ID --input JOURNAL_ID \
+  --chain chain.rlp --from 1 --to 10
+```
+
+The command snapshots verified journal and canonical chain objects and runs
+WBFT's `conformance/stepdriver.RunTrace` in a bounded child. `--helper FILE`
+selects a versioned `wbft-replay/1` executable; the default is the linked core.
+The advertised version is checked against the executable's Go build metadata,
+and its SHA256 is retained. The checked dependency pin binds its exact module
+version and checksum to the full origin commit; short-prefix guesses are not
+used. Different or unknown versions are regression
+comparisons. Inputs and the helper file are reverified after execution.
+
+Active height means the recorded application head plus one. Completeness
+requires contiguous steps from a recorded engine start, readable journal
+records, the preceding/current/following canonical headers, and a unique
+peer-message content/time witness. Asynchronously sampled native timestamps
+or duplicate witnesses remain partial; peer identity and cross-node clock
+alignment are not inferred. A gap or changed core configuration prevents
+reproduction. This does not reconstruct a missing input from its inline step.
+
+A run reports output digest matches, `output_diverged`, validator-set-only
+`env_mismatch`, or `not_comparable`. Arbitrary helper errors and payloads are
+not persisted. `reproduced` requires matching verified versions and every
+requested height complete; a digest match alone is insufficient. The current
+child reports other replay errors as `replay_error`; it does not infer an
+`env_exhausted` classification from arbitrary error text.
+
+Bounds: 10000 active canonical heights, 100000 steps, one million journal
+records, a 256 MiB chain file, 64 KiB protocol lines, 64 MiB helper output and
+a 5 minute default deadline (`--timeout`, up to 30 minutes). Chain indices must
+fit uint64; full recorded numeric strings are never truncated. Raw chain and
+journal objects remain in the private input directory and require separate
+backup. Migration 17 stores replay summaries and metadata-only steps outside
+canonical network facts. Finished runs are immutable.
+
+Read the latest 100 runs at `/networks/{net}/datasets/{dataset}/reexec`, one
+summary at `/reexec/{reexec}`, and bounded original-ordinal pages at
+`/reexec/{reexec}/steps?after=0&limit=500&class=match&height=1` (paths below the
+same network/dataset prefix). The core replay screen shows versions,
+completeness, a source-order difference strip, the first difference and the
+exact original journal record. HTTP reads do not execute a replay; start a
+run with the local command.
+
+Wire deletion detection currently marks incomplete input rather than inventing
+an output difference or an application response failure. Full closed replay
+acceptance still requires the complete simulation/restart bundle,
+cross-architecture comparisons and the remaining received-message mutation
+criteria. Visual event playback is separate from core execution.
