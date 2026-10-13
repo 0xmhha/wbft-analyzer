@@ -59,6 +59,7 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		var kind string
 		var meta []byte
+		var companionMeta []byte
 		var progress int64
 		if e := tx.QueryRow(ctx, `SELECT kind,metadata,progress,status FROM datasets WHERE id=$1 FOR UPDATE`, id).Scan(&kind, &meta, &progress, &out.Status); e != nil {
 			return e
@@ -223,6 +224,7 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 			if e := tx.QueryRow(ctx, `SELECT network_id FROM datasets WHERE id=$1`, id).Scan(&targetNetwork); e != nil {
 				return e
 			}
+			companionMeta = sourceMeta
 			if sourceKind != "run" || sourceStatus != "complete" || out.Status != "complete" || sourceNetwork != targetNetwork {
 				return errors.New("association requires completed sources on one network")
 			}
@@ -379,6 +381,12 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 		}
 		h := sha256.New()
 		enc := json.NewEncoder(h)
+		if e := enc.Encode(json.RawMessage(meta)); e != nil {
+			return e
+		}
+		if e := enc.Encode(json.RawMessage(companionMeta)); e != nil {
+			return e
+		}
 		if e := enc.Encode(out); e != nil {
 			return e
 		}

@@ -98,6 +98,20 @@ func TestMixedReindexUsesVerifiedDependencyAndRollsBackConflict(t *testing.T) {
 	if _, _, e = s.MessagePairData(ctx, m.ID, PairFilter{}); e != nil {
 		t.Fatal("rollback lost prior dependency", e)
 	}
+	if _, e = s.pool.Exec(ctx, `UPDATE datasets SET metadata=jsonb_set(metadata,'{label}','"updated"') WHERE id=$1`, r.ID); e != nil {
+		t.Fatal(e)
+	}
+	changed, e := s.RebuildMessagePairs(ctx, m.ID, r.ID)
+	if e != nil || changed.Snapshot == index.Snapshot {
+		t.Fatal("companion metadata omitted from snapshot", e)
+	}
+	if _, e = s.pool.Exec(ctx, `UPDATE datasets SET metadata=jsonb_set(metadata,'{label}','"updated"') WHERE id=$1`, m.ID); e != nil {
+		t.Fatal(e)
+	}
+	parentChanged, e := s.RebuildMessagePairs(ctx, m.ID, r.ID)
+	if e != nil || parentChanged.Snapshot == changed.Snapshot {
+		t.Fatal("parent metadata omitted from snapshot", e)
+	}
 	if _, e = s.pool.Exec(ctx, `DELETE FROM datasets WHERE id=$1`, r.ID); e != nil {
 		t.Fatal(e)
 	}
