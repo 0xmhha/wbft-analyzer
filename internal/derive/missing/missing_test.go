@@ -1,15 +1,37 @@
 package missing
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/0xmhha/wbft-analyzer/internal/source/events"
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
 	source "github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/0xmhha/wbft/observe/event"
 )
+
+func TestNormalizedInboundLossCannotProveSenderAbsence(t *testing.T) {
+	for _, what := range []string{"peer_inbound_overflow", "peer_inbound_disconnect"} {
+		t.Run(what, func(t *testing.T) {
+			rows, inputs := coverageRows(address(1))
+			if c := runCell(t, baseHeight(), rows, nil, inputs); c.Class != "NOT_SENT" {
+				t.Fatal(c)
+			}
+			value, err := json.Marshal(what)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fields := events.Metadata(map[string]json.RawMessage{"kind": json.RawMessage(`"HEALTH"`), "what": value})
+			rows = append(rows, native(address(1), 4, event.Health, "", "", fields))
+			if c := runCell(t, baseHeight(), rows, nil, inputs); c.Class != "UNKNOWN" {
+				t.Fatal("input loss became an absence proof", c)
+			}
+		})
+	}
+}
 
 func address(i int) string { return fmt.Sprintf("0x%040x", i) }
 func baseHeight() Height {

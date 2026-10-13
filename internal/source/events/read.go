@@ -212,6 +212,16 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 		}
 	}
 	if kind == event.Health {
+		// HEALTH and QUORUM use different schema-defined values of what.
+		// Keep operator conditions only for native HEALTH records.
+		var what string
+		_ = json.Unmarshal(m["what"], &what)
+		delete(out, "what")
+		switch what {
+		case "head_mismatch", "peer_inbound_overflow", "peer_inbound_disconnect", "privval_refusal", "sign_floor_skip",
+			"snapshot_missing_at_preprepare", "snapshot_missing_at_head", "consensus_halted", "disconnect":
+			out["what"] = what
+		}
 		var height string
 		_ = json.Unmarshal(m["h"], &height)
 		if len(height) > 156 {
