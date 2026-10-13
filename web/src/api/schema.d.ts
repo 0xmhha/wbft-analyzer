@@ -1587,6 +1587,19 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        ReexecAnswerSource: {
+            /** Format: int64 */
+            call: number;
+            engine_run: string;
+            file: string;
+            key: string;
+            /** Format: int64 */
+            kind: number;
+            /** Format: int64 */
+            ordinal: number;
+            step: string;
+            writer_run: string;
+        };
         ReexecHeight: {
             height: string;
             issues: string[];
@@ -1606,6 +1619,7 @@ export interface components {
             steps: components["schemas"]["ReexecStep"][];
         };
         ReexecResult: {
+            answer_scope?: string;
             binary_version: string;
             chain_sha256: string;
             /** Format: int64 */
@@ -1621,6 +1635,7 @@ export interface components {
             mode?: string;
             /** Format: int64 */
             not_comparable: number;
+            omit_missing_captures?: boolean;
             source_sha256: string;
             source_versions: string[];
             status: string;
@@ -1639,10 +1654,12 @@ export interface components {
             sources: components["schemas"]["ReplayjobSourceInfo"][];
         };
         ReexecStep: {
+            answer_sources?: components["schemas"]["ReexecAnswerSource"][];
             approximate?: boolean;
             capture_id?: string;
             class: string;
             completeness: string;
+            context_answers?: boolean;
             engine_run: string;
             file: string;
             height: string;
@@ -1745,6 +1762,8 @@ export interface components {
             status: string;
         };
         ReplayjobRequest: {
+            /** @enum {string} */
+            answer_scope?: "step" | "context";
             from_height: string;
             /** @enum {string} */
             mode: "closed" | "counterfactual";
@@ -1754,6 +1773,7 @@ export interface components {
             warmup_heights?: number | null;
         };
         ReplayjobSourceInfo: {
+            answer_scopes: string[];
             id: string;
             input_id: string;
             modes: string[];
@@ -2114,6 +2134,7 @@ export interface components {
             version: string;
         };
         StoreReexecJob: {
+            answer_scope: string;
             /** Format: date-time */
             created_at: string;
             /** Format: int64 */

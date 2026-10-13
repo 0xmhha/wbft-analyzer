@@ -96,10 +96,10 @@ func Run(ctx context.Context, s *store.Store, o RunOptions, onBegin func(int64) 
 		return out, err
 	}
 	mode := "closed"
-	if o.Helper.OmitMissing {
+	if o.Helper.OmitMissing || o.Helper.AnswerScope == "context" {
 		mode = "counterfactual"
 	}
-	initial := reexec.Result{WarmupHeights: int(o.Helper.WarmupHeights), Mode: mode, Version: reexec.Version, Status: "running", HelperVersion: "unknown", VersionStatus: "unknown", ChainSHA: plan.ChainSHA, SourceSHA: summary.SHA256, SourceVersions: plan.SourceVersions, Heights: plan.Heights}
+	initial := reexec.Result{OmitMissing: o.Helper.OmitMissing, AnswerScope: o.Helper.AnswerScope, WarmupHeights: int(o.Helper.WarmupHeights), Mode: mode, Version: reexec.Version, Status: "running", HelperVersion: "unknown", VersionStatus: "unknown", ChainSHA: plan.ChainSHA, SourceSHA: summary.SHA256, SourceVersions: plan.SourceVersions, Heights: plan.Heights}
 	id, err := s.BeginReexec(ctx, d.ID, o.Input, strconv.FormatUint(o.From, 10), strconv.FormatUint(o.To, 10), chain.Path, initial)
 	if err != nil {
 		return out, errors.Join(ErrStore, err)

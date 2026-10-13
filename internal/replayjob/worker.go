@@ -24,18 +24,20 @@ var ErrSource = errors.New("replay source unavailable")
 var ErrScope = errors.New("invalid replay scope")
 
 type SourceSpec struct {
-	ID        string `json:"id"`
-	Dataset   int64  `json:"dataset"`
-	Input     string `json:"input"`
-	Chain     string `json:"chain"`
-	Helper    string `json:"helper,omitempty"`
-	Timeout   string `json:"timeout,omitempty"`
-	AllowLoss bool   `json:"allow_loss,omitempty"`
+	AllowContext bool   `json:"allow_context,omitempty"`
+	ID           string `json:"id"`
+	Dataset      int64  `json:"dataset"`
+	Input        string `json:"input"`
+	Chain        string `json:"chain"`
+	Helper       string `json:"helper,omitempty"`
+	Timeout      string `json:"timeout,omitempty"`
+	AllowLoss    bool   `json:"allow_loss,omitempty"`
 }
 type SourceInfo struct {
-	ID    string   `json:"id"`
-	Input string   `json:"input_id"`
-	Modes []string `json:"modes"`
+	AnswerScopes []string `json:"answer_scopes"`
+	ID           string   `json:"id"`
+	Input        string   `json:"input_id"`
+	Modes        []string `json:"modes"`
 }
 type source struct {
 	info                        SourceInfo
@@ -45,6 +47,7 @@ type source struct {
 	helper                      reexec.Helper
 }
 type Request struct {
+	AnswerScope   string `json:"answer_scope,omitempty" enum:"step,context"`
 	WarmupHeights *int   `json:"warmup_heights,omitempty"`
 	Source        string `json:"source_id"`
 	From          string `json:"from_height"`
@@ -135,13 +138,17 @@ func Load(ctx context.Context, s *store.Store, path, linked string) (*Worker, er
 		if spec.AllowLoss {
 			modes = append(modes, "counterfactual")
 		}
+		scopes := []string{"step"}
+		if spec.AllowContext {
+			scopes = append(scopes, "context")
+		}
 		identity, _ := json.Marshal(struct {
 			Dataset                                             int64
 			Input, InputSHA, Node, ChainSHA, HelperSHA, Timeout string
-			Modes                                               []string
-		}{spec.Dataset, spec.Input, inputSHA, node, chain.SHA256, helperSHA, helper.Timeout.String(), modes})
+			Modes, AnswerScopes                                 []string
+		}{spec.Dataset, spec.Input, inputSHA, node, chain.SHA256, helperSHA, helper.Timeout.String(), modes, scopes})
 		hash := sha256.Sum256(identity)
-		worker.sources[spec.ID] = source{info: SourceInfo{spec.ID, spec.Input, modes}, network: dataset.NetworkID, dataset: spec.Dataset, chain: chain.Path, hash: hex.EncodeToString(hash[:]), inputSHA: inputSHA, node: node, helper: helper, chainSHA: chain.SHA256, helperSHA: helperSHA}
+		worker.sources[spec.ID] = source{info: SourceInfo{ID: spec.ID, Input: spec.Input, Modes: modes, AnswerScopes: scopes}, network: dataset.NetworkID, dataset: spec.Dataset, chain: chain.Path, hash: hex.EncodeToString(hash[:]), inputSHA: inputSHA, node: node, helper: helper, chainSHA: chain.SHA256, helperSHA: helperSHA}
 		worker.order = append(worker.order, spec.ID)
 	}
 	return worker, nil
@@ -185,6 +192,16 @@ func (w *Worker) Submit(ctx context.Context, network, dataset int64, r Request) 
 	if e1 != nil || e2 != nil || strconv.FormatUint(from, 10) != r.From || strconv.FormatUint(to, 10) != r.To || from < 1 || to < from || to-from >= 10000 {
 		return store.ReexecJob{}, ErrScope
 	}
+	scope := r.AnswerScope
+	if scope == "" {
+		scope = "step"
+	}
+	if scope != "step" && scope != "context" {
+		return store.ReexecJob{}, ErrScope
+	}
+	if scope == "context" && !hasScope(source.info.AnswerScopes, scope) {
+		return store.ReexecJob{}, ErrScope
+	}
 	warmup := 2
 	if r.WarmupHeights != nil {
 		warmup = *r.WarmupHeights
@@ -201,7 +218,7 @@ func (w *Worker) Submit(ctx context.Context, network, dataset int64, r Request) 
 	if !allowed {
 		return store.ReexecJob{}, ErrScope
 	}
-	job, err := w.store.EnqueueReexec(ctx, store.ReexecJob{Dataset: dataset, Input: source.info.Input, Source: r.Source, SourceSHA: source.hash, From: r.From, To: r.To, Mode: r.Mode, WarmupHeights: warmup})
+	job, err := w.store.EnqueueReexec(ctx, store.ReexecJob{Dataset: dataset, Input: source.info.Input, Source: r.Source, SourceSHA: source.hash, From: r.From, To: r.To, Mode: r.Mode, WarmupHeights: warmup, AnswerScope: scope})
 	if err == nil {
 		select {
 		case w.wake <- struct{}{}:
@@ -305,6 +322,7 @@ func (w *Worker) execute(ctx context.Context, job store.ReexecJob, owner string)
 			helper.ExpectedSHA = source.helperSHA
 			helper.OmitMissing = job.Mode == "counterfactual"
 			helper.WarmupHeights = uint64(job.WarmupHeights)
+			helper.AnswerScope = job.AnswerScope
 			_, err = Run(ctx, w.store, RunOptions{Dataset: job.Dataset, Input: job.Input, Chain: source.chain, From: from, To: to, Helper: helper, ExpectedInputSHA: source.inputSHA, ExpectedNode: source.node, ExpectedChainSHA: source.chainSHA}, func(id int64) error { return w.store.LinkReexecJob(ctx, job.ID, owner, id) })
 			if err == nil {
 				status, issue = "succeeded", ""
@@ -324,3 +342,12 @@ func (w *Worker) execute(ctx context.Context, job store.ReexecJob, owner string)
 }
 
 func (w *Worker) Available() bool { return w.running.Load() }
+
+func hasScope(scopes []string, want string) bool {
+	for _, s := range scopes {
+		if s == want {
+			return true
+		}
+	}
+	return false
+}

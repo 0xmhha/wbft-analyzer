@@ -29,7 +29,7 @@ import (
 // Explicit capture references bind new inputs; legacy inputs require a unique
 // content/time witness, and weaker associations stay partial.
 func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis string, from, to uint64) (Plan, error) {
-	out := Plan{From: from, To: to, Input: p, Chain: chain, SourceVersions: []string{}, Heights: []Height{}, Steps: []Step{}}
+	out := Plan{Answers: map[string]recordedAnswer{}, Contexts: map[int64]answerContext{}, From: from, To: to, Input: p, Chain: chain, SourceVersions: []string{}, Heights: []Height{}, Steps: []Step{}}
 	if from < 1 || to < from || to-from >= 10000 {
 		return out, errors.New("reexec height range must contain 1..10000 heights starting at 1 or later")
 	}
@@ -232,6 +232,25 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		}
 		if out.JournalIssue != "" {
 			markStep(&step, "not_possible", out.JournalIssue)
+		}
+		ctx := answerContext{run, step.Engine, b.HeadNumber.String(), strings.ToLower(b.HeadHash.Hex()), step.ValsetDigest}
+		out.Contexts[ordinal] = ctx
+		for i, raw := range b.Env {
+			c, err := inputlog.DecodeEnv(raw)
+			if err != nil || (c.Kind != inputlog.EnvValidateProposal && c.Kind != inputlog.EnvIsBadBlock) {
+				markStep(&step, "partial", "application_answer")
+				continue
+			}
+			if len(out.Answers) >= 100000 {
+				return out, errors.New("application answer limit exceeded")
+			}
+			source := AnswerSource{Ordinal: ordinal, File: step.File, Run: run, Engine: step.Engine, Step: step.Number, Call: i + 1, Kind: int(c.Kind), Key: strings.ToLower(c.Key.Hex())}
+			key := answerID(run, step.Engine, step.Number, i+1)
+			if _, ok := out.Answers[key]; ok {
+				out.JournalIssue = "duplicate_application_answer"
+				markStep(&step, "not_possible", out.JournalIssue)
+			}
+			out.Answers[key] = recordedAnswer{Source: source, Context: ctx}
 		}
 		out.Steps = append(out.Steps, step)
 		if row := status[n]; row != nil {

@@ -23,7 +23,7 @@ import (
 
 func TestProtocolChild(t *testing.T) {
 	mode := os.Args[len(os.Args)-1]
-	if !strings.HasPrefix(mode, "warmup_") && mode != "valid" && mode != "oversize" && mode != "bad_id" && mode != "stall" && mode != "core" && mode != "env_error" && mode != "bad_writer" && mode != "generic_error" {
+	if !strings.HasPrefix(mode, "answers_") && !strings.HasPrefix(mode, "warmup_") && mode != "valid" && mode != "oversize" && mode != "bad_id" && mode != "stall" && mode != "core" && mode != "env_error" && mode != "bad_writer" && mode != "generic_error" {
 		return
 	}
 	if mode == "core" {
@@ -47,12 +47,38 @@ func TestProtocolChild(t *testing.T) {
 	}
 	enc := json.NewEncoder(os.Stdout)
 	features := []string{}
+	if strings.HasPrefix(mode, "answers_") && mode != "answers_old" {
+		features = append(features, "context_answers_v1")
+	}
 	if strings.HasPrefix(mode, "warmup_bounded_") && mode != "warmup_bounded_old" {
 		features = append(features, "bounded_warmup_v1")
 	}
 	_ = enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": strings.Repeat("a", 40), "features": features})
 	if decoder.Decode(&request) != nil {
 		os.Exit(2)
+	}
+	if strings.HasPrefix(mode, "answers_") {
+		if request["answer_scope"] != "context" {
+			os.Exit(2)
+		}
+		source := map[string]any{"writer_run": "synthetic-source", "engine_run": uint64(18446744073709551615), "step": uint64(1), "call": 1, "kind": int(inputlog.EnvIsBadBlock), "key": "0x" + strings.Repeat("d", 64)}
+		if mode == "answers_bad_source" {
+			source["step"] = 999
+		}
+		for i := 1; i <= 2; i++ {
+			input := "timer"
+			if i == 1 {
+				input = "start"
+			}
+			var sources []any
+			if i == 2 || mode == "answers_reuse" {
+				sources = []any{source}
+			}
+			_ = enc.Encode(map[string]any{"type": "step", "id": 1, "writer_run": "synthetic-source", "engine_run": uint64(18446744073709551615), "step": i, "input": input, "out_digest": "0x" + strings.Repeat("b", 64), "match": true, "outputs": 0, "context_answers": mode != "answers_bad_flag", "answer_sources": sources})
+		}
+		_ = enc.Encode(map[string]any{"type": "done", "id": 1, "steps": 2, "mismatches": 0, "counterfactual": mode != "answers_bad_mode", "answer_scope": "context"})
+		_ = decoder.Decode(&request)
+		os.Exit(0)
 	}
 	if strings.HasPrefix(mode, "warmup_bounded_") {
 		if request["warmup_from_height"] != float64(1) || request["compare_from_height"] != float64(3) {

@@ -14,6 +14,8 @@ func TestSubmitRejectsScopeBeforeEnqueue(t *testing.T) {
 	tooDeep, negative := 10001, -1
 	valid := Request{Source: "registered", From: "1", To: "2", Mode: "closed"}
 	for _, r := range []Request{
+		{Source: "registered", From: "1", To: "2", Mode: "closed", AnswerScope: "context"},
+		{Source: "registered", From: "1", To: "2", Mode: "closed", AnswerScope: "unbounded"},
 		{Source: "registered", From: "1", To: "2", Mode: "closed", WarmupHeights: &negative},
 		{Source: "registered", From: "1", To: "2", Mode: "closed", WarmupHeights: &tooDeep},
 		{Source: "registered", From: "01", To: "2", Mode: "closed"},

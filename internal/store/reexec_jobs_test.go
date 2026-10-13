@@ -208,3 +208,38 @@ func TestReexecWarmupDepthPersistsAndMatchesLinkedRun(t *testing.T) {
 		t.Fatal("oversized prefix persisted")
 	}
 }
+
+func TestContextJobPolicyPersistsAndLinksOnlyCounterfactualResult(t *testing.T) {
+	s, _ := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	d := jobDataset(t, s)
+	request := testJob(d)
+	request.AnswerScope = "context"
+	j, err := s.EnqueueReexec(ctx, request)
+	if err != nil || j.AnswerScope != "context" {
+		t.Fatal(j, err)
+	}
+	claimed, err := s.ClaimReexecJob(ctx, "context-owner")
+	if err != nil || claimed.AnswerScope != "context" {
+		t.Fatal(claimed, err)
+	}
+	for _, r := range []reexec.Result{{Mode: "closed", AnswerScope: "context"}, {Mode: "counterfactual", AnswerScope: "step"}} {
+		run, err := s.BeginReexec(ctx, d, "journal", "1", "2", "private-chain", r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = s.LinkReexecJob(ctx, j.ID, "context-owner", run); !errors.Is(err, ErrReexecJobState) {
+			t.Fatal("incompatible policy linked", err)
+		}
+	}
+	run, err := s.BeginReexec(ctx, d, "journal", "1", "2", "private-chain", reexec.Result{Mode: "counterfactual", AnswerScope: "context"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = s.LinkReexecJob(ctx, j.ID, "context-owner", run); err != nil {
+		t.Fatal(err)
+	}
+}

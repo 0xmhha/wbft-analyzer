@@ -748,6 +748,18 @@ from exact mismatches. The original missing-start completeness issue is retained
 Prefix counts, approximate differences and original source pointers remain
 separate from selected-step counts. Older helpers are refused for this mode.
 
+Application answers default to their original source step. Explicit
+`--answer-scope context` permits another recorded step only within the same
+writer, engine, full head and validator context and call kind/argument key.
+The official helper must advertise `context_answers_v1`. Every reported source
+is checked against retained metadata and consumed once. Stored steps retain the
+original file, ordinal and one-based call position without response values.
+Conflicting or unrecorded answers stop execution; structured issues distinguish
+`env_ambiguous`, `env_source_mismatch`, `head_mismatch` and `answer_limit`.
+Context lookup always reports `counterfactual`, even with original inputs and
+matching outputs. It does not reconstruct unrecorded application execution or
+the reactions of other nodes. Missing-input omission is a separate policy.
+
 Bounds: 10000 active canonical heights, 100000 steps, one million journal
 records, a 256 MiB chain file, 64 KiB protocol lines, 64 MiB helper output and
 a 5 minute default deadline (`--timeout`, up to 30 minutes). Chain indices must
@@ -774,7 +786,7 @@ a private regular JSON file (0600, at most 64 KiB) containing 1–16 entries:
 
 ```json
 [{"id":"retained-node","dataset":1,"input":"journal-node",
-  "chain":"chain.rlp","timeout":"5m","allow_loss":false}]
+  "chain":"chain.rlp","timeout":"5m","allow_loss":false,"allow_context":false}]
 ```
 
 Paths are resolved relative to this file. An optional `helper` selects an
@@ -783,10 +795,14 @@ The configuration binds retained input, node, chain and helper fingerprints,
 deadline and allowed modes. A changed source fails closed. Each HTTP execution
 uses a verified private executable snapshot; clients cannot choose paths,
 commands or arguments. `allow_loss` explicitly permits the separately labelled
-counterfactual mode. It does not permit original reproduction claims.
+counterfactual input-loss mode. Independent `allow_context` permits context
+application lookup. Neither permits original reproduction claims.
 
 Under `/v1/networks/{net}/datasets/{dataset}`, `GET /reexec-sources` lists
-enabled source IDs, and `POST /reexec-jobs` accepts `source_id`, decimal-string
+enabled source IDs, allowed input modes and `answer_scopes`. Optional
+`answer_scope` defaults to `step`; `context` requires operator permission and
+forces the linked result to be counterfactual. Migration 21 persists this policy
+and checks result links against it. `POST /reexec-jobs` accepts `source_id`, decimal-string
 `from_height` and `to_height`, and `mode` (`closed` by default). The strict
 request limit is 4 KiB. Heights fit uint64, and the inclusive range is at most
 10000 heights. Optional integer `warmup_heights` defaults to 2, accepts 0 to
