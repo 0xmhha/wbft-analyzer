@@ -53,7 +53,7 @@ Run "wbft-analyzer <command> -h" for the flags of a command.
 var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
 	"serve":   runServe,
 	"ingest":  runIngest,
-	"follow":  notYet("follow"),
+	"follow":  runFollow,
 	"reindex": runReindex,
 	"export":  notYet("export"),
 }

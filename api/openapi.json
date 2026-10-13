@@ -3632,6 +3632,95 @@
         ],
         "type": "object"
       },
+      "StoreFollowBatch": {
+        "additionalProperties": false,
+        "properties": {
+          "from_index": {
+            "type": "string"
+          },
+          "headers_dataset": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "observations_dataset": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "to_index": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_index",
+          "headers_dataset",
+          "observations_dataset",
+          "to_index"
+        ],
+        "type": "object"
+      },
+      "StoreFollowCursor": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "next_index": {
+            "type": "string"
+          },
+          "parent_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dataset_id",
+          "next_index",
+          "parent_hash"
+        ],
+        "type": "object"
+      },
+      "StoreFollowState": {
+        "additionalProperties": false,
+        "properties": {
+          "captured_heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "cursor": {
+            "$ref": "#/components/schemas/StoreFollowCursor"
+          },
+          "last_commit_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "last_issue": {
+            "type": "string"
+          },
+          "latest_batches": {
+            "items": {
+              "$ref": "#/components/schemas/StoreFollowBatch"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "total_batches": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "captured_heights",
+          "cursor",
+          "last_commit_at",
+          "last_issue",
+          "latest_batches",
+          "status",
+          "total_batches"
+        ],
+        "type": "object"
+      },
       "StoreHeaderBounds": {
         "additionalProperties": false,
         "properties": {
@@ -5287,6 +5376,66 @@
           }
         },
         "summary": "Resolve an inspector source pointer only when network, file hash, node and original line match."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/follow": {
+      "get": {
+        "operationId": "getFollowState",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreFollowState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Durable native follow cursor and latest completed header/observation companions; no event completeness claim."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/inputs": {

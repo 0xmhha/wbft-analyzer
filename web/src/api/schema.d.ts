@@ -158,6 +158,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/follow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Durable native follow cursor and latest completed header/observation companions; no event completeness claim. */
+        get: operations["getFollowState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/inputs": {
         parameters: {
             query?: never;
@@ -1643,6 +1660,32 @@ export interface components {
             /** Format: date-time */
             to_t: string | null;
         };
+        StoreFollowBatch: {
+            from_index: string;
+            /** Format: int64 */
+            headers_dataset: number;
+            /** Format: int64 */
+            observations_dataset: number;
+            to_index: string;
+        };
+        StoreFollowCursor: {
+            /** Format: int64 */
+            dataset_id: number;
+            next_index: string;
+            parent_hash: string;
+        };
+        StoreFollowState: {
+            /** Format: int64 */
+            captured_heights: number;
+            cursor: components["schemas"]["StoreFollowCursor"];
+            /** Format: date-time */
+            last_commit_at: string;
+            last_issue: string;
+            latest_batches: components["schemas"]["StoreFollowBatch"][];
+            status: string;
+            /** Format: int64 */
+            total_batches: number;
+        };
         StoreHeaderBounds: {
             /** Format: int64 */
             bytes: number;
@@ -2347,6 +2390,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreLogEvidence"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getFollowState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreFollowState"];
                 };
             };
             /** @description the request failed */

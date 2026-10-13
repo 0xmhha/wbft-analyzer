@@ -37,7 +37,7 @@ type Client struct {
 }
 
 func New(url string, rate float64) (*Client, error) {
-	if rate <= 0 || rate > 5 {
+	if !(rate > 0 && rate <= 5) {
 		return nil, errors.New("RPC rate must be in (0, 5]")
 	}
 	return &Client{URL: url, HTTP: &http.Client{Timeout: 30 * time.Second}, Interval: time.Duration(float64(time.Second) / rate)}, nil

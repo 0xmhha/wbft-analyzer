@@ -67,13 +67,20 @@ func (s *Store) beginDataset(ctx context.Context, k NetworkKey, name, kind strin
 	if err != nil {
 		return Dataset{}, nil, err
 	}
-	conn, err := s.pool.Acquire(ctx)
+	// Dataset locks use dedicated sessions, leaving the write pool available
+	// when multiple follow streams import batches concurrently.
+	conn, err := pgx.ConnectConfig(ctx, s.pool.Config().ConnConfig.Copy())
 	if err != nil {
 		return Dataset{}, nil, err
 	}
+	releaseConn := func() {
+		cleanup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = conn.Close(cleanup)
+	}
 	var locked bool
 	if err = conn.QueryRow(ctx, `SELECT pg_try_advisory_lock(hashtextextended('wbft-analyzer:range:'||current_schema()||':'||$1::bigint::text,0))`, id).Scan(&locked); err != nil || !locked {
-		conn.Release()
+		releaseConn()
 		if err == nil {
 			err = errors.New("dataset is already importing")
 		}
@@ -85,9 +92,9 @@ func (s *Store) beginDataset(ctx context.Context, k NetworkKey, name, kind strin
 			cleanup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			if _, err := conn.Exec(cleanup, `SELECT pg_advisory_unlock(hashtextextended('wbft-analyzer:range:'||current_schema()||':'||$1::bigint::text,0))`, id); err != nil {
-				_ = conn.Conn().Close(cleanup)
+				_ = conn.Close(cleanup)
 			}
-			conn.Release()
+			releaseConn()
 		})
 	}
 	rows, err := conn.Query(ctx, `SELECT `+datasetColumns+` FROM datasets WHERE id=$1`, id)

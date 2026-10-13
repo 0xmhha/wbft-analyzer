@@ -20,7 +20,7 @@ func TestRun(t *testing.T) {
 		{[]string{"help"}, exitOK, "Commands:"},
 		{[]string{"version"}, exitOK, "wbft-analyzer dev"},
 		{[]string{"nope"}, exitUsage, `unknown command "nope"`},
-		{[]string{"follow"}, exitUnavailable, "follow: not available yet"},
+		{[]string{"follow"}, exitUsage, "Usage of follow"},
 		{[]string{"serve", "--db", "x", "--listen", "0.0.0.0:8080"}, exitUsage, "needs --auth token"},
 		{[]string{"serve", "--db", "x", "--listen", ":8080"}, exitUsage, "needs --auth token"},
 		{[]string{"serve", "--db", "x", "--auth", "token"}, exitUsage, "of 32 characters or more"},
