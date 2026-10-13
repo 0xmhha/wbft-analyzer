@@ -1265,6 +1265,28 @@ export interface components {
             reason: string;
             source: components["schemas"]["MessagesSource"];
         };
+        MessagesLegacyAssociationProof: {
+            address: string;
+            anchors: components["schemas"]["MessagesLegacyHeadAnchor"][];
+            from_t: string;
+            /** Format: int64 */
+            head_anchors: number;
+            input: string;
+            native_input: string;
+            native_sha256: string;
+            node: string;
+            /** Format: int64 */
+            records: number;
+            sha256: string;
+            status: string;
+            to_t: string;
+        };
+        MessagesLegacyHeadAnchor: {
+            hash: string;
+            height: string;
+            legacy: components["schemas"]["MessagesSource"];
+            native: components["schemas"]["MessagesSource"];
+        };
         MessagesPair: {
             at: string;
             candidates: components["schemas"]["MessagesSource"][];
@@ -1366,6 +1388,7 @@ export interface components {
             round: string;
         };
         MessagesSource: {
+            association?: string;
             clock_source?: string;
             /** Format: int64 */
             dataset_id?: number;
@@ -2219,6 +2242,7 @@ export interface components {
             from_t: string | null;
             /** Format: int64 */
             issues: number;
+            legacy_associations?: components["schemas"]["MessagesLegacyAssociationProof"][];
             /** Format: int64 */
             pairs: number;
             /** Format: int64 */

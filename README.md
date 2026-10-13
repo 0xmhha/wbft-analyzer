@@ -884,3 +884,27 @@ objects verify; the original shared or source-database objects are preserved.
 Interrupted adoption retains its candidate namespace and resumes with the same
 root. Other imports and deletion wait for adoption to finish. Paths and ownership
 identities are not exposed by the API.
+
+
+### Declared legacy execution scopes
+
+A run manifest may add `legacy_associations` entries binding an original legacy
+log input and native event input by their exact SHA256 fingerprints, the legacy
+logger's own `address`, and explicit `from_t`/`to_t` bounds (at most 24 hours).
+Reindexing a journal with this event companion still requires the existing
+native stepped outcome and clock proof. Legacy records are selected only inside
+the declared scope after logger identity and at least two unique matching head
+number/hash witnesses corroborate it. Conflicting or repeated head witnesses,
+changed inputs, copied declarations and insufficient evidence refuse reindexing.
+
+The separate `declared_head_anchors` grade is visible in the index and legacy
+source pointers. This corroborates an operator declaration; it is not native
+step identity or wire receipt proof. Original input/run namespaces are preserved,
+and excluded message observations remain source-linked diagnostics. All head
+witnesses are checked; the index previews at most 16 original head pointers per
+scope. Legacy message tuples remain weak `key` evidence. Native-to-log values
+measure propagation to processing, while log broadcasts paired with journal
+receipts use `broadcast_to_receipt`; neither is promoted to link latency. A
+missing or incompatible clock model retains raw trends only.
+
+Legacy extra-seal processing entries can supply weak `key` receive evidence for PREPARE and COMMIT. Their recorded processing time is not transport arrival time. Repeated copies remain ambiguous; native extra-seal entries are not counted again alongside message outcomes.
