@@ -43,6 +43,7 @@ func LinkedVersion() string {
 }
 
 type Helper struct {
+	AnswerScope   string
 	WarmupHeights uint64
 	ExpectedSHA   string
 	OmitMissing   bool
@@ -52,36 +53,46 @@ type Helper struct {
 }
 
 type reply struct {
-	Features         []string `json:"features"`
-	Approximate      bool     `json:"approximate"`
-	Warmup           bool     `json:"warmup"`
-	ApproximateSteps int64    `json:"approximate_steps"`
-	WarmupSteps      int64    `json:"warmup_steps"`
-	Writer           string   `json:"writer_run"`
-	Omitted          bool     `json:"omitted"`
-	Counterfactual   bool     `json:"counterfactual"`
-	Type             string   `json:"type"`
-	ID               uint64   `json:"id"`
-	Protocol         string   `json:"protocol"`
-	Impl             string   `json:"impl"`
-	Version          string   `json:"version"`
-	Engine           uint64   `json:"engine_run"`
-	Step             uint64   `json:"step"`
-	Input            string   `json:"input"`
-	Digest           string   `json:"out_digest"`
-	Match            *bool    `json:"match"`
-	Outputs          int64    `json:"outputs"`
-	Steps            int64    `json:"steps"`
-	Mismatches       int64    `json:"mismatches"`
-	Code             string   `json:"code"`
+	AnswerScope      string               `json:"answer_scope"`
+	ContextAnswers   bool                 `json:"context_answers"`
+	AnswerSources    []helperAnswerSource `json:"answer_sources"`
+	Features         []string             `json:"features"`
+	Approximate      bool                 `json:"approximate"`
+	Warmup           bool                 `json:"warmup"`
+	ApproximateSteps int64                `json:"approximate_steps"`
+	WarmupSteps      int64                `json:"warmup_steps"`
+	Writer           string               `json:"writer_run"`
+	Omitted          bool                 `json:"omitted"`
+	Counterfactual   bool                 `json:"counterfactual"`
+	Type             string               `json:"type"`
+	ID               uint64               `json:"id"`
+	Protocol         string               `json:"protocol"`
+	Impl             string               `json:"impl"`
+	Version          string               `json:"version"`
+	Engine           uint64               `json:"engine_run"`
+	Step             uint64               `json:"step"`
+	Input            string               `json:"input"`
+	Digest           string               `json:"out_digest"`
+	Match            *bool                `json:"match"`
+	Outputs          int64                `json:"outputs"`
+	Steps            int64                `json:"steps"`
+	Mismatches       int64                `json:"mismatches"`
+	Code             string               `json:"code"`
 }
 
 // Execute bounds time, line size, total output and emitted steps. Only source
 // coordinates, known classifications and digests cross the result boundary.
 func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res Result, err error) {
-	res = Result{WarmupHeights: int(h.WarmupHeights), Mode: "closed", Version: Version, Status: "failed", HelperVersion: "unknown", BinaryVersion: "unknown", VersionStatus: "unknown", ChainSHA: p.ChainSHA, SourceSHA: p.Input.Summary.SHA256, SourceVersions: p.SourceVersions, Heights: p.Heights}
-	if h.OmitMissing {
+	scope := h.AnswerScope
+	if scope == "" {
+		scope = "step"
+	}
+	res = Result{OmitMissing: h.OmitMissing, AnswerScope: scope, WarmupHeights: int(h.WarmupHeights), Mode: "closed", Version: Version, Status: "failed", HelperVersion: "unknown", BinaryVersion: "unknown", VersionStatus: "unknown", ChainSHA: p.ChainSHA, SourceSHA: p.Input.Summary.SHA256, SourceVersions: p.SourceVersions, Heights: p.Heights}
+	if h.OmitMissing || scope == "context" {
 		res.Mode = "counterfactual"
+	}
+	if scope != "step" && scope != "context" {
+		return res, ErrHelper
 	}
 	for _, s := range p.Steps {
 		if hasIssue(s.Issues, "head_identity") {
@@ -175,12 +186,19 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 	} else if res.HelperVersion != "unknown" && sameVersion(res.BinaryVersion, res.HelperVersion) && len(p.SourceVersions) > 0 && p.SourceVersions[0] != "unknown" {
 		res.VersionStatus = "different"
 	}
+	if scope == "context" && !hasIssue(hello.Features, "context_answers_v1") {
+		res.Issue = "answer_scope_unsupported"
+		return res, ErrHelper
+	}
 	execution := planExecution(p, h.WarmupHeights)
 	if execution.bounded && !hasIssue(hello.Features, "bounded_warmup_v1") {
 		res.Issue = "warmup_unsupported"
 		return res, ErrHelper
 	}
 	request := map[string]any{"type": "replay", "id": uint64(1), "journal": p.Input.Input.Path, "chain": p.Chain, "from_step": 0, "to_step": 0, "with_vars": false, "omit_missing_captures": h.OmitMissing}
+	if scope == "context" {
+		request["answer_scope"] = "context"
+	}
 	if execution.bounded {
 		request["warmup_from_height"] = execution.from
 		request["compare_from_height"] = execution.compare
@@ -211,6 +229,7 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 	index := 0
 	var rawBad, rawApproximate, rawWarmup int64
 	selectedApproximate := false
+	usedAnswers := map[string]bool{}
 	for {
 		r, e := next()
 		if e != nil {
@@ -227,6 +246,9 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			}
 			if r.Code == "input_gap" {
 				res.Issue = "input_gap"
+			}
+			if hasIssue([]string{"env_ambiguous", "env_source_mismatch", "head_mismatch", "answer_limit"}, r.Code) {
+				res.Issue = r.Code
 			}
 			if r.Code == "warmup_unavailable" {
 				res.Issue = "warmup_unavailable"
@@ -307,6 +329,15 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			if *r.Match && r.Digest != s.Recorded {
 				return res, ErrHelper
 			}
+			s.ContextAnswers = r.ContextAnswers
+			if r.ContextAnswers != (scope == "context") {
+				return res, ErrHelper
+			}
+			sources, e := verifiedAnswerSources(p, s, r.AnswerSources, usedAnswers)
+			if e != nil || (scope != "context" && len(sources) != 0) {
+				return res, ErrHelper
+			}
+			s.AnswerSources = sources
 			s.Omitted = r.Omitted
 			if r.Omitted != (h.OmitMissing && s.Capture != "" && onlyMissingCapture(s.Issues)) {
 				return res, ErrHelper
@@ -342,7 +373,7 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 				return res, e
 			}
 		case "done":
-			if h.OmitMissing != r.Counterfactual {
+			if (h.OmitMissing || scope == "context") != r.Counterfactual || scope == "context" && r.AnswerScope != "context" || scope == "step" && r.AnswerScope != "" && r.AnswerScope != "step" {
 				return res, ErrHelper
 			}
 			if execution.bounded && (r.ApproximateSteps != rawApproximate || r.WarmupSteps != rawWarmup) {
@@ -387,7 +418,7 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			if res.Total == 0 {
 				res.Status = "not_possible"
 				res.Issue = "no_replayed_steps"
-			} else if h.OmitMissing {
+			} else if h.OmitMissing || scope == "context" {
 				res.Status = "counterfactual"
 			} else if selectedApproximate {
 				res.Status = "partial"
@@ -425,6 +456,7 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 			return err
 		}
 		var r struct {
+			AnswerScope string `json:"answer_scope"`
 			Type        string `json:"type"`
 			Protocol    string `json:"protocol"`
 			ID          uint64 `json:"id"`
@@ -442,13 +474,13 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 			if r.Protocol != Protocol {
 				return ErrHelper
 			}
-			if err := enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": LinkedVersion(), "features": []string{"bounded_warmup_v1"}}); err != nil {
+			if err := enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": LinkedVersion(), "features": []string{"bounded_warmup_v1", "context_answers_v1"}}); err != nil {
 				return err
 			}
 		case "bye":
 			return nil
 		case "replay":
-			if err := serveReplay(ctx, r.Journal, r.Chain, r.ID, r.OmitMissing, r.WarmupFrom, r.CompareFrom, enc); err != nil {
+			if err := serveReplay(ctx, r.Journal, r.Chain, r.ID, r.OmitMissing, r.WarmupFrom, r.CompareFrom, r.AnswerScope, enc); err != nil {
 				return err
 			}
 		default:

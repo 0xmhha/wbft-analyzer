@@ -2948,6 +2948,49 @@
         ],
         "type": "object"
       },
+      "ReexecAnswerSource": {
+        "additionalProperties": false,
+        "properties": {
+          "call": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "engine_run": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "step": {
+            "type": "string"
+          },
+          "writer_run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "call",
+          "engine_run",
+          "file",
+          "key",
+          "kind",
+          "ordinal",
+          "step",
+          "writer_run"
+        ],
+        "type": "object"
+      },
       "ReexecHeight": {
         "additionalProperties": false,
         "properties": {
@@ -3032,6 +3075,9 @@
       "ReexecResult": {
         "additionalProperties": false,
         "properties": {
+          "answer_scope": {
+            "type": "string"
+          },
           "binary_version": {
             "type": "string"
           },
@@ -3074,6 +3120,9 @@
           "not_comparable": {
             "format": "int64",
             "type": "integer"
+          },
+          "omit_missing_captures": {
+            "type": "boolean"
           },
           "source_sha256": {
             "type": "string"
@@ -3157,6 +3206,12 @@
       "ReexecStep": {
         "additionalProperties": false,
         "properties": {
+          "answer_sources": {
+            "items": {
+              "$ref": "#/components/schemas/ReexecAnswerSource"
+            },
+            "type": "array"
+          },
           "approximate": {
             "type": "boolean"
           },
@@ -3168,6 +3223,9 @@
           },
           "completeness": {
             "type": "string"
+          },
+          "context_answers": {
+            "type": "boolean"
           },
           "engine_run": {
             "type": "string"
@@ -3568,6 +3626,13 @@
       "ReplayjobRequest": {
         "additionalProperties": false,
         "properties": {
+          "answer_scope": {
+            "enum": [
+              "step",
+              "context"
+            ],
+            "type": "string"
+          },
           "from_height": {
             "type": "string"
           },
@@ -3603,6 +3668,12 @@
       "ReplayjobSourceInfo": {
         "additionalProperties": false,
         "properties": {
+          "answer_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "id": {
             "type": "string"
           },
@@ -3617,6 +3688,7 @@
           }
         },
         "required": [
+          "answer_scopes",
           "id",
           "input_id",
           "modes"
@@ -4921,6 +4993,9 @@
       "StoreReexecJob": {
         "additionalProperties": false,
         "properties": {
+          "answer_scope": {
+            "type": "string"
+          },
           "created_at": {
             "format": "date-time",
             "type": "string"
@@ -4984,6 +5059,7 @@
           }
         },
         "required": [
+          "answer_scope",
           "created_at",
           "dataset_id",
           "finished_at",

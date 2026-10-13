@@ -15,6 +15,7 @@ var ErrReexecWorkerBusy = errors.New("replay worker is already active")
 var ErrReexecJobState = errors.New("replay job is not owned or already finished")
 
 type ReexecJob struct {
+	AnswerScope   string     `json:"answer_scope"`
 	WarmupHeights int        `json:"warmup_heights"`
 	ID            int64      `json:"id"`
 	Dataset       int64      `json:"dataset_id"`
@@ -32,14 +33,17 @@ type ReexecJob struct {
 	Finished      *time.Time `json:"finished_at"`
 }
 
-const jobColumns = `id,dataset_id,input_id,source_id,source_sha256,from_height::text,to_height::text,mode,warmup_heights,status,reexec_id,issue,created_at,started_at,finished_at`
+const jobColumns = `id,dataset_id,input_id,source_id,source_sha256,from_height::text,to_height::text,mode,warmup_heights,answer_scope,status,reexec_id,issue,created_at,started_at,finished_at`
 
 func scanJob(r pgx.Row) (ReexecJob, error) {
 	var j ReexecJob
-	err := r.Scan(&j.ID, &j.Dataset, &j.Input, &j.Source, &j.SourceSHA, &j.From, &j.To, &j.Mode, &j.WarmupHeights, &j.Status, &j.Run, &j.Issue, &j.Created, &j.Started, &j.Finished)
+	err := r.Scan(&j.ID, &j.Dataset, &j.Input, &j.Source, &j.SourceSHA, &j.From, &j.To, &j.Mode, &j.WarmupHeights, &j.AnswerScope, &j.Status, &j.Run, &j.Issue, &j.Created, &j.Started, &j.Finished)
 	return j, err
 }
 func (s *Store) EnqueueReexec(ctx context.Context, j ReexecJob) (ReexecJob, error) {
+	if j.AnswerScope == "" {
+		j.AnswerScope = "step"
+	}
 	var out ReexecJob
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext(current_schema()),1463969364)`); err != nil {
@@ -52,7 +56,7 @@ func (s *Store) EnqueueReexec(ctx context.Context, j ReexecJob) (ReexecJob, erro
 		if count >= MaxReexecJobs {
 			return ErrReexecQueueFull
 		}
-		row, err := scanJob(tx.QueryRow(ctx, `INSERT INTO reexec_jobs(dataset_id,input_id,source_id,source_sha256,from_height,to_height,mode,warmup_heights,status) VALUES($1,$2,$3,$4,$5::numeric,$6::numeric,$7,$8,'queued') RETURNING `+jobColumns, j.Dataset, j.Input, j.Source, j.SourceSHA, j.From, j.To, j.Mode, j.WarmupHeights))
+		row, err := scanJob(tx.QueryRow(ctx, `INSERT INTO reexec_jobs(dataset_id,input_id,source_id,source_sha256,from_height,to_height,mode,warmup_heights,answer_scope,status) VALUES($1,$2,$3,$4,$5::numeric,$6::numeric,$7,$8,$9,'queued') RETURNING `+jobColumns, j.Dataset, j.Input, j.Source, j.SourceSHA, j.From, j.To, j.Mode, j.WarmupHeights, j.AnswerScope))
 		out = row
 		return err
 	})
@@ -81,7 +85,7 @@ func (s *Store) ClaimReexecJob(ctx context.Context, owner string) (ReexecJob, er
 	return j, err
 }
 func (s *Store) LinkReexecJob(ctx context.Context, id int64, owner string, run int64) error {
-	tag, err := s.pool.Exec(ctx, `UPDATE reexec_jobs j SET reexec_id=$3 WHERE j.id=$1 AND j.owner=$2 AND j.status='running' AND j.reexec_id IS NULL AND EXISTS(SELECT 1 FROM reexec_runs r WHERE r.id=$3 AND r.dataset_id=j.dataset_id AND r.input_id=j.input_id AND r.from_height=j.from_height AND r.to_height=j.to_height AND r.summary->>'mode'=j.mode AND COALESCE((r.summary->>'warmup_heights')::integer,0)=j.warmup_heights AND r.status='running')`, id, owner, run)
+	tag, err := s.pool.Exec(ctx, `UPDATE reexec_jobs j SET reexec_id=$3 WHERE j.id=$1 AND j.owner=$2 AND j.status='running' AND j.reexec_id IS NULL AND EXISTS(SELECT 1 FROM reexec_runs r WHERE r.id=$3 AND r.dataset_id=j.dataset_id AND r.input_id=j.input_id AND r.from_height=j.from_height AND r.to_height=j.to_height AND r.summary->>'mode'=CASE WHEN j.answer_scope='context' THEN 'counterfactual' ELSE j.mode END AND COALESCE(NULLIF(r.summary->>'answer_scope',''),'step')=j.answer_scope AND COALESCE((r.summary->>'warmup_heights')::integer,0)=j.warmup_heights AND r.status='running')`, id, owner, run)
 	if err == nil && tag.RowsAffected() != 1 {
 		return ErrReexecJobState
 	}
