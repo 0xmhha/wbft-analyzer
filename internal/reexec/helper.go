@@ -50,6 +50,7 @@ type Helper struct {
 }
 
 type reply struct {
+	Writer         string `json:"writer_run"`
 	Omitted        bool   `json:"omitted"`
 	Counterfactual bool   `json:"counterfactual"`
 	Type           string `json:"type"`
@@ -183,6 +184,35 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			if r.Code == "input_gap" {
 				res.Issue = "input_gap"
 			}
+			if r.Writer != "" {
+				if index >= len(expected) {
+					return res, ErrHelper
+				}
+				s := expected[index]
+				if r.Writer != s.Run || strconv.FormatUint(r.Engine, 10) != s.Engine || strconv.FormatUint(r.Step, 10) != s.Number {
+					return res, ErrHelper
+				}
+				if _, included := selected[s.Height]; included {
+					s.Class = "not_comparable"
+					if r.Code == "env_exhausted" || r.Code == "input_gap" {
+						s.Class = r.Code
+					}
+					s.Issues = addIssue(s.Issues, res.Issue)
+					res.Total++
+					if r.Code == "env_exhausted" {
+						res.Mismatches++
+						if res.FirstMismatch == nil {
+							n := s.Ordinal
+							res.FirstMismatch = &n
+						}
+					} else {
+						res.NotComparable++
+					}
+					if e = yield(s); e != nil {
+						return res, e
+					}
+				}
+			}
 			return res, ErrHelper
 		case "step":
 			if index >= len(expected) || index >= MaxSteps || r.Match == nil || !digestPattern.MatchString(r.Digest) || r.Outputs < 0 || r.Outputs > 1000000 {
@@ -190,7 +220,7 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			}
 			s := expected[index]
 			index++
-			if strconv.FormatUint(r.Engine, 10) != s.Engine || strconv.FormatUint(r.Step, 10) != s.Number || r.Input != s.Input {
+			if r.Writer != "" && r.Writer != s.Run || strconv.FormatUint(r.Engine, 10) != s.Engine || strconv.FormatUint(r.Step, 10) != s.Number || r.Input != s.Input {
 				return res, ErrHelper
 			}
 			if !*r.Match {

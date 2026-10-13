@@ -92,6 +92,9 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 			if !logs.Identifier(b.Run) {
 				return out, errors.New("invalid journal writer run")
 			}
+			if b.Run != run {
+				coreFingerprint = ""
+			}
 			run = b.Run
 			versions[safeVersion(b.Commit)] = true
 			cfg, _ := json.Marshal(b.Core)
