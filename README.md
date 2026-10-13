@@ -569,8 +569,8 @@ aggregated with the pinned public WBFT definition; mismatched fields remain
 visible. `source=local`, `source=header` and gap records stay distinct. Header-only
 records cannot claim local message arrivals. None of these records establishes
 complete native event coverage or send absence, including node sign-floor
-metadata. These RPC claims do not replace canonical header facts or automatically
-bind header copies to the canonical header overlay.
+metadata. These RPC claims do not replace canonical header facts. Explicit structural
+binding to independently imported canonical headers is described below.
 
 Migration 13 keeps observations separate from event/journal datasets. Imports
 are atomic and immutable; retrying a complete identical source skips it, while
@@ -591,3 +591,49 @@ and 32 MiB of response envelopes per collection. Duplicate JSON keys, duplicate
 requests, malformed identities and delay aggregates outside int64 are refused.
 Live follow, canonical/header comparison and actual takeover sign-floor acceptance
 remain separate work.
+
+
+## Canonical observation bindings
+
+After importing independent headers (including the preceding parent and following
+carrier when available), explicitly build structural metadata bindings:
+
+```sh
+wbft-analyzer reindex observations --db "$DSN" --dataset "$OBSERVATIONS"
+```
+
+Migration 14 links full decimal RPC heights to unique canonical facts without
+using their low64 indices as identity. The projection compares captured node
+heads, node copies and participation records with canonical hash/parent/child,
+governing validator ordering, proposer policy, rounds and seal indices. Missing
+headers, source gaps and absent child proof stay unknown; conflicting hashes,
+rounds or validator indices remain different. A supplied null seal in an
+available copy means no seal of that phase, while an unavailable reply means the
+copy is unknown. Own-copy round never supplies a missing network decision round.
+Matched means structural metadata consistency, not aggregate signature verification.
+
+Only structurally matched copies enter the explicitly scoped header overlay,
+marked `rpc_observation_structural`. Source or canonical dependency changes stale
+the projection and its copy consumers (409), including header views and missing
+classification. Explicit rebuild replaces only this projection's own copies;
+failed rebuilds preserve the previous index, rows and copies atomically. GETs do
+not reindex. Captured source claims remain immutable and visible in their own API.
+
+`.../observations/headers/index` returns stored scope/counts and independent
+canonical validator totals. `.../observations/headers?from=1&to=56` supports
+`kind=head|copy|participation`, `status=matched|different|unknown`, `limit` and
+snapshot/filter-bound cursors. Head claims and replies without a positioned full
+height remain visible independently of range filtering. Each detail retains
+request/result-row pointers, canonical full number and index, parent/child proof,
+recorded/expected fields and their required/optional status. The node page opens
+an exact canonical index and optional bound node copy in the header view.
+
+Canonical proposer opportunities count rounds through the child-proved decision.
+RPC summaries can additionally count higher rounds entered by a particular node;
+this definition difference stays visible. Canonical expectations include every
+resolvable requested non-gap height, even when the RPC row disagrees, so the
+comparison never hides discrepancies by excluding them from the denominator.
+Local delay/evidence counters cannot be independently reconstructed from headers.
+Bindings are bounded to 4096 rows and 6144 canonical dependencies; overflow is
+refused. These bindings remain metadata analysis and do not establish complete
+event capture or historical send absence.

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -95,6 +96,11 @@ func (s *Server) headers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	rows, err := s.Store.HeaderRows(r.Context(), n.ID, strconv.FormatUint(a, 10), strconv.FormatUint(b, 10), d, node)
+	if errors.Is(err, store.ErrObservationHeaderIndex) {
+		writeError(w, 409, err.Error())
+		return
+	}
+
 	if err != nil {
 		s.fail(w, r, err)
 		return

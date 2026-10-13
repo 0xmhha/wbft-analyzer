@@ -11,13 +11,13 @@ import { Overview } from "./views/Overview";
 import { Trends } from "./views/Trends";
 import { Verdicts } from "./views/Verdicts";
 
-type Route = { view: "overview" } | { view: "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency" | "missing" | "nodes"; net: number; focus?: EventFocus; sourceError?:string };
+type Route = { view: "overview" } | { view: "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency" | "missing" | "nodes"; net: number; focus?: EventFocus; headerFocus?:{index:string;dataset:number;node:string}; sourceError?:string };
 
 /** Reads the route from the hash: #/, #/networks/N/verdicts, #/networks/N/trends. */
 export function parseRoute(hash: string): Route {
   const [path, query] = hash.split("?");
   const m = /^#\/networks\/(\d+)\/(verdicts|trends|headers|events|messages|message-latency|missing|nodes)$/.exec(path || "");
-  if (m && m[1] && m[2] && Number.isSafeInteger(Number(m[1])) && Number(m[1]) > 0) return { view: m[2] as "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency" | "missing" | "nodes", net: Number(m[1]), ...(m[2] === "events" ? eventFocus(query || "") : {}) };
+  if (m && m[1] && m[2] && Number.isSafeInteger(Number(m[1])) && Number(m[1]) > 0) return { view: m[2] as "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency" | "missing" | "nodes", net: Number(m[1]), ...(m[2] === "events" ? eventFocus(query || "") : m[2] === "headers" ? headerEvidenceFocus(query||"") : {}) };
   return { view: "overview" };
 }
 
@@ -61,7 +61,7 @@ export function App() {
  {route.view === "nodes" && <Nodes key={route.net} net={route.net} onAuth={onAuth} />}
  {route.view === "missing" && <Missing key={route.net} net={route.net} onAuth={onAuth} />}
  {route.view === "messages" && <Messages key={route.net} net={route.net} onAuth={onAuth} />}
-        {route.view === "headers" && <Headers net={route.net} onAuth={onAuth} />}
+        {route.view === "headers" && <Headers key={`${route.net}:${JSON.stringify(route.headerFocus)}`} net={route.net} onAuth={onAuth} focus={route.headerFocus} sourceError={route.sourceError} />}
         {route.view === "trends" && <Trends net={route.net} onAuth={onAuth} />}
       </main>
     </>
@@ -86,4 +86,15 @@ function TokenForm({ onToken }: { onToken: (t: string) => void }) {
       </button>
     </div>
   );
+}
+
+export function headerEvidenceFocus(query:string):{headerFocus?:{index:string;dataset:number;node:string};sourceError?:string} {
+ if(!query)return {};
+ const p=new URLSearchParams(query);const fail={sourceError:"Invalid canonical header evidence link."};
+ if([...p.keys()].some(k=>!["index","dataset","node"].includes(k)||p.getAll(k).length!==1))return fail;
+ const index=p.get("index")||"",dataset=p.get("dataset"),node=p.get("node")||"";
+ if(!/^(0|[1-9][0-9]{0,19})$/.test(index)||BigInt(index)>18446744073709551615n)return fail;
+ const id=dataset===null?0:Number(dataset);
+ if(dataset!==null&&(!/^[1-9][0-9]*$/.test(dataset)||!Number.isSafeInteger(id)||!node)||dataset===null&&node)return fail;
+ return {headerFocus:{index,dataset:id,node}};
 }

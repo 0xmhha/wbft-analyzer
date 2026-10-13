@@ -379,6 +379,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/observations/headers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Canonical full-number/hash/parent/validator comparisons with original RPC pointers; no signature or event-completeness claim. */
+        get: operations["listObservationHeaderBindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/observations/headers/index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stored structural metadata bindings and independent canonical totals; source/header changes require explicit reindex. */
+        get: operations["getObservationHeaderIndex"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/observations/participation": {
         parameters: {
             query?: never;
@@ -1274,6 +1308,37 @@ export interface components {
             node: string;
             requirements: string[];
         };
+        ObservationBinding: {
+            /** Format: int64 */
+            call_ordinal: number;
+            checks: components["schemas"]["ObservationCheck"][];
+            copy: components["schemas"]["HeadersCopy"] | null;
+            hash: string;
+            height: string;
+            kind: string;
+            /** Format: int64 */
+            own_round: number | null;
+            proof: components["schemas"]["ObservationProof"] | null;
+            /** Format: int64 */
+            source_ordinal: number;
+            status: string;
+        };
+        ObservationCheck: {
+            /** @description a JSON value admitted by the source or report reader */
+            expected: unknown;
+            field: string;
+            /** @description a JSON value admitted by the source or report reader */
+            recorded: unknown;
+            required: boolean;
+            status: string;
+        };
+        ObservationHeaderPage: {
+            index: components["schemas"]["StoreObservationHeaderIndex"];
+            next: string | null;
+            rows: components["schemas"]["ObservationBinding"][];
+            /** Format: int64 */
+            total: number;
+        };
         ObservationList: {
             observations: components["schemas"]["Observation"][];
         };
@@ -1283,6 +1348,45 @@ export interface components {
             snapshot: string;
             /** Format: int64 */
             total: number;
+        };
+        ObservationProof: {
+            child_hash: string;
+            child_index: string;
+            epoch: string;
+            hash: string;
+            index: string;
+            last_proposer: string;
+            /** Format: int64 */
+            network_round: number | null;
+            number: string;
+            parent_hash: string;
+            policy: string;
+            validators: string[];
+        };
+        ObservationSummary: {
+            checks: components["schemas"]["ObservationCheck"][];
+            /** Format: int64 */
+            covered: number;
+            definitions: string[];
+            /** Format: int64 */
+            requested: number;
+            status: string;
+            validators: components["schemas"]["ObservationTotals"][];
+        };
+        ObservationTotals: {
+            /** Format: int64 */
+            heights: number;
+            /** Format: int64 */
+            missed_rounds: number;
+            /** Format: int64 */
+            previous_committed: number;
+            /** Format: int64 */
+            previous_prepared: number;
+            /** Format: int64 */
+            proposed: number;
+            /** Format: int64 */
+            proposer_rounds: number;
+            validator: string;
         };
         ObserveCall: {
             /** @description a JSON value admitted by the source or report reader */
@@ -1648,6 +1752,23 @@ export interface components {
             source_kind: string;
             source_sha256: string;
             to: string;
+        };
+        StoreObservationHeaderIndex: {
+            /** Format: int64 */
+            bound_copies: number;
+            counts: {
+                [key: string]: number;
+            };
+            /** Format: int64 */
+            dataset_id: number;
+            from: string;
+            proof_level: string;
+            /** Format: int64 */
+            rows: number;
+            snapshot: string;
+            summary: components["schemas"]["ObservationSummary"];
+            to: string;
+            version: string;
         };
         StoreObservationImprovement: {
             name: string;
@@ -2955,6 +3076,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ObserveCall"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listObservationHeaderBindings: {
+        parameters: {
+            query: {
+                /** @description first full decimal height, not a low64 index */
+                from: string;
+                /** @description last full decimal height, at most 1024 heights */
+                to: string;
+                /** @description page size 1..1000 */
+                limit?: number;
+                /** @description immutable capture and range-bound cursor */
+                cursor?: string;
+                /** @description head, copy or participation */
+                kind?: string;
+                /** @description matched, different or unknown */
+                status?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservationHeaderPage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getObservationHeaderIndex: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreObservationHeaderIndex"];
                 };
             };
             /** @description the request failed */

@@ -74,6 +74,8 @@ capture() {
  get "/networks/$observation_net/datasets/$observation_id/observations" observation-capture
  get "/networks/$observation_net/datasets/$observation_id/observations/participation?from=1&to=2&limit=1000" observation-participation
  get "/networks/$observation_net/datasets/$observation_id/observations/calls/5" observation-copy-source
+ get "/networks/$observation_net/datasets/$observation_id/observations/headers/index" observation-binding-index
+ get "/networks/$observation_net/datasets/$observation_id/observations/headers?from=1&to=2&limit=1000" observation-bindings
 	header_net=$(jq -r --arg genesis "$(jq -r .hash "$root/internal/source/headers/testdata/0.json")" '.networks[] | select(.chain_id == "8283" and .genesis_hash == $genesis) | .id' "$dir/networks.json")
 	test -n "$header_net"
 	get "/networks/$header_net/datasets" header-datasets
@@ -190,6 +192,8 @@ Path(sys.argv[2]).write_text(json.dumps(base)+'\n')
 PYLOG
 "$bin" ingest reports --db "$src" "$work/log-report.json" >"$out/log-report.log"
 "$bin" ingest observe --db "$src" --name synthetic-observation-dump --archive "$root/internal/source/observe/testdata/capture.json" >"$out/observation-ingest.log"
+observation_dataset_id=$(jq -r .dataset_id "$out/observation-ingest.log")
+"$bin" reindex observations --db "$src" --dataset "$observation_dataset_id" >"$out/observation-bindings.log"
 capture 18091 "$out/source"
 stop
 
