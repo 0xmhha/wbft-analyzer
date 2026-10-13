@@ -345,6 +345,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/observations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Native RPC node metadata, request availability and reported versus recomputed participation summary; never event completeness evidence. */
+        get: operations["getObservationCapture"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/observations/calls/{ordinal}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One normalized read-only RPC request/result with captured envelope hash; arbitrary properties and error messages are stripped. */
+        get: operations["getObservationCall"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/observations/participation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Original full-height participation claims, preserving local/header/gap source and immutable request pointers. */
+        get: operations["listObservedParticipation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/phases/samples": {
         parameters: {
             query?: never;
@@ -1226,6 +1277,31 @@ export interface components {
         ObservationList: {
             observations: components["schemas"]["Observation"][];
         };
+        ObservationPage: {
+            next: string | null;
+            rows: components["schemas"]["StoreObservationRow"][];
+            snapshot: string;
+            /** Format: int64 */
+            total: number;
+        };
+        ObserveCall: {
+            /** @description a JSON value admitted by the source or report reader */
+            data: unknown;
+            /** Format: int64 */
+            error_code?: number | null;
+            method: string;
+            /** Format: int64 */
+            ordinal: number;
+            params: string[];
+            sha256: string;
+            status: string;
+        };
+        ObserveComparison: {
+            computed: components["schemas"]["ParticipationSummary"] | null;
+            different_fields: string[];
+            reported: components["schemas"]["ParticipationSummary"] | null;
+            status: string;
+        };
         PairPage: {
             index: components["schemas"]["StorePairIndex"];
             next: string | null;
@@ -1242,6 +1318,43 @@ export interface components {
         PairTimeSeries: {
             index: components["schemas"]["StorePairIndex"];
             series: components["schemas"]["MessagesTimeSeries"];
+        };
+        ParticipationDelay: {
+            /** Format: int64 */
+            count: number;
+            /** Format: double */
+            meanMs: number;
+        };
+        ParticipationSummary: {
+            from: string;
+            /** Format: int64 */
+            gaps: number;
+            /** Format: int64 */
+            heights: number;
+            /** Format: int64 */
+            local: number;
+            to: string;
+            validators: components["schemas"]["ParticipationValidatorSummary"][];
+        };
+        ParticipationValidatorSummary: {
+            delays: {
+                [key: string]: components["schemas"]["ParticipationDelay"];
+            };
+            /** Format: int64 */
+            evidence: number;
+            /** Format: int64 */
+            heights: number;
+            /** Format: int64 */
+            late: number;
+            /** Format: int64 */
+            missed: number;
+            /** Format: int64 */
+            proposed: number;
+            /** Format: int64 */
+            proposerRounds: number;
+            /** Format: int64 */
+            sealed: number;
+            validator: string;
         };
         PhasePage: {
             next: string | null;
@@ -1513,6 +1626,72 @@ export interface components {
             snapshot: string;
             to: string;
             version: string;
+        };
+        StoreObservationCall: {
+            /** Format: int64 */
+            error_code?: number | null;
+            method: string;
+            /** Format: int64 */
+            ordinal: number;
+            params: string[];
+            sha256: string;
+            status: string;
+        };
+        StoreObservationCapture: {
+            calls: components["schemas"]["StoreObservationCall"][];
+            comparison: components["schemas"]["ObserveComparison"];
+            /** Format: int64 */
+            dataset_id: number;
+            from: string;
+            node: components["schemas"]["StoreObservationNode"];
+            snapshot: string;
+            source_kind: string;
+            source_sha256: string;
+            to: string;
+        };
+        StoreObservationImprovement: {
+            name: string;
+            source: string;
+        };
+        StoreObservationNode: {
+            address: string;
+            bls_public_key: string;
+            build: string;
+            chain_id: string;
+            genesis_hash: string;
+            head_hash: string;
+            head_number: string;
+            impl: string;
+            improvements: components["schemas"]["StoreObservationImprovement"][];
+            log_profile: string;
+            mode: string;
+            rule_activations: {
+                [key: string]: string;
+            };
+            rules_digest: string;
+            sign_floor: string;
+            validator: boolean;
+            version: string;
+        };
+        StoreObservationRow: {
+            /** Format: int64 */
+            call_ordinal: number;
+            /** @description a JSON value admitted by the source or report reader */
+            data: unknown;
+            gap: boolean;
+            hash: string;
+            height: string;
+            /** Format: int64 */
+            local_arrivals: number;
+            proposer: string;
+            round: string;
+            /** Format: int64 */
+            rounds: number;
+            source: string;
+            /** Format: int64 */
+            source_ordinal: number;
+            /** Format: int64 */
+            validators: number;
         };
         StorePairCoverage: {
             /** Format: int64 */
@@ -2688,6 +2867,146 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreMissingIndex"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getObservationCapture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreObservationCapture"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getObservationCall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description positive original request ordinal */
+                ordinal: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObserveCall"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listObservedParticipation: {
+        parameters: {
+            query: {
+                /** @description first full decimal height, not a low64 index */
+                from: string;
+                /** @description last full decimal height, at most 1024 heights */
+                to: string;
+                /** @description page size 1..1000 */
+                limit?: number;
+                /** @description immutable capture and range-bound cursor */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservationPage"];
                 };
             };
             /** @description the request failed */

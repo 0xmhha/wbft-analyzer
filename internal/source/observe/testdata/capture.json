@@ -1,0 +1,46 @@
+{
+  "format": "wbft-analyzer-observe/1",
+  "from": "1",
+  "to": "2",
+  "replies": [
+    {
+      "method": "wbft_nodeInfo",
+      "params": [],
+      "response": {
+        "jsonrpc": "2.0", "id": 1,
+        "result": {
+          "impl": "wbft", "address": "0x0000000000000000000000000000000000000001", "validator": true,
+          "chainId": 8, "genesisHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+          "head": {"number": "2", "hash": "0x3333333333333333333333333333333333333333333333333333333333333333"},
+          "mode": "embedded", "version": "v0.0.0-synthetic", "build": "cgo", "logProfile": "wbft@synthetic",
+          "improvements": [], "ruleActivations": {},
+          "rulesDigest": "0x4444444444444444444444444444444444444444444444444444444444444444"
+        }
+      }
+    },
+    {
+      "method": "wbft_participation", "params": ["1", "2"],
+      "response": {"jsonrpc": "2.0", "id": 1, "result": [
+        {"height": "1", "source": "header", "hash": "0x2222222222222222222222222222222222222222222222222222222222222222", "round": "0", "proposer": "0x0000000000000000000000000000000000000001",
+          "rounds": [{"round": "0", "proposer": "0x0000000000000000000000000000000000000001", "outcome": "committed"}],
+          "validators": [{"round": "0", "validator": "0x0000000000000000000000000000000000000001", "index": 0, "inPrevCommitted": true}]},
+        {"height": "2", "gap": true}
+      ]}
+    },
+    {
+      "method": "wbft_participationSummary", "params": ["1", "2"],
+      "response": {"jsonrpc": "2.0", "id": 1, "result": {
+        "from": "1", "to": "2", "heights": 1, "gaps": 1, "local": 0,
+        "validators": [{"validator": "0x0000000000000000000000000000000000000001", "heights": 1, "proposerRounds": 1, "proposed": 1, "missed": 0, "sealed": 1, "late": 0, "delays": {}, "evidence": 0}]
+      }}
+    },
+    {
+      "method": "wbft_configAt", "params": ["1"],
+      "response": {"jsonrpc": "2.0", "id": 1, "result": {"number": "1", "requestTimeoutMs": 2000, "blockPeriodSeconds": 1, "epochLength": 100, "proposerPolicy": 0, "maxRequestTimeoutSeconds": 0, "allowedFutureBlockTime": 0, "transitions": []}}
+    },
+    {
+      "method": "wbft_headerCopy", "params": ["0x2222222222222222222222222222222222222222222222222222222222222222"],
+      "response": {"jsonrpc": "2.0", "id": 1, "result": {"number": "1", "hash": "0x2222222222222222222222222222222222222222222222222222222222222222", "round": 0, "preparedSeal": null, "committedSeal": {"sealers": [0], "signature": "0x00"}, "path": "imported"}}
+    }
+  ]
+}

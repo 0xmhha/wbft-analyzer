@@ -117,3 +117,6 @@ article pre { overflow: auto; max-height: 24rem; }
 .missing-UNKNOWN { background:repeating-linear-gradient(45deg,#eee,#eee 3px,#fff 3px,#fff 6px); color:#333; }
 
 .missing-cell[aria-pressed="true"] { outline: 3px solid #7954c7; outline-offset: 2px; }
+
+.node-observations pre { overflow:auto; max-height:24rem; }
+.node-observations button[aria-pressed="true"] { outline:2px solid #7954c7; }

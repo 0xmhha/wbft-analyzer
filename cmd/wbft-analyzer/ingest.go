@@ -22,6 +22,7 @@ are evaluated and their webhooks told of state changes.
 Use "ingest range -h" for RPC/RLP header range imports.
 Use "ingest run -h" for node log datasets; events and node logs.
 Use "ingest messages -h" for journal/R-01 message metadata datasets.
+Use "ingest observe -h" for read-only native RPC observation datasets.
 
 Exit codes: 0 every file added or skipped, 65 a file refused or not a
 report, 69 the database is unavailable, 70 a store error.
@@ -34,6 +35,9 @@ const (
 )
 
 func runIngest(args []string, stdout, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "observe" {
+		return runObserve(args[1:], stdout, stderr)
+	}
 	if len(args) > 0 && args[0] == "messages" {
 		return runMessages(args[1:], stdout, stderr)
 	}
