@@ -42,6 +42,7 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/series", id: "getMessageTimeSeries", summary: "Raw-pair UTC series with exact full views and separate evidence dimensions; at most 2000 buckets/views.", params: pairParams(false), answers: map[int]any{200: PairTimeSeries{}}, handle: (*Server).pairSeries},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/source", id: "getMessageSource", summary: "One original metadata record by immutable input, file and ordinal; no payload bytes.", params: append(runParams(), param{name: "input", in: "query", doc: "original input ID", typ: "string", required: true}, param{name: "file", in: "query", doc: "original journal/frame file name", typ: "string", required: true}, param{name: "ordinal", in: "query", doc: "positive original source ordinal", typ: "integer", format: "int64", required: true}), answers: map[int]any{200: sourcemessages.Record{}}, handle: (*Server).messageSource},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/pairs", id: "listMessagePairs", summary: "Directional source-linked message pairs; matching uses the entire dataset before window filtering. Reindex required.", params: pairParams(true), answers: map[int]any{200: PairPage{}}, handle: (*Server).pairSamples},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/messages/summary", id: "summarizeMessagePairs", summary: "Raw-pair distributions separated by direction, matching strength, path and clock; coverage remains explicit.", params: pairParams(false), answers: map[int]any{200: PairSummary{}}, handle: (*Server).pairSummary},
@@ -140,7 +141,7 @@ func messageParams() []param {
 
 func pairParams(pages bool) []param {
 	out := append(runParams(), param{name: "from_t", in: "query", doc: "optional inclusive RFC3339 start; requires to_t, at most 24h", typ: "string", format: "date-time"}, param{name: "to_t", in: "query", doc: "optional inclusive RFC3339 end; requires from_t", typ: "string", format: "date-time"})
-	for _, name := range []string{"sender", "receiver", "node", "phase", "height", "round", "strength", "path", "clock", "status"} {
+	for _, name := range []string{"sender", "receiver", "node", "phase", "height", "round", "strength", "path", "clock", "status", "metric"} {
 		out = append(out, param{name: name, in: "query", doc: "exact message evidence filter", typ: "string"})
 	}
 	if pages {

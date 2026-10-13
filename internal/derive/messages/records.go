@@ -5,7 +5,7 @@ import (
 	"sort"
 )
 
-const Version = "wbft-message-pairing/3"
+const Version = "wbft-message-pairing/4"
 
 type Issue struct {
 	Source Source `json:"source"`
@@ -53,7 +53,7 @@ func ProjectRecords(records []source.Record) Projection {
 			p.Counts[reason]++
 			continue
 		}
-		x := Endpoint{Source: recordSource(r), Strength: "link", Phase: r.Phase, Key: r.Key, Height: r.Height, Round: r.Round, Digest: r.Digest, Write: r.Write, Cause: r.Cause}
+		x := Endpoint{Source: recordSource(r), Strength: "link", Phase: r.Phase, Key: r.Key, Height: r.Height, Round: r.Round, Digest: r.Digest, Write: r.Write, Cause: r.Cause, Author: r.Signer}
 		if r.Dir == "out" {
 			x.Role = "send"
 			x.Sender = r.Node

@@ -16,18 +16,21 @@ var ErrPairWindow = errors.New("message pair window exceeds 100000 rows; narrow 
 var ErrPairSource = errors.New("message pairing exceeds one million source records or projected endpoints")
 
 type PairIndex struct {
-	Version     string           `json:"version"`
-	Records     int64            `json:"records"`
-	Pairs       int64            `json:"pairs"`
-	Issues      int64            `json:"issues"`
-	Status      string           `json:"dataset_status"`
-	Diagnostics map[string]int64 `json:"diagnostics"`
-	From        *string          `json:"from_t"`
-	To          *string          `json:"to_t"`
-	Coverage    []PairCoverage   `json:"coverage"`
+	EventDataset int64                     `json:"event_dataset,omitempty"`
+	Association  *derived.AssociationProof `json:"association,omitempty"`
+	Version      string                    `json:"version"`
+	Records      int64                     `json:"records"`
+	Pairs        int64                     `json:"pairs"`
+	Issues       int64                     `json:"issues"`
+	Status       string                    `json:"dataset_status"`
+	Diagnostics  map[string]int64          `json:"diagnostics"`
+	From         *string                   `json:"from_t"`
+	To           *string                   `json:"to_t"`
+	Coverage     []PairCoverage            `json:"coverage"`
 }
 
 type PairCoverage struct {
+	DatasetID            int64  `json:"dataset_id,omitempty"`
 	Input                string `json:"input"`
 	Kind                 string `json:"kind"`
 	GapRecords           int64  `json:"gap_records"`
@@ -41,8 +44,14 @@ type PairCoverage struct {
 // projection atomically. Failed imports retain prefix coverage explicitly.
 // No time filter is applied before matching: retries outside a displayed
 // window must still prevent a false unique match inside it.
-func (s *Store) RebuildMessagePairs(ctx context.Context, id int64) (PairIndex, error) {
+func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ...int64) (PairIndex, error) {
 	out := PairIndex{Version: derived.Version, Diagnostics: map[string]int64{}, Coverage: []PairCoverage{}}
+	if len(companions) > 1 {
+		return out, errors.New("one explicit event companion is supported")
+	}
+	if len(companions) == 1 {
+		out.EventDataset = companions[0]
+	}
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		var kind string
 		var meta []byte
@@ -52,6 +61,9 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64) (PairIndex, e
 		}
 		if kind != "messages" && kind != "run" {
 			return errors.New("dataset has no message evidence")
+		}
+		if out.EventDataset != 0 && kind != "messages" {
+			return errors.New("event companion requires a journal/message dataset")
 		}
 		var raw struct {
 			Clock json.RawMessage `json:"clock"`
@@ -126,6 +138,7 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64) (PairIndex, e
 					}
 				}
 			}
+			c.DatasetID = id
 			out.Coverage = append(out.Coverage, c)
 		}
 		e = coverageRows.Err()
@@ -166,7 +179,7 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64) (PairIndex, e
 						rows.Close()
 						return e
 					}
-					if x.Type == "frame" || x.Type == "gap" {
+					if x.Type == "frame" || x.Type == "gap" || out.EventDataset != 0 {
 						records = append(records, x)
 					}
 				} else {
@@ -196,6 +209,97 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64) (PairIndex, e
 			return errors.New("message source count differs from dataset progress")
 		}
 		projection := derived.ProjectRecords(records)
+		if out.EventDataset != 0 {
+			var sourceKind, sourceStatus string
+			var sourceProgress, sourceNetwork, targetNetwork int64
+			var sourceMeta []byte
+			if e := tx.QueryRow(ctx, `SELECT kind,status,progress,network_id,metadata FROM datasets WHERE id=$1 FOR UPDATE`, out.EventDataset).Scan(&sourceKind, &sourceStatus, &sourceProgress, &sourceNetwork, &sourceMeta); e != nil {
+				return e
+			}
+			if e := tx.QueryRow(ctx, `SELECT network_id FROM datasets WHERE id=$1`, id).Scan(&targetNetwork); e != nil {
+				return e
+			}
+			if sourceKind != "run" || sourceStatus != "complete" || out.Status != "complete" || sourceNetwork != targetNetwork {
+				return errors.New("association requires completed sources on one network")
+			}
+			if progress+sourceProgress > 1000000 {
+				return ErrPairSource
+			}
+			events, e = readAssociationEvents(ctx, tx, out.EventDataset)
+			if e != nil {
+				return e
+			}
+			if int64(len(events)) != sourceProgress {
+				return errors.New("event source count differs from progress")
+			}
+			proof := derived.VerifyAssociation(records, events)
+			if proof.Status != "matched" {
+				return errors.New("journal/event association is not fully matched")
+			}
+			for i := range proof.Anchors {
+				for j := range proof.Anchors[i].Journal {
+					proof.Anchors[i].Journal[j].DatasetID = id
+				}
+				for j := range proof.Anchors[i].Events {
+					proof.Anchors[i].Events[j].DatasetID = out.EventDataset
+				}
+			}
+			out.Association = &proof
+			out.Records += sourceProgress
+			associatedRecords, associatedEvents := derived.AssociatedSources(records, events, proof)
+			projection = derived.ProjectRecords(associatedRecords)
+			projection.Counts["unassociated_message_records"] = int64(len(records) - len(associatedRecords))
+			projection.Counts["unassociated_event_records"] = int64(len(events) - len(associatedEvents))
+			records = associatedRecords
+			other := derived.ProjectEvents(associatedEvents)
+			coverage, e := readEventCoverage(ctx, tx, out.EventDataset, sourceStatus)
+			if e != nil {
+				return e
+			}
+			out.Coverage = append(out.Coverage, coverage...)
+			for i := range projection.Endpoints {
+				projection.Endpoints[i].Source.DatasetID = id
+			}
+			for i := range projection.Issues {
+				projection.Issues[i].Source.DatasetID = id
+			}
+			for i := range other.Endpoints {
+				other.Endpoints[i].Source.DatasetID = out.EventDataset
+			}
+			for i := range other.Issues {
+				other.Issues[i].Source.DatasetID = out.EventDataset
+			}
+			xs := append(projection.Endpoints, other.Endpoints...)
+			xs = derived.EnrichEvents(xs, records)
+			mixed := derived.MixProjection(xs)
+			projection.Endpoints = mixed.Endpoints
+			projection.Issues = append(projection.Issues, other.Issues...)
+			projection.Issues = append(projection.Issues, mixed.Issues...)
+			for k, v := range other.Counts {
+				projection.Counts["events_"+k] = v
+			}
+			for k, v := range mixed.Counts {
+				projection.Counts[k] += v
+			}
+			// Both captures must declare shared-host before cross-node values are
+			// used. A missing or differently bounded companion clock stays unknown.
+			var cm struct {
+				Clock string `json:"clock"`
+			}
+			if e = json.Unmarshal(sourceMeta, &cm); e != nil {
+				return e
+			}
+			if cm.Clock != "shared-host" || clock.Model != "shared-host" {
+				clock.Model = "unknown"
+			}
+			if _, e = tx.Exec(ctx, `INSERT INTO message_pair_dependencies(dataset_id,source_id,progress,status,metadata) VALUES($1,$2,$3,$4,$5) ON CONFLICT(dataset_id) DO UPDATE SET source_id=EXCLUDED.source_id,progress=EXCLUDED.progress,status=EXCLUDED.status,metadata=EXCLUDED.metadata`, id, out.EventDataset, sourceProgress, sourceStatus, sourceMeta); e != nil {
+				return e
+			}
+		} else {
+			if _, e := tx.Exec(ctx, `DELETE FROM message_pair_dependencies WHERE dataset_id=$1`, id); e != nil {
+				return e
+			}
+		}
 		if kind == "run" {
 			nodes := map[string]bool{}
 			sends, outcomes := int64(0), int64(0)
@@ -282,8 +386,8 @@ func beforeWall(a, b string) bool {
 }
 
 type PairFilter struct {
-	From, To                                                                    time.Time
-	Sender, Receiver, Node, Phase, Height, Round, Strength, Path, Clock, Status string
+	From, To                                                                            time.Time
+	Sender, Receiver, Node, Phase, Height, Round, Strength, Path, Clock, Status, Metric string
 }
 
 // MessagePairData reads the index and rows in one repeatable-read snapshot.
@@ -294,7 +398,7 @@ func (s *Store) MessagePairData(ctx context.Context, id int64, f PairFilter) (Pa
 	err := pgx.BeginTxFunc(ctx, s.pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
 		var info []byte
 		var ready bool
-		e := tx.QueryRow(ctx, `SELECT i.info,coalesce(i.version=$2 AND i.progress=d.progress AND i.status=d.status AND i.metadata=d.metadata,false) FROM datasets d LEFT JOIN message_pair_indexes i ON i.dataset_id=d.id WHERE d.id=$1`, id, derived.Version).Scan(&info, &ready)
+		e := tx.QueryRow(ctx, `SELECT i.info,coalesce(i.version=$2 AND i.progress=d.progress AND i.status=d.status AND i.metadata=d.metadata AND NOT EXISTS(SELECT 1 FROM message_pair_dependencies p LEFT JOIN datasets s ON s.id=p.source_id WHERE p.dataset_id=d.id AND (s.id IS NULL OR p.progress<>s.progress OR p.status<>s.status OR p.metadata<>s.metadata)),false) FROM datasets d LEFT JOIN message_pair_indexes i ON i.dataset_id=d.id WHERE d.id=$1`, id, derived.Version).Scan(&info, &ready)
 		if e != nil {
 			if errors.Is(e, pgx.ErrNoRows) {
 				return ErrNotFound
@@ -314,7 +418,7 @@ func (s *Store) MessagePairData(ctx context.Context, id int64, f PairFilter) (Pa
 		if !f.To.IsZero() {
 			to = axisNS(f.To)
 		}
-		rows, e := tx.Query(ctx, `SELECT pair FROM message_pairs WHERE dataset_id=$1 AND ($2::numeric IS NULL OR axis_ns>=$2) AND ($3::numeric IS NULL OR axis_ns<=$3) AND ($4='' OR sender=$4) AND ($5='' OR receiver=$5) AND ($6='' OR sender=$6 OR receiver=$6) AND ($7='' OR phase=$7) AND (($8='' AND $9='') OR EXISTS(SELECT 1 FROM jsonb_array_elements(pair->'views') v WHERE ($8='' OR v->>'height'=$8) AND ($9='' OR v->>'round'=$9))) AND ($10='' OR strength=$10) AND ($11='' OR path=$11) AND ($12='' OR clock=$12) AND ($13='' OR status=$13) ORDER BY axis_ns NULLS LAST,id LIMIT 100001`, id, from, to, f.Sender, f.Receiver, f.Node, f.Phase, f.Height, f.Round, f.Strength, f.Path, f.Clock, f.Status)
+		rows, e := tx.Query(ctx, `SELECT pair FROM message_pairs WHERE dataset_id=$1 AND ($2::numeric IS NULL OR axis_ns>=$2) AND ($3::numeric IS NULL OR axis_ns<=$3) AND ($4='' OR sender=$4) AND ($5='' OR receiver=$5) AND ($6='' OR sender=$6 OR receiver=$6) AND ($7='' OR phase=$7) AND (($8='' AND $9='') OR EXISTS(SELECT 1 FROM jsonb_array_elements(pair->'views') v WHERE ($8='' OR v->>'height'=$8) AND ($9='' OR v->>'round'=$9))) AND ($10='' OR strength=$10) AND ($11='' OR path=$11) AND ($12='' OR clock=$12) AND ($13='' OR status=$13) AND ($14='' OR pair->>'metric'=$14) ORDER BY axis_ns NULLS LAST,id LIMIT 100001`, id, from, to, f.Sender, f.Receiver, f.Node, f.Phase, f.Height, f.Round, f.Strength, f.Path, f.Clock, f.Status, f.Metric)
 		if e != nil {
 			return e
 		}

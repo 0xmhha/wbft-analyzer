@@ -415,7 +415,7 @@ projected endpoints; reads refuse more than 100,000 matching groups. Results
 are never silently truncated. Stale indexes return 409.
 
 `/messages/summary` and cursor-paged `/messages/pairs` keep direction, phase,
-strength, local/direct/relay/processing path and clock apart. Percentiles and
+strength, measurement boundary, local/direct/relay/processing path and clock apart. Percentiles and
 histograms use raw valid pairs, including overall and per-node distributions.
 Local intervals require same-node/run monotonic stamps. Cross-node intervals
 use the declared shared-host clock or NTP uncertainty; unknown clocks retain
@@ -427,4 +427,32 @@ The message latency view connects filters, directional p95 cells, raw-sample
 histograms, node statistics and pair/source details. Chart motion is optional
 and respects reduced-motion preferences. Event stamps can share one step;
 zero elapsed time describes those recorded stamps. This does not complete
-mixed-input pairing, missing-seal classification, follow mode or re-execution.
+arbitrary mixed-log association, physical-link capture, missing-seal classification, follow mode or re-execution.
+
+
+A message journal can explicitly name one completed native-event companion:
+
+```sh
+wbft-analyzer reindex messages --db "$WBFT_ANALYZER_DB" --dataset MESSAGE_ID --events EVENT_ID
+```
+
+Both datasets must belong to the same network. Matching names or overlapping
+wall times are insufficient: every stepped outcome multiset and its recorded
+step clocks must agree across shared node/run identities. Missing or conflicting
+anchors refuse the rebuild without replacing the prior index. Runs present in
+only one source are counted and excluded from mixed projection. Coverage keeps
+both datasets' input IDs and clock/gap diagnostics. Companion deletion or changed
+metadata, status or progress invalidates the derived index.
+
+Mixed endpoints use the weaker selected side's evidence grade. Repeated copies
+at the selected grade remain ambiguous; lower-grade alternative observations
+remain diagnostics with source pointers. A wire peer is not substituted for the
+message author. Link latency, broadcast-to-receipt and broadcast-to-processing
+are different measurement boundaries and have separate distributions; tail
+thresholds spanning boundaries require a metric filter.
+
+`/messages/series` uses fixed UTC seconds and full height/round strings. Each
+bucket aggregates original valid pairs and preserves all evidence dimensions.
+Absent buckets are not interpolated. The series view links a selected point to
+its bucket, full view, table and charts, with mouse or keyboard selection. The
+API refuses more than 2,000 bucket/view groups instead of truncating results.

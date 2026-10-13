@@ -51,6 +51,16 @@ func TestPairPagesThresholdEvidenceAndStaleSnapshot(t *testing.T) {
 	if c.do("GET", base+"/summary", nil, &summary) != 200 || summary.Summary.Pairs != 3 || summary.Index.Records != 6 {
 		t.Fatal(summary)
 	}
+	var series PairTimeSeries
+	if c.do("GET", base+"/series", nil, &series) != 200 || series.Series.Pairs != 3 || len(series.Series.Points) != 1 {
+		t.Fatal(series)
+	}
+	if c.do("GET", base+"/series?limit=1", nil, nil) != 400 {
+		t.Fatal("series sample paging accepted")
+	}
+	if c.do("GET", base+"/series?metric=broadcast_to_receipt", nil, &series) != 200 || series.Series.Pairs != 0 {
+		t.Fatal("boundary metrics mixed", series)
+	}
 	var page PairPage
 	if c.do("GET", base+"/pairs?limit=1", nil, &page) != 200 || len(page.Pairs) != 1 || page.Next == nil || page.Total != 3 || page.Pairs[0].Send == nil {
 		t.Fatal(page)

@@ -97,9 +97,11 @@ capture() {
  get "/networks/$message_net/datasets/$message_id/messages/records?limit=1000" message-records
  get "/networks/$message_net/datasets/$message_id/messages/records?phase=PREPARE" message-prepare
  get "/networks/$message_net/datasets/$message_id/messages/summary" message-summary
+ get "/networks/$message_net/datasets/$message_id/messages/series" message-series
  get "/networks/$message_net/datasets/$message_id/messages/pairs?limit=1000" message-pairs
  get "/networks/$message_net/datasets/$message_id/messages/source?input=frames&file=frames-synthetic.jsonl&ordinal=1" message-source
  get "/networks/$run_net/datasets/$run_id/messages/summary" run-message-summary
+ get "/networks/$run_net/datasets/$run_id/messages/series?metric=propagation_processing" run-message-series
  get "/networks/$run_net/datasets/$run_id/messages/pairs?limit=1000" run-message-pairs
  get /reports reports
  log_report=$(jq -r '.reports[] | select(.run_id=="log-evidence-dump") | .id' "$dir/reports.json")
