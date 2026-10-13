@@ -2976,6 +2976,21 @@
         ],
         "type": "object"
       },
+      "ReexecJobs": {
+        "additionalProperties": false,
+        "properties": {
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/StoreReexecJob"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "jobs"
+        ],
+        "type": "object"
+      },
       "ReexecList": {
         "additionalProperties": false,
         "properties": {
@@ -3098,6 +3113,25 @@
           "steps",
           "version",
           "version_status"
+        ],
+        "type": "object"
+      },
+      "ReexecSources": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/ReplayjobSourceInfo"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "enabled",
+          "sources"
         ],
         "type": "object"
       },
@@ -3433,6 +3467,57 @@
           "kind",
           "source",
           "status"
+        ],
+        "type": "object"
+      },
+      "ReplayjobRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "from_height": {
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "closed",
+              "counterfactual"
+            ],
+            "type": "string"
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "to_height": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_height",
+          "mode",
+          "source_id",
+          "to_height"
+        ],
+        "type": "object"
+      },
+      "ReplayjobSourceInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "input_id": {
+            "type": "string"
+          },
+          "modes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "input_id",
+          "modes"
         ],
         "type": "object"
       },
@@ -4728,6 +4813,84 @@
           "snapshot",
           "to_t",
           "version"
+        ],
+        "type": "object"
+      },
+      "StoreReexecJob": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "finished_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "from_height": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_id": {
+            "type": "string"
+          },
+          "issue": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "reexec_id": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "to_height": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "dataset_id",
+          "finished_at",
+          "from_height",
+          "id",
+          "input_id",
+          "mode",
+          "reexec_id",
+          "source_id",
+          "source_sha256",
+          "started_at",
+          "status",
+          "to_height"
         ],
         "type": "object"
       },
@@ -7870,6 +8033,264 @@
           }
         },
         "summary": "Latest 100 closed replay observations, separate from visual playback and canonical facts."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/reexec-jobs": {
+      "get": {
+        "operationId": "listReexecJobs",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReexecJobs"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Latest 100 durable replay jobs and linked result IDs."
+      },
+      "post": {
+        "operationId": "createReexecJob",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplayjobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreReexecJob"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Queue a retained journal replay through the configured bounded worker."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/reexec-jobs/{job}": {
+      "get": {
+        "operationId": "getReexecJob",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "replay job ID",
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreReexecJob"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "One scoped replay job with durable status and linked result."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/reexec-sources": {
+      "get": {
+        "operationId": "listReexecSources",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReexecSources"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Configured retained journal IDs and allowed modes; no server paths."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}": {

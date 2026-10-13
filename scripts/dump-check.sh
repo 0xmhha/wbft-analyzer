@@ -105,6 +105,8 @@ capture() {
  message_net=$(jq -r '.networks[]|select(.name=="synthetic-messages")|.id' "$dir/networks.json")
  get "/networks/$message_net/datasets" message-datasets
  message_id=$(jq -r '.datasets[0].id' "$dir/message-datasets.json")
+ get "/networks/$message_net/datasets/$message_id/reexec-sources" message-reexec-sources
+ get "/networks/$message_net/datasets/$message_id/reexec-jobs" message-reexec-jobs
  get "/networks/$message_net/datasets/$message_id/messages/inputs" message-inputs
  get "/networks/$message_net/datasets/$message_id/messages/records?limit=1000" message-records
  get "/networks/$message_net/datasets/$message_id/messages/records?phase=PREPARE" message-prepare

@@ -43,6 +43,7 @@ func LinkedVersion() string {
 }
 
 type Helper struct {
+	ExpectedSHA string
 	OmitMissing bool
 	Path        string
 	Args        []string
@@ -89,9 +90,24 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 	if e != nil {
 		return res, ErrHelper
 	}
+	if h.ExpectedSHA != "" {
+		dir, err := os.MkdirTemp("", "wbft-replay-helper-")
+		if err != nil {
+			return res, ErrHelper
+		}
+		defer os.RemoveAll(dir)
+		target := filepath.Join(dir, "helper")
+		if err = snapshotHelper(child, path, target, h.ExpectedSHA); err != nil {
+			return res, ErrHelper
+		}
+		path = target
+	}
 	res.BinaryVersion = binaryVersion(path)
 	binaryHash, e := binarySHA(path)
 	if e != nil {
+		return res, ErrHelper
+	}
+	if h.ExpectedSHA != "" && h.ExpectedSHA != binaryHash {
 		return res, ErrHelper
 	}
 	res.HelperSHA = binaryHash
@@ -428,4 +444,49 @@ func comparableStep(s Step, h Height, omit bool) bool {
 		return false
 	}
 	return s.Completeness == "complete" || s.Completeness == "partial" && onlyMissingCapture(s.Issues)
+}
+
+// snapshotHelper pins the operator-approved executable before starting it.
+func snapshotHelper(ctx context.Context, source, target, expected string) error {
+	info, err := os.Lstat(source)
+	if err != nil || !info.Mode().IsRegular() || info.Size() > 256<<20 {
+		return ErrHelper
+	}
+	in, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0700)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	h := sha256.New()
+	buf := make([]byte, 64<<10)
+	var total int64
+	reader := io.LimitReader(in, info.Size()+1)
+	for {
+		if err = ctx.Err(); err != nil {
+			return err
+		}
+		n, e := reader.Read(buf)
+		if n > 0 {
+			if _, err = out.Write(buf[:n]); err != nil {
+				return err
+			}
+			_, _ = h.Write(buf[:n])
+			total += int64(n)
+		}
+		if e == io.EOF {
+			break
+		}
+		if e != nil {
+			return e
+		}
+	}
+	if total != info.Size() || hex.EncodeToString(h.Sum(nil)) != expected {
+		return ErrHelper
+	}
+	return out.Sync()
 }

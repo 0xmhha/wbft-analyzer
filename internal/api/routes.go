@@ -4,6 +4,7 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/derive/baseline"
 	"github.com/0xmhha/wbft-analyzer/internal/derive/latency"
 	"github.com/0xmhha/wbft-analyzer/internal/derive/rounds"
+	"github.com/0xmhha/wbft-analyzer/internal/replayjob"
 	sourcemessages "github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/0xmhha/wbft-analyzer/internal/source/observe"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
@@ -43,6 +44,11 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reexec-sources", id: "listReexecSources", summary: "Configured retained journal IDs and allowed modes; no server paths.", params: runParams(), answers: map[int]any{200: ReexecSources{}}, handle: (*Server).reexecSources},
+	{method: "POST", path: "/v1/networks/{net}/datasets/{dataset}/reexec-jobs", id: "createReexecJob", summary: "Queue a retained journal replay through the configured bounded worker.", params: runParams(), body: replayjob.Request{}, answers: map[int]any{202: store.ReexecJob{}}, handle: (*Server).postReexecJob},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reexec-jobs", id: "listReexecJobs", summary: "Latest 100 durable replay jobs and linked result IDs.", params: runParams(), answers: map[int]any{200: ReexecJobs{}}, handle: (*Server).reexecJobs},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reexec-jobs/{job}", id: "getReexecJob", summary: "One scoped replay job with durable status and linked result.", params: append(runParams(), param{name: "job", in: "path", doc: "replay job ID", typ: "integer", format: "int64", required: true}), answers: map[int]any{200: store.ReexecJob{}}, handle: (*Server).reexecJob},
+
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reexec", id: "listReexecRuns", summary: "Latest 100 closed replay observations, separate from visual playback and canonical facts.", params: runParams(), answers: map[int]any{200: ReexecList{}}, handle: (*Server).reexecList},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}", id: "getReexecRun", summary: "Version identity, source completeness and output comparison; no payloads or filesystem paths.", params: reexecParams(false), answers: map[int]any{200: store.ReexecRun{}}, handle: (*Server).reexecSummary},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}/steps", id: "listReexecSteps", summary: "Immutable source-ordinal pages of output digests and known classifications, at most 1000 rows.", params: reexecParams(true), answers: map[int]any{200: ReexecPage{}}, handle: (*Server).reexecSteps},

@@ -83,3 +83,23 @@ export async function get<P extends GetPath>(path: P, params?: Params<P>): Promi
   }
   return (await r.json()) as Answer<P>;
 }
+
+type PostPath = {
+  [P in keyof paths]: paths[P] extends { post: { requestBody: unknown; responses: { 202: unknown } } } ? P : never;
+}[keyof paths];
+type PostBody<P extends PostPath> = paths[P] extends { post: { requestBody: { content: { "application/json": infer B } } } } ? B : never;
+type PostAnswer<P extends PostPath> = paths[P] extends { post: { responses: { 202: { content: { "application/json": infer A } } } } } ? A : never;
+type PostParams<P extends PostPath> = paths[P] extends { post: { parameters: { path: infer A } } } ? A : never;
+
+/** Queues a documented JSON operation with the tab's authentication. */
+export async function post<P extends PostPath>(path: P, values: PostParams<P>, body: PostBody<P>): Promise<PostAnswer<P>> {
+  const headers: Record<string, string> = { Accept: "application/json", "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const r = await fetch(fill(path, values as Record<string, string | number>), { method: "POST", headers, body: JSON.stringify(body) });
+  if (!r.ok) {
+    let message = r.statusText;
+    try { message = ((await r.json()) as Schemas["Error"]).error; } catch { /* Keep the HTTP status text. */ }
+    throw new ApiError(r.status, message);
+  }
+  return (await r.json()) as PostAnswer<P>;
+}

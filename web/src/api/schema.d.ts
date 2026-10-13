@@ -498,6 +498,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/reexec-jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest 100 durable replay jobs and linked result IDs. */
+        get: operations["listReexecJobs"];
+        put?: never;
+        /** Queue a retained journal replay through the configured bounded worker. */
+        post: operations["createReexecJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/reexec-jobs/{job}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One scoped replay job with durable status and linked result. */
+        get: operations["getReexecJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/reexec-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Configured retained journal IDs and allowed modes; no server paths. */
+        get: operations["listReexecSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/reexec/{reexec}": {
         parameters: {
             query?: never;
@@ -1542,6 +1594,9 @@ export interface components {
             /** Format: int64 */
             steps: number;
         };
+        ReexecJobs: {
+            jobs: components["schemas"]["StoreReexecJob"][];
+        };
         ReexecList: {
             runs: components["schemas"]["StoreReexecRun"][];
         };
@@ -1573,6 +1628,10 @@ export interface components {
             steps: number;
             version: string;
             version_status: string;
+        };
+        ReexecSources: {
+            enabled: boolean;
+            sources: components["schemas"]["ReplayjobSourceInfo"][];
         };
         ReexecStep: {
             capture_id?: string;
@@ -1656,6 +1715,18 @@ export interface components {
             kind: string;
             source: components["schemas"]["ReplayPointer"];
             status: string;
+        };
+        ReplayjobRequest: {
+            from_height: string;
+            /** @enum {string} */
+            mode: "closed" | "counterfactual";
+            source_id: string;
+            to_height: string;
+        };
+        ReplayjobSourceInfo: {
+            id: string;
+            input_id: string;
+            modes: string[];
         };
         Report: {
             catalog_sha256: string;
@@ -2011,6 +2082,28 @@ export interface components {
             snapshot: string;
             to_t: string | null;
             version: string;
+        };
+        StoreReexecJob: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: int64 */
+            dataset_id: number;
+            /** Format: date-time */
+            finished_at: string | null;
+            from_height: string;
+            /** Format: int64 */
+            id: number;
+            input_id: string;
+            issue?: string;
+            mode: string;
+            /** Format: int64 */
+            reexec_id: number | null;
+            source_id: string;
+            source_sha256: string;
+            /** Format: date-time */
+            started_at: string | null;
+            status: string;
+            to_height: string;
         };
         StoreReexecRun: {
             /** Format: date-time */
@@ -3612,6 +3705,184 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReexecList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listReexecJobs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReexecJobs"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createReexecJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplayjobRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreReexecJob"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getReexecJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description replay job ID */
+                job: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreReexecJob"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listReexecSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReexecSources"];
                 };
             };
             /** @description the request failed */
