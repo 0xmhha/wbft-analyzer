@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"encoding/binary"
+	"github.com/0xmhha/wbft/consensus/inputlog"
 	"github.com/0xmhha/wbft/observe/journal"
 	"os"
 )
@@ -106,6 +107,9 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 			}
 		case *journal.MsgRec:
 			r.Type = "frame"
+			if b.Capture != 0 {
+				r.Capture = number(b.Capture)
+			}
 			r.ClockSource = "recorded"
 			r.Dir = choice(b.Dir, "in", "out")
 			r.Peer = peers[b.PeerIdx]
@@ -161,6 +165,11 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 			r.Cause = choice(string(b.Cause), "broadcast", "gossip", "relay", "retry", "reconnect", "replay", "direct")
 		case *journal.StepRec:
 			r.Type = "step"
+			if b.InputKind == inputlog.KindCapturedMessage {
+				if id, e := inputlog.CapturedReference(b.Input); e == nil {
+					r.Capture = number(id)
+				}
+			}
 			r.ClockSource = "recorded"
 			r.EngineRun = number(b.EngineRun)
 			r.Step = number(b.Step)

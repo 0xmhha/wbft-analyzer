@@ -1647,6 +1647,9 @@
       "MessagesRecord": {
         "additionalProperties": false,
         "properties": {
+          "capture_id": {
+            "type": "string"
+          },
           "cause": {
             "type": "string"
           },
@@ -3050,6 +3053,9 @@
             "format": "int64",
             "type": "integer"
           },
+          "mode": {
+            "type": "string"
+          },
           "not_comparable": {
             "format": "int64",
             "type": "integer"
@@ -3098,6 +3104,9 @@
       "ReexecStep": {
         "additionalProperties": false,
         "properties": {
+          "capture_id": {
+            "type": "string"
+          },
           "class": {
             "type": "string"
           },
@@ -3137,6 +3146,9 @@
               "integer",
               "null"
             ]
+          },
+          "omitted": {
+            "type": "boolean"
           },
           "ordinal": {
             "format": "int64",

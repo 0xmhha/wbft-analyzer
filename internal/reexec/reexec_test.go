@@ -16,11 +16,9 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/0xmhha/wbft/codec"
 	"github.com/0xmhha/wbft/conformance/sim"
-	"github.com/0xmhha/wbft/consensus"
 	"github.com/0xmhha/wbft/consensus/inputlog"
 	"github.com/0xmhha/wbft/crypto/keccak"
 	"github.com/0xmhha/wbft/observe/journal"
-	"github.com/0xmhha/wbft/p2p/transport"
 )
 
 func TestProtocolChild(t *testing.T) {
@@ -174,8 +172,7 @@ func TestRecordedCoreAndIndependentWireCompleteness(t *testing.T) {
 	if err != nil || count == 0 || r.Mismatches != 0 || r.Status == "reproduced" && r.VersionStatus != "matched" {
 		t.Fatal(r, count, err)
 	}
-	// Delete one wire input while preserving its inline step input. Output
-	// equality alone must not turn the affected height into complete evidence.
+	// Delete an authoritative received frame used by a nonempty recorded output.
 	reader, e := journal.OpenReader(nil, p.Input.Path)
 	if e != nil {
 		t.Fatal(e)
@@ -192,41 +189,29 @@ func TestRecordedCoreAndIndependentWireCompleteness(t *testing.T) {
 		records = append(records, rec)
 	}
 	seg := records[0].Body.(*journal.SegmentRec)
-	wireCounts := map[string]int{}
-	used := map[string]bool{}
+	empty, e := inputlog.OutDigest(nil)
+	if e != nil {
+		t.Fatal(e)
+	}
+	var capture uint64
 	for _, rec := range records {
-		switch b := rec.Body.(type) {
-		case *journal.MsgRec:
-			if b.Dir == journal.In {
-				payload, code, act, _ := transport.DecodeFrame(b.Code, b.Payload)
-				if act == transport.FrameDeliver {
-					wireCounts[exactWireKey(seg.Run, code, payload, b.Mono)]++
-				}
+		if b, ok := rec.Body.(*journal.StepRec); ok && b.InputKind == inputlog.KindCapturedMessage && b.HeadNumber.String() == "0" && b.OutDigest != empty {
+			capture, e = inputlog.CapturedReference(b.Input)
+			if e != nil {
+				t.Fatal(e)
 			}
-		case *journal.StepRec:
-			if b.InputKind == inputlog.KindMessage && b.Via == "peer" {
-				decoded, e := inputlog.Decode(b.InputKind, b.Input, nil)
-				if e != nil {
-					t.Fatal(e)
-				}
-				m := decoded.(consensus.Message)
-				used[exactWireKey(seg.Run, uint64(m.Code), m.Payload, m.RecvMono)] = true
-			}
+			break
 		}
 	}
 	target := -1
 	for i, rec := range records {
-		if b, ok := rec.Body.(*journal.MsgRec); ok && b.Dir == journal.In {
-			payload, code, act, _ := transport.DecodeFrame(b.Code, b.Payload)
-			k := exactWireKey(seg.Run, code, payload, b.Mono)
-			if act == transport.FrameDeliver && used[k] && wireCounts[k] == 1 {
-				target = i
-				break
-			}
+		if b, ok := rec.Body.(*journal.MsgRec); ok && b.Dir == journal.In && capture != 0 && b.Capture == capture {
+			target = i
+			break
 		}
 	}
 	if target < 0 {
-		t.Fatal("no received message")
+		t.Fatal("no processed captured message with recorded outputs")
 	}
 	rewrite := func(gap bool) messages.Prepared {
 		dir := filepath.Join(t.TempDir(), "journal")
@@ -261,13 +246,29 @@ func TestRecordedCoreAndIndependentWireCompleteness(t *testing.T) {
 	found := false
 	for _, s := range missing.Steps {
 		for _, issue := range s.Issues {
-			if issue == "wire_payload" || issue == "wire_association" {
+			if issue == "missing_capture" {
 				found = true
 			}
 		}
 	}
 	if !found {
 		t.Fatal("deleted wire input was ignored")
+	}
+	r, err = Execute(ctx, missing, testHelper(t, "core"), func(Step) error { return nil })
+	if err == nil || r.Issue != "input_gap" || r.Mode != "closed" {
+		t.Fatal("missing source accepted in closed mode", r, err)
+	}
+	h := testHelper(t, "core")
+	h.OmitMissing = true
+	var omitted []Step
+	r, err = Execute(ctx, missing, h, func(s Step) error {
+		if s.Omitted {
+			omitted = append(omitted, s)
+		}
+		return nil
+	})
+	if len(omitted) != 1 || omitted[0].Capture != strconv.FormatUint(capture, 10) || omitted[0].Class != "output_diverged" || omitted[0].Replayed != strings.ToLower(empty.Hex()) || r.Mode != "counterfactual" || r.Status == "reproduced" || err != nil && r.Issue != "env_exhausted" {
+		t.Fatal("intentional loss must expose the actual changed output", r, omitted, err)
 	}
 	gap, err := Inspect(ctx, rewrite(true), chain, "8282", genesis, 1, 3)
 	if err != nil || gap.JournalIssue != "journal_gap" {
