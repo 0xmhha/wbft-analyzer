@@ -15,81 +15,86 @@ import (
 func (s *Store) MessageAssociation(ctx context.Context, runID, messageID int64) (derived.AssociationProof, error) {
 	var proof derived.AssociationProof
 	err := pgx.BeginTxFunc(ctx, s.pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
-		var kindA, kindB, statusA, statusB string
-		var netA, netB, progressA, progressB int64
-		if e := tx.QueryRow(ctx, `SELECT kind,network_id,status,progress FROM datasets WHERE id=$1`, runID).Scan(&kindA, &netA, &statusA, &progressA); e != nil {
-			return e
-		}
-		if e := tx.QueryRow(ctx, `SELECT kind,network_id,status,progress FROM datasets WHERE id=$1`, messageID).Scan(&kindB, &netB, &statusB, &progressB); e != nil {
-			return e
-		}
-		if kindA != "run" || kindB != "messages" || netA != netB || statusA != "complete" || statusB != "complete" {
-			return errors.New("association requires completed run/message sources on one network")
-		}
-		if progressA+progressB > 1000000 {
-			return ErrPairSource
-		}
-		records := []source.Record{}
-		events := []logs.Event{}
-		rows, e := tx.Query(ctx, `SELECT record FROM message_records WHERE dataset_id=$1 ORDER BY input_id,file,ordinal`, messageID)
-		if e != nil {
-			return e
-		}
-		for rows.Next() {
-			var b []byte
-			var x source.Record
-			if e = rows.Scan(&b); e != nil {
-				rows.Close()
-				return e
-			}
-			if e = json.Unmarshal(b, &x); e != nil {
-				rows.Close()
-				return e
-			}
-			records = append(records, x)
-		}
-		e = rows.Err()
-		rows.Close()
-		if e != nil {
-			return e
-		}
-		if int64(len(records)) != progressB {
-			return errors.New("message source count changed")
-		}
-		rows, e = tx.Query(ctx, `SELECT event FROM log_events WHERE dataset_id=$1 ORDER BY input_id,line`, runID)
-		if e != nil {
-			return e
-		}
-		for rows.Next() {
-			var b []byte
-			var x LogEvent
-			if e = rows.Scan(&b); e != nil {
-				rows.Close()
-				return e
-			}
-			if e = json.Unmarshal(b, &x); e != nil {
-				rows.Close()
-				return e
-			}
-			r, e := normalized(x)
-			if e != nil {
-				rows.Close()
-				return e
-			}
-			events = append(events, r)
-		}
-		e = rows.Err()
-		rows.Close()
-		if e != nil {
-			return e
-		}
-		if int64(len(events)) != progressA {
-			return errors.New("event source count changed")
-		}
-		proof = derived.VerifyAssociation(records, events)
-		return nil
+		var e error
+		proof, e = messageAssociation(ctx, tx, runID, messageID)
+		return e
 	})
 	return proof, err
+}
+
+func messageAssociation(ctx context.Context, tx pgx.Tx, runID, messageID int64) (derived.AssociationProof, error) {
+	var kindA, kindB, statusA, statusB string
+	var netA, netB, progressA, progressB int64
+	if e := tx.QueryRow(ctx, `SELECT kind,network_id,status,progress FROM datasets WHERE id=$1`, runID).Scan(&kindA, &netA, &statusA, &progressA); e != nil {
+		return derived.AssociationProof{}, e
+	}
+	if e := tx.QueryRow(ctx, `SELECT kind,network_id,status,progress FROM datasets WHERE id=$1`, messageID).Scan(&kindB, &netB, &statusB, &progressB); e != nil {
+		return derived.AssociationProof{}, e
+	}
+	if kindA != "run" || kindB != "messages" || netA != netB || statusA != "complete" || statusB != "complete" {
+		return derived.AssociationProof{}, errors.New("association requires completed run/message sources on one network")
+	}
+	if progressA+progressB > 1000000 {
+		return derived.AssociationProof{}, ErrPairSource
+	}
+	records := []source.Record{}
+	events := []logs.Event{}
+	rows, e := tx.Query(ctx, `SELECT record FROM message_records WHERE dataset_id=$1 ORDER BY input_id,file,ordinal`, messageID)
+	if e != nil {
+		return derived.AssociationProof{}, e
+	}
+	for rows.Next() {
+		var b []byte
+		var x source.Record
+		if e = rows.Scan(&b); e != nil {
+			rows.Close()
+			return derived.AssociationProof{}, e
+		}
+		if e = json.Unmarshal(b, &x); e != nil {
+			rows.Close()
+			return derived.AssociationProof{}, e
+		}
+		records = append(records, x)
+	}
+	e = rows.Err()
+	rows.Close()
+	if e != nil {
+		return derived.AssociationProof{}, e
+	}
+	if int64(len(records)) != progressB {
+		return derived.AssociationProof{}, errors.New("message source count changed")
+	}
+	rows, e = tx.Query(ctx, `SELECT event FROM log_events WHERE dataset_id=$1 ORDER BY input_id,line`, runID)
+	if e != nil {
+		return derived.AssociationProof{}, e
+	}
+	for rows.Next() {
+		var b []byte
+		var x LogEvent
+		if e = rows.Scan(&b); e != nil {
+			rows.Close()
+			return derived.AssociationProof{}, e
+		}
+		if e = json.Unmarshal(b, &x); e != nil {
+			rows.Close()
+			return derived.AssociationProof{}, e
+		}
+		r, e := normalized(x)
+		if e != nil {
+			rows.Close()
+			return derived.AssociationProof{}, e
+		}
+		events = append(events, r)
+	}
+	e = rows.Err()
+	rows.Close()
+	if e != nil {
+		return derived.AssociationProof{}, e
+	}
+	if int64(len(events)) != progressA {
+		return derived.AssociationProof{}, errors.New("event source count changed")
+	}
+	return derived.VerifyAssociation(records, events), nil
 }
 
 func readAssociationEvents(ctx context.Context, tx pgx.Tx, id int64) ([]logs.Event, error) {
