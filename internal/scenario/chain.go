@@ -2,7 +2,6 @@ package scenario
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/0xmhha/wbft/codec"
 	"github.com/0xmhha/wbft/conformance/sim"
@@ -10,9 +9,12 @@ import (
 )
 
 type ChainFacts struct {
-	Validators []types.Address
-	Params     sim.Params
-	Heights    []Height
+	GenesisCount int
+	Epochs       []RecordedEpoch
+	Issues       []Issue
+	Validators   []types.Address
+	Params       sim.Params
+	Heights      []Height
 }
 
 // InspectChain derives network observations from the canonical block chain.
@@ -36,6 +38,7 @@ func InspectChain(blocks []*types.Block, cfg *types.Config, from, to uint64) (Ch
 		return out, errors.New("genesis validator evidence unavailable")
 	}
 	out.Validators = genesis.EpochInfo.ValidatorAddresses()
+	out.GenesisCount = len(out.Validators)
 	if len(out.Validators) < 2 || len(out.Validators) > 256 {
 		return out, errors.New("invalid genesis validators")
 	}
@@ -48,10 +51,14 @@ func InspectChain(blocks []*types.Block, cfg *types.Config, from, to uint64) (Ch
 	}
 	capSeconds := base.MaxRequestTimeoutSeconds
 	out.Params = sim.Params{RequestTimeoutSeconds: base.RequestTimeoutMs / 1000, BlockPeriodSeconds: base.BlockPeriodSeconds, EpochLength: base.EpochLength, ProposerPolicy: base.ProposerPolicy.ID, MaxRequestTimeoutSeconds: &capSeconds}
-	for h := from; h <= to; h++ {
+	// Simulation starts at genesis, including the warm-up before From.
+	for h := uint64(0); h <= to; h++ {
 		params := cfg.ConfigAt(types.HeightFromUint64(h))
 		if params.ProposerPolicy == nil || params.ProposerPolicy.ID != base.ProposerPolicy.ID || params.RequestTimeoutMs != base.RequestTimeoutMs || params.BlockPeriodSeconds != base.BlockPeriodSeconds || params.EpochLength != base.EpochLength || params.MaxRequestTimeoutSeconds != base.MaxRequestTimeoutSeconds {
 			return out, errors.New("scenario configuration transitions require explicit fitting")
+		}
+		if h < from {
+			continue
 		}
 		child, err := codec.DecodeExtra(blocks[h+1].Header)
 		if err != nil {
@@ -61,21 +68,10 @@ func InspectChain(blocks []*types.Block, cfg *types.Config, from, to uint64) (Ch
 			return out, errors.New("chain time regression")
 		}
 		out.Heights = append(out.Heights, Height{Number: h, Round: uint64(child.PrevRound), Time: blocks[h].Header.Time, PeriodSeconds: blocks[h].Header.Time - blocks[h-1].Header.Time})
-		extra, err := codec.DecodeExtra(blocks[h].Header)
-		if err != nil {
-			return out, err
-		}
-		if extra.EpochInfo != nil {
-			vals := extra.EpochInfo.ValidatorAddresses()
-			if len(vals) != len(out.Validators) {
-				return out, fmt.Errorf("validator changes at height %d require epoch fitting", h)
-			}
-			for i, a := range vals {
-				if a != out.Validators[i] {
-					return out, fmt.Errorf("validator order changes at height %d require epoch fitting", h)
-				}
-			}
-		}
+	}
+	out.Validators, out.Epochs, out.Issues, err = inspectEpochs(blocks, cfg, to, out.Validators)
+	if err != nil {
+		return out, err
 	}
 	return out, nil
 }

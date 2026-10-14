@@ -1104,3 +1104,12 @@ preserved, and scope counts are part of the immutable model identity.
 
 A fitting interpretation change requires a new registered source ID; existing
 source bindings and stored experiment results are never silently rewritten.
+
+Network fitting retains candidate membership at each recorded epoch and
+verifies the epoch header against canonical proposer and seal inputs. It maps
+new candidate identities to deterministic test keys, preserving the original
+genesis membership and candidate order. Simulated diligence and validator
+selection are recomputed from each run; recorded winners are not forced into
+a changed execution. Header-input agreement does not prove execution-state
+registration. Key rotation and parameter transitions that cannot be represented
+remain unavailable. Source metadata exposes the recorded epoch evidence.

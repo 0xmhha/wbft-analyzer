@@ -36,16 +36,17 @@ type FitOptions struct {
 }
 
 type Fitted struct {
-	Scope        ScopeCounts   `json:"scope"`
-	NodeOptions  []Node        `json:"node_options"`
-	Provenance   Provenance    `json:"provenance"`
-	SourceSHA256 string        `json:"source_sha256"`
-	Model        Assessment    `json:"model"`
-	Links        []Link        `json:"links"`
-	Runtimes     []Runtime     `json:"runtimes"`
-	App          AppTiming     `json:"application"`
-	Recorded     []Height      `json:"recorded"`
-	Scenario     *sim.Scenario `json:"-"`
+	Epochs       []RecordedEpoch `json:"epochs"`
+	Scope        ScopeCounts     `json:"scope"`
+	NodeOptions  []Node          `json:"node_options"`
+	Provenance   Provenance      `json:"provenance"`
+	SourceSHA256 string          `json:"source_sha256"`
+	Model        Assessment      `json:"model"`
+	Links        []Link          `json:"links"`
+	Runtimes     []Runtime       `json:"runtimes"`
+	App          AppTiming       `json:"application"`
+	Recorded     []Height        `json:"recorded"`
+	Scenario     *sim.Scenario   `json:"-"`
 }
 
 // Fit derives one prepared network experiment from exact chain and journal
@@ -119,6 +120,8 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		return out, err
 	}
 	out.Recorded = facts.Heights
+	out.Epochs = facts.Epochs
+	out.Model.Issues = append(out.Model.Issues, facts.Issues...)
 	ordered := []Node{}
 	addresses := []string{}
 	for _, a := range facts.Validators {
@@ -213,18 +216,20 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 	}
 	out.Model = assessment
 	modelRaw, err := json.Marshal(struct {
-		From, To    uint64
-		Origin      string
-		UntilNS     int64
-		Clock       pairs.Clock
-		Coverage    []Coverage
-		Nodes       []Node
-		Params      sim.Params
-		Links       []Link
-		Runtimes    []Runtime
-		Application AppTiming
-		Scope       ScopeCounts
-	}{o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope})
+		From, To     uint64
+		Origin       string
+		UntilNS      int64
+		Clock        pairs.Clock
+		Coverage     []Coverage
+		Nodes        []Node
+		Params       sim.Params
+		Links        []Link
+		Runtimes     []Runtime
+		Application  AppTiming
+		Scope        ScopeCounts
+		GenesisCount int
+		Epochs       []RecordedEpoch
+	}{o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs})
 	if err != nil {
 		return out, err
 	}
@@ -242,6 +247,10 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		return out, err
 	}
 	sc, err = ApplyRuntime(sc, ordered, out.Runtimes)
+	if err != nil {
+		return out, err
+	}
+	sc, err = ApplyEpochs(sc, facts.Validators, facts.GenesisCount, facts.Epochs)
 	if err != nil {
 		return out, err
 	}

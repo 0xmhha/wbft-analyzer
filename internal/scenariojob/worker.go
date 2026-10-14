@@ -37,7 +37,30 @@ type SourceSpec struct {
 	Coverage []scenario.Coverage `json:"coverage"`
 }
 
+type EpochInfo struct {
+	Block                string   `json:"block"`
+	Candidates           []string `json:"candidates"`
+	Validators           []string `json:"validators"`
+	HeaderInputsVerified bool     `json:"header_inputs_verified"`
+}
+
+func publicEpochs(epochs []scenario.RecordedEpoch) []EpochInfo {
+	out := []EpochInfo{}
+	for _, e := range epochs {
+		x := EpochInfo{Block: strconv.FormatUint(e.Block, 10), Candidates: []string{}, Validators: []string{}, HeaderInputsVerified: e.HeaderInputsVerified}
+		for _, a := range e.Candidates {
+			x.Candidates = append(x.Candidates, a.Hex())
+		}
+		for _, a := range e.Validators {
+			x.Validators = append(x.Validators, a.Hex())
+		}
+		out = append(out, x)
+	}
+	return out
+}
+
 type SourceInfo struct {
+	Epochs       []EpochInfo          `json:"epochs"`
 	Scope        scenario.ScopeCounts `json:"scope"`
 	Nodes        []string             `json:"nodes"`
 	DurationNS   int64                `json:"duration_ns"`
@@ -132,7 +155,7 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 		if err != nil {
 			return nil, err
 		}
-		public := SourceInfo{Scope: fitted.Scope, Nodes: []string{}, DurationNS: int64(duration), ID: spec.ID, Dataset: spec.Dataset, From: strconv.FormatUint(spec.From, 10), To: strconv.FormatUint(spec.To, 10), SourceSHA: fitted.SourceSHA256, Status: fitted.Model.Status, Model: fitted.Model}
+		public := SourceInfo{Epochs: publicEpochs(fitted.Epochs), Scope: fitted.Scope, Nodes: []string{}, DurationNS: int64(duration), ID: spec.ID, Dataset: spec.Dataset, From: strconv.FormatUint(spec.From, 10), To: strconv.FormatUint(spec.To, 10), SourceSHA: fitted.SourceSHA256, Status: fitted.Model.Status, Model: fitted.Model}
 		for _, node := range fitted.NodeOptions {
 			public.Nodes = append(public.Nodes, node.Address.Hex())
 		}
