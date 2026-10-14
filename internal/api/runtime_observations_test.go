@@ -56,3 +56,47 @@ func TestRuntimeSourceRetainsExactIdentityAndRejectsConflict(t *testing.T) {
 		t.Fatal("failed replacement corrupted capture", e)
 	}
 }
+
+func TestRuntimeEngineSourcesUseExactParentsAndPreserveAllStages(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	capture, e := runtimeobs.Load("../source/runtimeobs/testdata/core-synthetic.jsonl")
+	if e != nil {
+		t.Fatal(e)
+	}
+	key := store.NetworkKey{ChainID: "8", GenesisHash: "0x" + strings.Repeat("2", 64)}
+	out, e := ingest.Runtime(ctx, s, key, "synthetic-core", capture)
+	if e != nil {
+		t.Fatal(e)
+	}
+	c := client{t, (&Server{Store: s}).Handler()}
+	base := fmt.Sprintf("/v1/networks/%d/datasets/%d/runtime", out.NetworkID, out.DatasetID)
+	var summary RuntimeSummary
+	if c.do("GET", base, nil, &summary) != 200 || summary.EngineCount != 1 || summary.EngineStates["observed_stopped"] != 1 || summary.RuntimeModelComplete {
+		t.Fatal(summary)
+	}
+	for _, id := range []string{"42", "43"} {
+		var source RuntimeCallSource
+		if c.do("GET", base+"/calls/"+id, nil, &source) != 200 || len(source.Engines) != 1 {
+			t.Fatal(source)
+		}
+		engine := source.Engines[0]
+		if engine.ID != "18446744073709551614" || engine.ParentID != "42" || engine.Created.Line != 3 || engine.Created.ID != engine.ID || len(engine.Stages) != 11 || engine.Stages[10].ParentID != "43" || engine.State != "observed_stopped" {
+			t.Fatal(engine)
+		}
+	}
+	var source RuntimeCallSource
+	if c.do("GET", base+"/calls/18446744073709551615", nil, &source) != 200 || len(source.Engines) != 0 || source.Task == nil {
+		t.Fatal("nearby unrelated call selected", source)
+	}
+	// Oversized candidate evidence is refused, never truncated into a preferred set.
+	capture.Engines[0].Stages = make([]runtimeobs.Point, 257)
+	large, e := ingest.Runtime(ctx, s, key, "synthetic-core-large", capture)
+	if e != nil {
+		t.Fatal(e)
+	}
+	path := fmt.Sprintf("/v1/networks/%d/datasets/%d/runtime/calls/42", large.NetworkID, large.DatasetID)
+	if c.do("GET", path, nil, nil) != 400 {
+		t.Fatal("oversized candidate source allowed")
+	}
+}

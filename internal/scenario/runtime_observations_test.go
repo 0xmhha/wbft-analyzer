@@ -54,3 +54,17 @@ func TestRuntimeStartupScalarBindingRetainsUnprovedExecution(t *testing.T) {
 		t.Fatal(got, e)
 	}
 }
+
+func TestRuntimeEngineBindingDoesNotPromoteExecutionModel(t *testing.T) {
+	c, e := runtimeobs.Load("../source/runtimeobs/testdata/core-synthetic.jsonl")
+	if e != nil {
+		t.Fatal(e)
+	}
+	in := RuntimeObservation{Source: Input{ID: "engine", Kind: "runtime", Node: c.Node, SHA256: c.SourceSHA}, Capture: c}
+	policy := uint64(0)
+	cfg := types.NewConfig(types.WBFTParams{RequestTimeoutSeconds: 1, BlockPeriodSeconds: 1, EpochLength: 10, AllowedFutureBlockTime: 2, ProposerPolicy: &policy}, nil, types.GenesisInit{}, nil)
+	got, e := BindRuntimeObservation(in, cfg, []string{c.Node})
+	if e != nil || got.EngineStates["observed_stopped"] != 1 || got.ExecutionModelComplete || got.TaskStates["observed_result"] != 1 {
+		t.Fatal(got, e)
+	}
+}

@@ -17,6 +17,7 @@ type RuntimeObservation struct {
 	Capture runtimeobs.Capture `json:"-"`
 }
 type RuntimeBinding struct {
+	EngineStates           map[string]int    `json:"engine_states"`
 	TaskStates             map[string]int    `json:"task_states"`
 	Source                 Input             `json:"source"`
 	Run                    string            `json:"run"`
@@ -49,9 +50,12 @@ func InspectRuntimeObservation(source Input, r io.Reader) (RuntimeObservation, e
 // It never converts these measurements into native engine options or app timing.
 func BindRuntimeObservation(in RuntimeObservation, cfg *types.Config, nodes []string) (RuntimeBinding, error) {
 	c := in.Capture
-	out := RuntimeBinding{TaskStates: map[string]int{}, Source: in.Source, Run: c.Run, Configuration: "unavailable", CaptureComplete: c.Complete, Calls: c.Calls, CallCount: len(c.Calls), Unavailable: c.Unavailable}
+	out := RuntimeBinding{EngineStates: map[string]int{}, TaskStates: map[string]int{}, Source: in.Source, Run: c.Run, Configuration: "unavailable", CaptureComplete: c.Complete, Calls: c.Calls, CallCount: len(c.Calls), Unavailable: c.Unavailable}
 	if cfg == nil || in.Source.Node != c.Node || in.Source.SHA256 != c.SourceSHA {
 		return out, errors.New("invalid runtime binding")
+	}
+	for _, engine := range c.Engines {
+		out.EngineStates[engine.State]++
 	}
 	for _, t := range c.Tasks {
 		out.TaskStates[t.State]++
