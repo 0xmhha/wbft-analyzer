@@ -23,6 +23,7 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/ingest"
 	"github.com/0xmhha/wbft-analyzer/internal/replayjob"
 	"github.com/0xmhha/wbft-analyzer/internal/reports"
+	"github.com/0xmhha/wbft-analyzer/internal/scenariojob"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
 )
 
@@ -31,9 +32,10 @@ const DefaultMaxBody = 64 << 20
 
 // Server serves the API.
 type Server struct {
-	Jobs     *replayjob.Worker
-	Store    *store.Store
-	Reporter *ingest.Reporter
+	Scenarios *scenariojob.Worker
+	Jobs      *replayjob.Worker
+	Store     *store.Store
+	Reporter  *ingest.Reporter
 	// Token is the bearer token every request must carry; empty serves
 	// without authentication, to loopback host names only.
 	Token string

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/0xmhha/wbft-analyzer/internal/reexec"
+	"github.com/0xmhha/wbft-analyzer/internal/scenariojob"
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
 )
@@ -60,11 +61,28 @@ type Request struct {
 	Mode          string                `json:"mode" enum:"closed,counterfactual"`
 }
 type Worker struct {
-	store   *store.Store
-	sources map[string]source
-	order   []string
-	wake    chan struct{}
-	running atomic.Bool
+	scenarios *scenariojob.Worker
+	store     *store.Store
+	sources   map[string]source
+	order     []string
+	wake      chan struct{}
+	running   atomic.Bool
+}
+
+// NewEmpty serves only attached network sources without claiming unrelated
+// replay jobs whose source configuration has not been loaded.
+func NewEmpty(s *store.Store) *Worker {
+	return &Worker{store: s, sources: map[string]source{}, wake: make(chan struct{}, 1)}
+}
+
+// WithScenarios attaches network experiments to this worker's existing lease.
+// Call before Start; only the shared worker may claim queued executions.
+func (w *Worker) WithScenarios(s *scenariojob.Worker) error {
+	if w.running.Load() {
+		return ErrScope
+	}
+	w.scenarios = s
+	return nil
 }
 
 func Load(ctx context.Context, s *store.Store, path, linked string) (*Worker, error) {
@@ -257,6 +275,10 @@ func (w *Worker) Start(ctx context.Context) (func(), error) {
 	if err != nil {
 		return nil, err
 	}
+	if err = w.store.RecoverScenarioJobs(ctx); err != nil {
+		_ = lease.Close(context.Background())
+		return nil, err
+	}
 	if err = w.store.RecoverWhatifJobs(ctx); err != nil {
 		_ = lease.Close(context.Background())
 		return nil, err
@@ -304,9 +326,17 @@ func (w *Worker) Start(ctx context.Context) (func(), error) {
 			if work.Err() != nil {
 				return
 			}
-			job, err := w.store.ClaimReexecJob(work, owner)
+			var job store.ReexecJob
+			err := store.ErrNotFound
+			if len(w.sources) > 0 {
+				job, err = w.store.ClaimReexecJob(work, owner)
+			}
 			if errors.Is(err, store.ErrNotFound) {
-				timed, timedErr := w.store.ClaimWhatifJob(work, owner)
+				var timed store.WhatifJob
+				timedErr := store.ErrNotFound
+				if len(w.sources) > 0 {
+					timed, timedErr = w.store.ClaimWhatifJob(work, owner)
+				}
 				if timedErr == nil {
 					if w.executeWhatif(work, timed, owner) != nil {
 						return
@@ -315,6 +345,15 @@ func (w *Worker) Start(ctx context.Context) (func(), error) {
 				}
 				if !errors.Is(timedErr, store.ErrNotFound) {
 					return
+				}
+				if w.scenarios != nil {
+					claimed, scenarioErr := w.scenarios.ExecuteNext(work, owner)
+					if scenarioErr != nil {
+						return
+					}
+					if claimed {
+						continue
+					}
 				}
 				select {
 				case <-work.Done():

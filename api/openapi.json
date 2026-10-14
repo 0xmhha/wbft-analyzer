@@ -4323,6 +4323,717 @@
         ],
         "type": "object"
       },
+      "ScenarioAssessment": {
+        "additionalProperties": false,
+        "properties": {
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioIssue"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "issues",
+          "status",
+          "version"
+        ],
+        "type": "object"
+      },
+      "ScenarioComparisonPlot": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline": {
+            "$ref": "#/components/schemas/ScenarioDistribution"
+          },
+          "counterfactual": {
+            "$ref": "#/components/schemas/ScenarioDistribution"
+          },
+          "credibility": {
+            "type": "string"
+          },
+          "from": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "recorded": {
+            "$ref": "#/components/schemas/ScenarioDistribution"
+          },
+          "recorded_sha256": {
+            "type": "string"
+          },
+          "to": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "baseline",
+          "counterfactual",
+          "credibility",
+          "from",
+          "recorded",
+          "recorded_sha256",
+          "to"
+        ],
+        "type": "object"
+      },
+      "ScenarioCutOutgoing": {
+        "additionalProperties": false,
+        "properties": {
+          "from_ns": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "to_ns": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from_ns",
+          "kind",
+          "node",
+          "to_ns"
+        ],
+        "type": "object"
+      },
+      "ScenarioDistribution": {
+        "additionalProperties": false,
+        "properties": {
+          "complete_runs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "elapsed_seconds": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedBand"
+            },
+            "type": "array"
+          },
+          "expected_runs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "issue": {
+            "type": "string"
+          },
+          "period_seconds": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioDistributionPoint"
+            },
+            "type": "array"
+          },
+          "rounds": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioDistributionPoint"
+            },
+            "type": "array"
+          },
+          "samples": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "saved_runs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "complete_runs",
+          "elapsed_seconds",
+          "expected_runs",
+          "issue",
+          "period_seconds",
+          "rounds",
+          "samples",
+          "saved_runs",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ScenarioDistributionPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "cumulative": {
+            "format": "double",
+            "type": "number"
+          },
+          "value": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "cumulative",
+          "value"
+        ],
+        "type": "object"
+      },
+      "ScenarioExperiment": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline_rounds": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRoundComparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_time_check": {
+            "type": "string"
+          },
+          "change": {
+            "$ref": "#/components/schemas/ScenarioCutOutgoing"
+          },
+          "change_sha256": {
+            "type": "string"
+          },
+          "execution_sha256": {
+            "type": "string"
+          },
+          "from": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ScenarioAssessment"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/ScenarioProvenance"
+          },
+          "recorded_counts": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRoundCount"
+            },
+            "type": "array"
+          },
+          "recorded_heights": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioHeight"
+            },
+            "type": "array"
+          },
+          "recorded_sha256": {
+            "type": "string"
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "to": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "baseline_rounds",
+          "baseline_time_check",
+          "change",
+          "change_sha256",
+          "execution_sha256",
+          "from",
+          "model",
+          "provenance",
+          "recorded_counts",
+          "recorded_heights",
+          "recorded_sha256",
+          "source_sha256",
+          "status",
+          "to",
+          "version"
+        ],
+        "type": "object"
+      },
+      "ScenarioHeight": {
+        "additionalProperties": false,
+        "properties": {
+          "number": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "period_seconds": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "round": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "time": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "number",
+          "period_seconds",
+          "round",
+          "time"
+        ],
+        "type": "object"
+      },
+      "ScenarioHomogeneity": {
+        "additionalProperties": false,
+        "properties": {
+          "degrees_of_freedom": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dispersion": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "p": {
+            "format": "double",
+            "type": "number"
+          },
+          "statistic": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "degrees_of_freedom",
+          "dispersion",
+          "p",
+          "statistic"
+        ],
+        "type": "object"
+      },
+      "ScenarioInput": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "node",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "ScenarioIssue": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "link": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "ScenarioJobs": {
+        "additionalProperties": false,
+        "properties": {
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/StoreScenarioJob"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "jobs"
+        ],
+        "type": "object"
+      },
+      "ScenarioPermutation": {
+        "additionalProperties": false,
+        "properties": {
+          "exact": {
+            "type": "boolean"
+          },
+          "p": {
+            "format": "double",
+            "type": "number"
+          },
+          "seed": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "splits": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "exact",
+          "p",
+          "seed",
+          "splits"
+        ],
+        "type": "object"
+      },
+      "ScenarioProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "chain_sha256": {
+            "type": "string"
+          },
+          "core_commit": {
+            "type": "string"
+          },
+          "dataset": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "fit_version": {
+            "type": "string"
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioInput"
+            },
+            "type": "array"
+          },
+          "model_sha256": {
+            "type": "string"
+          },
+          "seeds": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "chain_sha256",
+          "core_commit",
+          "dataset",
+          "fit_version",
+          "inputs",
+          "model_sha256",
+          "seeds"
+        ],
+        "type": "object"
+      },
+      "ScenarioRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "change": {
+            "$ref": "#/components/schemas/ScenarioCutOutgoing"
+          },
+          "source_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "change",
+          "source_id"
+        ],
+        "type": "object"
+      },
+      "ScenarioRoundComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "alpha": {
+            "format": "double",
+            "type": "number"
+          },
+          "method": {
+            "type": "string"
+          },
+          "p": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "permutation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioPermutation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recorded_counts": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRoundCount"
+            },
+            "type": "array"
+          },
+          "recorded_homogeneity": {
+            "$ref": "#/components/schemas/ScenarioHomogeneity"
+          },
+          "simulated_counts": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRoundCount"
+            },
+            "type": "array"
+          },
+          "simulated_homogeneity": {
+            "$ref": "#/components/schemas/ScenarioHomogeneity"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "alpha",
+          "method",
+          "p",
+          "permutation",
+          "recorded_counts",
+          "recorded_homogeneity",
+          "simulated_counts",
+          "simulated_homogeneity",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ScenarioRoundCount": {
+        "additionalProperties": false,
+        "properties": {
+          "late": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "late",
+          "total"
+        ],
+        "type": "object"
+      },
+      "ScenarioRuns": {
+        "additionalProperties": false,
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/StoreScenarioRunInfo"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "runs"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedBand": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "maximum": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "median": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "minimum": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "seeds": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "height",
+          "maximum",
+          "median",
+          "minimum",
+          "seeds"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedPage": {
+        "additionalProperties": false,
+        "properties": {
+          "next": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "seeds": {
+            "items": {
+              "$ref": "#/components/schemas/StoreScenarioSeed"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "next",
+          "seeds"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedResult": {
+        "additionalProperties": false,
+        "properties": {
+          "heights": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioHeight"
+            },
+            "type": "array"
+          },
+          "seed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "simulation_ns": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "violations": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "heights",
+          "seed",
+          "simulation_ns",
+          "status",
+          "violations"
+        ],
+        "type": "object"
+      },
+      "ScenarioSources": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/ScenariojobSourceInfo"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "enabled",
+          "sources"
+        ],
+        "type": "object"
+      },
+      "ScenariojobSourceInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "duration_ns": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "execution_sha256": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ScenarioAssessment"
+          },
+          "nodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dataset_id",
+          "duration_ns",
+          "execution_sha256",
+          "from",
+          "id",
+          "model",
+          "nodes",
+          "source_sha256",
+          "status",
+          "to"
+        ],
+        "type": "object"
+      },
       "StoreDataset": {
         "additionalProperties": false,
         "properties": {
@@ -5711,6 +6422,122 @@
         "required": [
           "count",
           "round"
+        ],
+        "type": "object"
+      },
+      "StoreScenarioJob": {
+        "additionalProperties": false,
+        "properties": {
+          "change": {
+            "$ref": "#/components/schemas/ScenarioCutOutgoing"
+          },
+          "change_sha256": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "execution_sha256": {
+            "type": "string"
+          },
+          "finished_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "issue": {
+            "type": "string"
+          },
+          "scenario_id": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "change",
+          "change_sha256",
+          "created_at",
+          "dataset_id",
+          "execution_sha256",
+          "finished_at",
+          "id",
+          "scenario_id",
+          "source_id",
+          "source_sha256",
+          "started_at",
+          "status"
+        ],
+        "type": "object"
+      },
+      "StoreScenarioRunInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "credibility": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ScenarioExperiment"
+          }
+        },
+        "required": [
+          "credibility",
+          "id",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "StoreScenarioSeed": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ScenarioSeedResult"
+          }
+        },
+        "required": [
+          "index",
+          "mode",
+          "result"
         ],
         "type": "object"
       },
@@ -10783,6 +11610,561 @@
           }
         },
         "summary": "Per-node decision claims and round entries with correlated cause evidence, at most 100000 relevant events."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/scenario-jobs": {
+      "get": {
+        "operationId": "listScenarioJobs",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioJobs"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Latest 100 durable network experiment jobs and linked runs."
+      },
+      "post": {
+        "operationId": "createScenarioJob",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreScenarioJob"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Queue a bounded baseline and outgoing-link change on a complete registered model."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/scenario-jobs/{job}": {
+      "get": {
+        "operationId": "getScenarioJob",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "network experiment job ID",
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreScenarioJob"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "One scoped network experiment job with explicit interruption and failure status."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/scenario-runs": {
+      "get": {
+        "operationId": "listScenarioRuns",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioRuns"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Latest 100 network experiment summaries with execution and baseline credibility separated."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}": {
+      "get": {
+        "operationId": "getScenarioRun",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "network experiment run ID",
+            "in": "path",
+            "name": "scenario",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreScenarioRunInfo"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Immutable source, fitting, execution and change hashes with baseline checks."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}/comparison": {
+      "get": {
+        "operationId": "getScenarioComparison",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "network experiment run ID",
+            "in": "path",
+            "name": "scenario",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioComparisonPlot"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Exact recorded and complete-seed ECDFs and elapsed header-time bands from one database snapshot; incomplete groups remain unavailable."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}/seeds": {
+      "get": {
+        "operationId": "listScenarioSeeds",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "network experiment run ID",
+            "in": "path",
+            "name": "scenario",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "baseline (default) or counterfactual",
+            "in": "query",
+            "name": "mode",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exclusive saved seed index, 0 through 128",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "1 through 128, default 32",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioSeedPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Ordered baseline or counterfactual seed results; interrupted prefixes remain available."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/scenario-sources": {
+      "get": {
+        "operationId": "listScenarioSources",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioSources"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Registered network fitting models, coverage and immutable identities; no server paths."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/whatif": {

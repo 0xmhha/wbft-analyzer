@@ -1,0 +1,44 @@
+import { useEffect,useState } from "react";
+import { ApiError,get,post,type Schemas } from "../api/client";
+import { Pending,type Load } from "../ui";
+import { ScenarioComparison } from "./ScenarioComparison";
+type Run=Schemas["StoreScenarioRunInfo"];
+export function Scenarios({net,onAuth}:{net:number;onAuth:()=>void}){
+ const [dataset,setDataset]=useState(0),[refresh,setRefresh]=useState(0);
+ const load=useRefreshingLoad(async()=>(await get("/v1/networks/{net}/datasets",{path:{net}})).datasets.filter(d=>d.kind==="messages"),[net,refresh]);
+ return <section><h1>Network experiments</h1><p>Fit recorded WBFT inputs, execute independent baseline seeds, and compare an explicit outgoing-link change. Original records and generated outcomes remain separate.</p><button onClick={()=>setRefresh(r=>r+1)}>Refresh network experiments</button><Pending load={load} onAuth={onAuth}/>{load.state==="done"&&<><label>Message dataset <select value={dataset} onChange={e=>setDataset(Number(e.target.value))}><option value={0}>Select a dataset</option>{load.data.map(d=><option key={d.id} value={d.id}>{d.name} · {d.status}</option>)}</select></label>{load.data.filter(d=>d.id===dataset).map(d=><Experiments key={d.id} net={net} dataset={d.id} refresh={refresh} onAuth={onAuth}/>)}</>}</section>;
+}
+function Experiments({net,dataset,refresh,onAuth}:{net:number;dataset:number;refresh:number;onAuth:()=>void}){
+ const [tick,setTick]=useState(0),[selected,setSelected]=useState(0),[source,setSource]=useState(""),[node,setNode]=useState(0),[from,setFrom]=useState("0"),[to,setTo]=useState("10000000000"),[busy,setBusy]=useState(false),[error,setError]=useState("");
+ const sources=useRefreshingLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/scenario-sources",{path:{net,dataset}}),[net,dataset,refresh]);
+ const jobs=useRefreshingLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/scenario-jobs",{path:{net,dataset}}),[net,dataset,refresh,tick]);
+ const runs=useRefreshingLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/scenario-runs",{path:{net,dataset}}),[net,dataset,refresh,tick]);
+ const active=jobs.state==="done"&&jobs.data.jobs.some(j=>j.status==="queued"||j.status==="running")||runs.state==="done"&&runs.data.runs.some(r=>r.summary.status==="running");
+ useEffect(()=>{if(!active)return;const timer=setTimeout(()=>setTick(t=>t+1),2000);return()=>clearTimeout(timer)},[active,tick]);
+ const enabled=sources.state==="done"&&sources.data.enabled;
+ const available=sources.state==="done"?sources.data.sources.filter(s=>s.status==="complete"):[];
+ const chosen=available.find(s=>s.id===source)??available[0];
+ async function submit(){
+  if(!chosen||!enabled||busy)return;
+  const a=Number(from),b=Number(to);
+  if(!/^(0|[1-9][0-9]*)$/.test(from)||!/^[1-9][0-9]*$/.test(to)||!Number.isSafeInteger(a)||!Number.isSafeInteger(b)||a<0||b<=a||b>chosen.duration_ns||node<0||node>=chosen.nodes.length){setError("Choose a recorded node and a cut interval inside the registered duration.");return}
+  setBusy(true);setError("");
+  try{await post("/v1/networks/{net}/datasets/{dataset}/scenario-jobs",{net,dataset},{source_id:chosen.id,change:{kind:"cut_outgoing",node,from_ns:a,to_ns:b}});setTick(t=>t+1)}catch(e){setError(e instanceof Error?e.message:"Unable to queue network experiment.");if(e instanceof ApiError&&e.status===401)onAuth()}finally{setBusy(false)}
+ }
+ return <><h2>Registered fitting models</h2><Pending load={sources} onAuth={onAuth}/>{sources.state==="done"&&<>{!enabled&&<p>Network experiment execution is unavailable. Registered models and stored results remain readable.</p>}{sources.data.sources.length===0?<p>No registered model. Stored results remain readable.</p>:<table><thead><tr><th>Source</th><th>Height range</th><th>Coverage</th></tr></thead><tbody>{sources.data.sources.map(s=><tr key={s.id}><td>{s.id}</td><td>{s.from}–{s.to}</td><td>{s.status}{s.model.issues.map((i,n)=><div key={n}>{i.code}{i.node&&` · ${i.node}`}</div>)}</td></tr>)}</tbody></table>}{chosen&&<form className="controls" onSubmit={e=>{e.preventDefault();void submit()}}><label>Complete model <select value={chosen.id} disabled={busy||!enabled} onChange={e=>{setSource(e.target.value);setNode(0)}}>{available.map(s=><option key={s.id} value={s.id}>{s.id}</option>)}</select></label><label>Cut outgoing links from recorded node <select value={node} disabled={busy||!enabled} onChange={e=>setNode(Number(e.target.value))}>{chosen.nodes.map((n,i)=><option key={i} value={i}>{i}: {n}</option>)}</select></label><label>Cut start ns <input required inputMode="numeric" pattern="0|[1-9][0-9]*" value={from} disabled={busy||!enabled} onChange={e=>setFrom(e.target.value)}/></label><label>Cut end ns <input required inputMode="numeric" pattern="[1-9][0-9]*" value={to} disabled={busy||!enabled} onChange={e=>setTo(e.target.value)}/></label><p>The change affects this node's outgoing links only. Registered duration: {chosen.duration_ns} ns. Run completion and baseline reproducibility are separate checks.</p><button disabled={busy||!enabled}>{busy?"Queueing…":"Queue network experiment"}</button></form>}{!chosen&&<p>Incomplete fitting models cannot start an experiment.</p>}</>}{error&&<p className="error" role="alert">{error}</p>}<Pending load={jobs} onAuth={onAuth}/>{jobs.state==="done"&&jobs.data.jobs.length>0&&<table><thead><tr><th>Job / source</th><th>Status</th><th>Result</th></tr></thead><tbody>{jobs.data.jobs.map(j=><tr key={j.id}><td>{j.id} / {j.source_id}</td><td>{j.status}{j.issue&&` · ${j.issue}`}</td><td>{j.scenario_id!=null&&<button onClick={()=>setSelected(j.scenario_id!)}>Open experiment {j.scenario_id}</button>}</td></tr>)}</tbody></table>}<Pending load={runs} onAuth={onAuth}/>{runs.state==="done"&&<><label>Stored experiment <select value={selected} onChange={e=>setSelected(Number(e.target.value))}><option value={0}>Select an experiment</option>{runs.data.runs.map(r=><option key={r.id} value={r.id}>{r.id} · {r.summary.status} · {r.credibility}</option>)}</select></label>{runs.data.runs.filter(r=>r.id===selected).map(run=><Details key={run.id} net={net} dataset={dataset} run={run} tick={tick} onAuth={onAuth}/>)}</>}</>;
+}
+export function ScenarioSummary({run}:{run:Run}){
+ const e=run.summary;
+ return <aside aria-label="Network experiment evidence"><h2>Experiment {run.id}: {e.status}</h2><p>Fitting coverage: {e.model.status} · baseline credibility: {run.credibility}</p><p>Baseline rounds: {e.baseline_rounds?.status??"unavailable"}{e.baseline_rounds?.p!=null&&` · p=${e.baseline_rounds.p}`} · baseline time: {e.baseline_time_check}</p><p>Counterfactual: cut outgoing links from recorded node {e.change.node}, {e.change.from_ns}–{e.change.to_ns} ns. {e.provenance.seeds.length} independent seeds.</p><details><summary>Immutable provenance</summary><p className="mono">Source {e.source_sha256}<br/>Recorded heights {e.recorded_sha256}<br/>Model {e.provenance.model_sha256}<br/>Execution {e.execution_sha256}<br/>Change {e.change_sha256}<br/>Core {e.provenance.core_commit}</p></details>{e.model.issues.length>0&&<ul>{e.model.issues.map((i,n)=><li key={n}>{i.code}{i.node&&` · ${i.node}`}</li>)}</ul>}</aside>;
+}
+function Details({net,dataset,run,tick,onAuth}:{net:number;dataset:number;run:Run;tick:number;onAuth:()=>void}){
+ const load=useRefreshingLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}/comparison",{path:{net,dataset,scenario:run.id}}),[net,dataset,run.id,tick]);
+ return <><ScenarioSummary run={run}/><Pending load={load} onAuth={onAuth}/>{load.state==="done"&&<ScenarioComparison plot={load.data}/>}</>;
+}
+
+// Refresh an immutable scope without remounting selected charts and tables.
+function useRefreshingLoad<T>(load:()=>Promise<T>,deps:unknown[]):Load<T>{
+ const [state,setState]=useState<Load<T>>({state:"loading"});
+ useEffect(()=>{let live=true;load().then(data=>{if(live)setState({state:"done",data})},error=>{if(live)setState({state:"error",error})});return()=>{live=false}},deps);
+ return state;
+}

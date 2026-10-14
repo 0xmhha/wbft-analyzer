@@ -173,7 +173,7 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 			}
 		}
 	}
-	for _, k := range []string{"seq", "step", "count", "row", "gen", "engine_run", "deadline_mono_ns", "duration_ms", "requested_round"} {
+	for _, k := range []string{"seq", "step", "count", "row", "gen", "engine_run", "deadline_mono_ns", "duration_ms", "requested_round", "wait_ms"} {
 		raw := m[k]
 		if len(raw) == 0 {
 			continue
@@ -191,6 +191,14 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 	// form when metadata is reapplied at persistence. No arbitrary nested map
 	// crosses this boundary.
 	if kind == event.NodeStart {
+		if bytes.Equal(bytes.TrimSpace(m["sign_floor"]), []byte("null")) {
+			out["sign_floor_state"] = "none"
+		} else {
+			var state string
+			if json.Unmarshal(m["sign_floor_state"], &state) == nil && state == "none" {
+				out["sign_floor_state"] = state
+			}
+		}
 		var validator bool
 		if json.Unmarshal(m["validator"], &validator) == nil {
 			out["validator"] = validator
@@ -209,6 +217,50 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 		}
 		if n, ok := new(big.Int).SetString(floor.Height, 10); len(floor.Height) <= 156 && ok && n.Sign() >= 0 && n.String() == floor.Height && (floor.Status == "set" || floor.Status == "kept" || floor.Status == "cleared") {
 			out["sign_floor_height"], out["sign_floor_status"] = floor.Height, floor.Status
+		}
+	}
+	if kind == event.EngineStart {
+		// Preserve policy separately from the observed result. False replayed
+		// with an empty WAL never proves that replay was disabled.
+		var replay map[string]json.RawMessage
+		_ = json.Unmarshal(m["replay"], &replay)
+		for original, flat := range map[string]string{"enabled": "wal_replay_enabled", "available": "wal_available", "replayed": "wal_replayed"} {
+			raw := replay[original]
+			if len(raw) == 0 {
+				raw = m[flat]
+			}
+			var value bool
+			if bytes.Equal(bytes.TrimSpace(raw), []byte("true")) || bytes.Equal(bytes.TrimSpace(raw), []byte("false")) {
+				if json.Unmarshal(raw, &value) == nil {
+					out[flat] = value
+				}
+			}
+		}
+		raw := replay["records"]
+		if len(raw) == 0 {
+			raw = m["wal_replay_records"]
+		}
+		var records string
+		if json.Unmarshal(raw, &records) != nil {
+			records = string(raw)
+		}
+		if n, err := strconv.ParseUint(records, 10, 64); err == nil {
+			out["wal_replay_records"] = strconv.FormatUint(n, 10)
+		}
+		raw = replay["stopped"]
+		if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+			out["wal_replay_status"] = "complete"
+		} else if len(raw) > 0 {
+			var text string
+			if json.Unmarshal(raw, &text) == nil && text != "" {
+				out["wal_replay_status"] = "stopped"
+			}
+		}
+		if out["wal_replay_status"] == nil {
+			var status string
+			if json.Unmarshal(m["wal_replay_status"], &status) == nil && (status == "complete" || status == "stopped") {
+				out["wal_replay_status"] = status
+			}
 		}
 	}
 	if kind == event.Health {
@@ -237,7 +289,7 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 			out["requested_round"] = round
 		}
 	}
-	for _, k := range []string{"is_proposer", "stale"} {
+	for _, k := range []string{"is_proposer", "stale", "ok"} {
 		var b bool
 		if json.Unmarshal(m[k], &b) == nil {
 			out[k] = b

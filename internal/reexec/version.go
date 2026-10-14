@@ -21,3 +21,14 @@ func canonicalVersion(v string) string {
 func sameVersion(a, b string) bool {
 	return a != "unknown" && b != "unknown" && canonicalVersion(a) == canonicalVersion(b)
 }
+
+// LinkedCommit resolves the runtime module version only through the exact
+// embedded origin pin. Unknown or locally replaced builds stay unavailable.
+func LinkedCommit() string {
+	v := LinkedVersion()
+	commit := canonicalVersion(v)
+	if len(commit) != 40 {
+		return "unknown"
+	}
+	return commit
+}

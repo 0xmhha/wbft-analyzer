@@ -131,6 +131,8 @@ func (g *schemas) of(t reflect.Type) map[string]any {
 		return map[string]any{"type": "boolean"}
 	case reflect.Int, reflect.Int32, reflect.Int64:
 		return map[string]any{"type": "integer", "format": "int64"}
+	case reflect.Uint, reflect.Uint32, reflect.Uint64:
+		return map[string]any{"type": "integer", "minimum": 0}
 	case reflect.Float64:
 		return map[string]any{"type": "number", "format": "double"}
 	case reflect.Slice:
@@ -170,6 +172,16 @@ func (g *schemas) component(t reflect.Type) string {
 			tag = f.Name
 		}
 		s := g.of(f.Type)
+		if strings.Contains(f.Tag.Get("json"), ",string") {
+			switch f.Type.Kind() {
+			case reflect.Uint64, reflect.Uint, reflect.Uint32:
+				s = map[string]any{"type": "string", "pattern": "^[0-9]+$"}
+			case reflect.Int64, reflect.Int, reflect.Int32:
+				s = map[string]any{"type": "string", "pattern": "^-?[0-9]+$"}
+			default:
+				panic(fmt.Sprintf("api: unsupported string encoding %s", f.Type))
+			}
+		}
 		if f.Tag.Get("nullable") == "true" {
 			s = nullable(s)
 		}

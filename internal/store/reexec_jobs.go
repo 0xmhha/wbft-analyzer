@@ -72,7 +72,7 @@ func (s *Store) EnqueueReexec(ctx context.Context, j ReexecJob) (ReexecJob, erro
 		}
 
 		var count int
-		if err := tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM reexec_jobs WHERE status IN ('queued','running'))+(SELECT count(*) FROM whatif_jobs WHERE status IN ('queued','running'))`).Scan(&count); err != nil {
+		if err := tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM reexec_jobs WHERE status IN ('queued','running'))+(SELECT count(*) FROM whatif_jobs WHERE status IN ('queued','running'))+(SELECT count(*) FROM scenario_jobs WHERE status IN ('queued','running'))`).Scan(&count); err != nil {
 			return err
 		}
 		if count >= MaxReexecJobs {
