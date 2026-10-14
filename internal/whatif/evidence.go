@@ -13,6 +13,8 @@ type answerKey struct {
 	call       int
 }
 type Evidence struct {
+	entryMonos      map[Source]string
+	entryWalls      map[Source]string
 	retiredTimers   map[Source]bool
 	Versions        []string
 	recorded        map[answerKey]RecordedAnswer
@@ -214,4 +216,17 @@ func (e *Evidence) RetiredTimers() []Source {
 		return a < b
 	})
 	return out
+}
+
+// RecordedSourceWall is an original entry stamp, not a wall time invented for
+// a generated input or a shifted model slot.
+func (e *Evidence) RecordedSourceWall(s Step) *string {
+	if s.Source == nil || e.entryMonos[*s.Source] != s.Mono {
+		return nil
+	}
+	wall, exists := e.entryWalls[*s.Source]
+	if !exists {
+		return nil
+	}
+	return &wall
 }

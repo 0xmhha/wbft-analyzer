@@ -1030,3 +1030,30 @@ require separate validation.
 experiment results and exact original-record lookup. Its retained timer inputs
 remain alongside the database dump. A restored database must adopt retained
 objects into its own namespace before modifying or deleting them.
+
+### Original network links and experiment influence
+
+Timer experiments retain separate original-output network bindings and
+execution-ordered network/commit effects. Bindings compare verified original
+producer fingerprints with complete retained frame bytes, direction, peer,
+code, writer and send cause. Repeated producers or writes stay ambiguous;
+missing receivers, failed writes and unknown clocks never become arrivals.
+The original receive interval uses only the declared shared-host or bounded
+NTP clock scope. Every selected input hash and clock declaration is retained.
+
+The detail view shows each effect and its exact original send/receive pointers.
+A generated or relocated output can reuse recorded signing bytes without
+reusing their arrival time. Commit delivery through the application remains
+explicitly unproved. Original deletion effects are added only after full source
+completion, in the same transaction as finalization; interrupted runs cannot
+acquire a fabricated deleted suffix. Execution rows and derived effects are
+also persisted atomically. Recovery reconciles counts from preserved rows.
+
+`network-bindings` and `network-effects` below a dataset-scoped `whatif/{id}`
+provide bounded cursor pages. The summary separates the first unproved executed
+output from an observed receive for a removed original intent. New bytes never
+inherit an old latency. Hatched rows mark unproved model regions; bounded
+original-receive regions use exact nanosecond original entry stamps and declared
+clock uncertainty. Generated inputs without a recorded wall stamp remain
+unaligned. A source-horizon completion is not proof of other nodes' reactions.
+Historical runs without this evidence are explicitly unavailable.

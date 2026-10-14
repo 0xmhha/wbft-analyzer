@@ -137,3 +137,5 @@ article pre { overflow: auto; max-height: 24rem; }
 .whatif-panel tr { transition: background-color 140ms ease; }
 .whatif-selected { background-color: #4477aa22; }
 @media (prefers-reduced-motion: reduce) { .whatif-panel tr { transition: none; } }
+
+.whatif-unproved {background-image:repeating-linear-gradient(135deg,transparent 0,transparent 7px,#936b1920 7px,#936b1920 9px)}

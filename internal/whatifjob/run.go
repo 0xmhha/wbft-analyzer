@@ -50,7 +50,7 @@ func Run(ctx context.Context, s *store.Store, o Options) (Result, error) {
 		return result, err
 	}
 	defer release()
-	_, network, err := s.ReexecDataset(ctx, o.Dataset)
+	dataset, network, err := s.ReexecDataset(ctx, o.Dataset)
 	if err != nil {
 		return result, err
 	}
@@ -128,6 +128,11 @@ func Run(ctx context.Context, s *store.Store, o Options) (Result, error) {
 	if err != nil {
 		return result, err
 	}
+	bindings, networkScope, err := inspectNetwork(ctx, s, dataset, network, inputs, prepared, evidence)
+	if err != nil {
+		return result, err
+	}
+	planner := evidence.NewNetworkPlanner(bindings, networkScope)
 	executable, err := os.Executable()
 	if err != nil {
 		return result, err
@@ -142,7 +147,7 @@ func Run(ctx context.Context, s *store.Store, o Options) (Result, error) {
 	if o.Helper != nil && helperHash != o.Helper.ExpectedSHA {
 		return result, whatif.ErrEvidence
 	}
-	summary := whatif.Summary{Version: whatif.Version, Model: whatif.Model, Status: "running", BaselineValidated: true, HelperVersion: helperVersion, SourceVersions: evidence.Versions, RetiredTimers: evidence.RetiredTimers()}
+	summary := whatif.Summary{Version: whatif.Version, Model: whatif.Model, Status: "running", BaselineValidated: true, HelperVersion: helperVersion, SourceVersions: evidence.Versions, RetiredTimers: evidence.RetiredTimers(), Network: &whatif.NetworkSummary{Version: whatif.NetworkVersion, Status: "running", Scope: networkScope}}
 	record := store.WhatifRun{Dataset: o.Dataset, Input: o.Input, ChainSHA: chain.SHA256, SourceSHA: input.SHA256, HelperSHA: helperHash, Policy: o.Policy, Summary: summary}
 	var id int64
 	if o.JobID != 0 {
@@ -154,6 +159,16 @@ func Run(ctx context.Context, s *store.Store, o Options) (Result, error) {
 		return result, err
 	}
 	result.ID = id
+	if err = s.PutWhatifNetworkBindings(ctx, id, bindings); err != nil {
+		cleanup, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		summary.Status = "failed"
+		summary.Issue = "network_evidence_unavailable"
+		if finishErr := s.FinishWhatif(cleanup, id, summary); finishErr != nil {
+			return result, finishErr
+		}
+		return result, err
+	}
 	if o.OnBegin != nil {
 		if err = o.OnBegin(id); err != nil {
 			summary.Status = "failed"
@@ -213,7 +228,13 @@ func Run(ctx context.Context, s *store.Store, o Options) (Result, error) {
 			if err = evidence.Validate(step, previous); err != nil {
 				break
 			}
-			if err = s.PutWhatifStep(ctx, id, step); err != nil {
+			step.SourceWall = evidence.RecordedSourceWall(step)
+			effects, effectErr := planner.Note(step)
+			if effectErr != nil {
+				err = effectErr
+				break
+			}
+			if err = s.PutWhatifStepWithEffects(ctx, id, step, effects); err != nil {
 				break
 			}
 			previous++
@@ -304,7 +325,13 @@ func Run(ctx context.Context, s *store.Store, o Options) (Result, error) {
 	}
 	cleanup, finish := context.WithTimeout(context.Background(), 10*time.Second)
 	defer finish()
-	if finishErr := s.FinishWhatif(cleanup, id, summary); finishErr != nil {
+	remaining, networkSummary, networkErr := planner.Finish(summary.Status == "completed", bindings)
+	if networkErr != nil {
+		return result, networkErr
+	}
+
+	summary.Network = &networkSummary
+	if finishErr := s.FinishWhatifWithNetwork(cleanup, id, summary, remaining); finishErr != nil {
 		return result, finishErr
 	}
 	stored, readErr := s.WhatifRun(cleanup, o.Dataset, id)

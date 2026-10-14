@@ -112,6 +112,8 @@ capture() {
  timer_run=$(jq -r '.runs[0].id' "$dir/timer-runs.json")
  get "/networks/$timer_net/datasets/$timer_dataset/whatif/$timer_run" timer-summary
  get "/networks/$timer_net/datasets/$timer_dataset/whatif/$timer_run/results?limit=1000" timer-results
+ get "/networks/$timer_net/datasets/$timer_dataset/whatif/$timer_run/network-bindings?limit=1000" timer-network-bindings
+ get "/networks/$timer_net/datasets/$timer_dataset/whatif/$timer_run/network-effects?limit=1000" timer-network-effects
  get "/networks/$timer_net/datasets/$timer_dataset/whatif-jobs" timer-jobs
  get "/networks/$timer_net/datasets/$timer_dataset/messages/source?input=journal&file=00000000000000000000.wal&ordinal=1" timer-original-source
  get "/networks/$message_net/datasets/$message_id/reexec-sources" message-reexec-sources
