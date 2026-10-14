@@ -78,6 +78,9 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 			r.EngineRun = number(b.EngineRun)
 			r.ConfigDigest = hash(b.ConfigDigest)
 			r.Improvements = number(b.Core.Improvements)
+			if b.Core.TimerTrace != 0 {
+				r.TimerTrace = number(b.Core.TimerTrace)
+			}
 		} else if run == "" {
 			return s, errors.New("journal missing segment identity")
 		}
@@ -183,6 +186,15 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 			r.HeadHash = hash(b.HeadHash)
 			r.OutDigest = hash(b.OutDigest)
 			r.Via = choice(b.Via, "internal", "app", "timer", "peer", "wal")
+		case *journal.TimerRec:
+			r.Type = "timer_operation"
+			r.ClockSource = "recorded"
+			r.EngineRun = number(b.EngineRun)
+			r.Step = number(b.Step)
+			r.Mono = signed(int64(b.Mono))
+			r.Wall = time.Unix(0, b.WallNs).UTC().Format(time.RFC3339Nano)
+			r.Timer = projectTimerOperation(b)
+			r.Height, r.Round = r.Timer.Height, r.Timer.Round
 		case *journal.GapRec:
 			r.Type = "gap"
 			r.Dropped = number(b.Dropped)
