@@ -102,3 +102,19 @@ func TestRuntimePolicyRequiresRecordedConfigurationForEveryStart(t *testing.T) {
 		t.Fatal("another writer proved runtime policy", got, err)
 	}
 }
+
+func TestRuntimeSeparatesEnginePauseFromNodeShutdown(t *testing.T) {
+	origin := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	rec := func(kind event.Kind, line int) logs.Event {
+		return logs.Event{Node: "node", Input: "input", Profile: logs.EventProfile, Run: "r1", Line: int64(line), Wall: origin.Add(time.Duration(line) * time.Millisecond).Format(time.RFC3339Nano), Record: event.Record{Kind: kind, Fields: map[string]any{"sign_floor_state": "none"}}}
+	}
+	start, stop, engine := rec(event.NodeStart, 1), rec(event.NodeStop, 2), rec(event.EngineStop, 3)
+	shutdown, err := FitRuntime("node", "input", []logs.Event{start, stop, engine}, origin)
+	if err != nil || shutdown.EngineStopped || len(shutdown.Events) != 1 || shutdown.Events[0].Action != "stop" {
+		t.Fatal("engine teardown misclassified as an independent pause", shutdown, err)
+	}
+	pause, err := FitRuntime("node", "input", []logs.Event{start, engine}, origin)
+	if err != nil || !pause.EngineStopped {
+		t.Fatal("live-node engine stop was hidden", pause, err)
+	}
+}

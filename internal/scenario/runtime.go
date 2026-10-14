@@ -55,7 +55,9 @@ func FitRuntime(node, input string, xs []logs.Event, origin time.Time) (Runtime,
 		}
 		kind := x.Record.Kind
 		if kind == event.EngineStop {
-			out.EngineStopped = true
+			// NODE_STOP is emitted before the engine teardown during shutdown.
+			// Only a stop while the node remains live needs a separate engine model.
+			out.EngineStopped = out.EngineStopped || running
 			continue
 		}
 		if kind == event.EngineStart {
