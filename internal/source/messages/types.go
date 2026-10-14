@@ -6,7 +6,7 @@ package messages
 import "github.com/0xmhha/wbft-analyzer/internal/source/logs"
 
 const Format = "wbft-analyzer-messages/1"
-const Normalizer = "wbft-message-normalization/4"
+const Normalizer = "wbft-message-normalization/5"
 
 type Clock struct {
 	Model  string `json:"model"`
@@ -49,6 +49,8 @@ type Prepared struct {
 // the original per-run jseq, which need not be file-ordered in R-01 exports.
 // Empty wall/mono values on peer/outcome records remain unknown.
 type Record struct {
+	EntryMono     *string `json:"entry_t_mono_ns,omitempty"`
+	EntryWall     string  `json:"entry_t_wall,omitempty"`
 	Capture       string  `json:"capture_id,omitempty"`
 	ClockSource   string  `json:"clock_source,omitempty"`
 	Input         string  `json:"input"`

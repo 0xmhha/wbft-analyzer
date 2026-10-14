@@ -1780,6 +1780,15 @@
           "engine_run": {
             "type": "string"
           },
+          "entry_t_mono_ns": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entry_t_wall": {
+            "type": "string"
+          },
           "event": {
             "type": "string"
           },
@@ -3426,6 +3435,15 @@
             "type": "boolean"
           },
           "engine_run": {
+            "type": "string"
+          },
+          "entry_t_mono_ns": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entry_t_wall": {
             "type": "string"
           },
           "execution_height": {

@@ -1342,6 +1342,8 @@ export interface components {
             dropped?: string;
             engine?: string;
             engine_run?: string;
+            entry_t_mono_ns?: string | null;
+            entry_t_wall?: string;
             event?: string;
             file: string;
             gap_first_mono_ns?: string;
@@ -1780,6 +1782,8 @@ export interface components {
             completeness: string;
             context_answers?: boolean;
             engine_run: string;
+            entry_t_mono_ns?: string | null;
+            entry_t_wall?: string;
             execution_height?: string;
             /** Format: int64 */
             execution_ordinal?: number;

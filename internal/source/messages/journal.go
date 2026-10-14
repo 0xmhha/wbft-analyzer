@@ -175,6 +175,10 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 			r.Step = number(b.Step)
 			r.Mono = signed(int64(b.Mono))
 			r.Wall = time.Unix(0, b.WallNs).UTC().Format(time.RFC3339Nano)
+			if b.Entry != nil {
+				r.EntryMono = signed(int64(b.Entry.Mono))
+				r.EntryWall = time.Unix(0, b.Entry.WallNs).UTC().Format(time.RFC3339Nano)
+			}
 			r.HeadNumber = b.HeadNumber.String()
 			r.HeadHash = hash(b.HeadHash)
 			r.OutDigest = hash(b.OutDigest)
