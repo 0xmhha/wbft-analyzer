@@ -2348,6 +2348,9 @@ export interface components {
             call_count: number;
             capture_complete: boolean;
             delivery_coverage_proven: boolean;
+            engine_configurations: {
+                [key: string]: number;
+            };
             /** Format: int64 */
             engine_count: number;
             engine_states: {
@@ -2362,6 +2365,7 @@ export interface components {
             sequence_gaps: string;
             source_sha256: string;
             startup: components["schemas"]["RuntimeobsPoint"] | null;
+            startups: components["schemas"]["RuntimeobsPoint"][];
             /** Format: int64 */
             task_count: number;
             unavailable: string[];
@@ -2379,6 +2383,8 @@ export interface components {
             start_line: number;
         };
         RuntimeobsEngineEvidence: {
+            configs: components["schemas"]["RuntimeobsPoint"][];
+            configuration: string;
             created: components["schemas"]["RuntimeobsPoint"];
             /** Format: int64 */
             created_line: number;
@@ -2578,6 +2584,7 @@ export interface components {
             call_count: number;
             capture_complete: boolean;
             configuration: string;
+            configurations: components["schemas"]["ScenarioRuntimeConfiguration"][];
             engine_states: {
                 [key: string]: number;
             };
@@ -2585,10 +2592,18 @@ export interface components {
             run: string;
             source: components["schemas"]["ScenarioInput"];
             startup: components["schemas"]["RuntimeobsPoint"] | null;
+            startups: components["schemas"]["RuntimeobsPoint"][];
             task_states: {
                 [key: string]: number;
             };
             unavailable: string[];
+        };
+        ScenarioRuntimeConfiguration: {
+            comparison: string;
+            engine_id: string;
+            parent_id: string;
+            point: components["schemas"]["RuntimeobsPoint"];
+            state: string;
         };
         ScenarioScopeCounts: {
             /** Format: int64 */

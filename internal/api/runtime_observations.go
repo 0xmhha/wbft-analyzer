@@ -10,22 +10,24 @@ import (
 )
 
 type RuntimeSummary struct {
-	EngineCount                        int               `json:"engine_count"`
-	EngineStates                       map[string]int    `json:"engine_states"`
-	TaskCount                          int               `json:"task_count"`
-	Startup                            *runtimeobs.Point `json:"startup"`
-	Normalizer                         string            `json:"normalizer"`
-	SourceSHA                          string            `json:"source_sha256"`
-	Node                               string            `json:"node"`
-	Run                                string            `json:"run"`
-	Complete                           bool              `json:"capture_complete"`
-	SequenceGaps                       string            `json:"sequence_gaps"`
-	Unavailable                        []string          `json:"unavailable"`
-	CallCount                          int               `json:"call_count"`
-	PointCount                         int               `json:"point_count"`
-	RuntimeModelComplete               bool              `json:"runtime_model_complete"`
-	DeliveryCoverageProven             bool              `json:"delivery_coverage_proven"`
-	ApplicationRequestCompletionProven bool              `json:"application_request_completion_proven"`
+	Startups                           []runtimeobs.Point `json:"startups"`
+	EngineConfigurations               map[string]int     `json:"engine_configurations"`
+	EngineCount                        int                `json:"engine_count"`
+	EngineStates                       map[string]int     `json:"engine_states"`
+	TaskCount                          int                `json:"task_count"`
+	Startup                            *runtimeobs.Point  `json:"startup"`
+	Normalizer                         string             `json:"normalizer"`
+	SourceSHA                          string             `json:"source_sha256"`
+	Node                               string             `json:"node"`
+	Run                                string             `json:"run"`
+	Complete                           bool               `json:"capture_complete"`
+	SequenceGaps                       string             `json:"sequence_gaps"`
+	Unavailable                        []string           `json:"unavailable"`
+	CallCount                          int                `json:"call_count"`
+	PointCount                         int                `json:"point_count"`
+	RuntimeModelComplete               bool               `json:"runtime_model_complete"`
+	DeliveryCoverageProven             bool               `json:"delivery_coverage_proven"`
+	ApplicationRequestCompletionProven bool               `json:"application_request_completion_proven"`
 }
 type RuntimeCallPage struct {
 	Calls []runtimeobs.Call `json:"calls"`
@@ -67,19 +69,29 @@ func (s *Server) runtimeSummary(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	candidates := runtimeobs.StartupCandidates(c)
+	if len(candidates) > 256 {
+		writeError(w, 400, "runtime startup candidate limit exceeded")
+		return
+	}
 	var startup *runtimeobs.Point
-	for _, p := range c.Points {
-		if p.Type == "runtime_start" {
-			copy := p
-			startup = &copy
-			break
+	if len(candidates) > 0 {
+		copy := candidates[0]
+		startup = &copy
+	}
+	configs := map[string]int{}
+	for _, engine := range c.Engines {
+		state := engine.Configuration
+		if state == "" {
+			state = "unavailable"
 		}
+		configs[state]++
 	}
 	states := map[string]int{}
 	for _, engine := range c.Engines {
 		states[engine.State]++
 	}
-	writeJSON(w, 200, RuntimeSummary{len(c.Engines), states, len(c.Tasks), startup, c.Normalizer, c.SourceSHA, c.Node, c.Run, c.Complete, c.SequenceGaps, c.Unavailable, len(c.Calls), len(c.Points), false, false, false})
+	writeJSON(w, 200, RuntimeSummary{candidates, configs, len(c.Engines), states, len(c.Tasks), startup, c.Normalizer, c.SourceSHA, c.Node, c.Run, c.Complete, c.SequenceGaps, c.Unavailable, len(c.Calls), len(c.Points), false, false, false})
 }
 func (s *Server) runtimeCalls(w http.ResponseWriter, r *http.Request) {
 	for k := range r.URL.Query() {
@@ -144,7 +156,7 @@ func (s *Server) runtimeCall(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		engines := []runtimeobs.EngineEvidence{}
-		stages := 0
+		points := 0
 		for _, engine := range c.Engines {
 			matches := engine.ParentID == id
 			for _, stage := range engine.Stages {
@@ -153,8 +165,8 @@ func (s *Server) runtimeCall(w http.ResponseWriter, r *http.Request) {
 			if !matches {
 				continue
 			}
-			stages += len(engine.Stages)
-			if len(engines) >= 32 || stages > 256 {
+			points += 1 + len(engine.Stages) + len(engine.Configs)
+			if len(engines) >= 32 || points > 256 {
 				writeError(w, 400, "runtime engine candidate limit exceeded")
 				return
 			}

@@ -1199,9 +1199,9 @@ name for the new metadata. Fitting provenance retains task-state counts
 without claiming a complete engine, application queue, or delivery model.
 
 
-Runtime normalization version 3 preserves concrete core instances, their exact
+Runtime normalization preserves concrete core instances, their exact
 startup parent, creation point and every lifecycle stage candidate. Runtime
-summary and fitting provenance version 6 retain core-state counts. Selecting
+summary and fitting provenance retain core-state counts. Selecting
 either the exact start or stop parent exposes the same complete candidate set;
 unrelated calls are never joined by nearby time or height. The bounded API
 refuses oversized sets without choosing a subset. Stage parents, IDs and
@@ -1210,3 +1210,17 @@ evidence; import a new dataset name to retain the new metadata. A recorded
 startup or shutdown does not prove current process liveness, native options,
 input processing, application queues or receiver coverage. Execution models
 remain partial until those inputs and semantics are established.
+
+
+Runtime normalization version 4 retains every historical startup candidate and
+all exact per-instance configuration snapshots. The runtime API and source panel
+show original engine/parent identities, lines, full heights and scalar settings;
+creation, lifecycle and configuration candidates share one response bound.
+
+Fitting provenance version 7 compares every exact snapshot at its own full
+recorded height. One mismatch remains visible even when another snapshot passes.
+Ambiguous configurations and multiple unbound legacy startup rows never become a
+preferred first value or a complete execution model. The single `startup` field
+is a historical compatibility field; use `startups` and `configurations` to read
+the full history. Later effective settings, native options, input handling,
+application queues and receiver coverage remain unproved by these snapshots.
