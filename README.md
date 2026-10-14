@@ -1159,3 +1159,14 @@ included in the model identity and source metadata (fitting version 2); use a
 new source ID when changing it. Neither I/O timing nor received messages alone
 prove receiver coverage or zero loss. A full baseline still needs runtime and
 application inputs and the original independent-seed credibility checks.
+
+Runtime sidecars can be imported separately with `ingest runtime --file FILE
+--name NAME --chain-id DECIMAL --genesis HASH`. The network identity is declared
+by the operator; the sidecar alone does not prove chain membership. Original
+node, writer run, source SHA256, line numbers and exact operation IDs remain
+bound together. The runtime calls screen and read-only `/runtime`,
+`/runtime/calls`, and `/runtime/calls/{call}` endpoints retain known return paths
+and missing evidence. Call pages contain at most 100 intervals. Configuration
+scalars and times remain decimal strings. Complete capture evidence is separate
+from a complete execution model, remote delivery, or application request
+completion; runtime sidecars do not become native consensus events.

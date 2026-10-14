@@ -720,6 +720,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/runtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Runtime sidecar provenance and capture completeness, separate from execution model evidence. */
+        get: operations["getRuntimeCapture"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/runtime/calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** At most 100 exact recorded operation intervals; missing calls are not inferred. */
+        get: operations["listRuntimeCalls"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/runtime/calls/{call}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exact original operation start and end lines within one capture identity. */
+        get: operations["getRuntimeCall"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/scenario-jobs": {
         parameters: {
             query?: never;
@@ -2275,6 +2326,77 @@ export interface components {
             proposer: string;
             round: string;
             t_wall: string;
+        };
+        RuntimeCallPage: {
+            calls: components["schemas"]["RuntimeobsCall"][];
+            /** Format: int64 */
+            next: number | null;
+        };
+        RuntimeCallSource: {
+            call: components["schemas"]["RuntimeobsCall"];
+            end: components["schemas"]["RuntimeobsPoint"];
+            node: string;
+            run: string;
+            source_sha256: string;
+            start: components["schemas"]["RuntimeobsPoint"];
+        };
+        RuntimeSummary: {
+            application_request_completion_proven: boolean;
+            /** Format: int64 */
+            call_count: number;
+            capture_complete: boolean;
+            delivery_coverage_proven: boolean;
+            node: string;
+            normalizer: string;
+            /** Format: int64 */
+            point_count: number;
+            run: string;
+            runtime_model_complete: boolean;
+            sequence_gaps: string;
+            source_sha256: string;
+            unavailable: string[];
+        };
+        RuntimeobsCall: {
+            /** Format: int64 */
+            end_line: number;
+            hash: string;
+            height: string;
+            id: string;
+            nanoseconds: string;
+            operation: string;
+            result: string;
+            /** Format: int64 */
+            start_line: number;
+        };
+        RuntimeobsPoint: {
+            config?: components["schemas"]["RuntimeobsStartup"] | null;
+            count?: string;
+            dropped?: string;
+            engine_stopped?: boolean | null;
+            hash?: string;
+            height?: string;
+            id?: string;
+            index?: string;
+            /** Format: int64 */
+            line: number;
+            operation?: string;
+            result?: string;
+            seq: string;
+            t_mono_ns: string;
+            t_wall: string;
+            type: string;
+        };
+        RuntimeobsStartup: {
+            address: string;
+            allowed_future_block_seconds: string;
+            block_period_seconds: string;
+            epoch: string;
+            height: string;
+            max_request_timeout_seconds: string;
+            proposer_policy: string;
+            request_timeout_ms: string;
+            system_contract_upgrades: string;
+            transitions: string;
         };
         ScenarioAssessment: {
             issues: components["schemas"]["ScenarioIssue"][];
@@ -5360,6 +5482,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoundsSummary"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getRuntimeCapture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeSummary"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listRuntimeCalls: {
+        parameters: {
+            query?: {
+                /** @description zero-based immutable call offset */
+                after?: number;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeCallPage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getRuntimeCall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description full decimal operation ID */
+                call: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeCallSource"];
                 };
             };
             /** @description the request failed */
