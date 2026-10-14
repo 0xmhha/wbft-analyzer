@@ -129,3 +129,6 @@ article pre { overflow: auto; max-height: 24rem; }
 .first-difference { outline: 2px solid #c28c12; outline-offset: 2px; }
 
 .reexec-tick.warmup_suspect { background: #b9791b; border-bottom: 4px solid #644614; }
+
+.schedule-comparison { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 1rem; }
+.schedule-comparison ol { max-height: 12rem; overflow: auto; }

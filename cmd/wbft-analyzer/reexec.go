@@ -36,6 +36,7 @@ func runReexec(args []string, stdout, stderr io.Writer) int {
 	from := fs.Uint64("from", 0, "first active height (inclusive)")
 	to := fs.Uint64("to", 0, "last active height (inclusive)")
 	warmup := fs.Uint64("warmup-heights", 2, "bounded prefix heights when the recorded engine start is missing; 0 disables, at most 10000")
+	scheduleFile := fs.String("input-schedule", "", "explicit counterfactual external-input schedule JSON file")
 	scope := fs.String("answer-scope", "step", "application answers: step or explicit counterfactual context")
 	omit := fs.Bool("omit-missing-captures", false, "counterfactual: omit missing referenced received inputs")
 	helper := fs.String("helper", "", "versioned wbft-replay executable; default: linked core in a child")
@@ -43,6 +44,19 @@ func runReexec(args []string, stdout, stderr io.Writer) int {
 	if fs.Parse(args) != nil || fs.NArg() != 0 || *dsn == "" || *dataset < 1 || !logs.Identifier(*input) || *chain == "" || *from < 1 || *to < *from || *to-*from >= 10000 || *timeout <= 0 || *timeout > 30*time.Minute || *warmup > 10000 || (*scope != "step" && *scope != "context") {
 		fs.Usage()
 		return exitUsage
+	}
+	var schedule *reexec.InputSchedule
+	if *scheduleFile != "" {
+		f, e := os.Open(*scheduleFile)
+		if e != nil {
+			return exitUsage
+		}
+		raw, e := io.ReadAll(io.LimitReader(f, 4097))
+		_ = f.Close()
+		if e != nil || len(raw) > 4096 || json.Unmarshal(raw, &schedule) != nil || schedule == nil || *scope != "context" || *omit || *warmup != 0 {
+			fmt.Fprintln(stderr, "input schedule requires context answers, complete recorded start and no omission")
+			return exitUsage
+		}
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
@@ -66,7 +80,7 @@ func runReexec(args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		return exitInternal
 	}
-	result, runErr := replayjob.Run(ctx, s, replayjob.RunOptions{Dataset: *dataset, Input: *input, Chain: *chain, From: *from, To: *to, Helper: reexec.Helper{AnswerScope: *scope, Path: executable, Args: helperArgs, Timeout: *timeout, OmitMissing: *omit, WarmupHeights: *warmup}}, nil)
+	result, runErr := replayjob.Run(ctx, s, replayjob.RunOptions{Dataset: *dataset, Input: *input, Chain: *chain, From: *from, To: *to, Helper: reexec.Helper{Schedule: schedule, AnswerScope: *scope, Path: executable, Args: helperArgs, Timeout: *timeout, OmitMissing: *omit, WarmupHeights: *warmup}}, nil)
 	if errors.Is(runErr, replayjob.ErrStore) {
 		fmt.Fprintln(stderr, "replay storage failed")
 		return exitInternal

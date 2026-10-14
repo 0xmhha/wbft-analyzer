@@ -26,22 +26,27 @@ type recordedAnswer struct {
 }
 
 type Step struct {
-	ContextAnswers bool           `json:"context_answers,omitempty"`
-	AnswerSources  []AnswerSource `json:"answer_sources,omitempty"`
-	Approximate    bool           `json:"approximate,omitempty"`
-	Warmup         bool           `json:"warmup,omitempty"`
-	Capture        string         `json:"capture_id,omitempty"`
-	Omitted        bool           `json:"omitted,omitempty"`
-	Mono           string         `json:"t_mono_ns,omitempty"`
-	Wall           string         `json:"t_wall,omitempty"`
-	Offset         *int64         `json:"offset,omitempty"`
-	Phase          string         `json:"phase,omitempty"`
-	MessageHeight  string         `json:"message_height,omitempty"`
-	Round          string         `json:"round,omitempty"`
-	MessageDigest  string         `json:"message_digest,omitempty"`
-	Peer           string         `json:"input_peer,omitempty"`
-	PayloadSHA     string         `json:"payload_sha256,omitempty"`
-	ValsetDigest   string         `json:"recorded_valset_digest,omitempty"`
+	scheduleAffected bool
+	ScheduleReason   string         `json:"suppression_reason,omitempty"`
+	Scheduled        *InputPosition `json:"scheduled_input,omitempty"`
+	ExecutionOrdinal int64          `json:"execution_ordinal,omitempty"`
+	ExecutionHeight  string         `json:"execution_height,omitempty"`
+	ContextAnswers   bool           `json:"context_answers,omitempty"`
+	AnswerSources    []AnswerSource `json:"answer_sources,omitempty"`
+	Approximate      bool           `json:"approximate,omitempty"`
+	Warmup           bool           `json:"warmup,omitempty"`
+	Capture          string         `json:"capture_id,omitempty"`
+	Omitted          bool           `json:"omitted,omitempty"`
+	Mono             string         `json:"t_mono_ns,omitempty"`
+	Wall             string         `json:"t_wall,omitempty"`
+	Offset           *int64         `json:"offset,omitempty"`
+	Phase            string         `json:"phase,omitempty"`
+	MessageHeight    string         `json:"message_height,omitempty"`
+	Round            string         `json:"round,omitempty"`
+	MessageDigest    string         `json:"message_digest,omitempty"`
+	Peer             string         `json:"input_peer,omitempty"`
+	PayloadSHA       string         `json:"payload_sha256,omitempty"`
+	ValsetDigest     string         `json:"recorded_valset_digest,omitempty"`
 
 	Ordinal      int64    `json:"ordinal"`
 	File         string   `json:"file"`
@@ -78,28 +83,30 @@ type Plan struct {
 }
 
 type Result struct {
-	OmitMissing    bool     `json:"omit_missing_captures,omitempty"`
-	AnswerScope    string   `json:"answer_scope,omitempty"`
-	WarmupHeights  int      `json:"warmup_heights,omitempty"`
-	WarmupSuspect  int64    `json:"warmup_suspect"`
-	Warmup         *Warmup  `json:"warmup,omitempty"`
-	Mode           string   `json:"mode,omitempty"`
-	BinaryVersion  string   `json:"binary_version"`
-	HelperSHA      string   `json:"helper_sha256"`
-	Version        string   `json:"version"`
-	Status         string   `json:"status"`
-	HelperVersion  string   `json:"helper_version"`
-	VersionStatus  string   `json:"version_status"`
-	ChainSHA       string   `json:"chain_sha256"`
-	SourceSHA      string   `json:"source_sha256"`
-	SourceVersions []string `json:"source_versions"`
-	Heights        []Height `json:"heights"`
-	Total          int64    `json:"steps"`
-	Matches        int64    `json:"matches"`
-	Mismatches     int64    `json:"mismatches"`
-	NotComparable  int64    `json:"not_comparable"`
-	FirstMismatch  *int64   `json:"first_mismatch_ordinal,omitempty"`
-	Issue          string   `json:"issue,omitempty"`
+	Schedule               *InputSchedule `json:"input_schedule,omitempty"`
+	FirstMismatchExecution *int64         `json:"first_mismatch_execution_ordinal,omitempty"`
+	OmitMissing            bool           `json:"omit_missing_captures,omitempty"`
+	AnswerScope            string         `json:"answer_scope,omitempty"`
+	WarmupHeights          int            `json:"warmup_heights,omitempty"`
+	WarmupSuspect          int64          `json:"warmup_suspect"`
+	Warmup                 *Warmup        `json:"warmup,omitempty"`
+	Mode                   string         `json:"mode,omitempty"`
+	BinaryVersion          string         `json:"binary_version"`
+	HelperSHA              string         `json:"helper_sha256"`
+	Version                string         `json:"version"`
+	Status                 string         `json:"status"`
+	HelperVersion          string         `json:"helper_version"`
+	VersionStatus          string         `json:"version_status"`
+	ChainSHA               string         `json:"chain_sha256"`
+	SourceSHA              string         `json:"source_sha256"`
+	SourceVersions         []string       `json:"source_versions"`
+	Heights                []Height       `json:"heights"`
+	Total                  int64          `json:"steps"`
+	Matches                int64          `json:"matches"`
+	Mismatches             int64          `json:"mismatches"`
+	NotComparable          int64          `json:"not_comparable"`
+	FirstMismatch          *int64         `json:"first_mismatch_ordinal,omitempty"`
+	Issue                  string         `json:"issue,omitempty"`
 }
 
 // Warmup describes the verified original prefix preceding the selected range.
