@@ -81,6 +81,9 @@ func Assess(nodes []Node, links []Link, runtimes []Runtime, app AppTiming) (Asse
 	}
 	for _, node := range nodes {
 		addr := strings.ToLower(node.Address.Hex())
+		if _, ok := nodeApplicationPolicy(addr, app.Policies); !ok {
+			out.Issues = append(out.Issues, Issue{Node: addr, Code: "application_policy_unavailable"})
+		}
 		if builds[addr] == 0 || imports[addr] == 0 {
 			out.Issues = append(out.Issues, Issue{Node: addr, Code: "node_application_model_unavailable"})
 		}

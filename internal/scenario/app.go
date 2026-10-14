@@ -21,11 +21,12 @@ type AppSample struct {
 }
 
 type AppTiming struct {
-	Outcomes    []AppOutcome `json:"outcomes"`
-	Unsupported int64        `json:"unsupported"`
-	Build       []AppSample  `json:"build"`
-	Import      []AppSample  `json:"import"`
-	Unproved    int64        `json:"unproved"`
+	Policies    []ApplicationPolicy `json:"policies"`
+	Outcomes    []AppOutcome        `json:"outcomes"`
+	Unsupported int64               `json:"unsupported"`
+	Build       []AppSample         `json:"build"`
+	Import      []AppSample         `json:"import"`
+	Unproved    int64               `json:"unproved"`
 }
 
 // FitAppTiming uses exact application lifecycle IDs when available. Older

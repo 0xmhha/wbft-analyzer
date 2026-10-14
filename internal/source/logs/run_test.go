@@ -77,7 +77,7 @@ func TestChainbenchManifestDoesNotCopyLaunchSecrets(t *testing.T) {
 }
 
 func TestHealthMetadataVersionCompatibility(t *testing.T) {
-	for _, v := range []string{"wbft-event-normalization/5", "wbft-event-normalization/6", EventNormalizer} {
+	for _, v := range []string{"wbft-event-normalization/5", "wbft-event-normalization/6", "wbft-event-normalization/7", "wbft-event-normalization/8", EventNormalizer} {
 		if !HealthMetadataPreserved(v) {
 			t.Fatal("health metadata unavailable")
 		}

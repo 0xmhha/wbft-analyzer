@@ -155,8 +155,8 @@ func fitBuildLifecycles(xs []logs.Event, modern map[buildScope]bool, out *AppTim
 			}
 			out.Build = append(out.Build, AppSample{BuildID: key.id, Definition: "assembly_to_submission", Nanoseconds: elapsed, Input: h.Input, Node: h.Node, Run: h.Run, FromLine: outcome.StartLine, ToLine: f.Line})
 		case "replaced", "height_left", "stopped", "unavailable", "head_changed", "failed":
-			// The current simulator has no per-request application outcome policy.
-			// Preserve the known result and keep that model incomplete.
+			// A return path alone does not establish the required queue, availability,
+			// executor failure or cancellation inputs. Keep it outside successful timing.
 			out.Unsupported++
 		default:
 			out.Unproved++

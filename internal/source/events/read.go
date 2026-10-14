@@ -214,6 +214,7 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 	// form when metadata is reapplied at persistence. No arbitrary nested map
 	// crosses this boundary.
 	if kind == event.NodeStart {
+		applicationPolicyMetadata(m, out)
 		if bytes.Equal(bytes.TrimSpace(m["sign_floor"]), []byte("null")) {
 			out["sign_floor_state"] = "none"
 		} else {

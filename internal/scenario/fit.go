@@ -63,7 +63,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 	if !ValidWireMetric(o.WireMetric) {
 		return Fitted{}, errors.New("unsupported wire measurement")
 	}
-	out := Fitted{Links: []Link{}, Runtimes: []Runtime{}, Recorded: []Height{}, Model: Assessment{Version: FitVersion, Status: "partial", Issues: []Issue{}}}
+	out := Fitted{App: AppTiming{Policies: []ApplicationPolicy{}}, Links: []Link{}, Runtimes: []Runtime{}, Recorded: []Height{}, Model: Assessment{Version: FitVersion, Status: "partial", Issues: []Issue{}}}
 	out.WireMetric = o.WireMetric
 	if len(o.Runtime) > 0 {
 		return out, errors.New("runtime policy must come from recorded engine starts")
@@ -185,6 +185,14 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 			out.Model.Issues = append(out.Model.Issues, Issue{Node: strings.ToLower(n.Address.Hex()), Code: "runtime_input_unavailable"})
 			continue
 		}
+		policies, err := FitApplicationPolicies(selected[0].Source.Node, selected[0].Source.ID, selected[0].Records)
+		if err != nil {
+			return out, err
+		}
+		if len(out.App.Policies)+len(policies) > 256 {
+			return out, errors.New("application policy history exceeds bound")
+		}
+		out.App.Policies = append(out.App.Policies, policies...)
 		runtime, err := FitRuntime(selected[0].Source.Node, selected[0].Source.ID, selected[0].Records, o.Origin)
 		if err != nil {
 			out.Model.Issues = append(out.Model.Issues, Issue{Node: runtime.Node, Code: "runtime_model_unavailable"})
@@ -291,6 +299,10 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		return out, err
 	}
 	sc, err = ApplyAppTiming(sc, ordered, out.App)
+	if err != nil {
+		return out, err
+	}
+	sc, err = ApplyApplicationPolicies(sc, ordered, out.App.Policies)
 	if err != nil {
 		return out, err
 	}
