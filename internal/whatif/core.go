@@ -92,7 +92,15 @@ func ServeTimed(ctx context.Context, directory, chain string, id uint64, policy 
 			questions = append(questions, Question{*sourceOf(&q.Source), strconv.FormatUint(q.Output, 10)})
 		}
 		state := State{result.State.Running, result.State.Height, result.State.Round, result.State.State}
-		step := Step{Execution: strconv.FormatUint(result.Execution, 10), Mono: strconv.FormatInt(int64(result.Mono), 10), State: state, Source: sourceOf(result.Source), Cause: sourceOf(result.Cause), Parent: strconv.FormatUint(result.ParentExecution, 10), Arm: sourceOf(result.Arm), ArmExecution: strconv.FormatUint(result.ArmExecution, 10), Deadline: deadline, Signing: sourceOf(result.Evidence), Questions: questions, Generated: result.Generated, Suppression: result.Suppression, Input: inputlog.Kind(result.Result.Input), Digest: result.Result.OutDigest.Hex(), Outputs: len(result.Result.Outputs), Comparable: result.Source != nil && result.Suppression == "", Match: result.Result.Match, Counterfactual: result.Counterfactual, Model: result.Model}
+		actions, err := convertActions(result.Actions)
+		if err != nil {
+			return err
+		}
+		recorded, err := convertActions(result.RecordedActions)
+		if err != nil {
+			return err
+		}
+		step := Step{Actions: actions, RecordedActions: recorded, ParentOutput: strconv.FormatUint(result.ParentOutput, 10), Execution: strconv.FormatUint(result.Execution, 10), Mono: strconv.FormatInt(int64(result.Mono), 10), State: state, Source: sourceOf(result.Source), Cause: sourceOf(result.Cause), Parent: strconv.FormatUint(result.ParentExecution, 10), Arm: sourceOf(result.Arm), ArmExecution: strconv.FormatUint(result.ArmExecution, 10), Deadline: deadline, Signing: sourceOf(result.Evidence), Questions: questions, Generated: result.Generated, Suppression: result.Suppression, Input: inputlog.Kind(result.Result.Input), Digest: result.Result.OutDigest.Hex(), Outputs: len(result.Result.Outputs), Comparable: result.Source != nil && result.Suppression == "", Match: result.Result.Match, Counterfactual: result.Counterfactual, Model: result.Model}
 		encoded, err := json.Marshal(step)
 		if err != nil {
 			return err
@@ -130,6 +138,7 @@ func ServeTimed(ctx context.Context, directory, chain string, id uint64, policy 
 			reply["cause"] = sourceOf(failed.Cause)
 			reply["source_input"] = sourceOf(failed.Source)
 			reply["parent_execution_step"] = strconv.FormatUint(failed.ParentExecution, 10)
+			reply["parent_output"] = strconv.FormatUint(failed.ParentOutput, 10)
 		}
 		return enc.Encode(reply)
 	}

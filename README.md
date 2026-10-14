@@ -990,7 +990,7 @@ To enable HTTP jobs, register retained inputs with `--reexec-sources`. A timer
 source must explicitly set both `allow_timer` and `allow_context`. The worker
 pins source, chain and helper hashes and snapshots the helper executable before
 running it. External helpers must declare `timed_inputs_v1`, `timed_state_v1`
-and `context_answers_v1`, and identify the exact known core version.
+`timed_actions_v1` and `context_answers_v1`, and identify the exact known core version.
 
 ```json
 [{"id":"local-node","dataset":1,"input":"journal","chain":"./chain.rlp",
@@ -1003,6 +1003,20 @@ opens the linked result. Read routes are dataset-scoped `/whatif`,
 returns a job. Replay and timer jobs share a queue bound and one worker owner.
 Interrupted running jobs become failed; already stored execution rows remain
 partial. Completed jobs retain their finite source horizon and pending work.
+
+Ordered output fingerprints distinguish timer changes from network output
+intents. The detail view shows executed outputs and original slot outputs
+separately, exact recorded signing inputs and producer output numbers,
+application-question positions, and generated/failure parent outputs. Network
+byte fingerprints are available only for recorded signing results or core relay
+bytes; unsigned requests remain explicit. Eligible recipients describe validator
+membership intent, not transmission or arrival. Historical rows without action
+evidence retain nullable arrays and an unavailable comparison. The consumer
+checks original fingerprints, signing bytes and question references against the
+retained source, rejects repeated source/signing evidence, and requires all
+original external and suppressed internal slots before accepting source-horizon
+completion. Original timeout inputs are independently identified, listed as
+replaced, and never assigned to a generated expiry.
 
 Experiments hold recorded external slots fixed, assign zero processing cost to
 generated inputs, and reuse only recorded signing results and application

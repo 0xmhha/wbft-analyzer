@@ -31,6 +31,9 @@ func sourceValid(s *Source) bool {
 // Validate refuses fabricated source positions and rounded or inconsistent
 // coordinates before results cross the storage or HTTP boundary.
 func (s Step) Validate(previous uint64) error {
+	if err := s.validateActions(); err != nil {
+		return err
+	}
 	n, err := strconv.ParseUint(s.Execution, 10, 64)
 	if err != nil || !decimal(s.Execution, false, 64) || previous == ^uint64(0) || n != previous+1 || !decimal(s.Mono, true, 63) || !decimal(s.Parent, true, 64) || !decimal(s.ArmExecution, true, 64) {
 		return ErrEvidence

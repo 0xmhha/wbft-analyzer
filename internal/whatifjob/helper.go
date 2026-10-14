@@ -66,7 +66,7 @@ func runHelper(ctx context.Context, h reexec.Helper, journal, chain string, poli
 	for _, feature := range hello.Features {
 		capabilities[feature] = true
 	}
-	if !capabilities["timed_inputs_v1"] || !capabilities["timed_state_v1"] || !capabilities["context_answers_v1"] {
+	if !capabilities["timed_inputs_v1"] || !capabilities["timed_state_v1"] || !capabilities["timed_actions_v1"] || !capabilities["context_answers_v1"] {
 		return whatif.ErrEvidence
 	}
 	if err = enc.Encode(map[string]any{"type": "timed_replay", "id": 1, "journal": journal, "chain": chain, "answer_scope": "context", "timer_policy": policy}); err != nil {

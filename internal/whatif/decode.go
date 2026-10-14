@@ -29,7 +29,7 @@ func DecodeStep(raw []byte, previous uint64) (Step, error) {
 	if json.Unmarshal(raw, &fields) != nil {
 		return s, ErrEvidence
 	}
-	for _, key := range []string{"type", "id", "execution_step", "t_mono_ns", "execution_state", "source_input", "generated", "counterfactual", "execution_model", "comparable", "match", "outputs", "out_digest"} {
+	for _, key := range []string{"type", "id", "execution_step", "t_mono_ns", "execution_state", "source_input", "generated", "counterfactual", "execution_model", "comparable", "match", "outputs", "out_digest", "output_actions", "recorded_output_actions", "parent_output"} {
 		value, ok := fields[key]
 		if !ok || key != "source_input" && bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
 			return s, ErrEvidence

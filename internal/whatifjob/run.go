@@ -142,7 +142,7 @@ func Run(ctx context.Context, s *store.Store, o Options) (Result, error) {
 	if o.Helper != nil && helperHash != o.Helper.ExpectedSHA {
 		return result, whatif.ErrEvidence
 	}
-	summary := whatif.Summary{Version: whatif.Version, Model: whatif.Model, Status: "running", BaselineValidated: true, HelperVersion: helperVersion, SourceVersions: evidence.Versions}
+	summary := whatif.Summary{Version: whatif.Version, Model: whatif.Model, Status: "running", BaselineValidated: true, HelperVersion: helperVersion, SourceVersions: evidence.Versions, RetiredTimers: evidence.RetiredTimers()}
 	record := store.WhatifRun{Dataset: o.Dataset, Input: o.Input, ChainSHA: chain.SHA256, SourceSHA: input.SHA256, HelperSHA: helperHash, Policy: o.Policy, Summary: summary}
 	var id int64
 	if o.JobID != 0 {
@@ -190,10 +190,14 @@ func Run(ctx context.Context, s *store.Store, o Options) (Result, error) {
 			break
 		}
 		var header struct {
-			Type      string  `json:"type"`
-			ID        uint64  `json:"id"`
-			Code      string  `json:"code"`
-			Execution *string `json:"execution_step"`
+			Type      string         `json:"type"`
+			ID        uint64         `json:"id"`
+			Code      string         `json:"code"`
+			Execution *string        `json:"execution_step"`
+			Parent    *string        `json:"parent_execution_step"`
+			Output    *string        `json:"parent_output"`
+			Cause     *whatif.Source `json:"cause"`
+			Source    *whatif.Source `json:"source_input"`
 		}
 		if json.Unmarshal(scanner.Bytes(), &header) != nil || header.ID != 1 || terminal {
 			err = whatif.ErrEvidence
@@ -238,7 +242,7 @@ func Run(ctx context.Context, s *store.Store, o Options) (Result, error) {
 			}
 			_, actualPolicy, policyErr := done.Policy.Canonical()
 			_, expectedPolicy, _ := o.Policy.Canonical()
-			if policyErr != nil || actualPolicy != expectedPolicy || whatif.ValidateScopes(done.Scopes, previous) != nil {
+			if policyErr != nil || actualPolicy != expectedPolicy || whatif.ValidateScopes(done.Scopes, previous) != nil || evidence.Complete() != nil {
 				err = whatif.ErrEvidence
 				break
 			}
@@ -262,7 +266,16 @@ func Run(ctx context.Context, s *store.Store, o Options) (Result, error) {
 				summary.Status = "partial"
 			}
 			summary.Issue = header.Code
+			if header.Execution != nil {
+				if err = evidence.ValidateFailure(*header.Execution, header.Parent, header.Output, header.Cause, header.Source, previous, header.Code); err != nil {
+					break
+				}
+			}
 			summary.FailureExecution = header.Execution
+			summary.FailureParent = header.Parent
+			summary.FailureOutput = header.Output
+			summary.FailureCause = header.Cause
+			summary.FailureSource = header.Source
 		default:
 			err = whatif.ErrEvidence
 		}
