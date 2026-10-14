@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"encoding/hex"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -27,7 +28,7 @@ func TestMessageSnapshotsPinCompleteOriginalScope(t *testing.T) {
 	}
 	inputs := []MessageInput{}
 	for i, v := range sc.Validators {
-		input := messages.Input{ID: string(rune('a' + i)), Kind: "journal", Node: v.Address().Hex(), Path: filepath.Join(dir, v.Address().Hex()[2:])}
+		input := messages.Input{ID: string(rune('a' + i)), Kind: "journal", Node: v.Address().Hex(), Path: filepath.Join(dir, hex.EncodeToString(v.Address().Bytes()))}
 		summary, err := messages.Fingerprint(context.Background(), input)
 		if err != nil {
 			t.Fatal(err)

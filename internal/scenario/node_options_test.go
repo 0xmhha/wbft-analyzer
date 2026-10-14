@@ -2,6 +2,8 @@ package scenario
 
 import (
 	"context"
+	"encoding/hex"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -23,8 +25,19 @@ func TestRecordedNodeOptionsFromOfficialJournal(t *testing.T) {
 		t.Fatalf("run %v", err)
 	}
 	address := sc.Validators[0].Address()
-	// Simulator directory names omit the hexadecimal prefix.
-	path := filepath.Join(dir, address.Hex()[2:])
+	// Simulator directory names use lowercase bytes, not checksummed Hex names.
+	path := filepath.Join(dir, hex.EncodeToString(address.Bytes()))
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	exact := false
+	for _, entry := range entries {
+		exact = exact || entry.IsDir() && entry.Name() == filepath.Base(path)
+	}
+	if !exact {
+		t.Fatal("journal path does not match the exact simulator directory name")
+	}
 	node, cfg, err := InspectNodeOptions(context.Background(), path, address)
 	if err != nil {
 		t.Fatal(err)

@@ -3,6 +3,7 @@ package scenario
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,7 +36,7 @@ func TestFitPreservesPartialSourceWithoutDefaultingMissingNodes(t *testing.T) {
 	// Two nodes of a four-node chain are deliberately absent from this source.
 	for i, v := range sc.Validators[:2] {
 		node := strings.ToLower(v.Address().Hex())
-		input := messages.Input{ID: string(rune('a' + i)), Kind: "journal", Node: node, Path: filepath.Join(journals, v.Address().Hex()[2:])}
+		input := messages.Input{ID: string(rune('a' + i)), Kind: "journal", Node: node, Path: filepath.Join(journals, hex.EncodeToString(v.Address().Bytes()))}
 		summary, err := messages.Fingerprint(context.Background(), input)
 		if err != nil {
 			t.Fatal(err)
