@@ -5153,6 +5153,44 @@
         ],
         "type": "object"
       },
+      "StoreBuildLifecycle": {
+        "additionalProperties": false,
+        "properties": {
+          "assembly_ns": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "build_id": {
+            "type": "string"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/StoreLogEvent"
+            },
+            "type": "array"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/StoreLogEvent"
+          },
+          "state": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "assembly_ns",
+          "build_id",
+          "events",
+          "origin",
+          "state",
+          "status"
+        ],
+        "type": "object"
+      },
       "StoreDataset": {
         "additionalProperties": false,
         "properties": {
@@ -8602,6 +8640,85 @@
           }
         },
         "summary": "One event by its immutable input ID and source line."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}/build": {
+      "get": {
+        "operationId": "getBuildSource",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "event input ID",
+            "in": "path",
+            "name": "input",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "positive source line",
+            "in": "path",
+            "name": "line",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreBuildLifecycle"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Exact application build lifecycle candidates for an immutable source event."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/evidence": {

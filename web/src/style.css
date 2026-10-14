@@ -154,3 +154,6 @@ article pre { overflow: auto; max-height: 24rem; }
 .scenario-legend { display: flex; flex-wrap: wrap; gap: 1rem; }
 @keyframes scenario-reveal { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .scenario-chart { animation: none; } }
+
+.event-build { fill: #0891b2; stroke: #0e7490; }
+.build-lifecycle li { margin: .5rem 0; }

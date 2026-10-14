@@ -210,6 +210,8 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		out.App.Build = append(out.App.Build, timing.Build...)
 		out.App.Import = append(out.App.Import, timing.Import...)
 		out.App.Unproved += timing.Unproved
+		out.App.Unsupported += timing.Unsupported
+		out.App.Outcomes = append(out.App.Outcomes, timing.Outcomes...)
 	}
 	out.NodeOptions = append([]Node(nil), ordered...)
 	assessment, err := Assess(ordered, out.Links, out.Runtimes, out.App)

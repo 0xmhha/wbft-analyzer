@@ -49,7 +49,7 @@ func ScopeApplication(xs []logs.Event, from, to uint64) ([]logs.Event, ScopeCoun
 			if x.Record.View != nil {
 				height = x.Record.View.Seq
 			}
-		case event.ProposalSubmitted, event.CommitResult:
+		case event.ProposalSubmitted, event.CommitResult, event.BuildHandover, event.BuildStarted, event.BuildFinished:
 			height, _ = x.Record.Fields["number"].(string)
 		default:
 			continue
