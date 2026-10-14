@@ -45,6 +45,10 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/runtime", id: "getRuntimeCapture", summary: "Runtime sidecar provenance and capture completeness, separate from execution model evidence.", params: runParams(), answers: map[int]any{200: RuntimeSummary{}}, handle: (*Server).runtimeSummary},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/runtime/calls", id: "listRuntimeCalls", summary: "At most 100 exact recorded operation intervals; missing calls are not inferred.", params: append(runParams(), param{name: "after", in: "query", typ: "integer", doc: "zero-based immutable call offset"}), answers: map[int]any{200: RuntimeCallPage{}}, handle: (*Server).runtimeCalls},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/runtime/calls/{call}", id: "getRuntimeCall", summary: "Exact original operation start and end lines within one capture identity.", params: append(runParams(), param{name: "call", in: "path", typ: "string", required: true, doc: "full decimal operation ID"}), answers: map[int]any{200: RuntimeCallSource{}}, handle: (*Server).runtimeCall},
+
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}/comparison", id: "getScenarioComparison", summary: "Exact recorded and complete-seed ECDFs and elapsed header-time bands from one database snapshot; incomplete groups remain unavailable.", params: scenarioParams(false), answers: map[int]any{200: scenario.ComparisonPlot{}}, handle: (*Server).scenarioComparison},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/scenario-sources", id: "listScenarioSources", summary: "Registered network fitting models, coverage and immutable identities; no server paths.", params: runParams(), answers: map[int]any{200: ScenarioSources{}}, handle: (*Server).scenarioSources},
 	{method: "POST", path: "/v1/networks/{net}/datasets/{dataset}/scenario-jobs", id: "createScenarioJob", summary: "Queue a bounded baseline and outgoing-link change on a complete registered model.", params: runParams(), body: ScenarioRequest{}, answers: map[int]any{202: store.ScenarioJob{}}, handle: (*Server).postScenarioJob},

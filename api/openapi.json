@@ -4369,6 +4369,281 @@
         ],
         "type": "object"
       },
+      "RuntimeCallPage": {
+        "additionalProperties": false,
+        "properties": {
+          "calls": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeobsCall"
+            },
+            "type": "array"
+          },
+          "next": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "calls",
+          "next"
+        ],
+        "type": "object"
+      },
+      "RuntimeCallSource": {
+        "additionalProperties": false,
+        "properties": {
+          "call": {
+            "$ref": "#/components/schemas/RuntimeobsCall"
+          },
+          "end": {
+            "$ref": "#/components/schemas/RuntimeobsPoint"
+          },
+          "node": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "start": {
+            "$ref": "#/components/schemas/RuntimeobsPoint"
+          }
+        },
+        "required": [
+          "call",
+          "end",
+          "node",
+          "run",
+          "source_sha256",
+          "start"
+        ],
+        "type": "object"
+      },
+      "RuntimeSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "application_request_completion_proven": {
+            "type": "boolean"
+          },
+          "call_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "capture_complete": {
+            "type": "boolean"
+          },
+          "delivery_coverage_proven": {
+            "type": "boolean"
+          },
+          "node": {
+            "type": "string"
+          },
+          "normalizer": {
+            "type": "string"
+          },
+          "point_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "run": {
+            "type": "string"
+          },
+          "runtime_model_complete": {
+            "type": "boolean"
+          },
+          "sequence_gaps": {
+            "type": "string"
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "unavailable": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "application_request_completion_proven",
+          "call_count",
+          "capture_complete",
+          "delivery_coverage_proven",
+          "node",
+          "normalizer",
+          "point_count",
+          "run",
+          "runtime_model_complete",
+          "sequence_gaps",
+          "source_sha256",
+          "unavailable"
+        ],
+        "type": "object"
+      },
+      "RuntimeobsCall": {
+        "additionalProperties": false,
+        "properties": {
+          "end_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "nanoseconds": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "start_line": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "end_line",
+          "hash",
+          "height",
+          "id",
+          "nanoseconds",
+          "operation",
+          "result",
+          "start_line"
+        ],
+        "type": "object"
+      },
+      "RuntimeobsPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuntimeobsStartup"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "count": {
+            "type": "string"
+          },
+          "dropped": {
+            "type": "string"
+          },
+          "engine_stopped": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hash": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "string"
+          },
+          "t_mono_ns": {
+            "type": "string"
+          },
+          "t_wall": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "line",
+          "seq",
+          "t_mono_ns",
+          "t_wall",
+          "type"
+        ],
+        "type": "object"
+      },
+      "RuntimeobsStartup": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "allowed_future_block_seconds": {
+            "type": "string"
+          },
+          "block_period_seconds": {
+            "type": "string"
+          },
+          "epoch": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "max_request_timeout_seconds": {
+            "type": "string"
+          },
+          "proposer_policy": {
+            "type": "string"
+          },
+          "request_timeout_ms": {
+            "type": "string"
+          },
+          "system_contract_upgrades": {
+            "type": "string"
+          },
+          "transitions": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "allowed_future_block_seconds",
+          "block_period_seconds",
+          "epoch",
+          "height",
+          "max_request_timeout_seconds",
+          "proposer_policy",
+          "request_timeout_ms",
+          "system_contract_upgrades",
+          "transitions"
+        ],
+        "type": "object"
+      },
       "ScenarioAssessment": {
         "additionalProperties": false,
         "properties": {
@@ -11846,6 +12121,204 @@
           }
         },
         "summary": "Per-node decision claims and round entries with correlated cause evidence, at most 100000 relevant events."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/runtime": {
+      "get": {
+        "operationId": "getRuntimeCapture",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Runtime sidecar provenance and capture completeness, separate from execution model evidence."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/runtime/calls": {
+      "get": {
+        "operationId": "listRuntimeCalls",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "zero-based immutable call offset",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeCallPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "At most 100 exact recorded operation intervals; missing calls are not inferred."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/runtime/calls/{call}": {
+      "get": {
+        "operationId": "getRuntimeCall",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "full decimal operation ID",
+            "in": "path",
+            "name": "call",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeCallSource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Exact original operation start and end lines within one capture identity."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/scenario-jobs": {
