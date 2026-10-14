@@ -26,6 +26,8 @@ type recordedAnswer struct {
 }
 
 type Step struct {
+	EntryMono        *string `json:"entry_t_mono_ns,omitempty"`
+	EntryWall        string  `json:"entry_t_wall,omitempty"`
 	scheduleAffected bool
 	ScheduleReason   string         `json:"suppression_reason,omitempty"`
 	Scheduled        *InputPosition `json:"scheduled_input,omitempty"`

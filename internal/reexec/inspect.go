@@ -176,6 +176,11 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		n := new(big.Int).Add(b.HeadNumber.Big(), big.NewInt(1)).String()
 		step := Step{Ordinal: ordinal, File: fmt.Sprintf("%020d.wal", pos.Segment), Run: run, Engine: strconv.FormatUint(b.EngineRun, 10), Number: strconv.FormatUint(b.Step, 10), Height: n, Input: safeInput(b.InputKind), Recorded: strings.ToLower(b.OutDigest.Hex()), Class: "not_comparable", Completeness: "complete", Issues: []string{}}
 
+		if b.Entry != nil {
+			value := strconv.FormatInt(int64(b.Entry.Mono), 10)
+			step.EntryMono = &value
+			step.EntryWall = time.Unix(0, b.Entry.WallNs).UTC().Format(time.RFC3339Nano)
+		}
 		step.Mono = strconv.FormatInt(int64(b.Mono), 10)
 		step.Wall = time.Unix(0, b.WallNs).UTC().Format(time.RFC3339Nano)
 		step.Offset = &pos.Offset

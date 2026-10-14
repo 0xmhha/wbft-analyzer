@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { Schemas } from "./api/client";
 import { parseRoute } from "./App";
-import { ReexecSummary, WarmupSummary, ApplicationAnswerSummary, ScheduleComparison } from "./views/Reexec";
+import { ReexecSummary, WarmupSummary, ApplicationAnswerSummary, ScheduleComparison, EntryEvidence } from "./views/Reexec";
 
 describe("closed replay evidence",()=>{
  it("keeps partial inputs and unknown versions visible without numeric truncation",()=>{
@@ -41,5 +41,13 @@ describe("input schedule evidence",()=>{
   const html=renderToStaticMarkup(<ScheduleComparison steps={[row(20,10,"2"),row(10,20,"1")]} onSource={()=>{}}/>);
   const recorded=html.slice(html.indexOf("<h4>Recorded"),html.indexOf("<h4>Experiment"));const experiment=html.slice(html.indexOf("<h4>Experiment"));
   expect(recorded.indexOf("Source 10")).toBeLessThan(recorded.indexOf("Source 20"));expect(experiment.indexOf("Source 20")).toBeLessThan(experiment.indexOf("Source 10"));expect(html).toContain("inspect the original source");
+ });
+});
+
+describe("recorded step timing",()=>{
+ it("preserves measured entry zero and separates completion from unknown entry",()=>{
+ const known=renderToStaticMarkup(<EntryEvidence step={{entry_t_mono_ns:"0",entry_t_wall:"2020-01-01T00:00:00Z",t_mono_ns:"1000000"}}/>);
+ expect(known).toContain("Recorded entry 0 ns");expect(known).toContain("Recorded completion 1000000 ns");expect(known).not.toContain("unknown");
+ const old=renderToStaticMarkup(<EntryEvidence step={{t_mono_ns:"1000000"}}/>);expect(old).toContain("Entry clock unknown");expect(old).not.toContain("Recorded entry 1000000");
  });
 });

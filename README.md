@@ -944,3 +944,11 @@ missing or incompatible clock model retains raw trends only.
 Legacy extra-seal processing entries can supply weak `key` receive evidence for PREPARE and COMMIT. Their recorded processing time is not transport arrival time. Repeated copies remain ambiguous; native extra-seal entries are not counted again alongside message outcomes.
 
 When a received wire observation is unavailable, a unique associated native processing event may supply `node` evidence. Its processing timestamp and original source pointer are retained; the metric becomes `propagation_processing`, and it is excluded from wire-link latency. Missing or repeated processing observations remain unavailable or ambiguous.
+
+
+New live journal steps retain measured entry monotonic and wall stamps separately
+from recorded completion stamps. Original source metadata and replay evidence
+preserve both; measured entry zero is retained. Older journals and reconstructed
+WAL steps keep entry unknown. Message normalization version 5 binds this metadata
+projection into new dataset fingerprints. These stamps do not establish timer
+policy replay on their own; changed-duration expiry regeneration remains pending.
