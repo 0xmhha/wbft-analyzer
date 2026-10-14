@@ -1,6 +1,6 @@
 import {describe,it,expect} from "vitest";
 import {renderToStaticMarkup} from "react-dom/server";
-import {RuntimeSource} from "./views/Runtime";
+import {RuntimeSource,ConfigurationPoint} from "./views/Runtime";
 import type {Schemas} from "./api/client";
 import {parseRoute} from "./App";
 describe("runtime source identity",()=>{
@@ -22,8 +22,16 @@ describe("asynchronous task source",()=>{
 describe("core lifecycle source",()=>{
  it("keeps full instance identities and independent stage parents",()=>{
   const point=(line:number,stage:string,parent:string)=>({line,type:"engine_stage",stage,id:"18446744073709551614",parent_id:parent,seq:String(line),t_wall:"2026-01-01T00:00:00Z",t_mono_ns:"9007199254740993"});
-  const evidence:Schemas["RuntimeCallSource"]={engines:[{id:"18446744073709551614",parent_id:"42",created_line:3,state:"observed_stopped",created:{...point(3,"","42"),type:"engine_created"},stages:[point(4,"handler_exit","42"),point(5,"handler_joined","43")]}],task:null,node:"node",run:"writer",source_sha256:"a".repeat(64),call:{id:"43",operation:"backend_stop",result:"ok",start_line:1,end_line:6,nanoseconds:"30",height:"",hash:""},start:point(1,"","43"),end:point(6,"","43")};
+  const evidence:Schemas["RuntimeCallSource"]={engines:[{id:"18446744073709551614",parent_id:"42",created_line:3,state:"observed_stopped",configuration:"unavailable",configs:[],created:{...point(3,"","42"),type:"engine_created"},stages:[point(4,"handler_exit","42"),point(5,"handler_joined","43")]}],task:null,node:"node",run:"writer",source_sha256:"a".repeat(64),call:{id:"43",operation:"backend_stop",result:"ok",start_line:1,end_line:6,nanoseconds:"30",height:"",hash:""},start:point(1,"","43"),end:point(6,"","43")};
   const html=renderToStaticMarkup(<RuntimeSource evidence={evidence}/>);
   for(const text of ["18446744073709551614","parent call 42","parent call 43","handler_exit","handler_joined","Line 3","9007199254740993","does not establish a complete execution model"])expect(html).toContain(text);
+ });
+});
+
+describe("configuration candidates",()=>{
+ it("shows full heights and independent original parent identities",()=>{
+  const point={line:8,type:"engine_config",seq:"7",id:"18446744073709551614",parent_id:"18446744073709551613",t_wall:"2026-01-01T00:00:00Z",t_mono_ns:"9007199254740993",config:{address:"node",height:"18446744073709551617",request_timeout_ms:"2000",block_period_seconds:"1",epoch:"10",allowed_future_block_seconds:"2",max_request_timeout_seconds:"0",proposer_policy:"0",transitions:"1",system_contract_upgrades:"0"}};
+  const html=renderToStaticMarkup(<ConfigurationPoint point={point}/>);
+  for(const text of ["18446744073709551617","18446744073709551614","18446744073709551613","9007199254740993","2000","only to this recorded height"])expect(html).toContain(text);
  });
 });

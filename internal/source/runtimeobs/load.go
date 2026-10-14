@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-const Normalizer = "wbft-runtime-observations/3"
+const Normalizer = "wbft-runtime-observations/4"
 
 // Point is a closed, precision-safe projection of an original line. Numeric
 // values remain decimal strings in persistence and browser API responses.
@@ -46,6 +46,7 @@ type Startup struct {
 	SystemContractUpgrades    string `json:"system_contract_upgrades"`
 }
 type Capture struct {
+	Startups                           []Point          `json:"startups"`
 	Engines                            []EngineEvidence `json:"engines"`
 	Tasks                              []TaskEvidence   `json:"tasks"`
 	Normalizer                         string           `json:"normalizer"`
@@ -78,7 +79,7 @@ func FromReader(reader io.Reader) (Capture, error) {
 	if e != nil {
 		return Capture{}, e
 	}
-	out := Capture{Normalizer: Normalizer, SourceSHA: hex.EncodeToString(h.Sum(nil)), Node: r.Node, Run: r.Run, Complete: r.CaptureComplete, SequenceGaps: r.SequenceGaps, Unavailable: r.Unavailable, Calls: r.Calls, Points: []Point{}, Tasks: []TaskEvidence{}, Engines: []EngineEvidence{}}
+	out := Capture{Normalizer: Normalizer, SourceSHA: hex.EncodeToString(h.Sum(nil)), Node: r.Node, Run: r.Run, Complete: r.CaptureComplete, SequenceGaps: r.SequenceGaps, Unavailable: r.Unavailable, Calls: r.Calls, Points: []Point{}, Tasks: []TaskEvidence{}, Engines: []EngineEvidence{}, Startups: []Point{}}
 	number := func(n uint64) string { return strconv.FormatUint(n, 10) }
 	for _, x := range r.Records {
 		p := Point{Line: x.Line, Type: x.Type, Seq: number(x.Seq), Wall: x.Wall, Mono: number(x.Mono), Height: x.Height, Hash: x.Hash, Operation: x.Operation, Result: x.Result, Stage: x.Stage, EngineStopped: x.EngineStopped}
@@ -86,7 +87,7 @@ func FromReader(reader io.Reader) (Capture, error) {
 		case "operation_start":
 			p.ID = number(x.ID)
 			p.Count = number(x.Count)
-		case "engine_created", "engine_stage":
+		case "engine_created", "engine_stage", "engine_config":
 			p.ID = number(x.ID)
 			p.ParentID = number(x.ParentID)
 		case "operation_stage":
@@ -101,6 +102,9 @@ func FromReader(reader io.Reader) (Capture, error) {
 			p.Config = &Startup{c.Address, c.Height, c.RequestTimeoutMS, c.BlockPeriodSeconds, c.Epoch, c.AllowedFutureBlockSeconds, c.MaxRequestTimeoutSeconds, c.ProposerPolicy, number(c.Transitions), number(c.SystemContractUpgrades)}
 		}
 		out.Points = append(out.Points, p)
+		if p.Type == "runtime_start" {
+			out.Startups = append(out.Startups, p)
+		}
 	}
 	for _, task := range r.Tasks {
 		out.Tasks = append(out.Tasks, projectEvidence(task, out.Points, out.Complete))
@@ -114,7 +118,7 @@ func FromReader(reader io.Reader) (Capture, error) {
 // Validate refuses inconsistent projections before persistence. The complete
 // raw file hash remains provenance; normalized JSON is never claimed as bytes.
 func (c Capture) Validate() error {
-	if c.Normalizer != Normalizer || !address.MatchString(c.Node) || !identity.MatchString(c.Run) || len(c.SourceSHA) != 64 || len(c.Points) > MaxRecords || len(c.Calls) > MaxRecords || len(c.Tasks) > MaxRecords || len(c.Engines) > MaxRecords || c.RuntimeModelComplete || c.DeliveryCoverageProven || c.ApplicationRequestCompletionProven {
+	if c.Normalizer != Normalizer || !address.MatchString(c.Node) || !identity.MatchString(c.Run) || len(c.SourceSHA) != 64 || len(c.Points) > MaxRecords || len(c.Calls) > MaxRecords || len(c.Tasks) > MaxRecords || len(c.Engines) > MaxRecords || len(c.Startups) > MaxRecords || c.RuntimeModelComplete || c.DeliveryCoverageProven || c.ApplicationRequestCompletionProven {
 		return errors.New("invalid runtime observation projection")
 	}
 	if _, e := hex.DecodeString(c.SourceSHA); e != nil {
@@ -128,4 +132,16 @@ func (c Capture) Validate() error {
 		return errors.New("runtime projection too large")
 	}
 	return nil
+}
+
+// StartupCandidates derives the full historical list from original points,
+// including older stored captures that predate the explicit list field.
+func StartupCandidates(c Capture) []Point {
+	out := []Point{}
+	for _, point := range c.Points {
+		if point.Type == "runtime_start" {
+			out = append(out, point)
+		}
+	}
+	return out
 }

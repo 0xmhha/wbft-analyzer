@@ -4458,6 +4458,15 @@
           "delivery_coverage_proven": {
             "type": "boolean"
           },
+          "engine_configurations": {
+            "additionalProperties": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
           "engine_count": {
             "format": "int64",
             "type": "integer"
@@ -4503,6 +4512,12 @@
               }
             ]
           },
+          "startups": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeobsPoint"
+            },
+            "type": "array"
+          },
           "task_count": {
             "format": "int64",
             "type": "integer"
@@ -4519,6 +4534,7 @@
           "call_count",
           "capture_complete",
           "delivery_coverage_proven",
+          "engine_configurations",
           "engine_count",
           "engine_states",
           "node",
@@ -4529,6 +4545,7 @@
           "sequence_gaps",
           "source_sha256",
           "startup",
+          "startups",
           "task_count",
           "unavailable"
         ],
@@ -4579,6 +4596,15 @@
       "RuntimeobsEngineEvidence": {
         "additionalProperties": false,
         "properties": {
+          "configs": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeobsPoint"
+            },
+            "type": "array"
+          },
+          "configuration": {
+            "type": "string"
+          },
           "created": {
             "$ref": "#/components/schemas/RuntimeobsPoint"
           },
@@ -4603,6 +4629,8 @@
           }
         },
         "required": [
+          "configs",
+          "configuration",
           "created",
           "created_line",
           "id",
@@ -5363,6 +5391,12 @@
           "configuration": {
             "type": "string"
           },
+          "configurations": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuntimeConfiguration"
+            },
+            "type": "array"
+          },
           "engine_states": {
             "additionalProperties": {
               "format": "int64",
@@ -5391,6 +5425,12 @@
               }
             ]
           },
+          "startups": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeobsPoint"
+            },
+            "type": "array"
+          },
           "task_states": {
             "additionalProperties": {
               "format": "int64",
@@ -5411,13 +5451,43 @@
           "call_count",
           "capture_complete",
           "configuration",
+          "configurations",
           "engine_states",
           "execution_model_complete",
           "run",
           "source",
           "startup",
+          "startups",
           "task_states",
           "unavailable"
+        ],
+        "type": "object"
+      },
+      "ScenarioRuntimeConfiguration": {
+        "additionalProperties": false,
+        "properties": {
+          "comparison": {
+            "type": "string"
+          },
+          "engine_id": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": "string"
+          },
+          "point": {
+            "$ref": "#/components/schemas/RuntimeobsPoint"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "comparison",
+          "engine_id",
+          "parent_id",
+          "point",
+          "state"
         ],
         "type": "object"
       },

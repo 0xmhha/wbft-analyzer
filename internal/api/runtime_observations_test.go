@@ -100,3 +100,47 @@ func TestRuntimeEngineSourcesUseExactParentsAndPreserveAllStages(t *testing.T) {
 		t.Fatal("oversized candidate source allowed")
 	}
 }
+
+func TestRuntimeConfigurationHistoryRetainsCandidatesAndBoundsThem(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	capture, e := runtimeobs.Load("../source/runtimeobs/testdata/config-history-synthetic.jsonl")
+	if e != nil {
+		t.Fatal(e)
+	}
+	key := store.NetworkKey{ChainID: "8", GenesisHash: "0x" + strings.Repeat("2", 64)}
+	out, e := ingest.Runtime(ctx, s, key, "config-history", capture)
+	if e != nil {
+		t.Fatal(e)
+	}
+	c := client{t, (&Server{Store: s}).Handler()}
+	base := fmt.Sprintf("/v1/networks/%d/datasets/%d/runtime", out.NetworkID, out.DatasetID)
+	var summary RuntimeSummary
+	if c.do("GET", base, nil, &summary) != 200 || len(summary.Startups) != 2 || summary.EngineConfigurations["observed"] != 2 || summary.Startups[1].Config.Height != "18446744073709551617" {
+		t.Fatal(summary)
+	}
+	var source RuntimeCallSource
+	if c.do("GET", base+"/calls/44", nil, &source) != 200 || len(source.Engines) != 1 || source.Engines[0].ID != "18446744073709551613" || len(source.Engines[0].Configs) != 1 || source.Engines[0].Configs[0].Config.RequestTimeoutMS != "2000" {
+		t.Fatal(source)
+	}
+	capture.Engines[1].Configs = make([]runtimeobs.Point, 245)
+	large, e := ingest.Runtime(ctx, s, key, "config-history-large", capture)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if c.do("GET", fmt.Sprintf("/v1/networks/%d/datasets/%d/runtime/calls/44", large.NetworkID, large.DatasetID), nil, nil) != 400 {
+		t.Fatal("config candidates not bounded")
+	}
+	for i := 0; i < 257; i++ {
+		copy := capture.Points[0]
+		copy.Line = len(capture.Points) + 1
+		capture.Points = append(capture.Points, copy)
+	}
+	many, e := ingest.Runtime(ctx, s, key, "config-history-many-startups", capture)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if c.do("GET", fmt.Sprintf("/v1/networks/%d/datasets/%d/runtime", many.NetworkID, many.DatasetID), nil, nil) != 400 {
+		t.Fatal("startup candidates not bounded")
+	}
+}

@@ -76,6 +76,7 @@ capture() {
  get "/networks/$runtime_net/datasets/$runtime_dataset/runtime/calls/18446744073709551615" runtime-call-source
  get "/networks/$runtime_net/datasets/$runtime_dataset/runtime/calls/42" runtime-core-start-source
  get "/networks/$runtime_net/datasets/$runtime_dataset/runtime/calls/43" runtime-core-stop-source
+ get "/networks/$runtime_net/datasets/$runtime_dataset/runtime/calls/44" runtime-restarted-core-source
  local build_net build_dataset
  build_net=$(jq -r '.networks[]|select(.name=="synthetic-build")|.id' "$dir/networks.json")
  get "/networks/$build_net/datasets" build-datasets
@@ -211,7 +212,7 @@ manifest=dict(format='wbft-analyzer-run/1',name='synthetic-build-lifecycle',run=
 (work/'build.json').write_text(json.dumps(manifest)+'\n')
 PYBUILD
 "$bin" ingest run --db "$src" --manifest "$work/build.json" >"$out/build-ingest.log"
-"$bin" ingest runtime --db "$src" --file "$root/internal/source/runtimeobs/testdata/core-synthetic.jsonl" --name synthetic-runtime --chain-id 10 --genesis "0x5555555555555555555555555555555555555555555555555555555555555555" >"$out/runtime-ingest.json"
+"$bin" ingest runtime --db "$src" --file "$root/internal/source/runtimeobs/testdata/config-history-synthetic.jsonl" --name synthetic-runtime --chain-id 10 --genesis "0x5555555555555555555555555555555555555555555555555555555555555555" >"$out/runtime-ingest.json"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/g7/manifest.json" >"$out/run.log"
 run_dataset_id=$(sed -n 's/^dataset=\([0-9][0-9]*\).*/\1/p' "$out/run.log")
 "$bin" reindex messages --db "$src" --dataset "$run_dataset_id" >"$out/run-pair-index.log"
