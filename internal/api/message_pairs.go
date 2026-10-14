@@ -86,7 +86,7 @@ func (s *Server) pairData(w http.ResponseWriter, r *http.Request, flow ...bool) 
 	if f.Height != "" && !fullDecimal.MatchString(f.Height) || f.Round != "" && !fullDecimal.MatchString(f.Round) {
 		return bad("invalid full message view")
 	}
-	if !oneOf(f.Metric, "link", "propagation_processing", "broadcast_to_receipt") {
+	if !oneOf(f.Metric, "link", "propagation_processing", "broadcast_to_receipt", "write_start_to_read_complete") {
 		return bad("unknown message boundary metric")
 	}
 	if !oneOf(f.Phase, "PRE-PREPARE", "PREPARE", "COMMIT", "ROUND-CHANGE") || !oneOf(f.Strength, "link", "node", "key") || !oneOf(f.Path, "local", "direct", "relay", "propagation_processing") || !oneOf(f.Clock, "shared-host", "ntp", "monotonic", "unknown", "unavailable") || !oneOf(f.Status, "valid", "ambiguous", "missing_send", "missing_receive", "unconfirmed_write", "unknown_clock", "clock_overlap", "negative", "missing_clock", "invalid_clock") {

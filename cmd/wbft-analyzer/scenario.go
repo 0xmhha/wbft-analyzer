@@ -33,6 +33,7 @@ func runScenario(args []string, stdout, stderr io.Writer) int {
 	to := fs.Uint64("to", 0, "last compared height, with a retained child")
 	until := fs.Duration("duration", time.Minute, "simulation duration, at most 24h")
 	count := fs.Int("seeds", 32, "independent seeds, at most 128")
+	wireMetric := fs.String("wire-metric", "link", "link (callback) or write_start_to_read_complete")
 	clock := fs.String("clock", "unknown", "declared shared-host, ntp or unknown clock model")
 	skew := fs.Int64("skew-ms", 0, "declared clock uncertainty in ms")
 	timeout := fs.Duration("timeout", 5*time.Minute, "fitting deadline, at most 30m")
@@ -40,7 +41,7 @@ func runScenario(args []string, stdout, stderr io.Writer) int {
 	if *dsn == "" {
 		*dsn = os.Getenv("WBFT_ANALYZER_DB")
 	}
-	if parseErr != nil || fs.NArg() != 0 || *dsn == "" || *dataset < 1 || *chain == "" || *from < 1 || *to < *from || *to-*from >= 10000 || *until <= 0 || *until > 24*time.Hour || *count < 2 || *count > 128 || *timeout <= 0 || *timeout > 30*time.Minute || *skew < 0 || *skew > 3600000 || *clock != "unknown" && *clock != "shared-host" && *clock != "ntp" {
+	if parseErr != nil || !scenario.ValidWireMetric(*wireMetric) || fs.NArg() != 0 || *dsn == "" || *dataset < 1 || *chain == "" || *from < 1 || *to < *from || *to-*from >= 10000 || *until <= 0 || *until > 24*time.Hour || *count < 2 || *count > 128 || *timeout <= 0 || *timeout > 30*time.Minute || *skew < 0 || *skew > 3600000 || *clock != "unknown" && *clock != "shared-host" && *clock != "ntp" {
 		fs.Usage()
 		return exitUsage
 	}
@@ -64,7 +65,7 @@ func runScenario(args []string, stdout, stderr io.Writer) int {
 		seeds[i] = int64(i + 1)
 	}
 	// Inspection reads existing retained inputs; it does not migrate the database.
-	fitted, err := scenariojob.FitDataset(ctx, s, scenariojob.FitRequest{ChainPath: *chain, EventManifest: *events, Options: scenario.FitOptions{Dataset: *dataset, Origin: origin, From: *from, To: *to, Until: *until, Seeds: seeds, Clock: pairs.Clock{Model: *clock, SkewMS: *skew}}})
+	fitted, err := scenariojob.FitDataset(ctx, s, scenariojob.FitRequest{ChainPath: *chain, EventManifest: *events, Options: scenario.FitOptions{WireMetric: *wireMetric, Dataset: *dataset, Origin: origin, From: *from, To: *to, Until: *until, Seeds: seeds, Clock: pairs.Clock{Model: *clock, SkewMS: *skew}}})
 	if err != nil {
 		fmt.Fprintln(stderr, "scenario fitting unavailable for this source scope")
 		return exitDataErr

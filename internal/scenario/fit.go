@@ -20,6 +20,7 @@ import (
 // FitOptions contains already snapshotted local readers. None of their paths
 // are retained in the fitted report or persisted experiment provenance.
 type FitOptions struct {
+	WireMetric string
 	Dataset    int64
 	Chain      []byte
 	Frames     []messages.Prepared
@@ -36,6 +37,7 @@ type FitOptions struct {
 }
 
 type Fitted struct {
+	WireMetric   string          `json:"wire_metric"`
 	Epochs       []RecordedEpoch `json:"epochs"`
 	Scope        ScopeCounts     `json:"scope"`
 	NodeOptions  []Node          `json:"node_options"`
@@ -53,7 +55,14 @@ type Fitted struct {
 // snapshots plus verified event inputs. Unsupported source gaps remain a
 // structured partial fit rather than being filled by simulator defaults.
 func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
+	if o.WireMetric == "" {
+		o.WireMetric = "link"
+	}
+	if !ValidWireMetric(o.WireMetric) {
+		return Fitted{}, errors.New("unsupported wire measurement")
+	}
 	out := Fitted{Links: []Link{}, Runtimes: []Runtime{}, Recorded: []Height{}, Model: Assessment{Version: FitVersion, Status: "partial", Issues: []Issue{}}}
+	out.WireMetric = o.WireMetric
 	if len(o.Runtime) > 0 {
 		return out, errors.New("runtime policy must come from recorded engine starts")
 	}
@@ -140,7 +149,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 			out.Model.Issues = append(out.Model.Issues, Issue{Node: addr, Code: "node_options_unavailable"})
 		}
 	}
-	endpoints, err := PairMessageInputs(inputs, o.Clock)
+	endpoints, err := PairMessageInputsMetric(inputs, o.Clock, o.WireMetric)
 	if err != nil {
 		return out, err
 	}
@@ -149,7 +158,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		return out, err
 	}
 	out.Scope.LinksExcluded, out.Scope.LinksUnscoped = linkScope.LinksExcluded, linkScope.LinksUnscoped
-	out.Links, err = FitLinks(addresses, endpoints, o.Coverage, o.Clock.Model, time.Duration(o.Clock.SkewMS)*time.Millisecond)
+	out.Links, err = FitLinksMetric(addresses, endpoints, o.Coverage, o.Clock.Model, time.Duration(o.Clock.SkewMS)*time.Millisecond, o.WireMetric)
 	if err != nil {
 		return out, err
 	}
@@ -216,6 +225,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 	}
 	out.Model = assessment
 	modelRaw, err := json.Marshal(struct {
+		WireMetric   string
 		From, To     uint64
 		Origin       string
 		UntilNS      int64
@@ -229,7 +239,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		Scope        ScopeCounts
 		GenesisCount int
 		Epochs       []RecordedEpoch
-	}{o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs})
+	}{o.WireMetric, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs})
 	if err != nil {
 		return out, err
 	}

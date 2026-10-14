@@ -32,11 +32,12 @@ export function MessageLatency({ net, onAuth }: { net: number; onAuth: () => voi
  const index = summary.state === "done" ? summary.data?.index : null;
  const nodes = [...new Set([...(run?.nodes || []), ...(index?.legacy_associations || []).map(p => p.node)])].sort();
  const setFilter = (f: Filters) => { edit(f); apply(f); setCursors([]); setTail(""); select(null); setSource(null); };
- const options: Partial<Record<keyof Filters, string[]>> = { metric:["link","propagation_processing","broadcast_to_receipt"], phase: ["PRE-PREPARE", "PREPARE", "COMMIT", "ROUND-CHANGE"], strength: ["link", "node", "key"], path: ["local", "direct", "relay", "propagation_processing"], clock: ["monotonic", "shared-host", "ntp", "unknown", "unavailable"] };
+ const options: Partial<Record<keyof Filters, string[]>> = { metric:["link","write_start_to_read_complete","propagation_processing","broadcast_to_receipt"], phase: ["PRE-PREPARE", "PREPARE", "COMMIT", "ROUND-CHANGE"], strength: ["link", "node", "key"], path: ["local", "direct", "relay", "propagation_processing"], clock: ["monotonic", "shared-host", "ntp", "unknown", "unavailable"] };
  return <section className={motion ? "message-latency" : "message-latency no-motion"}>
   <h1>How long did recorded WBFT messages take?</h1>
   <p>Link records, broadcast-to-processing evidence and weak logged keys are kept separate. Missing observations are not proof of transmission failure. Unknown clocks have raw trends only; they do not contribute to valid percentiles. Repeated copies remain ambiguous. Event timestamps can share one step stamp; zero elapsed time describes those recorded stamps.</p>
-  <Pending load={datasets} onAuth={onAuth} />
+  <p>The link metric compares frame callback times. write_start_to_read_complete compares measured write entry with payload read completion. These are separate observations; I/O includes the write call and excludes sender queue wait. Missing endpoints remain unavailable and clock or copy ambiguity is never corrected.</p>
+ <Pending load={datasets} onAuth={onAuth} />
   {datasets.state === "done" && <label>Evidence dataset <select value={id} onChange={e => { choose(Number(e.target.value)); setFilter(empty); }}>{datasets.data.map(d => <option key={d.id} value={d.id}>{d.name} · {d.kind} · {d.status}</option>)}</select></label>}
   {run && <p>{run.status} · {run.progress.toLocaleString()} original records</p>}
   <form className="controls" onSubmit={e => { e.preventDefault(); setFilter(draft); }}>

@@ -1640,12 +1640,15 @@ export interface components {
         };
         MessagesSource: {
             association?: string;
+            callback_t_mono_ns?: string | null;
+            callback_t_wall?: string;
             clock_source?: string;
             /** Format: int64 */
             dataset_id?: number;
             file?: string;
             input: string;
             kind?: string;
+            moment?: string;
             node: string;
             /** Format: int64 */
             offset?: number | null;
@@ -2450,6 +2453,7 @@ export interface components {
             source_sha256: string;
             status: string;
             to: string;
+            wire_metric: string;
         };
         StoreDataset: {
             copy_nodes: string[];

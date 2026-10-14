@@ -13,19 +13,22 @@ import (
 )
 
 type Source struct {
-	Association string  `json:"association,omitempty"`
-	DatasetID   int64   `json:"dataset_id,omitempty"`
-	Kind        string  `json:"kind,omitempty"`
-	Input       string  `json:"input"`
-	File        string  `json:"file,omitempty"`
-	Ordinal     int64   `json:"ordinal"`
-	Node        string  `json:"node"`
-	Run         string  `json:"run"`
-	Seq         string  `json:"seq,omitempty"`
-	Wall        string  `json:"t_wall"`
-	Mono        *string `json:"t_mono_ns,omitempty"`
-	ClockSource string  `json:"clock_source,omitempty"`
-	Offset      *int64  `json:"offset,omitempty"`
+	Moment       string  `json:"moment,omitempty"`
+	CallbackWall string  `json:"callback_t_wall,omitempty"`
+	CallbackMono *string `json:"callback_t_mono_ns,omitempty"`
+	Association  string  `json:"association,omitempty"`
+	DatasetID    int64   `json:"dataset_id,omitempty"`
+	Kind         string  `json:"kind,omitempty"`
+	Input        string  `json:"input"`
+	File         string  `json:"file,omitempty"`
+	Ordinal      int64   `json:"ordinal"`
+	Node         string  `json:"node"`
+	Run          string  `json:"run"`
+	Seq          string  `json:"seq,omitempty"`
+	Wall         string  `json:"t_wall"`
+	Mono         *string `json:"t_mono_ns,omitempty"`
+	ClockSource  string  `json:"clock_source,omitempty"`
+	Offset       *int64  `json:"offset,omitempty"`
 }
 
 // Endpoint is an evidence adapter's closed projection. Sender/Receiver denote

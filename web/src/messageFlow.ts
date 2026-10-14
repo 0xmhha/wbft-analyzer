@@ -9,7 +9,7 @@ export function flowMarks(pairs:Pair[],cut?:{dataset:number;input:string;line:nu
  const send=visible(pair.send)?stamp(pair.send?.t_wall):null,receive=visible(pair.receive)?stamp(pair.receive?.t_wall):null;
  const connected=pair.send_candidates===1 && pair.receive_candidates===1 && pair.status!=="ambiguous" && send!==null && receive!==null;
  const band: [bigint,bigint]|null=send!==null && pair.clock==="ntp" && pair.lower_seconds!==null && pair.upper_seconds!==null ? [send+BigInt(Math.round(pair.lower_seconds*1e9)),send+BigInt(Math.round(pair.upper_seconds*1e9))]:null;
- return {pair,send,receive,band,connected,animate:connected && pair.status==="valid" && pair.strength==="link" && pair.metric==="link" && send!<=receive!};
+ return {pair,send,receive,band,connected,animate:connected && pair.status==="valid" && pair.strength==="link" && (pair.metric==="link" || pair.metric==="write_start_to_read_complete" && pair.send?.moment==="write_start" && pair.receive?.moment==="read_complete") && send!<=receive!};
 })}
 export function flowFraction(mark:FlowMark,at:bigint):number|null {
  if(!mark.animate || mark.send===null || mark.receive===null || at<mark.send || at>mark.receive)return null;
@@ -17,3 +17,5 @@ export function flowFraction(mark:FlowMark,at:bigint):number|null {
  return Number(at-mark.send)/Number(mark.receive-mark.send);
 }
 export function canonicalFlowNode(node:string):string{return /^0x[0-9a-fA-F]{40}$/.test(node)?node.toLowerCase():node}
+
+export function selectFlowMetric(pairs:Pair[],measurement:string):Pair[]{return pairs.filter(p=>measurement==="recorded"?p.metric!=="write_start_to_read_complete":p.metric===measurement)}

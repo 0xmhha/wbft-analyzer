@@ -2009,6 +2009,15 @@
           "association": {
             "type": "string"
           },
+          "callback_t_mono_ns": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "callback_t_wall": {
+            "type": "string"
+          },
           "clock_source": {
             "type": "string"
           },
@@ -2023,6 +2032,9 @@
             "type": "string"
           },
           "kind": {
+            "type": "string"
+          },
+          "moment": {
             "type": "string"
           },
           "node": {
@@ -5119,6 +5131,9 @@
           },
           "to": {
             "type": "string"
+          },
+          "wire_metric": {
+            "type": "string"
           }
         },
         "required": [
@@ -5133,7 +5148,8 @@
           "scope",
           "source_sha256",
           "status",
-          "to"
+          "to",
+          "wire_metric"
         ],
         "type": "object"
       },

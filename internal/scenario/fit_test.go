@@ -52,6 +52,12 @@ func TestFitPreservesPartialSourceWithoutDefaultingMissingNodes(t *testing.T) {
 	if got.Model.Status != "partial" || got.Scenario != nil || len(got.Model.Issues) == 0 || got.SourceSHA256 == "" {
 		t.Fatalf("partial fit %+v", got)
 	}
+	measuredOptions := o
+	measuredOptions.WireMetric = pairs.WriteStartToReadComplete
+	measured, err := Fit(context.Background(), measuredOptions)
+	if err != nil || measured.WireMetric != pairs.WriteStartToReadComplete || measured.SourceSHA256 == got.SourceSHA256 || measured.Provenance.ModelSHA256 == got.Provenance.ModelSHA256 || measured.Scenario != nil {
+		t.Fatal("measurement definition lost from immutable model identity", measured, err)
+	}
 	if len(got.Recorded) != 5 || got.Recorded[0].Number != 1 {
 		t.Fatal("canonical recorded range missing")
 	}

@@ -398,6 +398,22 @@ func (s *Store) RebuildMessagePairs(ctx context.Context, id int64, companions ..
 			}
 		}
 
+		if kind == "messages" {
+			hasIO := false
+			for _, record := range records {
+				hasIO = hasIO || record.IO != nil
+			}
+			if hasIO {
+				io := derived.ProjectIORecords(records)
+				for i := range io.Endpoints {
+					io.Endpoints[i].Source.DatasetID = id
+				}
+				projection.Endpoints = append(projection.Endpoints, io.Endpoints...)
+				for k, v := range io.Counts {
+					projection.Counts["io_"+k] = v
+				}
+			}
+		}
 		if len(projection.Endpoints) > 1000000 {
 			return ErrPairSource
 		}
