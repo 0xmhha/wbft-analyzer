@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/0xmhha/wbft/conformance/stepdriver"
 	"github.com/0xmhha/wbft/consensus"
@@ -25,6 +26,7 @@ func InspectEvidence(ctx context.Context, directory string, blocks stepdriver.Bl
 	}
 	var sources []Source
 	var answers []RecordedAnswer
+	walls := map[Source]string{}
 	byStep := map[answerCoordinate]Source{}
 	writer := ""
 	versions := map[string]bool{}
@@ -61,6 +63,9 @@ func InspectEvidence(ctx context.Context, directory string, blocks stepdriver.Bl
 			}
 			byStep[coordinate] = source
 			sources = append(sources, source)
+			if body.Entry != nil {
+				walls[source] = time.Unix(0, body.Entry.WallNs).UTC().Format(time.RFC3339Nano)
+			}
 			if len(sources) > 100000 {
 				return nil, ErrEvidence
 			}
@@ -89,6 +94,8 @@ func InspectEvidence(ctx context.Context, directory string, blocks stepdriver.Bl
 	}
 	evidence.questions = map[Question]bool{}
 	evidence.retiredTimers = map[Source]bool{}
+	evidence.entryMonos = map[Source]string{}
+	evidence.entryWalls = walls
 	reader, err = journal.OpenReader(nil, directory)
 	if err != nil {
 		return nil, err
@@ -158,6 +165,7 @@ func InspectEvidence(ctx context.Context, directory string, blocks stepdriver.Bl
 			return ErrEvidence
 		}
 		source := sourceOf(result.Source)
+		evidence.entryMonos[*source] = strconv.FormatInt(int64(result.Mono), 10)
 		actions, err := convertActions(result.Actions)
 		if err != nil {
 			return err

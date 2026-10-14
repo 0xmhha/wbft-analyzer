@@ -35,6 +35,9 @@ func DecodeStep(raw []byte, previous uint64) (Step, error) {
 			return s, ErrEvidence
 		}
 	}
+	if _, exists := fields["source_entry_t_wall"]; exists {
+		return s, ErrEvidence
+	}
 	var stateFields map[string]json.RawMessage
 	if json.Unmarshal(fields["execution_state"], &stateFields) != nil {
 		return s, ErrEvidence

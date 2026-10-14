@@ -15,26 +15,27 @@ type Scope struct {
 // Summary retains the bounded horizon and explicit failure classification.
 // Completion means the supplied source ended, never a new network future.
 type Summary struct {
-	RetiredTimers     []Source `json:"replaced_original_timers" nullable:"true"`
-	Version           string   `json:"version"`
-	Model             string   `json:"execution_model"`
-	Status            string   `json:"status"`
-	Issue             string   `json:"issue,omitempty"`
-	BaselineValidated bool     `json:"baseline_validated"`
-	TimerValidated    bool     `json:"timer_trace_validated"`
-	HelperVersion     string   `json:"helper_version"`
-	SourceVersions    []string `json:"source_versions"`
-	Steps             int64    `json:"steps"`
-	Generated         int64    `json:"generated_steps"`
-	SourceSteps       int64    `json:"source_steps"`
-	Scopes            []Scope  `json:"scopes"`
-	FailureParent     *string  `json:"failure_parent_execution_step,omitempty"`
-	FailureOutput     *string  `json:"failure_parent_output,omitempty"`
-	FailureCause      *Source  `json:"failure_cause,omitempty"`
-	FailureSource     *Source  `json:"failure_source_input,omitempty"`
-	FailureExecution  *string  `json:"failure_execution_step,omitempty"`
-	Horizon           string   `json:"horizon"`
-	FutureTail        bool     `json:"future_tail_generated"`
+	Network           *NetworkSummary `json:"network_effects"`
+	RetiredTimers     []Source        `json:"replaced_original_timers" nullable:"true"`
+	Version           string          `json:"version"`
+	Model             string          `json:"execution_model"`
+	Status            string          `json:"status"`
+	Issue             string          `json:"issue,omitempty"`
+	BaselineValidated bool            `json:"baseline_validated"`
+	TimerValidated    bool            `json:"timer_trace_validated"`
+	HelperVersion     string          `json:"helper_version"`
+	SourceVersions    []string        `json:"source_versions"`
+	Steps             int64           `json:"steps"`
+	Generated         int64           `json:"generated_steps"`
+	SourceSteps       int64           `json:"source_steps"`
+	Scopes            []Scope         `json:"scopes"`
+	FailureParent     *string         `json:"failure_parent_execution_step,omitempty"`
+	FailureOutput     *string         `json:"failure_parent_output,omitempty"`
+	FailureCause      *Source         `json:"failure_cause,omitempty"`
+	FailureSource     *Source         `json:"failure_source_input,omitempty"`
+	FailureExecution  *string         `json:"failure_execution_step,omitempty"`
+	Horizon           string          `json:"horizon"`
+	FutureTail        bool            `json:"future_tail_generated"`
 }
 
 func ValidateScopes(scopes []Scope, total uint64) error {

@@ -772,6 +772,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/whatif/{whatif}/network-bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verified original producer and byte-link evidence; repeated copies and missing clocks remain explicit. */
+        get: operations["listWhatifNetworkBindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/whatif/{whatif}/network-effects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Executed and removed output intents; observed original arrivals never predict new deliveries. */
+        get: operations["listWhatifNetworkEffects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/whatif/{whatif}/results": {
         parameters: {
             query?: never;
@@ -2522,6 +2556,10 @@ export interface components {
             /** Format: int64 */
             whatif_id: number | null;
         };
+        StoreWhatifNetworkBinding: {
+            evidence: components["schemas"]["WhatifNetworkBinding"];
+            id: string;
+        };
         StoreWhatifRun: {
             chain_sha256: string;
             /** Format: date-time */
@@ -2579,11 +2617,92 @@ export interface components {
             step: string;
             writer_run: string;
         };
+        WhatifArrivalInterval: {
+            clock_model: string;
+            from_t_wall: string;
+            to_t_wall: string;
+        };
         WhatifJobs: {
             jobs: components["schemas"]["StoreWhatifJob"][];
         };
         WhatifList: {
             runs: components["schemas"]["StoreWhatifRun"][];
+        };
+        WhatifNetworkBinding: {
+            kind: string;
+            original_arrival: components["schemas"]["WhatifArrivalInterval"] | null;
+            original_output: components["schemas"]["WhatifQuestion"];
+            payload_sha256?: string;
+            /** Format: int64 */
+            producer_candidates: number;
+            /** Format: int64 */
+            receive_candidates: number;
+            receives: components["schemas"]["MessagesSource"][];
+            recipient: string;
+            /** Format: int64 */
+            send_candidates: number;
+            sender: string;
+            sends: components["schemas"]["MessagesSource"][];
+            status: string;
+        };
+        WhatifNetworkBindingPage: {
+            bindings: components["schemas"]["StoreWhatifNetworkBinding"][];
+            /** Format: int64 */
+            next: number | null;
+        };
+        WhatifNetworkEffect: {
+            action_kind: string;
+            binding_ids: string[];
+            current_output: components["schemas"]["WhatifOutputPosition"] | null;
+            id: string;
+            kind: string;
+            /** Format: int64 */
+            origin_candidates: number;
+            original_output: components["schemas"]["WhatifQuestion"] | null;
+            payload_sha256?: string;
+            status: string;
+        };
+        WhatifNetworkEffectPage: {
+            effects: components["schemas"]["WhatifNetworkEffect"][];
+            /** Format: int64 */
+            next: number | null;
+        };
+        WhatifNetworkInput: {
+            input: string;
+            kind: string;
+            node: string;
+            sha256: string;
+            status: string;
+        };
+        WhatifNetworkScope: {
+            clock_model: string;
+            inputs: components["schemas"]["WhatifNetworkInput"][];
+            sha256: string;
+            /** Format: int64 */
+            skew_ms?: number | null;
+            status: string;
+        };
+        WhatifNetworkSummary: {
+            /** Format: int64 */
+            bindings: number;
+            /** Format: int64 */
+            changed_intents: number;
+            /** Format: int64 */
+            effects: number;
+            first_observed_removed_arrival: components["schemas"]["WhatifArrivalInterval"] | null;
+            first_unproved_output: components["schemas"]["WhatifOutputPosition"] | null;
+            scope: components["schemas"]["WhatifNetworkScope"];
+            status: string;
+            /** Format: int64 */
+            unchanged_under_model: number;
+            /** Format: int64 */
+            unproved_effects: number;
+            version: string;
+        };
+        WhatifOutputPosition: {
+            execution_step: string;
+            output: string;
+            t_mono_ns: string;
         };
         WhatifPage: {
             /** Format: int64 */
@@ -2642,6 +2761,7 @@ export interface components {
             parent_output: string;
             recorded_output_actions: components["schemas"]["WhatifAction"][] | null;
             signing_evidence: components["schemas"]["WhatifSource"] | null;
+            source_entry_t_wall?: string | null;
             source_input: components["schemas"]["WhatifSource"] | null;
             suppression_reason: string;
             t_mono_ns: string;
@@ -2663,6 +2783,7 @@ export interface components {
             helper_version: string;
             horizon: string;
             issue?: string;
+            network_effects: components["schemas"]["WhatifNetworkSummary"] | null;
             replaced_original_timers: components["schemas"]["WhatifSource"][] | null;
             scopes: components["schemas"]["WhatifScope"][];
             /** Format: int64 */
@@ -5031,6 +5152,106 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreWhatifRun"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listWhatifNetworkBindings: {
+        parameters: {
+            query?: {
+                /** @description last evidence row ID */
+                after?: number;
+                /** @description page limit, 1..1000 */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description counterfactual experiment ID */
+                whatif: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatifNetworkBindingPage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listWhatifNetworkEffects: {
+        parameters: {
+            query?: {
+                /** @description last evidence row ID */
+                after?: number;
+                /** @description page limit, 1..1000 */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description counterfactual experiment ID */
+                whatif: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatifNetworkEffectPage"];
                 };
             };
             /** @description the request failed */

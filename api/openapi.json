@@ -5860,6 +5860,22 @@
         ],
         "type": "object"
       },
+      "StoreWhatifNetworkBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "$ref": "#/components/schemas/WhatifNetworkBinding"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence",
+          "id"
+        ],
+        "type": "object"
+      },
       "StoreWhatifRun": {
         "additionalProperties": false,
         "properties": {
@@ -6098,6 +6114,26 @@
         ],
         "type": "object"
       },
+      "WhatifArrivalInterval": {
+        "additionalProperties": false,
+        "properties": {
+          "clock_model": {
+            "type": "string"
+          },
+          "from_t_wall": {
+            "type": "string"
+          },
+          "to_t_wall": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "clock_model",
+          "from_t_wall",
+          "to_t_wall"
+        ],
+        "type": "object"
+      },
       "WhatifJobs": {
         "additionalProperties": false,
         "properties": {
@@ -6125,6 +6161,333 @@
         },
         "required": [
           "runs"
+        ],
+        "type": "object"
+      },
+      "WhatifNetworkBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "original_arrival": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifArrivalInterval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "original_output": {
+            "$ref": "#/components/schemas/WhatifQuestion"
+          },
+          "payload_sha256": {
+            "type": "string"
+          },
+          "producer_candidates": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "receive_candidates": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "receives": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesSource"
+            },
+            "type": "array"
+          },
+          "recipient": {
+            "type": "string"
+          },
+          "send_candidates": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "sends": {
+            "items": {
+              "$ref": "#/components/schemas/MessagesSource"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "original_arrival",
+          "original_output",
+          "producer_candidates",
+          "receive_candidates",
+          "receives",
+          "recipient",
+          "send_candidates",
+          "sender",
+          "sends",
+          "status"
+        ],
+        "type": "object"
+      },
+      "WhatifNetworkBindingPage": {
+        "additionalProperties": false,
+        "properties": {
+          "bindings": {
+            "items": {
+              "$ref": "#/components/schemas/StoreWhatifNetworkBinding"
+            },
+            "type": "array"
+          },
+          "next": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "bindings",
+          "next"
+        ],
+        "type": "object"
+      },
+      "WhatifNetworkEffect": {
+        "additionalProperties": false,
+        "properties": {
+          "action_kind": {
+            "type": "string"
+          },
+          "binding_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "current_output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifOutputPosition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "origin_candidates": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "original_output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifQuestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payload_sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action_kind",
+          "binding_ids",
+          "current_output",
+          "id",
+          "kind",
+          "origin_candidates",
+          "original_output",
+          "status"
+        ],
+        "type": "object"
+      },
+      "WhatifNetworkEffectPage": {
+        "additionalProperties": false,
+        "properties": {
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/WhatifNetworkEffect"
+            },
+            "type": "array"
+          },
+          "next": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "effects",
+          "next"
+        ],
+        "type": "object"
+      },
+      "WhatifNetworkInput": {
+        "additionalProperties": false,
+        "properties": {
+          "input": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "input",
+          "kind",
+          "node",
+          "sha256",
+          "status"
+        ],
+        "type": "object"
+      },
+      "WhatifNetworkScope": {
+        "additionalProperties": false,
+        "properties": {
+          "clock_model": {
+            "type": "string"
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/WhatifNetworkInput"
+            },
+            "type": "array"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "skew_ms": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "clock_model",
+          "inputs",
+          "sha256",
+          "status"
+        ],
+        "type": "object"
+      },
+      "WhatifNetworkSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "bindings": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "changed_intents": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "effects": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "first_observed_removed_arrival": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifArrivalInterval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_unproved_output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifOutputPosition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope": {
+            "$ref": "#/components/schemas/WhatifNetworkScope"
+          },
+          "status": {
+            "type": "string"
+          },
+          "unchanged_under_model": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unproved_effects": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bindings",
+          "changed_intents",
+          "effects",
+          "first_observed_removed_arrival",
+          "first_unproved_output",
+          "scope",
+          "status",
+          "unchanged_under_model",
+          "unproved_effects",
+          "version"
+        ],
+        "type": "object"
+      },
+      "WhatifOutputPosition": {
+        "additionalProperties": false,
+        "properties": {
+          "execution_step": {
+            "type": "string"
+          },
+          "output": {
+            "type": "string"
+          },
+          "t_mono_ns": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "execution_step",
+          "output",
+          "t_mono_ns"
         ],
         "type": "object"
       },
@@ -6367,6 +6730,12 @@
               }
             ]
           },
+          "source_entry_t_wall": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "source_input": {
             "anyOf": [
               {
@@ -6494,6 +6863,16 @@
           "issue": {
             "type": "string"
           },
+          "network_effects": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifNetworkSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "replaced_original_timers": {
             "items": {
               "$ref": "#/components/schemas/WhatifSource"
@@ -6540,6 +6919,7 @@
           "generated_steps",
           "helper_version",
           "horizon",
+          "network_effects",
           "replaced_original_timers",
           "scopes",
           "source_steps",
@@ -10731,6 +11111,184 @@
           }
         },
         "summary": "Exact source, policy and helper identity with explicit counterfactual horizon and failures."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/whatif/{whatif}/network-bindings": {
+      "get": {
+        "operationId": "listWhatifNetworkBindings",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "counterfactual experiment ID",
+            "in": "path",
+            "name": "whatif",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "last evidence row ID",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "page limit, 1..1000",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatifNetworkBindingPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Verified original producer and byte-link evidence; repeated copies and missing clocks remain explicit."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/whatif/{whatif}/network-effects": {
+      "get": {
+        "operationId": "listWhatifNetworkEffects",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "counterfactual experiment ID",
+            "in": "path",
+            "name": "whatif",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "last evidence row ID",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "page limit, 1..1000",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatifNetworkEffectPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Executed and removed output intents; observed original arrivals never predict new deliveries."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/whatif/{whatif}/results": {

@@ -64,72 +64,105 @@ func beginWhatif(ctx context.Context, q whatifBeginner, run WhatifRun, chain str
 	return id, err
 }
 func (s *Store) PutWhatifStep(ctx context.Context, id int64, step whatif.Step) error {
-	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		var status string
-		if err := tx.QueryRow(ctx, `SELECT status FROM whatif_runs WHERE id=$1 FOR UPDATE`, id).Scan(&status); err != nil {
-			return err
-		}
-		if status != "running" {
-			return ErrWhatifState
-		}
-		var previous uint64
-		if err := tx.QueryRow(ctx, `SELECT COALESCE(max(execution_step),0) FROM whatif_results WHERE run_id=$1`, id).Scan(&previous); err != nil {
-			return err
-		}
-		if err := step.Validate(previous); err != nil {
-			return err
-		}
-		if step.Answers == nil {
-			step.Answers = []whatif.Answer{}
-		}
-		if step.Questions == nil {
-			step.Questions = []whatif.Question{}
-		}
-		raw, err := json.Marshal(step)
-		if err != nil {
-			return err
-		}
-		n, _ := strconv.ParseInt(step.Execution, 10, 64)
-		mono, _ := strconv.ParseInt(step.Mono, 10, 64)
-		_, err = tx.Exec(ctx, `INSERT INTO whatif_results(run_id,execution_step,height,round,t_mono_ns,generated,record) VALUES($1,$2,$3::numeric,$4::numeric,$5,$6,$7)`, id, n, step.State.Height, step.State.Round, mono, step.Generated, raw)
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error { return putWhatifStep(ctx, tx, id, step) })
+}
+func putWhatifStep(ctx context.Context, tx pgx.Tx, id int64, step whatif.Step) error {
+	var status string
+	if err := tx.QueryRow(ctx, `SELECT status FROM whatif_runs WHERE id=$1 FOR UPDATE`, id).Scan(&status); err != nil {
 		return err
-	})
+	}
+	if status != "running" {
+		return ErrWhatifState
+	}
+	var previous uint64
+	if err := tx.QueryRow(ctx, `SELECT COALESCE(max(execution_step),0) FROM whatif_results WHERE run_id=$1`, id).Scan(&previous); err != nil {
+		return err
+	}
+	if err := step.Validate(previous); err != nil {
+		return err
+	}
+	if step.Answers == nil {
+		step.Answers = []whatif.Answer{}
+	}
+	if step.Questions == nil {
+		step.Questions = []whatif.Question{}
+	}
+	raw, err := json.Marshal(step)
+	if err != nil {
+		return err
+	}
+	n, _ := strconv.ParseInt(step.Execution, 10, 64)
+	mono, _ := strconv.ParseInt(step.Mono, 10, 64)
+	_, err = tx.Exec(ctx, `INSERT INTO whatif_results(run_id,execution_step,height,round,t_mono_ns,generated,record) VALUES($1,$2,$3::numeric,$4::numeric,$5,$6,$7)`, id, n, step.State.Height, step.State.Round, mono, step.Generated, raw)
+	return err
 }
 func (s *Store) FinishWhatif(ctx context.Context, id int64, result whatif.Summary) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error { return finishWhatif(ctx, tx, id, result) })
+}
+
+// Final removed-intent rows and completion are committed together. An
+// interrupted partial run can never inherit a fabricated removed suffix.
+func (s *Store) FinishWhatifWithNetwork(ctx context.Context, id int64, result whatif.Summary, remaining []whatif.NetworkEffect) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := putWhatifEffects(ctx, tx, id, remaining); err != nil {
+			return err
+		}
+		return finishWhatif(ctx, tx, id, result)
+	})
+}
+func finishWhatif(ctx context.Context, tx pgx.Tx, id int64, result whatif.Summary) error {
 	if result.Status != "completed" && result.Status != "partial" && result.Status != "failed" || result.FutureTail || result.Model != whatif.Model {
 		return whatif.ErrEvidence
 	}
 	if result.Status == "completed" && (!result.BaselineValidated || !result.TimerValidated || len(result.Scopes) == 0 || result.Horizon != "recorded_source_end") {
 		return whatif.ErrEvidence
 	}
-	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		var status string
-		if err := tx.QueryRow(ctx, `SELECT status FROM whatif_runs WHERE id=$1 FOR UPDATE`, id).Scan(&status); err != nil {
-			return err
-		}
-		if status != "running" {
-			return ErrWhatifState
-		}
-		if err := tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER(WHERE generated),count(*) FILTER(WHERE NOT generated) FROM whatif_results WHERE run_id=$1`, id).Scan(&result.Steps, &result.Generated, &result.SourceSteps); err != nil {
-			return err
-		}
-		if result.Status == "completed" && result.Steps == 0 {
-			return whatif.ErrEvidence
-		}
-		result.Version = whatif.Version
-		if result.Scopes == nil {
-			result.Scopes = []whatif.Scope{}
-		}
-		if result.SourceVersions == nil {
-			result.SourceVersions = []string{}
-		}
-		raw, err := json.Marshal(result)
-		if err != nil {
-			return err
-		}
-		_, err = tx.Exec(ctx, `UPDATE whatif_runs SET status=$2,summary=$3,finished_at=now() WHERE id=$1`, id, result.Status, raw)
+	var status string
+	if err := tx.QueryRow(ctx, `SELECT status FROM whatif_runs WHERE id=$1 FOR UPDATE`, id).Scan(&status); err != nil {
 		return err
-	})
+	}
+	if status != "running" {
+		return ErrWhatifState
+	}
+	if err := tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER(WHERE generated),count(*) FILTER(WHERE NOT generated) FROM whatif_results WHERE run_id=$1`, id).Scan(&result.Steps, &result.Generated, &result.SourceSteps); err != nil {
+		return err
+	}
+	if result.Status == "completed" && result.Steps == 0 {
+		return whatif.ErrEvidence
+	}
+	if result.Network != nil {
+		n := result.Network
+		if err := tx.QueryRow(ctx, `SELECT count(*) FROM whatif_network_bindings WHERE run_id=$1`, id).Scan(&n.Bindings); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER(WHERE kind='unchanged' AND record->>'status'='unchanged_under_model'),count(*) FILTER(WHERE NOT(kind='unchanged' AND record->>'status'='unchanged_under_model') AND record->>'status' NOT IN ('no_eligible_recipient','recorded_signing_failure')),count(*) FILTER(WHERE NOT(kind='unchanged' AND record->>'status'='unchanged_under_model') AND record->>'status' NOT IN ('no_eligible_recipient','recorded_signing_failure','observed_original_delivery')) FROM whatif_network_effects WHERE run_id=$1`, id).Scan(&n.Effects, &n.Unchanged, &n.Changed, &n.Unproved); err != nil {
+			return err
+		}
+		var position []byte
+		if err := tx.QueryRow(ctx, `SELECT coalesce((SELECT record->'current_output' FROM whatif_network_effects WHERE run_id=$1 AND execution_step IS NOT NULL AND record->>'status' NOT IN ('unchanged_under_model','no_eligible_recipient','recorded_signing_failure') ORDER BY id LIMIT 1),'null'::jsonb)`, id).Scan(&position); err != nil {
+			return err
+		}
+		if err := json.Unmarshal(position, &n.FirstUnproved); err != nil {
+			return err
+		}
+		if result.Status != "completed" {
+			n.Status = "unproved"
+			n.ObservedRemovedArrival = nil
+		}
+	}
+	result.Version = whatif.Version
+	if result.Scopes == nil {
+		result.Scopes = []whatif.Scope{}
+	}
+	if result.SourceVersions == nil {
+		result.SourceVersions = []string{}
+	}
+	raw, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `UPDATE whatif_runs SET status=$2,summary=$3,finished_at=now() WHERE id=$1`, id, result.Status, raw)
+	return err
 }
 
 const whatifColumns = `id,dataset_id,input_id,chain_sha256,source_sha256,helper_sha256,policy,policy_sha256,created_at,finished_at,status,summary`

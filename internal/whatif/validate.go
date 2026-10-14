@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
 )
@@ -31,6 +32,11 @@ func sourceValid(s *Source) bool {
 // Validate refuses fabricated source positions and rounded or inconsistent
 // coordinates before results cross the storage or HTTP boundary.
 func (s Step) Validate(previous uint64) error {
+	if s.SourceWall != nil {
+		if _, err := time.Parse(time.RFC3339Nano, *s.SourceWall); err != nil || s.Source == nil {
+			return ErrEvidence
+		}
+	}
 	if err := s.validateActions(); err != nil {
 		return err
 	}

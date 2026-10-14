@@ -38,6 +38,7 @@ type Question struct {
 // Step is keyed by execution order, independently of source record order.
 // It contains bounded metadata; input bytes and block hashes remain outside it.
 type Step struct {
+	SourceWall      *string    `json:"source_entry_t_wall,omitempty"`
 	Actions         []Action   `json:"output_actions" nullable:"true"`
 	RecordedActions []Action   `json:"recorded_output_actions" nullable:"true"`
 	ParentOutput    string     `json:"parent_output"`

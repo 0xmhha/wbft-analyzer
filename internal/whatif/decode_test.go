@@ -21,6 +21,7 @@ func TestDecodeStepRejectsUnknownPayloadRoundedCoordinatesAndTrailingData(t *tes
 	}
 	for _, bad := range []string{
 		string(raw) + " {}",
+		strings.Replace(string(raw), `"execution_step":"1"`, `"source_entry_t_wall":"2026-01-01T00:00:00Z","execution_step":"1"`, 1),
 		strings.Replace(string(raw), `"output_actions":[]`, `"output_actions":null`, 1),
 		strings.Replace(string(raw), `"output_actions":[],`, "", 1),
 		strings.Replace(string(raw), `"recorded_output_actions":[]`, `"recorded_output_actions":null`, 1),
