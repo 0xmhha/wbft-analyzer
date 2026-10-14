@@ -2354,6 +2354,7 @@ export interface components {
             runtime_model_complete: boolean;
             sequence_gaps: string;
             source_sha256: string;
+            startup: components["schemas"]["RuntimeobsPoint"] | null;
             unavailable: string[];
         };
         RuntimeobsCall: {
@@ -2534,6 +2535,17 @@ export interface components {
         ScenarioRuns: {
             runs: components["schemas"]["StoreScenarioRunInfo"][];
         };
+        ScenarioRuntimeBinding: {
+            /** Format: int64 */
+            call_count: number;
+            capture_complete: boolean;
+            configuration: string;
+            execution_model_complete: boolean;
+            run: string;
+            source: components["schemas"]["ScenarioInput"];
+            startup: components["schemas"]["RuntimeobsPoint"] | null;
+            unavailable: string[];
+        };
         ScenarioScopeCounts: {
             /** Format: int64 */
             application_excluded: number;
@@ -2588,6 +2600,7 @@ export interface components {
             id: string;
             model: components["schemas"]["ScenarioAssessment"];
             nodes: string[];
+            runtime_observations: components["schemas"]["ScenarioRuntimeBinding"][];
             scope: components["schemas"]["ScenarioScopeCounts"];
             source_sha256: string;
             status: string;

@@ -30,7 +30,7 @@ func TestRuntimeSourceRetainsExactIdentityAndRejectsConflict(t *testing.T) {
 	c := client{t, (&Server{Store: s}).Handler()}
 	base := fmt.Sprintf("/v1/networks/%d/datasets/%d/runtime", out.NetworkID, out.DatasetID)
 	var summary RuntimeSummary
-	if c.do("GET", base, nil, &summary) != 200 || !summary.Complete || summary.RuntimeModelComplete || summary.PointCount != 5 {
+	if c.do("GET", base, nil, &summary) != 200 || !summary.Complete || summary.RuntimeModelComplete || summary.PointCount != 5 || summary.Startup == nil || summary.Startup.Line != 1 || summary.Startup.Config == nil || summary.Startup.Config.Height != "18446744073709551616" {
 		t.Fatal(summary)
 	}
 	var page RuntimeCallPage

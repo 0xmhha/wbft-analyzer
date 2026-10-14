@@ -64,8 +64,13 @@ func Load(path string) (Capture, error) {
 		return Capture{}, errors.New("runtime observation input unavailable")
 	}
 	defer f.Close()
+	return FromReader(f)
+}
+
+// FromReader normalizes only the supplied bytes and binds their exact digest.
+func FromReader(reader io.Reader) (Capture, error) {
 	h := sha256.New()
-	r, e := Read(io.TeeReader(f, h))
+	r, e := Read(io.TeeReader(reader, h))
 	if e != nil {
 		return Capture{}, e
 	}

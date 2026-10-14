@@ -1170,3 +1170,19 @@ and missing evidence. Call pages contain at most 100 intervals. Configuration
 scalars and times remain decimal strings. Complete capture evidence is separate
 from a complete execution model, remote delivery, or application request
 completion; runtime sidecars do not become native consensus events.
+
+Scenario fitting accepts `--runtime-manifest FILE`, or `runtime_manifest` on
+an operator-registered source. The manifest format is
+`wbft-analyzer-runtime-manifest/1`, with the declared network and inputs containing
+`id`, `node`, `path`, and `sha256`. Original sidecar bytes are retained as immutable
+SHA256 objects. Worker reload uses those retained objects; changing external
+files does not rewrite a registered source. Runtime IDs and hashes are part of
+fitting provenance version 4. Register a new source identity for changed inputs.
+
+Each runtime binding retains the exact startup line, writer run, configuration
+comparison, and observed call count. Startup scalars are checked at their
+recorded full height against chain configuration. This establishes neither
+chain membership nor native engine options, sign-floor/WAL state, remote delivery,
+or application request completion. Later configuration remains unproved when
+transition or upgrade counts are present. These execution models remain partial;
+observed worker return intervals never become successful proposal timing samples.
