@@ -7,7 +7,7 @@ import (
 )
 
 func TestDecodeStepRejectsUnknownPayloadRoundedCoordinatesAndTrailingData(t *testing.T) {
-	s := Step{Execution: "1", Mono: "0", Parent: "0", ArmExecution: "0", Source: &Source{Writer: "synthetic", Engine: "1", Step: "1", Ordinal: "3"}, Input: "start", Digest: "0x" + strings.Repeat("a", 64), Comparable: true, Counterfactual: true, Model: Model}
+	s := Step{Actions: []Action{}, RecordedActions: []Action{}, ParentOutput: "0", Execution: "1", Mono: "0", Parent: "0", ArmExecution: "0", Source: &Source{Writer: "synthetic", Engine: "1", Step: "1", Ordinal: "3"}, Input: "start", Digest: "0x" + strings.Repeat("a", 64), Comparable: true, Counterfactual: true, Model: Model}
 	raw, err := json.Marshal(struct {
 		Type string `json:"type"`
 		ID   uint64 `json:"id"`
@@ -21,6 +21,10 @@ func TestDecodeStepRejectsUnknownPayloadRoundedCoordinatesAndTrailingData(t *tes
 	}
 	for _, bad := range []string{
 		string(raw) + " {}",
+		strings.Replace(string(raw), `"output_actions":[]`, `"output_actions":null`, 1),
+		strings.Replace(string(raw), `"output_actions":[],`, "", 1),
+		strings.Replace(string(raw), `"recorded_output_actions":[]`, `"recorded_output_actions":null`, 1),
+		strings.Replace(string(raw), `"parent_output":"0"`, `"parent_output":0`, 1),
 		strings.Replace(string(raw), `"execution_state":{"running":false,"height":null,"round":null},`, "", 1),
 		strings.Replace(string(raw), `"execution_state":{"running":false,"height":null,"round":null}`, `"execution_state":null`, 1),
 		strings.Replace(string(raw), `"running":false,`, "", 1),

@@ -5967,6 +5967,107 @@
         ],
         "type": "object"
       },
+      "WhatifAction": {
+        "additionalProperties": false,
+        "properties": {
+          "application_question": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifQuestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancel_kinds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "code": {
+            "type": "string"
+          },
+          "duration_ns": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "eligible_recipients": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "event": {
+            "type": "string"
+          },
+          "height": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "output": {
+            "type": "string"
+          },
+          "output_sha256": {
+            "type": "string"
+          },
+          "payload_evidence": {
+            "type": "string"
+          },
+          "payload_sha256": {
+            "type": "string"
+          },
+          "recipient_evidence": {
+            "type": "string"
+          },
+          "round": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "signing_input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signing_output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifQuestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "eligible_recipients",
+          "kind",
+          "output",
+          "output_sha256",
+          "payload_evidence",
+          "recipient_evidence"
+        ],
+        "type": "object"
+      },
       "WhatifAnswer": {
         "additionalProperties": false,
         "properties": {
@@ -6228,12 +6329,33 @@
           "out_digest": {
             "type": "string"
           },
+          "output_actions": {
+            "items": {
+              "$ref": "#/components/schemas/WhatifAction"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
           "outputs": {
             "format": "int64",
             "type": "integer"
           },
           "parent_execution_step": {
             "type": "string"
+          },
+          "parent_output": {
+            "type": "string"
+          },
+          "recorded_output_actions": {
+            "items": {
+              "$ref": "#/components/schemas/WhatifAction"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "signing_evidence": {
             "anyOf": [
@@ -6294,8 +6416,11 @@
           "input",
           "match",
           "out_digest",
+          "output_actions",
           "outputs",
           "parent_execution_step",
+          "parent_output",
+          "recorded_output_actions",
           "signing_evidence",
           "source_input",
           "suppression_reason",
@@ -6315,10 +6440,42 @@
           "execution_model": {
             "type": "string"
           },
+          "failure_cause": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "failure_execution_step": {
             "type": [
               "string",
               "null"
+            ]
+          },
+          "failure_parent_execution_step": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "failure_parent_output": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "failure_source_input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifSource"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "future_tail_generated": {
@@ -6336,6 +6493,15 @@
           },
           "issue": {
             "type": "string"
+          },
+          "replaced_original_timers": {
+            "items": {
+              "$ref": "#/components/schemas/WhatifSource"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "scopes": {
             "items": {
@@ -6374,6 +6540,7 @@
           "generated_steps",
           "helper_version",
           "horizon",
+          "replaced_original_timers",
           "scopes",
           "source_steps",
           "source_versions",

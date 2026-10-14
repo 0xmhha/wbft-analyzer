@@ -2551,6 +2551,25 @@ export interface components {
         TrendPointList: {
             points: components["schemas"]["TrendPoint"][];
         };
+        WhatifAction: {
+            application_question?: components["schemas"]["WhatifQuestion"] | null;
+            cancel_kinds?: string[];
+            code?: string;
+            duration_ns?: string | null;
+            eligible_recipients: string[];
+            event?: string;
+            height?: string | null;
+            kind: string;
+            output: string;
+            output_sha256: string;
+            payload_evidence: string;
+            payload_sha256?: string;
+            recipient_evidence: string;
+            round?: string | null;
+            signing_input?: components["schemas"]["WhatifSource"] | null;
+            signing_output?: components["schemas"]["WhatifQuestion"] | null;
+            timer?: string;
+        };
         WhatifAnswer: {
             /** Format: int64 */
             call: number;
@@ -2616,9 +2635,12 @@ export interface components {
             input: string;
             match: boolean;
             out_digest: string;
+            output_actions: components["schemas"]["WhatifAction"][] | null;
             /** Format: int64 */
             outputs: number;
             parent_execution_step: string;
+            parent_output: string;
+            recorded_output_actions: components["schemas"]["WhatifAction"][] | null;
             signing_evidence: components["schemas"]["WhatifSource"] | null;
             source_input: components["schemas"]["WhatifSource"] | null;
             suppression_reason: string;
@@ -2630,13 +2652,18 @@ export interface components {
         WhatifSummary: {
             baseline_validated: boolean;
             execution_model: string;
+            failure_cause?: components["schemas"]["WhatifSource"] | null;
             failure_execution_step?: string | null;
+            failure_parent_execution_step?: string | null;
+            failure_parent_output?: string | null;
+            failure_source_input?: components["schemas"]["WhatifSource"] | null;
             future_tail_generated: boolean;
             /** Format: int64 */
             generated_steps: number;
             helper_version: string;
             horizon: string;
             issue?: string;
+            replaced_original_timers: components["schemas"]["WhatifSource"][] | null;
             scopes: components["schemas"]["WhatifScope"][];
             /** Format: int64 */
             source_steps: number;

@@ -170,6 +170,9 @@ func (g *schemas) component(t reflect.Type) string {
 			tag = f.Name
 		}
 		s := g.of(f.Type)
+		if f.Tag.Get("nullable") == "true" {
+			s = nullable(s)
+		}
 		if e := f.Tag.Get("enum"); e != "" {
 			s["enum"] = strings.Split(e, ",")
 		}
