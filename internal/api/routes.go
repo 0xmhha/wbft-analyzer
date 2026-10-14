@@ -5,6 +5,7 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/derive/latency"
 	"github.com/0xmhha/wbft-analyzer/internal/derive/rounds"
 	"github.com/0xmhha/wbft-analyzer/internal/replayjob"
+	"github.com/0xmhha/wbft-analyzer/internal/scenario"
 	sourcemessages "github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/0xmhha/wbft-analyzer/internal/source/observe"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
@@ -44,6 +45,15 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}/comparison", id: "getScenarioComparison", summary: "Exact recorded and complete-seed ECDFs and elapsed header-time bands from one database snapshot; incomplete groups remain unavailable.", params: scenarioParams(false), answers: map[int]any{200: scenario.ComparisonPlot{}}, handle: (*Server).scenarioComparison},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/scenario-sources", id: "listScenarioSources", summary: "Registered network fitting models, coverage and immutable identities; no server paths.", params: runParams(), answers: map[int]any{200: ScenarioSources{}}, handle: (*Server).scenarioSources},
+	{method: "POST", path: "/v1/networks/{net}/datasets/{dataset}/scenario-jobs", id: "createScenarioJob", summary: "Queue a bounded baseline and outgoing-link change on a complete registered model.", params: runParams(), body: ScenarioRequest{}, answers: map[int]any{202: store.ScenarioJob{}}, handle: (*Server).postScenarioJob},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/scenario-jobs", id: "listScenarioJobs", summary: "Latest 100 durable network experiment jobs and linked runs.", params: runParams(), answers: map[int]any{200: ScenarioJobs{}}, handle: (*Server).scenarioJobs},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/scenario-jobs/{job}", id: "getScenarioJob", summary: "One scoped network experiment job with explicit interruption and failure status.", params: append(runParams(), param{name: "job", in: "path", doc: "network experiment job ID", typ: "integer", format: "int64", required: true}), answers: map[int]any{200: store.ScenarioJob{}}, handle: (*Server).scenarioJob},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/scenario-runs", id: "listScenarioRuns", summary: "Latest 100 network experiment summaries with execution and baseline credibility separated.", params: runParams(), answers: map[int]any{200: ScenarioRuns{}}, handle: (*Server).scenarioRuns},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}", id: "getScenarioRun", summary: "Immutable source, fitting, execution and change hashes with baseline checks.", params: scenarioParams(false), answers: map[int]any{200: store.ScenarioRunInfo{}}, handle: (*Server).scenarioSummary},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}/seeds", id: "listScenarioSeeds", summary: "Ordered baseline or counterfactual seed results; interrupted prefixes remain available.", params: scenarioParams(true), answers: map[int]any{200: ScenarioSeedPage{}}, handle: (*Server).scenarioSeeds},
+
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reexec-sources", id: "listReexecSources", summary: "Configured retained journal IDs and allowed modes; no server paths.", params: runParams(), answers: map[int]any{200: ReexecSources{}}, handle: (*Server).reexecSources},
 	{method: "POST", path: "/v1/networks/{net}/datasets/{dataset}/reexec-jobs", id: "createReexecJob", summary: "Queue a retained journal replay through the configured bounded worker.", params: runParams(), body: replayjob.Request{}, answers: map[int]any{202: store.ReexecJob{}}, handle: (*Server).postReexecJob},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reexec-jobs", id: "listReexecJobs", summary: "Latest 100 durable replay jobs and linked result IDs.", params: runParams(), answers: map[int]any{200: ReexecJobs{}}, handle: (*Server).reexecJobs},
@@ -197,4 +207,15 @@ func reexecParams(steps bool) []param {
 		out = append(out, param{name: "after", in: "query", doc: "exclusive original source ordinal", typ: "integer", format: "int64"}, param{name: "limit", in: "query", doc: "page size 1..1000", typ: "integer"}, param{name: "class", in: "query", doc: "match, output_diverged, env_mismatch, env_exhausted, input_gap, warmup_suspect or not_comparable", typ: "string"}, param{name: "height", in: "query", doc: "full recorded active height", typ: "string"})
 	}
 	return out
+}
+
+func scenarioParams(page bool) []param {
+	params := append(runParams(), param{name: "scenario", in: "path", doc: "network experiment run ID", typ: "integer", format: "int64", required: true})
+	if page {
+		params = append(params,
+			param{name: "mode", in: "query", doc: "baseline (default) or counterfactual", typ: "string"},
+			param{name: "after", in: "query", doc: "exclusive saved seed index, 0 through 128", typ: "integer"},
+			param{name: "limit", in: "query", doc: "1 through 128, default 32", typ: "integer"})
+	}
+	return params
 }

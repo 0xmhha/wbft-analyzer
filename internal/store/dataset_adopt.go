@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -20,7 +21,7 @@ func (s *Store) AdoptDatasetInputs(ctx context.Context, network, id int64, direc
 	}
 	defer release()
 	var eligible bool
-	e = s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM datasets WHERE id=$1 AND network_id=$2 AND kind='messages') AND NOT EXISTS(SELECT 1 FROM reexec_jobs WHERE dataset_id=$1 AND status IN ('queued','running')) AND NOT EXISTS(SELECT 1 FROM whatif_runs WHERE dataset_id=$1 AND status='running') AND NOT EXISTS(SELECT 1 FROM whatif_jobs WHERE dataset_id=$1 AND status IN ('queued','running'))`, id, network).Scan(&eligible)
+	e = s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM datasets WHERE id=$1 AND network_id=$2 AND kind='messages') AND NOT EXISTS(SELECT 1 FROM reexec_jobs WHERE dataset_id=$1 AND status IN ('queued','running')) AND NOT EXISTS(SELECT 1 FROM whatif_runs WHERE dataset_id=$1 AND status='running') AND NOT EXISTS(SELECT 1 FROM whatif_jobs WHERE dataset_id=$1 AND status IN ('queued','running')) AND NOT EXISTS(SELECT 1 FROM scenario_jobs WHERE dataset_id=$1 AND status IN ('queued','running')) AND NOT EXISTS(SELECT 1 FROM scenario_runs WHERE dataset_id=$1 AND status='running')`, id, network).Scan(&eligible)
 	if e != nil {
 		return e
 	}
@@ -109,6 +110,15 @@ func (s *Store) AdoptDatasetInputs(ctx context.Context, network, id int64, direc
 	if e != nil {
 		return e
 	}
+	sources, e := s.ScenarioSources(ctx, id)
+	if e != nil {
+		return e
+	}
+	for _, source := range sources {
+		for _, ref := range source.Snapshot.Objects() {
+			objects = append(objects, object{path: ref.Path, sha: ref.SHA256, bytes: ref.Bytes})
+		}
+	}
 	for _, o := range objects {
 		info, err := os.Lstat(o.path)
 		if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 || info.Size() != o.bytes {
@@ -137,6 +147,15 @@ func (s *Store) AdoptDatasetInputs(ctx context.Context, network, id int64, direc
 			}
 			if _, e := tx.Exec(ctx, `UPDATE whatif_runs SET chain_path=$3 WHERE dataset_id=$1 AND chain_sha256=$2`, id, sha, path); e != nil {
 				return e
+			}
+		}
+		for _, source := range sources {
+			raw, err := json.Marshal(source.Snapshot.Rebase(n.Directory()))
+			if err != nil {
+				return err
+			}
+			if _, err = tx.Exec(ctx, `UPDATE scenario_sources SET snapshot=$3 WHERE dataset_id=$1 AND source_id=$2`, id, source.ID, raw); err != nil {
+				return err
 			}
 		}
 		_, e := tx.Exec(ctx, `DELETE FROM dataset_storage_adoptions WHERE dataset_id=$1`, id)

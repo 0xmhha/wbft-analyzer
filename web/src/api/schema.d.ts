@@ -703,6 +703,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/scenario-jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest 100 durable network experiment jobs and linked runs. */
+        get: operations["listScenarioJobs"];
+        put?: never;
+        /** Queue a bounded baseline and outgoing-link change on a complete registered model. */
+        post: operations["createScenarioJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/scenario-jobs/{job}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One scoped network experiment job with explicit interruption and failure status. */
+        get: operations["getScenarioJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/scenario-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest 100 network experiment summaries with execution and baseline credibility separated. */
+        get: operations["listScenarioRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Immutable source, fitting, execution and change hashes with baseline checks. */
+        get: operations["getScenarioRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exact recorded and complete-seed ECDFs and elapsed header-time bands from one database snapshot; incomplete groups remain unavailable. */
+        get: operations["getScenarioComparison"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}/seeds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ordered baseline or counterfactual seed results; interrupted prefixes remain available. */
+        get: operations["listScenarioSeeds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/scenario-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Registered network fitting models, coverage and immutable identities; no server paths. */
+        get: operations["listScenarioSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/whatif": {
         parameters: {
             query?: never;
@@ -2129,6 +2249,183 @@ export interface components {
             round: string;
             t_wall: string;
         };
+        ScenarioAssessment: {
+            issues: components["schemas"]["ScenarioIssue"][];
+            status: string;
+            version: string;
+        };
+        ScenarioComparisonPlot: {
+            baseline: components["schemas"]["ScenarioDistribution"];
+            counterfactual: components["schemas"]["ScenarioDistribution"];
+            credibility: string;
+            from: string;
+            recorded: components["schemas"]["ScenarioDistribution"];
+            recorded_sha256: string;
+            to: string;
+        };
+        ScenarioCutOutgoing: {
+            /** Format: int64 */
+            from_ns: number;
+            kind: string;
+            /** Format: int64 */
+            node: number;
+            /** Format: int64 */
+            to_ns: number;
+        };
+        ScenarioDistribution: {
+            /** Format: int64 */
+            complete_runs: number;
+            elapsed_seconds: components["schemas"]["ScenarioSeedBand"][];
+            /** Format: int64 */
+            expected_runs: number;
+            issue: string;
+            period_seconds: components["schemas"]["ScenarioDistributionPoint"][];
+            rounds: components["schemas"]["ScenarioDistributionPoint"][];
+            /** Format: int64 */
+            samples: number;
+            /** Format: int64 */
+            saved_runs: number;
+            status: string;
+        };
+        ScenarioDistributionPoint: {
+            /** Format: int64 */
+            count: number;
+            /** Format: double */
+            cumulative: number;
+            value: string;
+        };
+        ScenarioExperiment: {
+            baseline_rounds: components["schemas"]["ScenarioRoundComparison"] | null;
+            baseline_time_check: string;
+            change: components["schemas"]["ScenarioCutOutgoing"];
+            change_sha256: string;
+            execution_sha256: string;
+            from: string;
+            model: components["schemas"]["ScenarioAssessment"];
+            provenance: components["schemas"]["ScenarioProvenance"];
+            recorded_counts: components["schemas"]["ScenarioRoundCount"][];
+            recorded_heights: components["schemas"]["ScenarioHeight"][];
+            recorded_sha256: string;
+            source_sha256: string;
+            status: string;
+            to: string;
+            version: string;
+        };
+        ScenarioHeight: {
+            number: string;
+            period_seconds: string;
+            round: string;
+            time: string;
+        };
+        ScenarioHomogeneity: {
+            /** Format: int64 */
+            degrees_of_freedom: number;
+            /** Format: double */
+            dispersion: number | null;
+            /** Format: double */
+            p: number;
+            /** Format: double */
+            statistic: number;
+        };
+        ScenarioInput: {
+            id: string;
+            kind: string;
+            node: string;
+            sha256: string;
+        };
+        ScenarioIssue: {
+            code: string;
+            link?: string;
+            node?: string;
+        };
+        ScenarioJobs: {
+            jobs: components["schemas"]["StoreScenarioJob"][];
+        };
+        ScenarioPermutation: {
+            exact: boolean;
+            /** Format: double */
+            p: number;
+            seed: string;
+            /** Format: int64 */
+            splits: number;
+        };
+        ScenarioProvenance: {
+            chain_sha256: string;
+            core_commit: string;
+            /** Format: int64 */
+            dataset: number;
+            fit_version: string;
+            inputs: components["schemas"]["ScenarioInput"][];
+            model_sha256: string;
+            seeds: number[];
+        };
+        ScenarioRequest: {
+            change: components["schemas"]["ScenarioCutOutgoing"];
+            source_id: string;
+        };
+        ScenarioRoundComparison: {
+            /** Format: double */
+            alpha: number;
+            method: string;
+            /** Format: double */
+            p: number | null;
+            permutation: components["schemas"]["ScenarioPermutation"] | null;
+            recorded_counts: components["schemas"]["ScenarioRoundCount"][];
+            recorded_homogeneity: components["schemas"]["ScenarioHomogeneity"];
+            simulated_counts: components["schemas"]["ScenarioRoundCount"][];
+            simulated_homogeneity: components["schemas"]["ScenarioHomogeneity"];
+            status: string;
+        };
+        ScenarioRoundCount: {
+            /** Format: int64 */
+            late: number;
+            /** Format: int64 */
+            total: number;
+        };
+        ScenarioRuns: {
+            runs: components["schemas"]["StoreScenarioRunInfo"][];
+        };
+        ScenarioSeedBand: {
+            height: string;
+            maximum: string;
+            median: string;
+            minimum: string;
+            /** Format: int64 */
+            seeds: number;
+        };
+        ScenarioSeedPage: {
+            /** Format: int64 */
+            next: number | null;
+            seeds: components["schemas"]["StoreScenarioSeed"][];
+        };
+        ScenarioSeedResult: {
+            heights: components["schemas"]["ScenarioHeight"][];
+            /** Format: int64 */
+            seed: number;
+            /** Format: int64 */
+            simulation_ns: number;
+            status: string;
+            /** Format: int64 */
+            violations: number;
+        };
+        ScenarioSources: {
+            enabled: boolean;
+            sources: components["schemas"]["ScenariojobSourceInfo"][];
+        };
+        ScenariojobSourceInfo: {
+            /** Format: int64 */
+            dataset_id: number;
+            /** Format: int64 */
+            duration_ns: number;
+            execution_sha256: string;
+            from: string;
+            id: string;
+            model: components["schemas"]["ScenarioAssessment"];
+            nodes: string[];
+            source_sha256: string;
+            status: string;
+            to: string;
+        };
         StoreDataset: {
             copy_nodes: string[];
             error: string;
@@ -2510,6 +2807,39 @@ export interface components {
             count: number;
             /** Format: int64 */
             round: number;
+        };
+        StoreScenarioJob: {
+            change: components["schemas"]["ScenarioCutOutgoing"];
+            change_sha256: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: int64 */
+            dataset_id: number;
+            execution_sha256: string;
+            /** Format: date-time */
+            finished_at: string | null;
+            /** Format: int64 */
+            id: number;
+            issue?: string;
+            /** Format: int64 */
+            scenario_id: number | null;
+            source_id: string;
+            source_sha256: string;
+            /** Format: date-time */
+            started_at: string | null;
+            status: string;
+        };
+        StoreScenarioRunInfo: {
+            credibility: string;
+            /** Format: int64 */
+            id: number;
+            summary: components["schemas"]["ScenarioExperiment"];
+        };
+        StoreScenarioSeed: {
+            /** Format: int64 */
+            index: number;
+            mode: string;
+            result: components["schemas"]["ScenarioSeedResult"];
         };
         StoreValidatorSummary: {
             address: string;
@@ -4929,6 +5259,369 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoundsSummary"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listScenarioJobs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioJobs"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createScenarioJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScenarioRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreScenarioJob"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getScenarioJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description network experiment job ID */
+                job: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreScenarioJob"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listScenarioRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioRuns"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getScenarioRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description network experiment run ID */
+                scenario: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreScenarioRunInfo"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getScenarioComparison: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description network experiment run ID */
+                scenario: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioComparisonPlot"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listScenarioSeeds: {
+        parameters: {
+            query?: {
+                /** @description baseline (default) or counterfactual */
+                mode?: string;
+                /** @description exclusive saved seed index, 0 through 128 */
+                after?: number;
+                /** @description 1 through 128, default 32 */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description network experiment run ID */
+                scenario: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioSeedPage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listScenarioSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioSources"];
                 };
             };
             /** @description the request failed */

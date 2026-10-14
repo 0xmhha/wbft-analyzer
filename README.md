@@ -1057,3 +1057,40 @@ original-receive regions use exact nanosecond original entry stamps and declared
 clock uncertainty. Generated inputs without a recorded wall stamp remain
 unaligned. A source-horizon completion is not proof of other nodes' reactions.
 Historical runs without this evidence are explicitly unavailable.
+
+### Network fitting and independent seed experiments
+
+`scenario fit --db DSN --dataset ID --chain chain.rlp --events-manifest events.json
+--origin 2026-01-01T00:00:00Z --from 1 --to 60 --duration 2m --seeds 32`
+inspects retained message inputs and canonical headers without migrating the
+database. Native journals and captured wire frames retain their original input
+hashes and source positions. A model with missing node options, startup policy,
+application timing or directed-link coverage stays partial and cannot execute.
+An absent receipt is not treated as packet loss without independently verified
+receiver coverage and a settled observation horizon. Older engine records that
+omit replay configuration do not prove that WAL replay was disabled.
+
+`serve --scenario-sources /private/network-sources.json` registers a private,
+owner-readable JSON array of source declarations. Each entry selects an `id`,
+`dataset`, `chain`, optional `events_manifest`, RFC3339Nano `origin`, numeric
+`from` and `to`, Go duration `duration`, declared `clock`, `skew_ms`, and `seeds`.
+Optional receiver `coverage` entries must come from an independently verified
+recording interval. Caller-supplied runtime policy cannot replace recorded
+engine startup evidence. The server pins declarations and retained chain/event
+objects; changing a registered source ID's evidence is refused.
+
+The network experiments screen shows source coverage, queues a bounded outgoing
+link cut, and reads durable jobs and seed results. It uses the same execution
+worker, database lease and queue limit as core replay. Execution availability is
+reported separately from readable source and result metadata. Incomplete models
+remain readable. Recovery preserves saved seed prefixes and records interrupted
+executions without inventing a completed suffix.
+
+Comparison charts keep one recorded chain separate from baseline and changed
+seed groups. Round and block-period ECDFs share axes; elapsed header-time bands
+show the seed minimum, lower median and maximum, rather than confidence
+intervals. Integer labels remain exact, and partial groups are not pooled into a
+complete distribution. Animated chart reveals respect reduced-motion settings.
+Fitting completeness, completed simulation, baseline round agreement and the
+unconfigured timing acceptance threshold remain separate evidence. This feature
+does not establish a complete fit of a physical mixed-node capture.

@@ -1,0 +1,238 @@
+package scenario
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"reflect"
+	"strings"
+	"time"
+
+	pairs "github.com/0xmhha/wbft-analyzer/internal/derive/messages"
+	"github.com/0xmhha/wbft-analyzer/internal/source/messages"
+	"github.com/0xmhha/wbft/codec"
+	"github.com/0xmhha/wbft/conformance/sim"
+	"github.com/0xmhha/wbft/types"
+)
+
+// FitOptions contains already snapshotted local readers. None of their paths
+// are retained in the fitted report or persisted experiment provenance.
+type FitOptions struct {
+	Dataset    int64
+	Chain      []byte
+	Frames     []messages.Prepared
+	Journals   []messages.Prepared
+	Events     []EventInput
+	Clock      pairs.Clock
+	Coverage   []Coverage
+	Runtime    []Node
+	Origin     time.Time
+	From, To   uint64
+	Until      time.Duration
+	CoreCommit string
+	Seeds      []int64
+}
+
+type Fitted struct {
+	NodeOptions  []Node        `json:"node_options"`
+	Provenance   Provenance    `json:"provenance"`
+	SourceSHA256 string        `json:"source_sha256"`
+	Model        Assessment    `json:"model"`
+	Links        []Link        `json:"links"`
+	Runtimes     []Runtime     `json:"runtimes"`
+	App          AppTiming     `json:"application"`
+	Recorded     []Height      `json:"recorded"`
+	Scenario     *sim.Scenario `json:"-"`
+}
+
+// Fit derives one prepared network experiment from exact chain and journal
+// snapshots plus verified event inputs. Unsupported source gaps remain a
+// structured partial fit rather than being filled by simulator defaults.
+func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
+	out := Fitted{Links: []Link{}, Runtimes: []Runtime{}, Recorded: []Height{}, Model: Assessment{Version: FitVersion, Status: "partial", Issues: []Issue{}}}
+	if len(o.Runtime) > 0 {
+		return out, errors.New("runtime policy must come from recorded engine starts")
+	}
+	if len(o.Chain) == 0 || len(o.Chain) > 64<<20 || len(o.Journals) == 0 || len(o.Journals) > 256 || o.Origin.IsZero() || o.Clock.SkewMS < 0 || o.Clock.SkewMS > 3600000 {
+		return out, errors.New("invalid recorded fitting scope")
+	}
+	blocks, err := sim.DecodeChain(o.Chain)
+	if err != nil || len(blocks) < 3 {
+		return out, errors.New("recorded chain unavailable")
+	}
+	if blocks[0] == nil || blocks[0].Header == nil {
+		return out, errors.New("genesis header unavailable")
+	}
+	genesis := codec.BlockHash(blocks[0].Header).Hex()
+	sources := []Input{}
+	nodes := []Node{}
+	inputs := []MessageInput{}
+	var config *types.Config
+	for _, p := range o.Journals {
+		var nodeAddress types.Address
+		if err := nodeAddress.UnmarshalText([]byte(p.Summary.Node)); err != nil {
+			return out, errors.New("invalid journal node address")
+		}
+		node, cfg, err := InspectNodeOptions(ctx, p.Input.Path, nodeAddress)
+		if err != nil {
+			return out, err
+		}
+		if config == nil {
+			config = cfg
+		} else if config.ChainID == nil || cfg.ChainID == nil || config.ChainID.Cmp(cfg.ChainID) != 0 {
+			return out, errors.New("journal network mismatch")
+		}
+		if !reflect.DeepEqual(config, cfg) {
+			return out, errors.New("per-node chain configuration requires explicit fitting")
+		}
+		if cfg.ChainID == nil {
+			return out, errors.New("chain ID unavailable")
+		}
+		input, err := InspectMessageSnapshot(ctx, p, cfg.ChainID.String(), genesis)
+		if err != nil {
+			return out, err
+		}
+		nodes = append(nodes, node)
+		inputs = append(inputs, input)
+		sources = append(sources, input.Source)
+	}
+	if len(o.Frames) > 256 || len(o.Frames)+len(o.Journals) > 256 {
+		return out, errors.New("message source scope exceeds bound")
+	}
+	for _, p := range o.Frames {
+		if p.Summary.Kind != "frames" || config == nil {
+			return out, errors.New("invalid frame fitting source")
+		}
+		input, err := InspectMessageSnapshot(ctx, p, config.ChainID.String(), genesis)
+		if err != nil {
+			return out, err
+		}
+		inputs = append(inputs, input)
+		sources = append(sources, input.Source)
+	}
+	facts, err := InspectChain(blocks, config, o.From, o.To)
+	if err != nil {
+		out.Model.Issues = append(out.Model.Issues, Issue{Code: "chain_model_unavailable"})
+		return out, err
+	}
+	out.Recorded = facts.Heights
+	ordered := []Node{}
+	addresses := []string{}
+	for _, a := range facts.Validators {
+		addr := strings.ToLower(a.Hex())
+		addresses = append(addresses, addr)
+		found := false
+		for _, n := range nodes {
+			if n.Address == a {
+				ordered = append(ordered, n)
+				found = true
+				break
+			}
+		}
+		if !found {
+			ordered = append(ordered, Node{Address: a})
+			out.Model.Issues = append(out.Model.Issues, Issue{Node: addr, Code: "node_options_unavailable"})
+		}
+	}
+	endpoints, err := PairMessageInputs(inputs, o.Clock)
+	if err != nil {
+		return out, err
+	}
+	out.Links, err = FitLinks(addresses, endpoints, o.Coverage, o.Clock.Model, time.Duration(o.Clock.SkewMS)*time.Millisecond)
+	if err != nil {
+		return out, err
+	}
+	allEvents := []EventInput{}
+	eventIDs := map[string]bool{}
+	for _, input := range o.Events {
+		if eventIDs[input.Source.ID] || !hexLength(input.Source.SHA256, 64) || input.Stats.SHA256 != input.Source.SHA256 || input.Stats.Malformed > 0 || input.Stats.SequenceGaps > 0 {
+			return out, errors.New("unverified fitting event input")
+		}
+		eventIDs[input.Source.ID] = true
+		allEvents = append(allEvents, input)
+		sources = append(sources, input.Source)
+	}
+	for i, n := range ordered {
+		selected := []EventInput{}
+		for _, input := range allEvents {
+			if strings.EqualFold(input.Source.Node, n.Address.Hex()) {
+				selected = append(selected, input)
+			}
+		}
+		if len(selected) != 1 {
+			out.Model.Issues = append(out.Model.Issues, Issue{Node: strings.ToLower(n.Address.Hex()), Code: "runtime_input_unavailable"})
+			continue
+		}
+		runtime, err := FitRuntime(selected[0].Source.Node, selected[0].Source.ID, selected[0].Records, o.Origin)
+		if err != nil {
+			out.Model.Issues = append(out.Model.Issues, Issue{Node: runtime.Node, Code: "runtime_model_unavailable"})
+			continue
+		}
+		out.Runtimes = append(out.Runtimes, runtime)
+		if runtime.ReplayWAL != nil {
+			ordered[i].RuntimeEvidence = "verified"
+			ordered[i].ReplayWAL = *runtime.ReplayWAL
+			ordered[i].SignFloor = runtime.SignFloor
+			ordered[i].RuntimeInput = selected[0].Source.ID
+			ordered[i].RuntimeLine = runtime.WALPolicies[0].Line
+		}
+
+		timing, err := FitAppTiming(selected[0].Records)
+		if err != nil {
+			return out, err
+		}
+		out.App.Build = append(out.App.Build, timing.Build...)
+		out.App.Import = append(out.App.Import, timing.Import...)
+		out.App.Unproved += timing.Unproved
+	}
+	out.NodeOptions = append([]Node(nil), ordered...)
+	assessment, err := Assess(ordered, out.Links, out.Runtimes, out.App)
+	if err != nil {
+		return out, err
+	}
+	assessment.Issues = append(assessment.Issues, out.Model.Issues...)
+	if len(assessment.Issues) > 0 {
+		assessment.Status = "partial"
+	}
+	out.Model = assessment
+	modelRaw, err := json.Marshal(struct {
+		From, To    uint64
+		Origin      string
+		UntilNS     int64
+		Clock       pairs.Clock
+		Coverage    []Coverage
+		Nodes       []Node
+		Params      sim.Params
+		Links       []Link
+		Runtimes    []Runtime
+		Application AppTiming
+	}{o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App})
+	if err != nil {
+		return out, err
+	}
+	modelHash := sha256.Sum256(modelRaw)
+	sum := sha256.Sum256(o.Chain)
+	out.Provenance, out.SourceSHA256, err = SealProvenance(Provenance{ModelSHA256: hex.EncodeToString(modelHash[:]), Dataset: o.Dataset, Version: FitVersion, Inputs: sources, ChainSHA256: hex.EncodeToString(sum[:]), CoreCommit: o.CoreCommit, Seeds: o.Seeds})
+	if err != nil {
+		return out, err
+	}
+	if assessment.Status != "complete" {
+		return out, nil
+	}
+	sc, err := Build(ordered, out.Links, facts.Params, []time.Duration{0}, []time.Duration{0}, sim.Stop{Height: o.To, Duration: o.Until})
+	if err != nil {
+		return out, err
+	}
+	sc, err = ApplyRuntime(sc, ordered, out.Runtimes)
+	if err != nil {
+		return out, err
+	}
+	sc, err = ApplyAppTiming(sc, ordered, out.App)
+	if err != nil {
+		return out, err
+	}
+	out.Scenario = &sc
+	return out, nil
+}

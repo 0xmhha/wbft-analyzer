@@ -75,3 +75,16 @@ func TestChainbenchManifestDoesNotCopyLaunchSecrets(t *testing.T) {
 		t.Fatal("copied launch secrets")
 	}
 }
+
+func TestHealthMetadataVersionCompatibility(t *testing.T) {
+	for _, v := range []string{"wbft-event-normalization/5", "wbft-event-normalization/6", EventNormalizer} {
+		if !HealthMetadataPreserved(v) {
+			t.Fatal("health metadata unavailable")
+		}
+	}
+	for _, v := range []string{"", "wbft-event-normalization/4", "wbft-event-normalization/99"} {
+		if HealthMetadataPreserved(v) {
+			t.Fatal("unknown metadata declared complete")
+		}
+	}
+}

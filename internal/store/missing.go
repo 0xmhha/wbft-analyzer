@@ -249,7 +249,7 @@ func (s *Store) RebuildMissing(ctx context.Context, id, messageID int64, from, t
 		if e = json.Unmarshal(d.Metadata, &metadata); e != nil {
 			return e
 		}
-		events, inputs, e := missingEvents(ctx, tx, id, d.Status, metadata.EventsNormalizer == logs.EventNormalizer)
+		events, inputs, e := missingEvents(ctx, tx, id, d.Status, logs.HealthMetadataPreserved(metadata.EventsNormalizer))
 		if e != nil {
 			return e
 		}

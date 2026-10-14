@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -197,5 +199,58 @@ func TestNativeHealthConditionsSurviveMetadataBoundaries(t *testing.T) {
 		if safe := Metadata(raw); safe["what"] != nil {
 			t.Fatal("condition crossed kind or allowlist", safe)
 		}
+	}
+}
+
+func TestExplicitAbsentSignFloorSurvivesMetadataBoundary(t *testing.T) {
+	raw := map[string]json.RawMessage{"kind": json.RawMessage(`"NODE_START"`), "sign_floor": json.RawMessage(`null`)}
+	got := Metadata(raw)
+	if got["sign_floor_state"] != "none" {
+		t.Fatal("explicit null floor lost")
+	}
+	delete(raw, "sign_floor")
+	if Metadata(raw)["sign_floor_state"] != nil {
+		t.Fatal("missing floor fabricated")
+	}
+	raw["sign_floor_state"] = json.RawMessage(`"none"`)
+	if Metadata(raw)["sign_floor_state"] != "none" {
+		t.Fatal("persisted state lost")
+	}
+}
+
+func TestReplayPolicyMetadataDistinguishesConfigurationAndResult(t *testing.T) {
+	cases := []struct {
+		raw     string
+		enabled any
+	}{{`{"records":0,"stopped":null,"replayed":false}`, nil}, {`{"records":0,"stopped":null,"replayed":false,"enabled":true,"available":true}`, true}, {`{"records":0,"stopped":null,"replayed":false,"enabled":false,"available":true}`, false}, {`{"records":0,"stopped":"private path or error","replayed":false,"enabled":true,"available":false}`, true}}
+	for _, tc := range cases {
+		raw := map[string]json.RawMessage{"kind": json.RawMessage(`"ENGINE_START"`), "replay": json.RawMessage(tc.raw)}
+		got := Metadata(raw)
+		if got["wal_replay_enabled"] != tc.enabled || got["wal_replayed"] != false {
+			t.Fatal(got)
+		}
+		if strings.Contains(fmt.Sprint(got), "private path") {
+			t.Fatal("raw replay error retained")
+		}
+		for i := 0; i < 2; i++ {
+			bytes, err := json.Marshal(got)
+			if err != nil {
+				t.Fatal(err)
+			}
+			raw = map[string]json.RawMessage{}
+			if err = json.Unmarshal(bytes, &raw); err != nil {
+				t.Fatal(err)
+			}
+			raw["kind"] = json.RawMessage(`"ENGINE_START"`)
+			again := Metadata(raw)
+			if !reflect.DeepEqual(got, again) {
+				t.Fatalf("metadata reapplication changed policy %+v %+v", got, again)
+			}
+			got = again
+		}
+	}
+	raw := map[string]json.RawMessage{"kind": json.RawMessage(`"ENGINE_START"`), "replay": json.RawMessage(`{"enabled":null,"available":"true"}`)}
+	if got := Metadata(raw); got["wal_replay_enabled"] != nil || got["wal_available"] != nil {
+		t.Fatal("unknown policy defaulted", got)
 	}
 }

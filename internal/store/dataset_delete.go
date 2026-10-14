@@ -92,7 +92,7 @@ func (s *Store) DeleteDataset(ctx context.Context, network, id int64, confirm st
 	var result DatasetDeletion
 	e = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		var activeExperiment bool
-		if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM whatif_runs WHERE dataset_id=$1 AND status='running') OR EXISTS(SELECT 1 FROM whatif_jobs WHERE dataset_id=$1 AND status='running')`, id).Scan(&activeExperiment); err != nil {
+		if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM scenario_jobs WHERE dataset_id=$1 AND status='running') OR EXISTS(SELECT 1 FROM scenario_runs WHERE dataset_id=$1 AND status='running') OR EXISTS(SELECT 1 FROM whatif_runs WHERE dataset_id=$1 AND status='running') OR EXISTS(SELECT 1 FROM whatif_jobs WHERE dataset_id=$1 AND status='running')`, id).Scan(&activeExperiment); err != nil {
 			return err
 		}
 		if activeExperiment {
@@ -148,10 +148,28 @@ func (s *Store) DeleteDataset(ctx context.Context, network, id int64, confirm st
 		if e != nil {
 			return e
 		}
+		sources, e := tx.Query(ctx, `SELECT `+scenarioSourceColumns+` FROM scenario_sources WHERE dataset_id=$1`, id)
+		if e != nil {
+			return e
+		}
+		retained, e := collect(sources, func(r pgx.CollectableRow) (ScenarioSource, error) { return scanScenarioSource(r) })
+		if e != nil {
+			return e
+		}
+		for _, source := range retained {
+			for _, ref := range source.Snapshot.Objects() {
+				if !managed || !ownedPath(n, ref.Path, ref.SHA256) {
+					return ErrUnmanagedInputs
+				}
+			}
+		}
 		if _, e = tx.Exec(ctx, `UPDATE reexec_jobs SET status='cancelled',issue='dataset_deleted',finished_at=now() WHERE dataset_id=$1 AND status='queued'`, id); e != nil {
 			return e
 		}
 		if _, e = tx.Exec(ctx, `UPDATE whatif_jobs SET status='cancelled',issue='dataset_deleted',finished_at=now() WHERE dataset_id=$1 AND status='queued'`, id); e != nil {
+			return e
+		}
+		if _, e = tx.Exec(ctx, `UPDATE scenario_jobs SET status='cancelled',issue='dataset_deleted',finished_at=now() WHERE dataset_id=$1 AND status='queued'`, id); e != nil {
 			return e
 		}
 		if _, e = tx.Exec(ctx, `UPDATE datasets SET status='deleting',updated_at=now() WHERE id=$1 AND network_id=$2`, id, network); e != nil {
@@ -184,7 +202,7 @@ func (s *Store) finishDatasetDeletion(ctx context.Context, d DatasetDeletion) (D
 		}
 	}
 	e = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		for _, table := range []string{"reexec_jobs", "reexec_runs", "whatif_jobs", "whatif_runs", "dataset_storage"} {
+		for _, table := range []string{"scenario_jobs", "scenario_runs", "scenario_sources", "reexec_jobs", "reexec_runs", "whatif_jobs", "whatif_runs", "dataset_storage"} {
 			if _, e := tx.Exec(ctx, `DELETE FROM `+table+` WHERE dataset_id=$1`, d.Dataset); e != nil {
 				return e
 			}

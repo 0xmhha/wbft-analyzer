@@ -45,6 +45,7 @@ Commands:
   dataset   adopt retained inputs, delete a dataset, or inspect deletion
   reexec    compare recorded journal steps with the actual WBFT core
   whatif    run a counterfactual timer policy on complete retained input
+  scenario  inspect a recorded network scenario and its fitting coverage
   reindex   rebuild the derived tables of a dataset
   export    write a dataset to a directory
   version   print the version
@@ -61,6 +62,7 @@ var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
 	"reindex":       runReindex,
 	"reexec":        runReexec,
 	"whatif":        runWhatif,
+	"scenario":      runScenario,
 	"reexec-helper": runReexecHelper,
 	"export":        notYet("export"),
 }
