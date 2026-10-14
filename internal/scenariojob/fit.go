@@ -16,10 +16,11 @@ import (
 )
 
 type FitRequest struct {
-	Options       scenario.FitOptions
-	ChainPath     string
-	EventManifest string
-	Snapshot      *scenario.SourceSnapshot
+	Options         scenario.FitOptions
+	ChainPath       string
+	RuntimeManifest string
+	EventManifest   string
+	Snapshot        *scenario.SourceSnapshot
 }
 
 // FitDataset reconstructs verified private snapshots and keeps their bytes
@@ -92,7 +93,7 @@ func PrepareDataset(ctx context.Context, s *store.Store, r FitRequest) (scenario
 		}
 	} else {
 		snapshot = *r.Snapshot
-		if len(snapshot.Events) > 256 {
+		if len(snapshot.Events) > 256 || len(snapshot.Runtime) > 256 {
 			return out, snapshot, errors.New("too many retained event inputs")
 		}
 		for _, ref := range snapshot.Objects() {
@@ -180,6 +181,35 @@ func PrepareDataset(ctx context.Context, s *store.Store, r FitRequest) (scenario
 			return out, snapshot, err
 		}
 		r.Options.Events = append(r.Options.Events, event)
+	}
+	if r.Snapshot == nil && r.RuntimeManifest != "" {
+		snapshot.Runtime, err = retainRuntimeObservations(ctx, r.RuntimeManifest, storage, network.ChainID, network.GenesisHash)
+		if err != nil {
+			return out, snapshot, err
+		}
+	}
+	r.Options.RuntimeObservations = []scenario.RuntimeObservation{}
+	for _, object := range snapshot.Runtime {
+		if object.File.Bytes < 1 || object.File.Bytes > 64<<20 || object.File.SHA256 != object.Source.SHA256 {
+			return out, snapshot, ErrSource
+		}
+		target := filepath.Join(tmp, "runtime-"+object.Source.ID)
+		if !logs.Identifier(object.Source.ID) {
+			return out, snapshot, ErrSource
+		}
+		if err := reexec.CopyObject(ctx, object.File, target); err != nil {
+			return out, snapshot, err
+		}
+		f, err := os.Open(target)
+		if err != nil {
+			return out, snapshot, err
+		}
+		observed, e := scenario.InspectRuntimeObservation(object.Source, f)
+		_ = f.Close()
+		if e != nil {
+			return out, snapshot, e
+		}
+		r.Options.RuntimeObservations = append(r.Options.RuntimeObservations, observed)
 	}
 	fitted, err := scenario.Fit(ctx, r.Options)
 	return fitted, snapshot, err

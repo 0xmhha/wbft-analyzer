@@ -27,6 +27,7 @@ func runScenario(args []string, stdout, stderr io.Writer) int {
 	dsn := fs.String("db", "", "PostgreSQL DSN; default from WBFT_ANALYZER_DB")
 	dataset := fs.Int64("dataset", 0, "retained message dataset ID")
 	chain := fs.String("chain", "", "canonical chain.rlp")
+	runtimeManifest := fs.String("runtime-manifest", "", "runtime sidecar manifest, if available")
 	events := fs.String("events-manifest", "", "native event manifest, if available")
 	originText := fs.String("origin", "", "explicit RFC3339Nano scenario origin")
 	from := fs.Uint64("from", 0, "first compared height")
@@ -65,7 +66,7 @@ func runScenario(args []string, stdout, stderr io.Writer) int {
 		seeds[i] = int64(i + 1)
 	}
 	// Inspection reads existing retained inputs; it does not migrate the database.
-	fitted, err := scenariojob.FitDataset(ctx, s, scenariojob.FitRequest{ChainPath: *chain, EventManifest: *events, Options: scenario.FitOptions{WireMetric: *wireMetric, Dataset: *dataset, Origin: origin, From: *from, To: *to, Until: *until, Seeds: seeds, Clock: pairs.Clock{Model: *clock, SkewMS: *skew}}})
+	fitted, err := scenariojob.FitDataset(ctx, s, scenariojob.FitRequest{RuntimeManifest: *runtimeManifest, ChainPath: *chain, EventManifest: *events, Options: scenario.FitOptions{WireMetric: *wireMetric, Dataset: *dataset, Origin: origin, From: *from, To: *to, Until: *until, Seeds: seeds, Clock: pairs.Clock{Model: *clock, SkewMS: *skew}}})
 	if err != nil {
 		fmt.Fprintln(stderr, "scenario fitting unavailable for this source scope")
 		return exitDataErr

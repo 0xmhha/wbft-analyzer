@@ -17,7 +17,7 @@ import (
 )
 
 func TestScenarioEpochEvidenceJSONContract(t *testing.T) {
-	v := ScenarioSources{Sources: []scenariojob.SourceInfo{{Epochs: []scenariojob.EpochInfo{{Block: "18446744073709551615", Candidates: []string{"0x0000000000000000000000000000000000000001"}, Validators: []string{"0x0000000000000000000000000000000000000001"}, HeaderInputsVerified: true}}, Nodes: []string{}, Model: scenario.Assessment{Issues: []scenario.Issue{}}}}}
+	v := ScenarioSources{Sources: []scenariojob.SourceInfo{{RuntimeObservations: []scenario.RuntimeBinding{}, Epochs: []scenariojob.EpochInfo{{Block: "18446744073709551615", Candidates: []string{"0x0000000000000000000000000000000000000001"}, Validators: []string{"0x0000000000000000000000000000000000000001"}, HeaderInputsVerified: true}}, Nodes: []string{}, Model: scenario.Assessment{Issues: []scenario.Issue{}}}}}
 	raw, err := json.Marshal(v)
 	if err != nil {
 		t.Fatal(err)

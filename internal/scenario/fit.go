@@ -20,35 +20,37 @@ import (
 // FitOptions contains already snapshotted local readers. None of their paths
 // are retained in the fitted report or persisted experiment provenance.
 type FitOptions struct {
-	WireMetric string
-	Dataset    int64
-	Chain      []byte
-	Frames     []messages.Prepared
-	Journals   []messages.Prepared
-	Events     []EventInput
-	Clock      pairs.Clock
-	Coverage   []Coverage
-	Runtime    []Node
-	Origin     time.Time
-	From, To   uint64
-	Until      time.Duration
-	CoreCommit string
-	Seeds      []int64
+	RuntimeObservations []RuntimeObservation
+	WireMetric          string
+	Dataset             int64
+	Chain               []byte
+	Frames              []messages.Prepared
+	Journals            []messages.Prepared
+	Events              []EventInput
+	Clock               pairs.Clock
+	Coverage            []Coverage
+	Runtime             []Node
+	Origin              time.Time
+	From, To            uint64
+	Until               time.Duration
+	CoreCommit          string
+	Seeds               []int64
 }
 
 type Fitted struct {
-	WireMetric   string          `json:"wire_metric"`
-	Epochs       []RecordedEpoch `json:"epochs"`
-	Scope        ScopeCounts     `json:"scope"`
-	NodeOptions  []Node          `json:"node_options"`
-	Provenance   Provenance      `json:"provenance"`
-	SourceSHA256 string          `json:"source_sha256"`
-	Model        Assessment      `json:"model"`
-	Links        []Link          `json:"links"`
-	Runtimes     []Runtime       `json:"runtimes"`
-	App          AppTiming       `json:"application"`
-	Recorded     []Height        `json:"recorded"`
-	Scenario     *sim.Scenario   `json:"-"`
+	RuntimeObservations []RuntimeBinding `json:"runtime_observations"`
+	WireMetric          string           `json:"wire_metric"`
+	Epochs              []RecordedEpoch  `json:"epochs"`
+	Scope               ScopeCounts      `json:"scope"`
+	NodeOptions         []Node           `json:"node_options"`
+	Provenance          Provenance       `json:"provenance"`
+	SourceSHA256        string           `json:"source_sha256"`
+	Model               Assessment       `json:"model"`
+	Links               []Link           `json:"links"`
+	Runtimes            []Runtime        `json:"runtimes"`
+	App                 AppTiming        `json:"application"`
+	Recorded            []Height         `json:"recorded"`
+	Scenario            *sim.Scenario    `json:"-"`
 }
 
 // Fit derives one prepared network experiment from exact chain and journal
@@ -213,6 +215,27 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		out.App.Unsupported += timing.Unsupported
 		out.App.Outcomes = append(out.App.Outcomes, timing.Outcomes...)
 	}
+	out.RuntimeObservations = []RuntimeBinding{}
+	if len(o.RuntimeObservations) > 256 {
+		return out, errors.New("runtime source scope exceeds bound")
+	}
+	runtimeNodes := map[string]bool{}
+	for _, in := range o.RuntimeObservations {
+		if runtimeNodes[in.Source.Node] {
+			return out, errors.New("duplicate runtime node source")
+		}
+		runtimeNodes[in.Source.Node] = true
+		binding, e := BindRuntimeObservation(in, config, addresses)
+		if e != nil {
+			return out, e
+		}
+		out.RuntimeObservations = append(out.RuntimeObservations, binding)
+		sources = append(sources, in.Source)
+		out.Model.Issues = append(out.Model.Issues, Issue{Node: in.Source.Node, Code: "observed_runtime_execution_model_unavailable"})
+		if binding.Configuration != "startup_scalars_verified" {
+			out.Model.Issues = append(out.Model.Issues, Issue{Node: in.Source.Node, Code: "observed_runtime_configuration_unverified"})
+		}
+	}
 	out.NodeOptions = append([]Node(nil), ordered...)
 	assessment, err := Assess(ordered, out.Links, out.Runtimes, out.App)
 	if err != nil {
@@ -227,21 +250,22 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 	}
 	out.Model = assessment
 	modelRaw, err := json.Marshal(struct {
-		WireMetric   string
-		From, To     uint64
-		Origin       string
-		UntilNS      int64
-		Clock        pairs.Clock
-		Coverage     []Coverage
-		Nodes        []Node
-		Params       sim.Params
-		Links        []Link
-		Runtimes     []Runtime
-		Application  AppTiming
-		Scope        ScopeCounts
-		GenesisCount int
-		Epochs       []RecordedEpoch
-	}{o.WireMetric, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs})
+		WireMetric      string
+		From, To        uint64
+		Origin          string
+		UntilNS         int64
+		Clock           pairs.Clock
+		Coverage        []Coverage
+		Nodes           []Node
+		Params          sim.Params
+		Links           []Link
+		Runtimes        []Runtime
+		Application     AppTiming
+		Scope           ScopeCounts
+		GenesisCount    int
+		Epochs          []RecordedEpoch
+		ObservedRuntime []RuntimeBinding
+	}{o.WireMetric, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs, out.RuntimeObservations})
 	if err != nil {
 		return out, err
 	}

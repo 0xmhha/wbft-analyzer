@@ -4462,6 +4462,16 @@
           "source_sha256": {
             "type": "string"
           },
+          "startup": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuntimeobsPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "unavailable": {
             "items": {
               "type": "string"
@@ -4481,6 +4491,7 @@
           "runtime_model_complete",
           "sequence_gaps",
           "source_sha256",
+          "startup",
           "unavailable"
         ],
         "type": "object"
@@ -5193,6 +5204,57 @@
         ],
         "type": "object"
       },
+      "ScenarioRuntimeBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "call_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "capture_complete": {
+            "type": "boolean"
+          },
+          "configuration": {
+            "type": "string"
+          },
+          "execution_model_complete": {
+            "type": "boolean"
+          },
+          "run": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ScenarioInput"
+          },
+          "startup": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuntimeobsPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unavailable": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "call_count",
+          "capture_complete",
+          "configuration",
+          "execution_model_complete",
+          "run",
+          "source",
+          "startup",
+          "unavailable"
+        ],
+        "type": "object"
+      },
       "ScenarioScopeCounts": {
         "additionalProperties": false,
         "properties": {
@@ -5395,6 +5457,12 @@
             },
             "type": "array"
           },
+          "runtime_observations": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuntimeBinding"
+            },
+            "type": "array"
+          },
           "scope": {
             "$ref": "#/components/schemas/ScenarioScopeCounts"
           },
@@ -5420,6 +5488,7 @@
           "id",
           "model",
           "nodes",
+          "runtime_observations",
           "scope",
           "source_sha256",
           "status",
