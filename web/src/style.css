@@ -132,3 +132,8 @@ article pre { overflow: auto; max-height: 24rem; }
 
 .schedule-comparison { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 1rem; }
 .schedule-comparison ol { max-height: 12rem; overflow: auto; }
+
+.whatif-panel { padding: 1rem; margin: 1rem 0; overflow-x: auto; background: repeating-linear-gradient(135deg, transparent, transparent 12px, #8a6d3b10 12px, #8a6d3b10 14px); border: 1px solid #8a6d3b66; }
+.whatif-panel tr { transition: background-color 140ms ease; }
+.whatif-selected { background-color: #4477aa22; }
+@media (prefers-reduced-motion: reduce) { .whatif-panel tr { transition: none; } }

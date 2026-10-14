@@ -63,7 +63,7 @@ stop() {
 
 # capture PORT DIR writes the answers of the read endpoints to DIR.
 capture() {
-	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report baseline_net baseline_ids message_net message_id missing_id observation_net observation_id
+	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report baseline_net baseline_ids message_net message_id missing_id observation_net observation_id timer_net timer_dataset timer_run
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
@@ -105,6 +105,15 @@ capture() {
  message_net=$(jq -r '.networks[]|select(.name=="synthetic-messages")|.id' "$dir/networks.json")
  get "/networks/$message_net/datasets" message-datasets
  message_id=$(jq -r '.datasets[0].id' "$dir/message-datasets.json")
+ timer_net=$(jq -r '.networks[]|select(.name=="synthetic-timer")|.id' "$dir/networks.json")
+ get "/networks/$timer_net/datasets" timer-datasets
+ timer_dataset=$(jq -r '.datasets[]|select(.name=="synthetic-timer-experiment")|.id' "$dir/timer-datasets.json")
+ get "/networks/$timer_net/datasets/$timer_dataset/whatif" timer-runs
+ timer_run=$(jq -r '.runs[0].id' "$dir/timer-runs.json")
+ get "/networks/$timer_net/datasets/$timer_dataset/whatif/$timer_run" timer-summary
+ get "/networks/$timer_net/datasets/$timer_dataset/whatif/$timer_run/results?limit=1000" timer-results
+ get "/networks/$timer_net/datasets/$timer_dataset/whatif-jobs" timer-jobs
+ get "/networks/$timer_net/datasets/$timer_dataset/messages/source?input=journal&file=00000000000000000000.wal&ordinal=1" timer-original-source
  get "/networks/$message_net/datasets/$message_id/reexec-sources" message-reexec-sources
  get "/networks/$message_net/datasets/$message_id/reexec-jobs" message-reexec-jobs
  get "/networks/$message_net/datasets/$message_id/messages/inputs" message-inputs
@@ -196,6 +205,28 @@ PYLOG
 "$bin" ingest observe --db "$src" --name synthetic-observation-dump --archive "$root/internal/source/observe/testdata/capture.json" >"$out/observation-ingest.log"
 observation_dataset_id=$(jq -r .dataset_id "$out/observation-ingest.log")
 "$bin" reindex observations --db "$src" --dataset "$observation_dataset_id" >"$out/observation-bindings.log"
+# Full synthetic journals exercise non-empty counterfactual result tables.
+cat >"$work/timer-fixture.go" <<'GOTIMER'
+package main
+import("context";"encoding/json";"fmt";"os";"path/filepath";"time";"github.com/0xmhha/wbft/codec";"github.com/0xmhha/wbft/conformance/sim";"github.com/0xmhha/wbft/crypto/keccak")
+func main(){
+ root:=os.Args[1];if err:=os.MkdirAll(root,0700);err!=nil{panic(err)}
+ validators:=make([]sim.Validator,4)
+ for i:=range validators{v,err:=sim.NewValidator(keccak.Sum256Bytes([]byte(fmt.Sprintf("synthetic-dump-timer-%d",i))));if err!=nil{panic(err)};validators[i]=v}
+ var links []sim.Link
+ for i,a:=range validators{for j,b:=range validators{if i!=j{links=append(links,sim.Link{From:a.Address(),To:b.Address(),Delay:[]time.Duration{10*time.Millisecond}})}}}
+ result,err:=sim.Run(context.Background(),sim.Scenario{Name:"synthetic-dump-timer",Seed:4,Validators:validators,Links:links,Until:sim.Stop{Height:3,Duration:time.Minute}},sim.Output{JournalDir:root});if err!=nil || len(result.Violations)!=0{panic("synthetic timer scenario failed")}
+ for _,validator:=range validators{files,ok:=result.Journals[validator.Address()];if !ok{continue};directory:=filepath.Join(root,"journal");if err=os.Mkdir(directory,0700);err!=nil{panic(err)};for name,raw:=range files{if err=os.WriteFile(filepath.Join(directory,name),raw,0600);err!=nil{panic(err)}}
+ manifest:=map[string]any{"format":"wbft-analyzer-messages/1","name":"synthetic-timer-experiment","network":map[string]any{"name":"synthetic-timer","chain_id":"8282","genesis_hash":codec.BlockHash(result.Chain[0].Header).Hex()},"clock":map[string]any{"model":"shared-host"},"inputs":[]any{map[string]any{"id":"journal","kind":"journal","node":validator.Address().Hex(),"path":directory}}}
+ raw,err:=json.Marshal(manifest);if err!=nil{panic(err)};if err=os.WriteFile(filepath.Join(root,"manifest.json"),raw,0600);err!=nil{panic(err)};return}
+ panic("missing synthetic journal")
+}
+GOTIMER
+(cd "$root" && go run "$work/timer-fixture.go" "$work/timer-fixture")
+"$bin" ingest messages --db "$src" --manifest "$work/timer-fixture/manifest.json" --inputs-dir "$out/timer-inputs" >"$out/timer-ingest.json"
+timer_dataset=$(jq -r .dataset_id "$out/timer-ingest.json")
+printf '%s\n' '{"request_timeout_seconds":"2"}' >"$work/timer-policy.json"
+"$bin" whatif --db "$src" --dataset "$timer_dataset" --input journal --chain "$work/timer-fixture/chain.rlp" --timer-policy "$work/timer-policy.json" >"$out/timer-experiment.json"
 capture 18091 "$out/source"
 stop
 

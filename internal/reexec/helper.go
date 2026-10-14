@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/0xmhha/wbft-analyzer/internal/source/messages"
+	"github.com/0xmhha/wbft-analyzer/internal/whatif"
 	"io"
 	"os"
 	"os/exec"
@@ -517,6 +518,7 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 			return err
 		}
 		var r struct {
+			Policy      *whatif.Policy            `json:"timer_policy"`
 			Schedule    *stepdriver.TraceSchedule `json:"input_schedule"`
 			AnswerScope string                    `json:"answer_scope"`
 			Type        string                    `json:"type"`
@@ -536,12 +538,25 @@ func Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 			if r.Protocol != Protocol {
 				return ErrHelper
 			}
-			if err := enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": LinkedVersion(), "features": []string{"bounded_warmup_v1", "context_answers_v1", "input_schedule_v1"}}); err != nil {
+			if err := enc.Encode(map[string]any{"type": "hello", "protocol": Protocol, "impl": "wbft", "version": LinkedVersion(), "features": []string{"bounded_warmup_v1", "context_answers_v1", "input_schedule_v1", "timed_inputs_v1", "timed_state_v1"}}); err != nil {
 				return err
 			}
 		case "bye":
 			return nil
+		case "timed_replay":
+			if r.Policy == nil || r.AnswerScope != "context" || r.Schedule != nil || r.OmitMissing || r.WarmupFrom != 0 || r.CompareFrom != 0 {
+				if err := enc.Encode(map[string]any{"type": "error", "id": r.ID, "code": "timer_policy"}); err != nil {
+					return err
+				}
+				continue
+			}
+			if err := whatif.ServeTimed(ctx, r.Journal, r.Chain, r.ID, *r.Policy, enc); err != nil {
+				return err
+			}
 		case "replay":
+			if r.Policy != nil {
+				return ErrHelper
+			}
 			if err := serveReplay(ctx, r.Journal, r.Chain, r.ID, r.OmitMissing, r.WarmupFrom, r.CompareFrom, r.AnswerScope, r.Schedule, enc); err != nil {
 				return err
 			}

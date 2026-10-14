@@ -4000,6 +4000,9 @@
           "allow_schedule": {
             "type": "boolean"
           },
+          "allow_timer": {
+            "type": "boolean"
+          },
           "answer_scopes": {
             "items": {
               "type": "string"
@@ -4021,10 +4024,27 @@
         },
         "required": [
           "allow_schedule",
+          "allow_timer",
           "answer_scopes",
           "id",
           "input_id",
           "modes"
+        ],
+        "type": "object"
+      },
+      "ReplayjobWhatifRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "source_id": {
+            "type": "string"
+          },
+          "timer_policy": {
+            "$ref": "#/components/schemas/WhatifPolicy"
+          }
+        },
+        "required": [
+          "source_id",
+          "timer_policy"
         ],
         "type": "object"
       },
@@ -5754,6 +5774,155 @@
         ],
         "type": "object"
       },
+      "StoreWhatifJob": {
+        "additionalProperties": false,
+        "properties": {
+          "chain_sha256": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "finished_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "helper_sha256": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_id": {
+            "type": "string"
+          },
+          "input_sha256": {
+            "type": "string"
+          },
+          "issue": {
+            "type": "string"
+          },
+          "policy_sha256": {
+            "type": "string"
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "timer_policy": {
+            "$ref": "#/components/schemas/WhatifPolicy"
+          },
+          "whatif_id": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "chain_sha256",
+          "created_at",
+          "dataset_id",
+          "finished_at",
+          "helper_sha256",
+          "id",
+          "input_id",
+          "input_sha256",
+          "policy_sha256",
+          "source_id",
+          "source_sha256",
+          "started_at",
+          "status",
+          "timer_policy",
+          "whatif_id"
+        ],
+        "type": "object"
+      },
+      "StoreWhatifRun": {
+        "additionalProperties": false,
+        "properties": {
+          "chain_sha256": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "finished_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "helper_sha256": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_id": {
+            "type": "string"
+          },
+          "policy_sha256": {
+            "type": "string"
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/WhatifSummary"
+          },
+          "timer_policy": {
+            "$ref": "#/components/schemas/WhatifPolicy"
+          }
+        },
+        "required": [
+          "chain_sha256",
+          "created_at",
+          "dataset_id",
+          "finished_at",
+          "helper_sha256",
+          "id",
+          "input_id",
+          "policy_sha256",
+          "source_sha256",
+          "status",
+          "summary",
+          "timer_policy"
+        ],
+        "type": "object"
+      },
       "TrendPoint": {
         "additionalProperties": false,
         "properties": {
@@ -5795,6 +5964,423 @@
         },
         "required": [
           "points"
+        ],
+        "type": "object"
+      },
+      "WhatifAnswer": {
+        "additionalProperties": false,
+        "properties": {
+          "call": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "engine_run": {
+            "type": "string"
+          },
+          "kind": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "step": {
+            "type": "string"
+          },
+          "writer_run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "call",
+          "engine_run",
+          "kind",
+          "step",
+          "writer_run"
+        ],
+        "type": "object"
+      },
+      "WhatifJobs": {
+        "additionalProperties": false,
+        "properties": {
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/StoreWhatifJob"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "jobs"
+        ],
+        "type": "object"
+      },
+      "WhatifList": {
+        "additionalProperties": false,
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/StoreWhatifRun"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "runs"
+        ],
+        "type": "object"
+      },
+      "WhatifPage": {
+        "additionalProperties": false,
+        "properties": {
+          "next": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/WhatifStep"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "next",
+          "steps"
+        ],
+        "type": "object"
+      },
+      "WhatifPolicy": {
+        "additionalProperties": false,
+        "properties": {
+          "max_request_timeout_seconds": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_timeout_seconds": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "WhatifQuestion": {
+        "additionalProperties": false,
+        "properties": {
+          "output": {
+            "type": "string"
+          },
+          "source_input": {
+            "$ref": "#/components/schemas/WhatifSource"
+          }
+        },
+        "required": [
+          "output",
+          "source_input"
+        ],
+        "type": "object"
+      },
+      "WhatifScope": {
+        "additionalProperties": false,
+        "properties": {
+          "armed_timers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "engine_run": {
+            "type": "string"
+          },
+          "execution_step": {
+            "type": "string"
+          },
+          "horizon_mono_ns": {
+            "type": "string"
+          },
+          "pending_internal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "queued_timers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "writer_run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "armed_timers",
+          "engine_run",
+          "execution_step",
+          "horizon_mono_ns",
+          "pending_internal",
+          "queued_timers",
+          "writer_run"
+        ],
+        "type": "object"
+      },
+      "WhatifSource": {
+        "additionalProperties": false,
+        "properties": {
+          "engine_run": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "string"
+          },
+          "step": {
+            "type": "string"
+          },
+          "writer_run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "engine_run",
+          "ordinal",
+          "step",
+          "writer_run"
+        ],
+        "type": "object"
+      },
+      "WhatifState": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "round": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "running": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "height",
+          "round",
+          "running"
+        ],
+        "type": "object"
+      },
+      "WhatifStep": {
+        "additionalProperties": false,
+        "properties": {
+          "answer_sources": {
+            "items": {
+              "$ref": "#/components/schemas/WhatifAnswer"
+            },
+            "type": "array"
+          },
+          "application_question_sources": {
+            "items": {
+              "$ref": "#/components/schemas/WhatifQuestion"
+            },
+            "type": "array"
+          },
+          "cause": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comparable": {
+            "type": "boolean"
+          },
+          "counterfactual": {
+            "type": "boolean"
+          },
+          "execution_model": {
+            "type": "string"
+          },
+          "execution_state": {
+            "$ref": "#/components/schemas/WhatifState"
+          },
+          "execution_step": {
+            "type": "string"
+          },
+          "generated": {
+            "type": "boolean"
+          },
+          "input": {
+            "type": "string"
+          },
+          "match": {
+            "type": "boolean"
+          },
+          "out_digest": {
+            "type": "string"
+          },
+          "outputs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "parent_execution_step": {
+            "type": "string"
+          },
+          "signing_evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "suppression_reason": {
+            "type": "string"
+          },
+          "t_mono_ns": {
+            "type": "string"
+          },
+          "timer_arm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatifSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timer_arm_execution_step": {
+            "type": "string"
+          },
+          "timer_deadline_mono_ns": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "answer_sources",
+          "application_question_sources",
+          "cause",
+          "comparable",
+          "counterfactual",
+          "execution_model",
+          "execution_state",
+          "execution_step",
+          "generated",
+          "input",
+          "match",
+          "out_digest",
+          "outputs",
+          "parent_execution_step",
+          "signing_evidence",
+          "source_input",
+          "suppression_reason",
+          "t_mono_ns",
+          "timer_arm",
+          "timer_arm_execution_step",
+          "timer_deadline_mono_ns"
+        ],
+        "type": "object"
+      },
+      "WhatifSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "baseline_validated": {
+            "type": "boolean"
+          },
+          "execution_model": {
+            "type": "string"
+          },
+          "failure_execution_step": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "future_tail_generated": {
+            "type": "boolean"
+          },
+          "generated_steps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "helper_version": {
+            "type": "string"
+          },
+          "horizon": {
+            "type": "string"
+          },
+          "issue": {
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/WhatifScope"
+            },
+            "type": "array"
+          },
+          "source_steps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "source_versions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "steps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "timer_trace_validated": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "baseline_validated",
+          "execution_model",
+          "future_tail_generated",
+          "generated_steps",
+          "helper_version",
+          "horizon",
+          "scopes",
+          "source_steps",
+          "source_versions",
+          "status",
+          "steps",
+          "timer_trace_validated",
+          "version"
         ],
         "type": "object"
       }
@@ -9650,6 +10236,423 @@
           }
         },
         "summary": "Per-node decision claims and round entries with correlated cause evidence, at most 100000 relevant events."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/whatif": {
+      "get": {
+        "operationId": "listWhatifRuns",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatifList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Latest bounded timer-policy experiments, separate from canonical network facts."
+      },
+      "post": {
+        "operationId": "enqueueWhatif",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplayjobWhatifRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreWhatifJob"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Queue a full retained timer experiment on an operator-registered immutable source."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/whatif-jobs": {
+      "get": {
+        "operationId": "listWhatifJobs",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatifJobs"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Latest 100 durable timer experiment jobs, including explicit interrupted and failed states."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/whatif-jobs/{job}": {
+      "get": {
+        "operationId": "getWhatifJob",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "timer experiment job ID",
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreWhatifJob"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Timer policy and registered-source identity with its independently linked experiment result."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/whatif/{whatif}": {
+      "get": {
+        "operationId": "getWhatifRun",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "counterfactual experiment ID",
+            "in": "path",
+            "name": "whatif",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreWhatifRun"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Exact source, policy and helper identity with explicit counterfactual horizon and failures."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/whatif/{whatif}/results": {
+      "get": {
+        "operationId": "listWhatifResults",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "counterfactual experiment ID",
+            "in": "path",
+            "name": "whatif",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "last execution step",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "page limit, 1..1000",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatifPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Execution-ordered experiment metadata with nullable original evidence; no input bytes or block hashes."
       }
     },
     "/v1/networks/{net}/epochs": {

@@ -168,7 +168,8 @@ func (s *spec) check(v any, sch map[string]any, at string) error {
 	switch v := v.(type) {
 	case map[string]any:
 		props, _ := sch["properties"].(map[string]any)
-		for _, r := range sch["required"].([]any) {
+		required, _ := sch["required"].([]any)
+		for _, r := range required {
 			if _, ok := v[r.(string)]; !ok {
 				return fmt.Errorf("%s: %q is missing", at, r)
 			}

@@ -24,6 +24,7 @@ var ErrSource = errors.New("replay source unavailable")
 var ErrScope = errors.New("invalid replay scope")
 
 type SourceSpec struct {
+	AllowTimer    bool   `json:"allow_timer,omitempty"`
 	AllowSchedule bool   `json:"allow_schedule,omitempty"`
 	AllowContext  bool   `json:"allow_context,omitempty"`
 	ID            string `json:"id"`
@@ -35,6 +36,7 @@ type SourceSpec struct {
 	AllowLoss     bool   `json:"allow_loss,omitempty"`
 }
 type SourceInfo struct {
+	AllowTimer    bool     `json:"allow_timer"`
 	AllowSchedule bool     `json:"allow_schedule"`
 	AnswerScopes  []string `json:"answer_scopes"`
 	ID            string   `json:"id"`
@@ -90,7 +92,7 @@ func Load(ctx context.Context, s *store.Store, path, linked string) (*Worker, er
 		if !logs.Identifier(spec.ID) || !logs.Identifier(spec.Input) || spec.Dataset < 1 || spec.Chain == "" {
 			return nil, ErrSource
 		}
-		if spec.AllowSchedule && !spec.AllowContext {
+		if (spec.AllowSchedule || spec.AllowTimer) && !spec.AllowContext {
 			return nil, ErrSource
 		}
 		if _, ok := worker.sources[spec.ID]; ok {
@@ -163,10 +165,10 @@ func Load(ctx context.Context, s *store.Store, path, linked string) (*Worker, er
 			Dataset                                             int64
 			Input, InputSHA, Node, ChainSHA, HelperSHA, Timeout string
 			Modes, AnswerScopes                                 []string
-			AllowSchedule                                       bool
-		}{spec.Dataset, spec.Input, inputSHA, node, chain.SHA256, helperSHA, helper.Timeout.String(), modes, scopes, spec.AllowSchedule})
+			AllowSchedule, AllowTimer                           bool
+		}{spec.Dataset, spec.Input, inputSHA, node, chain.SHA256, helperSHA, helper.Timeout.String(), modes, scopes, spec.AllowSchedule, spec.AllowTimer})
 		hash := sha256.Sum256(identity)
-		worker.sources[spec.ID] = source{info: SourceInfo{AllowSchedule: spec.AllowSchedule, ID: spec.ID, Input: spec.Input, Modes: modes, AnswerScopes: scopes}, network: dataset.NetworkID, dataset: spec.Dataset, chain: chain.Path, hash: hex.EncodeToString(hash[:]), inputSHA: inputSHA, node: node, helper: helper, chainSHA: chain.SHA256, helperSHA: helperSHA}
+		worker.sources[spec.ID] = source{info: SourceInfo{AllowTimer: spec.AllowTimer, AllowSchedule: spec.AllowSchedule, ID: spec.ID, Input: spec.Input, Modes: modes, AnswerScopes: scopes}, network: dataset.NetworkID, dataset: spec.Dataset, chain: chain.Path, hash: hex.EncodeToString(hash[:]), inputSHA: inputSHA, node: node, helper: helper, chainSHA: chain.SHA256, helperSHA: helperSHA}
 		worker.order = append(worker.order, spec.ID)
 	}
 	return worker, nil
@@ -255,6 +257,10 @@ func (w *Worker) Start(ctx context.Context) (func(), error) {
 	if err != nil {
 		return nil, err
 	}
+	if err = w.store.RecoverWhatifJobs(ctx); err != nil {
+		_ = lease.Close(context.Background())
+		return nil, err
+	}
 	if err = w.store.RecoverReexecJobs(ctx); err != nil {
 		_ = lease.Close(context.Background())
 		return nil, err
@@ -300,6 +306,16 @@ func (w *Worker) Start(ctx context.Context) (func(), error) {
 			}
 			job, err := w.store.ClaimReexecJob(work, owner)
 			if errors.Is(err, store.ErrNotFound) {
+				timed, timedErr := w.store.ClaimWhatifJob(work, owner)
+				if timedErr == nil {
+					if w.executeWhatif(work, timed, owner) != nil {
+						return
+					}
+					continue
+				}
+				if !errors.Is(timedErr, store.ErrNotFound) {
+					return
+				}
 				select {
 				case <-work.Done():
 					return

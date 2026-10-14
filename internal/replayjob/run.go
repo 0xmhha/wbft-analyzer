@@ -2,10 +2,7 @@ package replayjob
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -148,26 +145,5 @@ func Run(ctx context.Context, s *store.Store, o RunOptions, onBegin func(int64) 
 
 // RetainChain callers hold a dataset lease when writing owned storage.
 func RetainChain(ctx context.Context, path, directory string) (messages.ArchivedFile, error) {
-	info, err := os.Lstat(path)
-	if err != nil || !info.Mode().IsRegular() || info.Size() > 256<<20 {
-		return messages.ArchivedFile{}, errors.New("chain must be a regular file at most 256MiB")
-	}
-	f, err := os.Open(path)
-	if err != nil {
-		return messages.ArchivedFile{}, err
-	}
-	defer f.Close()
-	h := sha256.New()
-	n, err := io.Copy(h, io.LimitReader(f, (256<<20)+1))
-	if err != nil || n > 256<<20 {
-		return messages.ArchivedFile{}, errors.New("chain size limit exceeded")
-	}
-	sum := hex.EncodeToString(h.Sum(nil))
-	name := filepath.Base(path)
-	p := messages.Prepared{Input: messages.Input{ID: "chain", Path: filepath.Dir(path)}, Summary: messages.Summary{Files: []messages.File{{Name: name, Bytes: n, SHA256: sum}}}}
-	out, err := messages.Archive(ctx, directory, []messages.Prepared{p})
-	if err != nil {
-		return messages.ArchivedFile{}, err
-	}
-	return out["chain"][0], nil
+	return reexec.RetainChain(ctx, path, directory)
 }

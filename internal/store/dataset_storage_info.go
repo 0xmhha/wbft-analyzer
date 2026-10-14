@@ -30,7 +30,7 @@ func (s *Store) DatasetInputStorage(ctx context.Context, network, id int64) (Dat
 	n, e := s.inputNamespace(ctx, id)
 	if errors.Is(e, ErrNotFound) {
 		var count int64
-		e = s.pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM input_files WHERE dataset_id=$1)+(SELECT count(*) FROM reexec_runs WHERE dataset_id=$1)`, id).Scan(&count)
+		e = s.pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM input_files WHERE dataset_id=$1)+(SELECT count(*) FROM reexec_runs WHERE dataset_id=$1)+(SELECT count(*) FROM whatif_runs WHERE dataset_id=$1)`, id).Scan(&count)
 		out.State = "empty"
 		if count > 0 {
 			out.State = "unmanaged"
@@ -54,7 +54,7 @@ func (s *Store) DatasetInputStorage(ctx context.Context, network, id int64) (Dat
 		return out, nil
 	}
 	var other bool
-	e = s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM input_files WHERE dataset_id=$1 AND path<>$2||'/'||sha256 UNION ALL SELECT 1 FROM reexec_runs WHERE dataset_id=$1 AND chain_path<>$2||'/'||COALESCE(summary->>'chain_sha256',''))`, id, n.Directory()).Scan(&other)
+	e = s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM input_files WHERE dataset_id=$1 AND path<>$2||'/'||sha256 UNION ALL SELECT 1 FROM reexec_runs WHERE dataset_id=$1 AND chain_path<>$2||'/'||COALESCE(summary->>'chain_sha256','') UNION ALL SELECT 1 FROM whatif_runs WHERE dataset_id=$1 AND chain_path<>$2||'/'||chain_sha256)`, id, n.Directory()).Scan(&other)
 	if e != nil {
 		return out, e
 	}
