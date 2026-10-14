@@ -4412,6 +4412,16 @@
           },
           "start": {
             "$ref": "#/components/schemas/RuntimeobsPoint"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuntimeobsTaskEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -4420,7 +4430,8 @@
           "node",
           "run",
           "source_sha256",
-          "start"
+          "start",
+          "task"
         ],
         "type": "object"
       },
@@ -4472,6 +4483,10 @@
               }
             ]
           },
+          "task_count": {
+            "format": "int64",
+            "type": "integer"
+          },
           "unavailable": {
             "items": {
               "type": "string"
@@ -4492,6 +4507,7 @@
           "sequence_gaps",
           "source_sha256",
           "startup",
+          "task_count",
           "unavailable"
         ],
         "type": "object"
@@ -4535,6 +4551,32 @@
           "operation",
           "result",
           "start_line"
+        ],
+        "type": "object"
+      },
+      "RuntimeobsInterval": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "type": "string"
+          },
+          "from_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "nanoseconds": {
+            "type": "string"
+          },
+          "to_line": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "definition",
+          "from_line",
+          "nanoseconds",
+          "to_line"
         ],
         "type": "object"
       },
@@ -4586,6 +4628,9 @@
             "type": "string"
           },
           "seq": {
+            "type": "string"
+          },
+          "stage": {
             "type": "string"
           },
           "t_mono_ns": {
@@ -4652,6 +4697,46 @@
           "request_timeout_ms",
           "system_contract_upgrades",
           "transitions"
+        ],
+        "type": "object"
+      },
+      "RuntimeobsTaskEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "end_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "intervals": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeobsInterval"
+            },
+            "type": "array"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeobsPoint"
+            },
+            "type": "array"
+          },
+          "start_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "end_line",
+          "id",
+          "intervals",
+          "stages",
+          "start_line",
+          "state"
         ],
         "type": "object"
       },
@@ -5236,6 +5321,15 @@
               }
             ]
           },
+          "task_states": {
+            "additionalProperties": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
           "unavailable": {
             "items": {
               "type": "string"
@@ -5251,6 +5345,7 @@
           "run",
           "source",
           "startup",
+          "task_states",
           "unavailable"
         ],
         "type": "object"

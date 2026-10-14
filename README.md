@@ -1186,3 +1186,14 @@ chain membership nor native engine options, sign-floor/WAL state, remote deliver
 or application request completion. Later configuration remains unproved when
 transition or upgrade counts are present. These execution models remain partial;
 observed worker return intervals never become successful proposal timing samples.
+
+Runtime normalization version 2 preserves exact task tokens and all recorded
+sealing stages. The source panel separates worker return, task transfer, Seal
+return, actual request post, result handover and cancellation. Intervals use
+unique original local monotonic boundaries; duplicate or incomplete candidates
+never select a preferred record, and reversed clocks are not corrected. Selecting
+a call brings its source panel into view and moves keyboard focus; reduced-motion
+preferences disable smooth scrolling. Older stored captures without task stages
+remain unavailable for asynchronous completion. Reingest under a new dataset
+name for the new metadata. Fitting provenance version 5 retains task-state counts
+without claiming a complete engine, application queue, or delivery model.

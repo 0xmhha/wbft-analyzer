@@ -14,7 +14,7 @@ import (
 func TestRuntimeSourceRetainsExactIdentityAndRejectsConflict(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
-	capture, e := runtimeobs.Load("../source/runtimeobs/testdata/synthetic.jsonl")
+	capture, e := runtimeobs.Load("../source/runtimeobs/testdata/task-synthetic.jsonl")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -30,7 +30,7 @@ func TestRuntimeSourceRetainsExactIdentityAndRejectsConflict(t *testing.T) {
 	c := client{t, (&Server{Store: s}).Handler()}
 	base := fmt.Sprintf("/v1/networks/%d/datasets/%d/runtime", out.NetworkID, out.DatasetID)
 	var summary RuntimeSummary
-	if c.do("GET", base, nil, &summary) != 200 || !summary.Complete || summary.RuntimeModelComplete || summary.PointCount != 5 || summary.Startup == nil || summary.Startup.Line != 1 || summary.Startup.Config == nil || summary.Startup.Config.Height != "18446744073709551616" {
+	if c.do("GET", base, nil, &summary) != 200 || !summary.Complete || summary.RuntimeModelComplete || summary.PointCount != 13 || summary.TaskCount != 1 || summary.Startup == nil || summary.Startup.Line != 1 || summary.Startup.Config == nil || summary.Startup.Config.Height != "18446744073709551616" {
 		t.Fatal(summary)
 	}
 	var page RuntimeCallPage
@@ -38,7 +38,7 @@ func TestRuntimeSourceRetainsExactIdentityAndRejectsConflict(t *testing.T) {
 		t.Fatal(page)
 	}
 	var source RuntimeCallSource
-	if c.do("GET", base+"/calls/18446744073709551615", nil, &source) != 200 || source.Start.Line != 2 || source.End.Line != 3 || source.End.Height != "18446744073709551616" || source.SourceSHA != capture.SourceSHA || source.Start.ID != source.End.ID {
+	if c.do("GET", base+"/calls/18446744073709551615", nil, &source) != 200 || source.Start.Line != 2 || source.End.Line != 3 || source.End.Height != "18446744073709551616" || source.SourceSHA != capture.SourceSHA || source.Start.ID != source.End.ID || source.Task == nil || len(source.Task.Stages) != 8 || source.Task.State != "observed_result" || len(source.Task.Intervals) != 3 {
 		t.Fatal(source)
 	}
 	if c.do("GET", base+"/calls/1", nil, nil) != 404 || c.do("GET", base+"/calls?after=-1", nil, nil) != 400 || c.do("GET", base+"/calls?after=2", nil, nil) != 400 || c.do("GET", base+"?private=x", nil, nil) != 400 {
