@@ -1094,3 +1094,13 @@ complete distribution. Animated chart reveals respect reduced-motion settings.
 Fitting completeness, completed simulation, baseline round agreement and the
 unconfigured timing acceptance threshold remain separate evidence. This feature
 does not establish a complete fit of a physical mixed-node capture.
+
+Fitting selects application samples and link pairs in the registered height
+range after pairing the whole immutable source. Only records whose full heights
+prove that they are outside the range are excluded; unknown heights and
+ambiguous candidate views remain unproved. Source coverage reports the excluded
+and unresolved counts. Lifecycle evidence and original retained bytes are
+preserved, and scope counts are part of the immutable model identity.
+
+A fitting interpretation change requires a new registered source ID; existing
+source bindings and stored experiment results are never silently rewritten.

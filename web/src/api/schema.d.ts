@@ -2385,6 +2385,16 @@ export interface components {
         ScenarioRuns: {
             runs: components["schemas"]["StoreScenarioRunInfo"][];
         };
+        ScenarioScopeCounts: {
+            /** Format: int64 */
+            application_excluded: number;
+            /** Format: int64 */
+            application_unscoped: number;
+            /** Format: int64 */
+            links_excluded: number;
+            /** Format: int64 */
+            links_unscoped: number;
+        };
         ScenarioSeedBand: {
             height: string;
             maximum: string;
@@ -2422,6 +2432,7 @@ export interface components {
             id: string;
             model: components["schemas"]["ScenarioAssessment"];
             nodes: string[];
+            scope: components["schemas"]["ScenarioScopeCounts"];
             source_sha256: string;
             status: string;
             to: string;

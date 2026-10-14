@@ -36,6 +36,7 @@ type FitOptions struct {
 }
 
 type Fitted struct {
+	Scope        ScopeCounts   `json:"scope"`
 	NodeOptions  []Node        `json:"node_options"`
 	Provenance   Provenance    `json:"provenance"`
 	SourceSHA256 string        `json:"source_sha256"`
@@ -140,6 +141,11 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 	if err != nil {
 		return out, err
 	}
+	endpoints, linkScope, err := ScopeLinks(endpoints, o.From, o.To)
+	if err != nil {
+		return out, err
+	}
+	out.Scope.LinksExcluded, out.Scope.LinksUnscoped = linkScope.LinksExcluded, linkScope.LinksUnscoped
 	out.Links, err = FitLinks(addresses, endpoints, o.Coverage, o.Clock.Model, time.Duration(o.Clock.SkewMS)*time.Millisecond)
 	if err != nil {
 		return out, err
@@ -179,7 +185,13 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 			ordered[i].RuntimeLine = runtime.WALPolicies[0].Line
 		}
 
-		timing, err := FitAppTiming(selected[0].Records)
+		appEvents, appScope, err := ScopeApplication(selected[0].Records, o.From, o.To)
+		if err != nil {
+			return out, err
+		}
+		out.Scope.AppExcluded += appScope.AppExcluded
+		out.Scope.AppUnscoped += appScope.AppUnscoped
+		timing, err := FitAppTiming(appEvents)
 		if err != nil {
 			return out, err
 		}
@@ -193,6 +205,9 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		return out, err
 	}
 	assessment.Issues = append(assessment.Issues, out.Model.Issues...)
+	if out.Scope.LinksUnscoped > 0 || out.Scope.AppUnscoped > 0 {
+		assessment.Issues = append(assessment.Issues, Issue{Code: "fitting_height_scope_unavailable"})
+	}
 	if len(assessment.Issues) > 0 {
 		assessment.Status = "partial"
 	}
@@ -208,7 +223,8 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		Links       []Link
 		Runtimes    []Runtime
 		Application AppTiming
-	}{o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App})
+		Scope       ScopeCounts
+	}{o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope})
 	if err != nil {
 		return out, err
 	}

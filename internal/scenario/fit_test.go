@@ -3,7 +3,9 @@ package scenario
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -98,5 +100,33 @@ func TestFitPreservesPartialSourceWithoutDefaultingMissingNodes(t *testing.T) {
 	}
 	if bytes.Contains([]byte(other.SourceSHA256), []byte(journals)) {
 		t.Fatal("local path crossed provenance boundary")
+	}
+	// The full capture continues beyond the comparison range. Preserve every
+	// original event while excluding the later unfinished build from this fit.
+	for _, raw := range res.Events {
+		var first struct {
+			Node string `json:"node"`
+		}
+		if err := json.Unmarshal(bytes.SplitN(raw, []byte("\n"), 2)[0], &first); err != nil {
+			t.Fatal(err)
+		}
+		hash := sha256.Sum256(raw)
+		input, err := InspectEvents(context.Background(), Input{ID: "events-" + first.Node[2:], Kind: "events", Node: first.Node, SHA256: hex.EncodeToString(hash[:])}, bytes.NewReader(raw))
+		if err != nil {
+			t.Fatal(err)
+		}
+		o.Events = append(o.Events, input)
+	}
+	before, err := json.Marshal(o.Events)
+	if err != nil {
+		t.Fatal(err)
+	}
+	scoped, err := Fit(context.Background(), o)
+	if err != nil || scoped.App.Unproved != 0 || scoped.Scope.AppExcluded == 0 || scoped.Model.Status != "partial" || scoped.Scenario != nil {
+		t.Fatal("range tail or missing-node evidence misclassified", scoped.Model, scoped.Scope, scoped.App.Unproved, err)
+	}
+	after, err := json.Marshal(o.Events)
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatal("fitting changed original event evidence", err)
 	}
 }

@@ -4872,6 +4872,34 @@
         ],
         "type": "object"
       },
+      "ScenarioScopeCounts": {
+        "additionalProperties": false,
+        "properties": {
+          "application_excluded": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "application_unscoped": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "links_excluded": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "links_unscoped": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "application_excluded",
+          "application_unscoped",
+          "links_excluded",
+          "links_unscoped"
+        ],
+        "type": "object"
+      },
       "ScenarioSeedBand": {
         "additionalProperties": false,
         "properties": {
@@ -5010,6 +5038,9 @@
             },
             "type": "array"
           },
+          "scope": {
+            "$ref": "#/components/schemas/ScenarioScopeCounts"
+          },
           "source_sha256": {
             "type": "string"
           },
@@ -5028,6 +5059,7 @@
           "id",
           "model",
           "nodes",
+          "scope",
           "source_sha256",
           "status",
           "to"
