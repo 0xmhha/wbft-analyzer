@@ -67,6 +67,13 @@ capture() {
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
+ local build_net build_dataset
+ build_net=$(jq -r '.networks[]|select(.name=="synthetic-build")|.id' "$dir/networks.json")
+ get "/networks/$build_net/datasets" build-datasets
+ build_dataset=$(jq -r '.datasets[]|select(.name=="synthetic-build-lifecycle")|.id' "$dir/build-datasets.json")
+ get "/networks/$build_net/datasets/$build_dataset/events/build/1/build" build-handover-source
+ get "/networks/$build_net/datasets/$build_dataset/events/build/2/build" build-start-source
+ get "/networks/$build_net/datasets/$build_dataset/events/build/3/build" build-finish-source
 
  observation_net=$(jq -r '.networks[]|select(.chain_id=="8" and .genesis_hash=="0x1111111111111111111111111111111111111111111111111111111111111111")|.id' "$dir/networks.json")
  get "/networks/$observation_net/datasets" observation-datasets
@@ -182,6 +189,19 @@ PYMISSING
 "$bin" ingest run --db "$src" --manifest "$work/synthetic-votes.json" >"$out/missing-run.log"
 missing_dataset_id=$(sed -n 's/^dataset=\([0-9][0-9]*\).*/\1/p' "$out/missing-run.log")
 "$bin" reindex missing --db "$src" --dataset "$missing_dataset_id" --from 1 --to 2 >"$out/missing-index.log"
+# Exact build identities exercise the lifecycle source endpoint after restore.
+python3 - "$work" <<'PYBUILD'
+import hashlib,json,sys
+from pathlib import Path
+work=Path(sys.argv[1]);node='0x'+'1'*40
+common=dict(v=1,node=node,run='synthetic-build',t_wall='2026-01-01T00:00:00Z',view=dict(seq='18446744073709551616',round='0'),number='18446744073709551616',build_id='build-1')
+rows=[dict(kind='BUILD_HANDOVER',wait_ns='9007199254740993',parent='0x'+'2'*64),dict(kind='BUILD_STARTED'),dict(kind='BUILD_FINISHED',status='submitted',hash='0x'+'3'*64)]
+raw=''.join(json.dumps(dict(common,seq=i,t_mono_ns=i*1000000000,**row))+'\n' for i,row in enumerate(rows)).encode()
+(work/'build.jsonl').write_bytes(raw)
+manifest=dict(format='wbft-analyzer-run/1',name='synthetic-build-lifecycle',run='synthetic-build',network=dict(chain_id='9',genesis_hash='0x'+'4'*64,name='synthetic-build'),clock='shared-host',inputs=[dict(id='build',node=node,kind='events',path='build.jsonl',sha256=hashlib.sha256(raw).hexdigest())])
+(work/'build.json').write_text(json.dumps(manifest)+'\n')
+PYBUILD
+"$bin" ingest run --db "$src" --manifest "$work/build.json" >"$out/build-ingest.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/g7/manifest.json" >"$out/run.log"
 run_dataset_id=$(sed -n 's/^dataset=\([0-9][0-9]*\).*/\1/p' "$out/run.log")
 "$bin" reindex messages --db "$src" --dataset "$run_dataset_id" >"$out/run-pair-index.log"

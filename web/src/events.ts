@@ -17,6 +17,7 @@ export function eventClass(e: LogEvent): string {
   if (e.kind === "ROUND_ENTER") return "event-round";
   if (e.kind === "NEW_HEAD") return "event-head";
   if (e.kind === "QUORUM") return "event-quorum";
+  if (["BUILD_HANDOVER","BUILD_STARTED","BUILD_FINISHED"].includes(e.kind)) return "event-build";
   if (e.kind === "SEND") return "event-send";
   return "event-other";
 }

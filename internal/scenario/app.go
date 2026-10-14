@@ -10,6 +10,8 @@ import (
 )
 
 type AppSample struct {
+	BuildID     string `json:"build_id,omitempty"`
+	Definition  string `json:"definition,omitempty"`
 	Nanoseconds int64  `json:"nanoseconds"`
 	Input       string `json:"input"`
 	Node        string `json:"node"`
@@ -19,15 +21,18 @@ type AppSample struct {
 }
 
 type AppTiming struct {
-	Build    []AppSample `json:"build"`
-	Import   []AppSample `json:"import"`
-	Unproved int64       `json:"unproved"`
+	Outcomes    []AppOutcome `json:"outcomes"`
+	Unsupported int64        `json:"unsupported"`
+	Build       []AppSample  `json:"build"`
+	Import      []AppSample  `json:"import"`
+	Unproved    int64        `json:"unproved"`
 }
 
-// FitAppTiming subtracts the declared minimum build wait from assembly time.
-// Multiple build requests for one height are ambiguous without a request ID.
+// FitAppTiming uses exact application lifecycle IDs when available. Older
+// records keep their request-minus-declared-wait definition and ambiguity.
 func FitAppTiming(xs []logs.Event) (AppTiming, error) {
-	out := AppTiming{Build: []AppSample{}, Import: []AppSample{}}
+	out := AppTiming{Build: []AppSample{}, Import: []AppSample{}, Outcomes: []AppOutcome{}}
+	modern := buildScopes(xs)
 	type key struct{ node, input, run, height string }
 	requests := map[key][]logs.Event{}
 	for _, x := range xs {
@@ -35,6 +40,9 @@ func FitAppTiming(xs []logs.Event) (AppTiming, error) {
 			return out, errors.New("native application timing required")
 		}
 		kind := x.Record.Kind
+		if modern[scopeOf(x)] && kind != event.CommitResult {
+			continue
+		}
 		if kind == event.BuildRequest {
 			if x.Record.View == nil {
 				out.Unproved++
@@ -60,7 +68,7 @@ func FitAppTiming(xs []logs.Event) (AppTiming, error) {
 				out.Unproved++
 				continue
 			}
-			out.Build = append(out.Build, AppSample{Nanoseconds: int64(elapsed - time.Duration(wait)*time.Millisecond), Input: x.Input, Node: x.Node, Run: x.Run, FromLine: request.Line, ToLine: x.Line})
+			out.Build = append(out.Build, AppSample{Definition: "request_minus_declared_wait", Nanoseconds: int64(elapsed - time.Duration(wait)*time.Millisecond), Input: x.Input, Node: x.Node, Run: x.Run, FromLine: request.Line, ToLine: x.Line})
 		}
 		if kind == event.CommitResult {
 			text, _ := x.Record.Fields["duration_ms"].(string)
@@ -76,6 +84,7 @@ func FitAppTiming(xs []logs.Event) (AppTiming, error) {
 	for _, rs := range requests {
 		out.Unproved += int64(len(rs))
 	}
+	fitBuildLifecycles(xs, modern, &out)
 	return out, nil
 }
 

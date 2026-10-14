@@ -12,7 +12,7 @@ import (
 // ApplyAppTiming binds native measured distributions per node. Missing data
 // for a node never falls back to the shared synthetic application model.
 func ApplyAppTiming(sc sim.Scenario, nodes []Node, timing AppTiming) (sim.Scenario, error) {
-	if len(nodes) != len(sc.Nodes) || len(nodes) < 2 || timing.Unproved > 0 {
+	if len(nodes) != len(sc.Nodes) || len(nodes) < 2 || timing.Unproved > 0 || timing.Unsupported > 0 {
 		return sc, errors.New("incomplete measured application timing")
 	}
 	index := map[string]int{}

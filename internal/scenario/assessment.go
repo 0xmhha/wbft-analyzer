@@ -85,6 +85,9 @@ func Assess(nodes []Node, links []Link, runtimes []Runtime, app AppTiming) (Asse
 			out.Issues = append(out.Issues, Issue{Node: addr, Code: "node_application_model_unavailable"})
 		}
 	}
+	if app.Unsupported > 0 {
+		out.Issues = append(out.Issues, Issue{Code: "application_lifecycle_model_unavailable"})
+	}
 	if len(app.Build) == 0 || len(app.Import) == 0 || app.Unproved > 0 {
 		out.Issues = append(out.Issues, Issue{Code: "application_model_incomplete"})
 	}

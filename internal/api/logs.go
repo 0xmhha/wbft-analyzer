@@ -13,6 +13,7 @@ import (
 
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
+	"github.com/0xmhha/wbft/observe/event"
 	"github.com/0xmhha/wbft/observe/logcat"
 )
 
@@ -125,7 +126,7 @@ func eventWindow(w http.ResponseWriter, r *http.Request) (store.EventFilter, boo
 				valid = true
 			}
 		}
-		if f.Kind == "LOG_CONFIG" {
+		if f.Kind == "LOG_CONFIG" || event.IsNodeKind(event.Kind(f.Kind)) {
 			valid = true
 		}
 		if !valid {

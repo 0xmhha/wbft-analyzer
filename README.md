@@ -357,6 +357,22 @@ are refused. Gaps and clock regressions remain diagnostics. Event normalization
 is separately versioned; bytes, payloads and arbitrary error text are excluded
 at both source and persistence. A source file is not proof of complete coverage.
 
+Native `BUILD_HANDOVER`, `BUILD_STARTED`, and `BUILD_FINISHED` events retain an
+explicit build identity within the original input, node, and writer run. Select
+a build event in Events to open every matching source candidate, or use
+`GET /v1/networks/{net}/datasets/{dataset}/events/{input}/{line}/build`.
+Only unique, ordered boundaries in a complete input without recorded gaps yield
+an assembly-start-to-submission interval. Duplicate and incomplete candidates
+remain visible. A submitted status describes the application call boundary;
+it does not establish consensus acceptance.
+
+Scenario fitting version 3 uses these actual assembly boundaries instead of
+subtracting a declared wait. Known replacement, cancellation, and failure
+outcomes remain separate from successful timing samples. The current simulator
+does not model the application's serial request queue, so those outcomes keep
+the application model incomplete. Reingest older event datasets to retain the
+new metadata before fitting; existing stored datasets are not silently upgraded.
+
 Run ingestion builds a recorded-state projection with per-node keyframes at
 height and lifecycle boundaries and every 1,024 records. Existing datasets can
 be indexed with `reindex replay --db DSN --dataset ID`. The projection records

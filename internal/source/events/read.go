@@ -12,6 +12,7 @@ import (
 	"io"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
@@ -103,6 +104,12 @@ func Read(ctx context.Context, r io.Reader, node, input string, emit func(logs.E
 		if m["view"] != nil {
 			_ = json.Unmarshal(m["view"], &view)
 		}
+		var producer string
+		_ = json.Unmarshal(m["src"], &producer)
+		if producer == event.AppSrc && event.IsNodeKind(kind) {
+			stats.Malformed++
+			continue
+		}
 		fields := Metadata(m)
 		if view == nil && kind == event.NewHead {
 			number, _ := fields["number"].(string)
@@ -165,6 +172,22 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 	out := logs.Metadata(m)
 	var kind event.Kind
 	_ = json.Unmarshal(m["kind"], &kind)
+	if kind == event.BuildHandover || kind == event.BuildStarted || kind == event.BuildFinished {
+		var id string
+		if json.Unmarshal(m["build_id"], &id) == nil && len(id) <= 26 && strings.HasPrefix(id, "build-") {
+			n, err := strconv.ParseUint(strings.TrimPrefix(id, "build-"), 10, 64)
+			if err == nil && n > 0 && id == "build-"+strconv.FormatUint(n, 10) {
+				out["build_id"] = id
+			}
+		}
+		var status string
+		if kind == event.BuildFinished && json.Unmarshal(m["status"], &status) == nil {
+			switch status {
+			case "submitted", "replaced", "height_left", "stopped", "unavailable", "head_changed", "failed":
+				out["status"] = status
+			}
+		}
+	}
 	if kind == event.StateChange {
 		for _, k := range []string{"from", "to"} {
 			var s string
@@ -173,7 +196,7 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 			}
 		}
 	}
-	for _, k := range []string{"seq", "step", "count", "row", "gen", "engine_run", "deadline_mono_ns", "duration_ms", "requested_round", "wait_ms"} {
+	for _, k := range []string{"seq", "step", "count", "row", "gen", "engine_run", "deadline_mono_ns", "duration_ms", "requested_round", "wait_ms", "wait_ns"} {
 		raw := m[k]
 		if len(raw) == 0 {
 			continue

@@ -175,6 +175,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}/build": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exact application build lifecycle candidates for an immutable source event. */
+        get: operations["getBuildSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/evidence": {
         parameters: {
             query?: never;
@@ -2455,6 +2472,14 @@ export interface components {
             to: string;
             wire_metric: string;
         };
+        StoreBuildLifecycle: {
+            assembly_ns: string | null;
+            build_id: string;
+            events: components["schemas"]["StoreLogEvent"][];
+            origin: components["schemas"]["StoreLogEvent"];
+            state: string;
+            status: string;
+        };
         StoreDataset: {
             copy_nodes: string[];
             error: string;
@@ -3630,6 +3655,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreLogEvent"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getBuildSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description event input ID */
+                input: string;
+                /** @description positive source line */
+                line: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreBuildLifecycle"];
                 };
             };
             /** @description the request failed */
