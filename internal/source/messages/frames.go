@@ -16,31 +16,32 @@ import (
 )
 
 type frameRecord struct {
-	V          int     `json:"v"`
-	Type       string  `json:"type"`
-	Node       string  `json:"node"`
-	Run        string  `json:"run"`
-	Seq        *uint64 `json:"seq"`
-	Wall       string  `json:"t_wall"`
-	Mono       *int64  `json:"t_mono_ns"`
-	Dir        string  `json:"dir"`
-	Peer       *string `json:"peer"`
-	Code       string  `json:"code"`
-	WireCode   *uint64 `json:"wire_code"`
-	Size       *uint64 `json:"size"`
-	Payload    string  `json:"payload_sha256"`
-	Key        string  `json:"dedup_key"`
-	Outcome    string  `json:"outcome"`
-	WriteError string  `json:"write_error"`
-	Cause      string  `json:"cause"`
-	RelayOf    *uint64 `json:"relay_of"`
-	Of         *uint64 `json:"of"`
-	Engine     string  `json:"engine"`
-	Check      string  `json:"check"`
-	Via        string  `json:"via"`
-	Event      string  `json:"event"`
-	Count      *uint64 `json:"count"`
-	Dedup      *struct {
+	V           int             `json:"v"`
+	Type        string          `json:"type"`
+	Node        string          `json:"node"`
+	Run         string          `json:"run"`
+	Seq         *uint64         `json:"seq"`
+	Wall        string          `json:"t_wall"`
+	Mono        *int64          `json:"t_mono_ns"`
+	Dir         string          `json:"dir"`
+	Peer        *string         `json:"peer"`
+	Code        string          `json:"code"`
+	WireCode    *uint64         `json:"wire_code"`
+	Size        *uint64         `json:"size"`
+	Payload     string          `json:"payload_sha256"`
+	Key         string          `json:"dedup_key"`
+	Outcome     string          `json:"outcome"`
+	WriteError  string          `json:"write_error"`
+	WriteResult json.RawMessage `json:"write_result"`
+	Cause       string          `json:"cause"`
+	RelayOf     *uint64         `json:"relay_of"`
+	Of          *uint64         `json:"of"`
+	Engine      string          `json:"engine"`
+	Check       string          `json:"check"`
+	Via         string          `json:"via"`
+	Event       string          `json:"event"`
+	Count       *uint64         `json:"count"`
+	Dedup       *struct {
 		Known      *bool `json:"known_hit"`
 		PeerRecent *bool `json:"peer_recent_hit"`
 	} `json:"dedup"`
@@ -82,8 +83,12 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Sta
 					return errors.New("invalid or duplicate frame JSON fields")
 				}
 				var x frameRecord
-				if json.Unmarshal(b, &x) != nil || x.V != 1 || !addressPattern.MatchString(x.Node) || strings.ToLower(x.Node) != p.Summary.Node || x.Run == "" || len(x.Run) > 128 || x.Seq == nil || *x.Seq == 0 || x.Mono == nil {
+				if json.Unmarshal(b, &x) != nil || x.V != 1 || !addressPattern.MatchString(x.Node) || strings.ToLower(x.Node) != p.Summary.Node || x.Run == "" || len(x.Run) > 128 || x.Seq == nil || x.Mono == nil {
 					return errors.New("invalid frame identity or sequence")
+				}
+				write, e := frameWriteResult(x)
+				if e != nil {
+					return e
 				}
 				seq := x.Run + ":" + number(*x.Seq)
 				if seen[seq] {
@@ -136,14 +141,7 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Sta
 						r.WireCode = &v
 					}
 					if x.Dir == "out" {
-						if x.WriteError == "" {
-							r.Write = "no_error_recorded"
-						} else {
-							r.Write = choice(x.WriteError, "error", "not_attached")
-							if r.Write == "" {
-								r.Write = "error"
-							}
-						}
+						r.Write = write
 					}
 					r.Outcome = choice(x.Outcome, "PENDING", "ACCEPT", "IGNORE", "DROP_SILENT", "DISCONNECT")
 					if x.Dedup != nil {
@@ -247,4 +245,33 @@ func uniqueObject(b []byte) bool {
 	}
 	t, e = d.Token()
 	return e == nil && t == json.Delim('}') && d.Decode(new(any)) == io.EOF
+}
+
+// frameWriteResult accepts only an explicit transport result as success.
+// Old error absence stays unknown; contradictory or malformed declarations
+// must not enter retained metadata as a successful write.
+func frameWriteResult(x frameRecord) (string, error) {
+	if len(x.WriteResult) > 0 {
+		if x.Type != "frame" || x.Dir != "out" {
+			return "", errors.New("write result outside outgoing frame")
+		}
+		var declared string
+		if json.Unmarshal(x.WriteResult, &declared) != nil || choice(declared, "ok", "error", "not_attached") == "" {
+			return "", errors.New("invalid explicit frame write result")
+		}
+		if x.WriteError != "" && (declared == "ok" || declared == "not_attached" && x.WriteError != "not_attached" || declared == "error" && x.WriteError == "not_attached") {
+			return "", errors.New("contradictory frame write result")
+		}
+		return declared, nil
+	}
+	if x.Type != "frame" || x.Dir != "out" {
+		return "", nil
+	}
+	if x.WriteError == "" {
+		return "no_error_recorded", nil
+	}
+	if x.WriteError == "not_attached" {
+		return "not_attached", nil
+	}
+	return "error", nil
 }
