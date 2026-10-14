@@ -2335,6 +2335,7 @@ export interface components {
         RuntimeCallSource: {
             call: components["schemas"]["RuntimeobsCall"];
             end: components["schemas"]["RuntimeobsPoint"];
+            engines: components["schemas"]["RuntimeobsEngineEvidence"][];
             node: string;
             run: string;
             source_sha256: string;
@@ -2347,6 +2348,11 @@ export interface components {
             call_count: number;
             capture_complete: boolean;
             delivery_coverage_proven: boolean;
+            /** Format: int64 */
+            engine_count: number;
+            engine_states: {
+                [key: string]: number;
+            };
             node: string;
             normalizer: string;
             /** Format: int64 */
@@ -2372,6 +2378,15 @@ export interface components {
             /** Format: int64 */
             start_line: number;
         };
+        RuntimeobsEngineEvidence: {
+            created: components["schemas"]["RuntimeobsPoint"];
+            /** Format: int64 */
+            created_line: number;
+            id: string;
+            parent_id: string;
+            stages: components["schemas"]["RuntimeobsPoint"][];
+            state: string;
+        };
         RuntimeobsInterval: {
             definition: string;
             /** Format: int64 */
@@ -2392,6 +2407,7 @@ export interface components {
             /** Format: int64 */
             line: number;
             operation?: string;
+            parent_id?: string;
             result?: string;
             seq: string;
             stage?: string;
@@ -2562,6 +2578,9 @@ export interface components {
             call_count: number;
             capture_complete: boolean;
             configuration: string;
+            engine_states: {
+                [key: string]: number;
+            };
             execution_model_complete: boolean;
             run: string;
             source: components["schemas"]["ScenarioInput"];

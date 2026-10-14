@@ -4401,6 +4401,12 @@
           "end": {
             "$ref": "#/components/schemas/RuntimeobsPoint"
           },
+          "engines": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeobsEngineEvidence"
+            },
+            "type": "array"
+          },
           "node": {
             "type": "string"
           },
@@ -4427,6 +4433,7 @@
         "required": [
           "call",
           "end",
+          "engines",
           "node",
           "run",
           "source_sha256",
@@ -4450,6 +4457,19 @@
           },
           "delivery_coverage_proven": {
             "type": "boolean"
+          },
+          "engine_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "engine_states": {
+            "additionalProperties": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
           },
           "node": {
             "type": "string"
@@ -4499,6 +4519,8 @@
           "call_count",
           "capture_complete",
           "delivery_coverage_proven",
+          "engine_count",
+          "engine_states",
           "node",
           "normalizer",
           "point_count",
@@ -4551,6 +4573,42 @@
           "operation",
           "result",
           "start_line"
+        ],
+        "type": "object"
+      },
+      "RuntimeobsEngineEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "created": {
+            "$ref": "#/components/schemas/RuntimeobsPoint"
+          },
+          "created_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": "string"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeobsPoint"
+            },
+            "type": "array"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "created",
+          "created_line",
+          "id",
+          "parent_id",
+          "stages",
+          "state"
         ],
         "type": "object"
       },
@@ -4622,6 +4680,9 @@
             "type": "integer"
           },
           "operation": {
+            "type": "string"
+          },
+          "parent_id": {
             "type": "string"
           },
           "result": {
@@ -5302,6 +5363,15 @@
           "configuration": {
             "type": "string"
           },
+          "engine_states": {
+            "additionalProperties": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
           "execution_model_complete": {
             "type": "boolean"
           },
@@ -5341,6 +5411,7 @@
           "call_count",
           "capture_complete",
           "configuration",
+          "engine_states",
           "execution_model_complete",
           "run",
           "source",

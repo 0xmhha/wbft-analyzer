@@ -1177,7 +1177,7 @@ an operator-registered source. The manifest format is
 `id`, `node`, `path`, and `sha256`. Original sidecar bytes are retained as immutable
 SHA256 objects. Worker reload uses those retained objects; changing external
 files does not rewrite a registered source. Runtime IDs and hashes are part of
-fitting provenance version 4. Register a new source identity for changed inputs.
+fitting provenance. Register a new source identity for changed inputs.
 
 Each runtime binding retains the exact startup line, writer run, configuration
 comparison, and observed call count. Startup scalars are checked at their
@@ -1187,7 +1187,7 @@ or application request completion. Later configuration remains unproved when
 transition or upgrade counts are present. These execution models remain partial;
 observed worker return intervals never become successful proposal timing samples.
 
-Runtime normalization version 2 preserves exact task tokens and all recorded
+Task-stage normalization preserves exact task tokens and all recorded
 sealing stages. The source panel separates worker return, task transfer, Seal
 return, actual request post, result handover and cancellation. Intervals use
 unique original local monotonic boundaries; duplicate or incomplete candidates
@@ -1195,5 +1195,18 @@ never select a preferred record, and reversed clocks are not corrected. Selectin
 a call brings its source panel into view and moves keyboard focus; reduced-motion
 preferences disable smooth scrolling. Older stored captures without task stages
 remain unavailable for asynchronous completion. Reingest under a new dataset
-name for the new metadata. Fitting provenance version 5 retains task-state counts
+name for the new metadata. Fitting provenance retains task-state counts
 without claiming a complete engine, application queue, or delivery model.
+
+
+Runtime normalization version 3 preserves concrete core instances, their exact
+startup parent, creation point and every lifecycle stage candidate. Runtime
+summary and fitting provenance version 6 retain core-state counts. Selecting
+either the exact start or stop parent exposes the same complete candidate set;
+unrelated calls are never joined by nearby time or height. The bounded API
+refuses oversized sets without choosing a subset. Stage parents, IDs and
+nanoseconds remain decimal strings. Older stored captures have unknown lifecycle
+evidence; import a new dataset name to retain the new metadata. A recorded
+startup or shutdown does not prove current process liveness, native options,
+input processing, application queues or receiver coverage. Execution models
+remain partial until those inputs and semantics are established.

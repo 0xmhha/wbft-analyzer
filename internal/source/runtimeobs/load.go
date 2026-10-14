@@ -10,11 +10,12 @@ import (
 	"strconv"
 )
 
-const Normalizer = "wbft-runtime-observations/2"
+const Normalizer = "wbft-runtime-observations/3"
 
 // Point is a closed, precision-safe projection of an original line. Numeric
 // values remain decimal strings in persistence and browser API responses.
 type Point struct {
+	ParentID      string   `json:"parent_id,omitempty"`
 	Stage         string   `json:"stage,omitempty"`
 	Line          int      `json:"line"`
 	Type          string   `json:"type"`
@@ -45,19 +46,20 @@ type Startup struct {
 	SystemContractUpgrades    string `json:"system_contract_upgrades"`
 }
 type Capture struct {
-	Tasks                              []TaskEvidence `json:"tasks"`
-	Normalizer                         string         `json:"normalizer"`
-	SourceSHA                          string         `json:"source_sha256"`
-	Node                               string         `json:"node"`
-	Run                                string         `json:"run"`
-	Complete                           bool           `json:"capture_complete"`
-	SequenceGaps                       string         `json:"sequence_gaps"`
-	Unavailable                        []string       `json:"unavailable"`
-	Calls                              []Call         `json:"calls"`
-	Points                             []Point        `json:"points"`
-	RuntimeModelComplete               bool           `json:"runtime_model_complete"`
-	DeliveryCoverageProven             bool           `json:"delivery_coverage_proven"`
-	ApplicationRequestCompletionProven bool           `json:"application_request_completion_proven"`
+	Engines                            []EngineEvidence `json:"engines"`
+	Tasks                              []TaskEvidence   `json:"tasks"`
+	Normalizer                         string           `json:"normalizer"`
+	SourceSHA                          string           `json:"source_sha256"`
+	Node                               string           `json:"node"`
+	Run                                string           `json:"run"`
+	Complete                           bool             `json:"capture_complete"`
+	SequenceGaps                       string           `json:"sequence_gaps"`
+	Unavailable                        []string         `json:"unavailable"`
+	Calls                              []Call           `json:"calls"`
+	Points                             []Point          `json:"points"`
+	RuntimeModelComplete               bool             `json:"runtime_model_complete"`
+	DeliveryCoverageProven             bool             `json:"delivery_coverage_proven"`
+	ApplicationRequestCompletionProven bool             `json:"application_request_completion_proven"`
 }
 
 func Load(path string) (Capture, error) {
@@ -76,7 +78,7 @@ func FromReader(reader io.Reader) (Capture, error) {
 	if e != nil {
 		return Capture{}, e
 	}
-	out := Capture{Normalizer: Normalizer, SourceSHA: hex.EncodeToString(h.Sum(nil)), Node: r.Node, Run: r.Run, Complete: r.CaptureComplete, SequenceGaps: r.SequenceGaps, Unavailable: r.Unavailable, Calls: r.Calls, Points: []Point{}, Tasks: []TaskEvidence{}}
+	out := Capture{Normalizer: Normalizer, SourceSHA: hex.EncodeToString(h.Sum(nil)), Node: r.Node, Run: r.Run, Complete: r.CaptureComplete, SequenceGaps: r.SequenceGaps, Unavailable: r.Unavailable, Calls: r.Calls, Points: []Point{}, Tasks: []TaskEvidence{}, Engines: []EngineEvidence{}}
 	number := func(n uint64) string { return strconv.FormatUint(n, 10) }
 	for _, x := range r.Records {
 		p := Point{Line: x.Line, Type: x.Type, Seq: number(x.Seq), Wall: x.Wall, Mono: number(x.Mono), Height: x.Height, Hash: x.Hash, Operation: x.Operation, Result: x.Result, Stage: x.Stage, EngineStopped: x.EngineStopped}
@@ -84,6 +86,9 @@ func FromReader(reader io.Reader) (Capture, error) {
 		case "operation_start":
 			p.ID = number(x.ID)
 			p.Count = number(x.Count)
+		case "engine_created", "engine_stage":
+			p.ID = number(x.ID)
+			p.ParentID = number(x.ParentID)
 		case "operation_stage":
 			p.ID = number(x.ID)
 		case "operation_end":
@@ -100,13 +105,16 @@ func FromReader(reader io.Reader) (Capture, error) {
 	for _, task := range r.Tasks {
 		out.Tasks = append(out.Tasks, projectEvidence(task, out.Points, out.Complete))
 	}
+	for _, engine := range r.Engines {
+		out.Engines = append(out.Engines, projectEngineEvidence(engine, out.Points))
+	}
 	return out, nil
 }
 
 // Validate refuses inconsistent projections before persistence. The complete
 // raw file hash remains provenance; normalized JSON is never claimed as bytes.
 func (c Capture) Validate() error {
-	if c.Normalizer != Normalizer || !address.MatchString(c.Node) || !identity.MatchString(c.Run) || len(c.SourceSHA) != 64 || len(c.Points) > MaxRecords || len(c.Calls) > MaxRecords || len(c.Tasks) > MaxRecords || c.RuntimeModelComplete || c.DeliveryCoverageProven || c.ApplicationRequestCompletionProven {
+	if c.Normalizer != Normalizer || !address.MatchString(c.Node) || !identity.MatchString(c.Run) || len(c.SourceSHA) != 64 || len(c.Points) > MaxRecords || len(c.Calls) > MaxRecords || len(c.Tasks) > MaxRecords || len(c.Engines) > MaxRecords || c.RuntimeModelComplete || c.DeliveryCoverageProven || c.ApplicationRequestCompletionProven {
 		return errors.New("invalid runtime observation projection")
 	}
 	if _, e := hex.DecodeString(c.SourceSHA); e != nil {
