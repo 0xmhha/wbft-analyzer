@@ -10,7 +10,11 @@ import (
 	pairs "github.com/0xmhha/wbft-analyzer/internal/derive/messages"
 )
 
-const FitVersion = "wbft-network-scenario-fit/1"
+const FitVersion = "wbft-network-scenario-fit/2"
+
+func ValidWireMetric(metric string) bool {
+	return metric == "link" || metric == pairs.WriteStartToReadComplete
+}
 
 // Coverage is an independently verified continuous receiver recording window.
 // It must not be inferred from the existence of one received message.
@@ -32,6 +36,7 @@ type Delay struct {
 }
 
 type Link struct {
+	Metric   string   `json:"metric"`
 	Sender   string   `json:"sender"`
 	Receiver string   `json:"receiver"`
 	Delays   []Delay  `json:"delays"`
@@ -46,6 +51,13 @@ type Link struct {
 // copies. Missing receipts contribute to loss only within a verified complete
 // receiver interval; a missing file never implies packet loss.
 func FitLinks(nodes []string, observations []pairs.Pair, coverage []Coverage, clock string, skew time.Duration) ([]Link, error) {
+	return FitLinksMetric(nodes, observations, coverage, clock, skew, "link")
+}
+
+func FitLinksMetric(nodes []string, observations []pairs.Pair, coverage []Coverage, clock string, skew time.Duration, metric string) ([]Link, error) {
+	if !ValidWireMetric(metric) {
+		return nil, fmt.Errorf("unsupported wire measurement")
+	}
 	if len(nodes) < 2 || len(nodes) > 256 || skew < 0 {
 		return nil, fmt.Errorf("invalid scenario link scope")
 	}
@@ -65,12 +77,19 @@ func FitLinks(nodes []string, observations []pairs.Pair, coverage []Coverage, cl
 	for _, a := range nodes {
 		for _, b := range nodes {
 			if a != b {
-				links[[2]string{a, b}] = &Link{Sender: a, Receiver: b, Delays: []Delay{}, Status: "unavailable"}
+				links[[2]string{a, b}] = &Link{Metric: metric, Sender: a, Receiver: b, Delays: []Delay{}, Status: "unavailable"}
 			}
 		}
 	}
 	seen := map[string]bool{}
 	for _, p := range observations {
+		actual := p.Metric
+		if actual == "" {
+			actual = "link"
+		}
+		if actual != metric {
+			continue
+		}
 		l := links[[2]string{p.Sender, p.Receiver}]
 		if l == nil || p.Strength != "link" {
 			continue
@@ -79,6 +98,10 @@ func FitLinks(nodes []string, observations []pairs.Pair, coverage []Coverage, cl
 			return nil, fmt.Errorf("duplicate or missing pair identity")
 		}
 		seen[p.ID] = true
+		if metric == pairs.WriteStartToReadComplete && (p.Send != nil && p.Send.Moment != "write_start" || p.Receive != nil && p.Receive.Moment != "read_complete") {
+			l.Unproved++
+			continue
+		}
 		if p.Send == nil || p.SendCandidates != 1 || p.Write != "ok" || p.Send.Node != p.Sender || p.Receive != nil && p.Receive.Node != p.Receiver {
 			l.Unproved++
 			continue

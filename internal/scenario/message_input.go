@@ -50,6 +50,13 @@ func InspectMessageSnapshot(ctx context.Context, p messages.Prepared, chain, gen
 // PairMessageInputs pairs the complete selected snapshot scope. Clock
 // declarations are retained; timestamps never make an ambiguous copy unique.
 func PairMessageInputs(inputs []MessageInput, clock pairs.Clock) ([]pairs.Pair, error) {
+	return PairMessageInputsMetric(inputs, clock, "link")
+}
+
+func PairMessageInputsMetric(inputs []MessageInput, clock pairs.Clock, metric string) ([]pairs.Pair, error) {
+	if !ValidWireMetric(metric) {
+		return nil, errors.New("unsupported wire measurement")
+	}
 	if len(inputs) == 0 || len(inputs) > 256 {
 		return nil, errors.New("invalid message snapshot scope")
 	}
@@ -71,5 +78,8 @@ func PairMessageInputs(inputs []MessageInput, clock pairs.Clock) ([]pairs.Pair, 
 		records = append(records, in.Records...)
 	}
 	projected := pairs.ProjectRecords(records)
+	if metric == pairs.WriteStartToReadComplete {
+		projected = pairs.ProjectIORecords(records)
+	}
 	return pairs.PairEndpoints(projected.Endpoints, clock), nil
 }

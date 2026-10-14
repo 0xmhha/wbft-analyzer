@@ -5,7 +5,9 @@ import (
 	"sort"
 )
 
-const Version = "wbft-message-pairing/8"
+const Version = "wbft-message-pairing/9"
+
+const WriteStartToReadComplete = "write_start_to_read_complete"
 
 type Issue struct {
 	Source Source `json:"source"`
@@ -25,6 +27,16 @@ func recordSource(r source.Record) Source {
 // author is not the transmitting peer: relay traffic must not become a direct
 // author-to-recipient link. Outcomes inherit no frame clock for measurement.
 func ProjectRecords(records []source.Record) Projection {
+	return projectRecords(records, false)
+}
+
+// ProjectIORecords retains every candidate, even when its clock endpoint was
+// not measured. Missing timing cannot turn repeated writes into a unique pair.
+func ProjectIORecords(records []source.Record) Projection {
+	return projectRecords(records, true)
+}
+
+func projectRecords(records []source.Record, io bool) Projection {
 	p := Projection{Endpoints: []Endpoint{}, Issues: []Issue{}, Counts: map[string]int64{}}
 	for _, r := range records {
 		p.Counts["records"]++
@@ -62,6 +74,28 @@ func ProjectRecords(records []source.Record) Projection {
 			x.Role = "receive"
 			x.Sender = r.Peer
 			x.Receiver = r.Node
+		}
+		if io {
+			x.Metric = WriteStartToReadComplete
+			x.Source.CallbackWall, x.Source.CallbackMono = x.Source.Wall, x.Source.Mono
+			x.Source.Wall, x.Source.Mono, x.Source.ClockSource = "", nil, "unavailable"
+			if r.Dir == "out" {
+				x.Source.Moment = "write_start"
+			} else {
+				x.Source.Moment = "read_complete"
+			}
+			if r.IO != nil {
+				x.Source.ClockSource = "recorded_io"
+				if r.Dir == "out" {
+					x.Source.Wall = r.IO.StartWall
+					v := r.IO.StartMono
+					x.Source.Mono = &v
+				} else {
+					x.Source.Wall = r.IO.EndWall
+					v := r.IO.EndMono
+					x.Source.Mono = &v
+				}
+			}
 		}
 		p.Endpoints = append(p.Endpoints, x)
 		p.Counts["endpoints"]++

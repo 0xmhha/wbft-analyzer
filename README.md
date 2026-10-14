@@ -1123,3 +1123,23 @@ is refused. The normalization version is part of dataset identity; use a fresh
 dataset for a changed interpretation. Existing latency values and pairing rules
 remain unchanged; interval presence does not establish corrected latency or
 complete transport coverage.
+
+
+The optional `write_start_to_read_complete` message metric measures recorded
+write entry to payload read completion. It includes the write call, excludes
+sender queue wait, and remains separate from the `link` callback metric.
+Projection retains unmeasured candidates so repeated copies cannot become
+unique by dropping their missing clocks. The source position still opens the
+original record; projected endpoints retain the original callback stamps.
+Message pairing identity advances to version 9.
+
+The latency view and replay timing selector keep these measurements separate.
+Only unique valid measured endpoints animate; clock uncertainty, absent timing,
+negative observations, and ambiguous copies remain visible without correction.
+For network fitting, explicitly select
+`scenario fit --wire-metric write_start_to_read_complete`, or set `wire_metric`
+on a registered source. The default remains `link`. The selected definition is
+included in the model identity and source metadata (fitting version 2); use a
+new source ID when changing it. Neither I/O timing nor received messages alone
+prove receiver coverage or zero loss. A full baseline still needs runtime and
+application inputs and the original independent-seed credibility checks.
