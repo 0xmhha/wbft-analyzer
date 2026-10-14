@@ -1113,3 +1113,13 @@ selection are recomputed from each run; recorded winners are not forced into
 a changed execution. Header-input agreement does not prove execution-state
 registration. Key rotation and parameter transitions that cannot be represented
 remain unavailable. Source metadata exposes the recorded epoch evidence.
+
+Message normalization retains optional transport I/O endpoints from journals
+and R-01 frames as exact nanosecond strings and RFC 3339 wall timestamps. The
+message source view shows these separately from the original callback time.
+Older records retain absent intervals, measured zero remains known, and wall
+clock regressions are not corrected. Invalid or incomplete interval evidence
+is refused. The normalization version is part of dataset identity; use a fresh
+dataset for a changed interpretation. Existing latency values and pairing rules
+remain unchanged; interval presence does not establish corrected latency or
+complete transport coverage.

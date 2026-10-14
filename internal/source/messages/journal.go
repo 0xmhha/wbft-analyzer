@@ -109,6 +109,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 				}
 			}
 		case *journal.MsgRec:
+			r.IO = journalIOInterval(b.IO)
 			r.Type = "frame"
 			if b.Capture != 0 {
 				r.Capture = number(b.Capture)

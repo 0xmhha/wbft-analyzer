@@ -1456,6 +1456,30 @@
         ],
         "type": "object"
       },
+      "MessagesIOInterval": {
+        "additionalProperties": false,
+        "properties": {
+          "end_mono_ns": {
+            "type": "string"
+          },
+          "end_wall": {
+            "type": "string"
+          },
+          "start_mono_ns": {
+            "type": "string"
+          },
+          "start_wall": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "end_mono_ns",
+          "end_wall",
+          "start_mono_ns",
+          "start_wall"
+        ],
+        "type": "object"
+      },
       "MessagesIssue": {
         "additionalProperties": false,
         "properties": {
@@ -1815,6 +1839,16 @@
           },
           "input": {
             "type": "string"
+          },
+          "io": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesIOInterval"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "known_hit": {
             "type": [

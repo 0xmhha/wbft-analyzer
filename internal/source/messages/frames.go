@@ -33,6 +33,7 @@ type frameRecord struct {
 	Outcome     string          `json:"outcome"`
 	WriteError  string          `json:"write_error"`
 	WriteResult json.RawMessage `json:"write_result"`
+	IO          json.RawMessage `json:"io"`
 	Cause       string          `json:"cause"`
 	RelayOf     *uint64         `json:"relay_of"`
 	Of          *uint64         `json:"of"`
@@ -90,6 +91,10 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Sta
 				if e != nil {
 					return e
 				}
+				span, e := frameIOInterval(x, write)
+				if e != nil {
+					return e
+				}
 				seq := x.Run + ":" + number(*x.Seq)
 				if seen[seq] {
 					return errors.New("duplicate frame sequence")
@@ -119,6 +124,7 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Sta
 				r.Cause = choice(x.Cause, "broadcast", "gossip", "relay", "retry", "reconnect", "replay", "direct")
 				switch x.Type {
 				case "frame":
+					r.IO = span
 					r.ClockSource = "recorded"
 					if x.Dir != "in" && x.Dir != "out" || x.Size == nil {
 						return errors.New("invalid frame direction or size")

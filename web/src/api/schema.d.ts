@@ -1501,6 +1501,12 @@ export interface components {
             sender: string;
             strength: string;
         };
+        MessagesIOInterval: {
+            end_mono_ns: string;
+            end_wall: string;
+            start_mono_ns: string;
+            start_wall: string;
+        };
         MessagesIssue: {
             reason: string;
             source: components["schemas"]["MessagesSource"];
@@ -1593,6 +1599,7 @@ export interface components {
             height?: string;
             improvements?: string;
             input: string;
+            io?: components["schemas"]["MessagesIOInterval"] | null;
             known_hit?: boolean | null;
             node: string;
             of?: string;
