@@ -3119,6 +3119,87 @@
         ],
         "type": "object"
       },
+      "ReexecInputPosition": {
+        "additionalProperties": false,
+        "properties": {
+          "engine_run": {
+            "type": "string"
+          },
+          "execution_step": {
+            "type": "string"
+          },
+          "reader_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "removed": {
+            "type": "boolean"
+          },
+          "slot_reader_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "slot_source_seq": {
+            "type": "string"
+          },
+          "slot_step": {
+            "type": "string"
+          },
+          "source_seq": {
+            "type": "string"
+          },
+          "step": {
+            "type": "string"
+          },
+          "writer_run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "engine_run",
+          "execution_step",
+          "reader_ordinal",
+          "slot_reader_ordinal",
+          "slot_source_seq",
+          "slot_step",
+          "source_seq",
+          "step",
+          "writer_run"
+        ],
+        "type": "object"
+      },
+      "ReexecInputSchedule": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "drop",
+              "delay",
+              "swap"
+            ],
+            "type": "string"
+          },
+          "engine_run": {
+            "type": "string"
+          },
+          "other_step": {
+            "type": "string"
+          },
+          "step": {
+            "type": "string"
+          },
+          "writer_run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "engine_run",
+          "step",
+          "writer_run"
+        ],
+        "type": "object"
+      },
       "ReexecJobs": {
         "additionalProperties": false,
         "properties": {
@@ -3184,6 +3265,13 @@
           "chain_sha256": {
             "type": "string"
           },
+          "first_mismatch_execution_ordinal": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "first_mismatch_ordinal": {
             "format": "int64",
             "type": [
@@ -3202,6 +3290,16 @@
           },
           "helper_version": {
             "type": "string"
+          },
+          "input_schedule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReexecInputSchedule"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "issue": {
             "type": "string"
@@ -3330,6 +3428,13 @@
           "engine_run": {
             "type": "string"
           },
+          "execution_height": {
+            "type": "string"
+          },
+          "execution_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
           "file": {
             "type": "string"
           },
@@ -3386,7 +3491,20 @@
           "round": {
             "type": "string"
           },
+          "scheduled_input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReexecInputPosition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "step": {
+            "type": "string"
+          },
+          "suppression_reason": {
             "type": "string"
           },
           "t_mono_ns": {
@@ -3736,6 +3854,16 @@
           "from_height": {
             "type": "string"
           },
+          "input_schedule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReexecInputSchedule"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "mode": {
             "enum": [
               "closed",
@@ -3768,6 +3896,9 @@
       "ReplayjobSourceInfo": {
         "additionalProperties": false,
         "properties": {
+          "allow_schedule": {
+            "type": "boolean"
+          },
           "answer_scopes": {
             "items": {
               "type": "string"
@@ -3788,6 +3919,7 @@
           }
         },
         "required": [
+          "allow_schedule",
           "answer_scopes",
           "id",
           "input_id",
@@ -5229,6 +5361,16 @@
           },
           "input_id": {
             "type": "string"
+          },
+          "input_schedule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReexecInputSchedule"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "issue": {
             "type": "string"

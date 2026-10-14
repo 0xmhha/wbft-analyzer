@@ -24,20 +24,22 @@ var ErrSource = errors.New("replay source unavailable")
 var ErrScope = errors.New("invalid replay scope")
 
 type SourceSpec struct {
-	AllowContext bool   `json:"allow_context,omitempty"`
-	ID           string `json:"id"`
-	Dataset      int64  `json:"dataset"`
-	Input        string `json:"input"`
-	Chain        string `json:"chain"`
-	Helper       string `json:"helper,omitempty"`
-	Timeout      string `json:"timeout,omitempty"`
-	AllowLoss    bool   `json:"allow_loss,omitempty"`
+	AllowSchedule bool   `json:"allow_schedule,omitempty"`
+	AllowContext  bool   `json:"allow_context,omitempty"`
+	ID            string `json:"id"`
+	Dataset       int64  `json:"dataset"`
+	Input         string `json:"input"`
+	Chain         string `json:"chain"`
+	Helper        string `json:"helper,omitempty"`
+	Timeout       string `json:"timeout,omitempty"`
+	AllowLoss     bool   `json:"allow_loss,omitempty"`
 }
 type SourceInfo struct {
-	AnswerScopes []string `json:"answer_scopes"`
-	ID           string   `json:"id"`
-	Input        string   `json:"input_id"`
-	Modes        []string `json:"modes"`
+	AllowSchedule bool     `json:"allow_schedule"`
+	AnswerScopes  []string `json:"answer_scopes"`
+	ID            string   `json:"id"`
+	Input         string   `json:"input_id"`
+	Modes         []string `json:"modes"`
 }
 type source struct {
 	info                        SourceInfo
@@ -47,12 +49,13 @@ type source struct {
 	helper                      reexec.Helper
 }
 type Request struct {
-	AnswerScope   string `json:"answer_scope,omitempty" enum:"step,context"`
-	WarmupHeights *int   `json:"warmup_heights,omitempty"`
-	Source        string `json:"source_id"`
-	From          string `json:"from_height"`
-	To            string `json:"to_height"`
-	Mode          string `json:"mode" enum:"closed,counterfactual"`
+	Schedule      *reexec.InputSchedule `json:"input_schedule,omitempty"`
+	AnswerScope   string                `json:"answer_scope,omitempty" enum:"step,context"`
+	WarmupHeights *int                  `json:"warmup_heights,omitempty"`
+	Source        string                `json:"source_id"`
+	From          string                `json:"from_height"`
+	To            string                `json:"to_height"`
+	Mode          string                `json:"mode" enum:"closed,counterfactual"`
 }
 type Worker struct {
 	store   *store.Store
@@ -85,6 +88,9 @@ func Load(ctx context.Context, s *store.Store, path, linked string) (*Worker, er
 	worker := &Worker{store: s, sources: map[string]source{}, wake: make(chan struct{}, 1)}
 	for _, spec := range specs {
 		if !logs.Identifier(spec.ID) || !logs.Identifier(spec.Input) || spec.Dataset < 1 || spec.Chain == "" {
+			return nil, ErrSource
+		}
+		if spec.AllowSchedule && !spec.AllowContext {
 			return nil, ErrSource
 		}
 		if _, ok := worker.sources[spec.ID]; ok {
@@ -157,9 +163,10 @@ func Load(ctx context.Context, s *store.Store, path, linked string) (*Worker, er
 			Dataset                                             int64
 			Input, InputSHA, Node, ChainSHA, HelperSHA, Timeout string
 			Modes, AnswerScopes                                 []string
-		}{spec.Dataset, spec.Input, inputSHA, node, chain.SHA256, helperSHA, helper.Timeout.String(), modes, scopes})
+			AllowSchedule                                       bool
+		}{spec.Dataset, spec.Input, inputSHA, node, chain.SHA256, helperSHA, helper.Timeout.String(), modes, scopes, spec.AllowSchedule})
 		hash := sha256.Sum256(identity)
-		worker.sources[spec.ID] = source{info: SourceInfo{ID: spec.ID, Input: spec.Input, Modes: modes, AnswerScopes: scopes}, network: dataset.NetworkID, dataset: spec.Dataset, chain: chain.Path, hash: hex.EncodeToString(hash[:]), inputSHA: inputSHA, node: node, helper: helper, chainSHA: chain.SHA256, helperSHA: helperSHA}
+		worker.sources[spec.ID] = source{info: SourceInfo{AllowSchedule: spec.AllowSchedule, ID: spec.ID, Input: spec.Input, Modes: modes, AnswerScopes: scopes}, network: dataset.NetworkID, dataset: spec.Dataset, chain: chain.Path, hash: hex.EncodeToString(hash[:]), inputSHA: inputSHA, node: node, helper: helper, chainSHA: chain.SHA256, helperSHA: helperSHA}
 		worker.order = append(worker.order, spec.ID)
 	}
 	return worker, nil
@@ -229,7 +236,10 @@ func (w *Worker) Submit(ctx context.Context, network, dataset int64, r Request) 
 	if !allowed {
 		return store.ReexecJob{}, ErrScope
 	}
-	job, err := w.store.EnqueueReexec(ctx, store.ReexecJob{Dataset: dataset, Input: source.info.Input, Source: r.Source, SourceSHA: source.hash, From: r.From, To: r.To, Mode: r.Mode, WarmupHeights: warmup, AnswerScope: scope})
+	if r.Schedule != nil && (!source.info.AllowSchedule || scope != "context" || warmup != 0 || r.Mode != "closed") {
+		return store.ReexecJob{}, ErrScope
+	}
+	job, err := w.store.EnqueueReexec(ctx, store.ReexecJob{Dataset: dataset, Input: source.info.Input, Source: r.Source, SourceSHA: source.hash, From: r.From, To: r.To, Mode: r.Mode, WarmupHeights: warmup, AnswerScope: scope, Schedule: r.Schedule})
 	if err == nil {
 		select {
 		case w.wake <- struct{}{}:
@@ -334,6 +344,7 @@ func (w *Worker) execute(ctx context.Context, job store.ReexecJob, owner string)
 			helper.OmitMissing = job.Mode == "counterfactual"
 			helper.WarmupHeights = uint64(job.WarmupHeights)
 			helper.AnswerScope = job.AnswerScope
+			helper.Schedule = job.Schedule
 			_, err = Run(ctx, w.store, RunOptions{Dataset: job.Dataset, Input: job.Input, Chain: source.chain, From: from, To: to, Helper: helper, ExpectedInputSHA: source.inputSHA, ExpectedNode: source.node, ExpectedChainSHA: source.chainSHA}, func(id int64) error { return w.store.LinkReexecJob(ctx, job.ID, owner, id) })
 			if err == nil {
 				status, issue = "succeeded", ""

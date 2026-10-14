@@ -106,7 +106,7 @@ func (s *Server) reexecSteps(w http.ResponseWriter, r *http.Request) {
 	}
 	result := ReexecPage{Steps: rows}
 	if len(rows) > limit {
-		n := rows[limit-1].Ordinal
+		n := rows[limit-1].Cursor()
 		result.Next = &n
 		result.Steps = rows[:limit]
 	}

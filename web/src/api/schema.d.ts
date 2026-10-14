@@ -1701,6 +1701,28 @@ export interface components {
             /** Format: int64 */
             steps: number;
         };
+        ReexecInputPosition: {
+            engine_run: string;
+            execution_step: string;
+            /** Format: int64 */
+            reader_ordinal: number;
+            removed?: boolean;
+            /** Format: int64 */
+            slot_reader_ordinal: number;
+            slot_source_seq: string;
+            slot_step: string;
+            source_seq: string;
+            step: string;
+            writer_run: string;
+        };
+        ReexecInputSchedule: {
+            /** @enum {string} */
+            action: "drop" | "delay" | "swap";
+            engine_run: string;
+            other_step?: string;
+            step: string;
+            writer_run: string;
+        };
         ReexecJobs: {
             jobs: components["schemas"]["StoreReexecJob"][];
         };
@@ -1717,10 +1739,13 @@ export interface components {
             binary_version: string;
             chain_sha256: string;
             /** Format: int64 */
+            first_mismatch_execution_ordinal?: number | null;
+            /** Format: int64 */
             first_mismatch_ordinal?: number | null;
             heights: components["schemas"]["ReexecHeight"][];
             helper_sha256: string;
             helper_version: string;
+            input_schedule?: components["schemas"]["ReexecInputSchedule"] | null;
             issue?: string;
             /** Format: int64 */
             matches: number;
@@ -1755,6 +1780,9 @@ export interface components {
             completeness: string;
             context_answers?: boolean;
             engine_run: string;
+            execution_height?: string;
+            /** Format: int64 */
+            execution_ordinal?: number;
             file: string;
             height: string;
             input: string;
@@ -1773,7 +1801,9 @@ export interface components {
             recorded_valset_digest?: string;
             replayed_digest?: string;
             round?: string;
+            scheduled_input?: components["schemas"]["ReexecInputPosition"] | null;
             step: string;
+            suppression_reason?: string;
             t_mono_ns?: string;
             t_wall?: string;
             warmup?: boolean;
@@ -1859,6 +1889,7 @@ export interface components {
             /** @enum {string} */
             answer_scope?: "step" | "context";
             from_height: string;
+            input_schedule?: components["schemas"]["ReexecInputSchedule"] | null;
             /** @enum {string} */
             mode: "closed" | "counterfactual";
             source_id: string;
@@ -1867,6 +1898,7 @@ export interface components {
             warmup_heights?: number | null;
         };
         ReplayjobSourceInfo: {
+            allow_schedule: boolean;
             answer_scopes: string[];
             id: string;
             input_id: string;
@@ -2272,6 +2304,7 @@ export interface components {
             /** Format: int64 */
             id: number;
             input_id: string;
+            input_schedule?: components["schemas"]["ReexecInputSchedule"] | null;
             issue?: string;
             mode: string;
             /** Format: int64 */

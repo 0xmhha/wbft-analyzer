@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { Schemas } from "./api/client";
 import { parseRoute } from "./App";
-import { ReexecSummary, WarmupSummary, ApplicationAnswerSummary } from "./views/Reexec";
+import { ReexecSummary, WarmupSummary, ApplicationAnswerSummary, ScheduleComparison } from "./views/Reexec";
 
 describe("closed replay evidence",()=>{
  it("keeps partial inputs and unknown versions visible without numeric truncation",()=>{
@@ -33,4 +33,13 @@ describe("closed replay evidence",()=>{
  expect(renderToStaticMarkup(<ApplicationAnswerSummary run={old}/>)).toContain("no recorded application answer policy");
  });
  it("routes core replay separately from recorded event playback",()=>{expect(parseRoute("#/networks/7/reexec")).toEqual({view:"reexec",net:7});expect(parseRoute("#/networks/7/events").view).toBe("events")});
+});
+
+describe("input schedule evidence",()=>{
+ it("shows original and execution order separately with original source links",()=>{
+  const row=(ordinal:number,execution:number,step:string):Schemas["ReexecStep"]=>({ordinal,execution_ordinal:execution,file:"00000000000000000000.wal",writer_run:"synthetic",engine_run:"18446744073709551615",step,height:"1",execution_height:"1",input:"captured_message",recorded_digest:"0x"+"a".repeat(64),class:"output_diverged",completeness:"complete",issues:[],scheduled_input:{writer_run:"synthetic",engine_run:"18446744073709551615",step,reader_ordinal:ordinal,source_seq:step,execution_step:String(execution),slot_step:String(execution),slot_reader_ordinal:execution,slot_source_seq:String(execution)}});
+  const html=renderToStaticMarkup(<ScheduleComparison steps={[row(20,10,"2"),row(10,20,"1")]} onSource={()=>{}}/>);
+  const recorded=html.slice(html.indexOf("<h4>Recorded"),html.indexOf("<h4>Experiment"));const experiment=html.slice(html.indexOf("<h4>Experiment"));
+  expect(recorded.indexOf("Source 10")).toBeLessThan(recorded.indexOf("Source 20"));expect(experiment.indexOf("Source 20")).toBeLessThan(experiment.indexOf("Source 10"));expect(html).toContain("inspect the original source");
+ });
 });

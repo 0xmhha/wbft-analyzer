@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime/debug"
 	"strconv"
@@ -45,6 +46,7 @@ func LinkedVersion() string {
 }
 
 type Helper struct {
+	Schedule      *InputSchedule
 	AnswerScope   string
 	WarmupHeights uint64
 	ExpectedSHA   string
@@ -55,31 +57,34 @@ type Helper struct {
 }
 
 type reply struct {
-	AnswerScope      string               `json:"answer_scope"`
-	ContextAnswers   bool                 `json:"context_answers"`
-	AnswerSources    []helperAnswerSource `json:"answer_sources"`
-	Features         []string             `json:"features"`
-	Approximate      bool                 `json:"approximate"`
-	Warmup           bool                 `json:"warmup"`
-	ApproximateSteps int64                `json:"approximate_steps"`
-	WarmupSteps      int64                `json:"warmup_steps"`
-	Writer           string               `json:"writer_run"`
-	Omitted          bool                 `json:"omitted"`
-	Counterfactual   bool                 `json:"counterfactual"`
-	Type             string               `json:"type"`
-	ID               uint64               `json:"id"`
-	Protocol         string               `json:"protocol"`
-	Impl             string               `json:"impl"`
-	Version          string               `json:"version"`
-	Engine           uint64               `json:"engine_run"`
-	Step             uint64               `json:"step"`
-	Input            string               `json:"input"`
-	Digest           string               `json:"out_digest"`
-	Match            *bool                `json:"match"`
-	Outputs          int64                `json:"outputs"`
-	Steps            int64                `json:"steps"`
-	Mismatches       int64                `json:"mismatches"`
-	Code             string               `json:"code"`
+	Schedule         *stepdriver.TraceSchedule      `json:"input_schedule"`
+	Scheduled        *stepdriver.TraceInputPosition `json:"scheduled_input"`
+	ScheduleReason   string                         `json:"suppression_reason"`
+	AnswerScope      string                         `json:"answer_scope"`
+	ContextAnswers   bool                           `json:"context_answers"`
+	AnswerSources    []helperAnswerSource           `json:"answer_sources"`
+	Features         []string                       `json:"features"`
+	Approximate      bool                           `json:"approximate"`
+	Warmup           bool                           `json:"warmup"`
+	ApproximateSteps int64                          `json:"approximate_steps"`
+	WarmupSteps      int64                          `json:"warmup_steps"`
+	Writer           string                         `json:"writer_run"`
+	Omitted          bool                           `json:"omitted"`
+	Counterfactual   bool                           `json:"counterfactual"`
+	Type             string                         `json:"type"`
+	ID               uint64                         `json:"id"`
+	Protocol         string                         `json:"protocol"`
+	Impl             string                         `json:"impl"`
+	Version          string                         `json:"version"`
+	Engine           uint64                         `json:"engine_run"`
+	Step             uint64                         `json:"step"`
+	Input            string                         `json:"input"`
+	Digest           string                         `json:"out_digest"`
+	Match            *bool                          `json:"match"`
+	Outputs          int64                          `json:"outputs"`
+	Steps            int64                          `json:"steps"`
+	Mismatches       int64                          `json:"mismatches"`
+	Code             string                         `json:"code"`
 }
 
 // Execute bounds time, line size, total output and emitted steps. Only source
@@ -89,7 +94,7 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 	if scope == "" {
 		scope = "step"
 	}
-	res = Result{OmitMissing: h.OmitMissing, AnswerScope: scope, WarmupHeights: int(h.WarmupHeights), Mode: "closed", Version: Version, Status: "failed", HelperVersion: "unknown", BinaryVersion: "unknown", VersionStatus: "unknown", ChainSHA: p.ChainSHA, SourceSHA: p.Input.Summary.SHA256, SourceVersions: p.SourceVersions, Heights: p.Heights}
+	res = Result{Schedule: h.Schedule, OmitMissing: h.OmitMissing, AnswerScope: scope, WarmupHeights: int(h.WarmupHeights), Mode: "closed", Version: Version, Status: "failed", HelperVersion: "unknown", BinaryVersion: "unknown", VersionStatus: "unknown", ChainSHA: p.ChainSHA, SourceSHA: p.Input.Summary.SHA256, SourceVersions: p.SourceVersions, Heights: p.Heights}
 	if h.OmitMissing || scope == "context" {
 		res.Mode = "counterfactual"
 	}
@@ -193,11 +198,33 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 		return res, ErrHelper
 	}
 	execution := planExecution(p, h.WarmupHeights)
+	if h.Schedule != nil {
+		if scope != "context" || h.OmitMissing || h.WarmupHeights != 0 {
+			res.Issue = "input_schedule"
+			return res, ErrHelper
+		}
+		if !hasIssue(hello.Features, "input_schedule_v1") {
+			res.Issue = "input_schedule_unsupported"
+			return res, ErrHelper
+		}
+		execution, e = scheduleExecution(p, h.Schedule)
+		if e != nil {
+			res.Issue = "input_schedule"
+			return res, ErrHelper
+		}
+	}
 	if execution.bounded && !hasIssue(hello.Features, "bounded_warmup_v1") {
 		res.Issue = "warmup_unsupported"
 		return res, ErrHelper
 	}
 	request := map[string]any{"type": "replay", "id": uint64(1), "journal": p.Input.Input.Path, "chain": p.Chain, "from_step": 0, "to_step": 0, "with_vars": false, "omit_missing_captures": h.OmitMissing}
+	if h.Schedule != nil {
+		c, err := h.Schedule.core()
+		if err != nil {
+			return res, ErrHelper
+		}
+		request["input_schedule"] = c
+	}
 	if scope == "context" {
 		request["answer_scope"] = "context"
 	}
@@ -252,6 +279,9 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			if hasIssue([]string{"env_ambiguous", "env_source_mismatch", "head_mismatch", "answer_limit"}, r.Code) {
 				res.Issue = r.Code
 			}
+			if hasIssue([]string{"input_schedule", "reservation_unavailable"}, r.Code) {
+				res.Issue = r.Code
+			}
 			if r.Code == "warmup_unavailable" {
 				res.Issue = "warmup_unavailable"
 				res.Warmup.Status = "failed"
@@ -280,7 +310,7 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 					recordWarmup(res.Warmup, s)
 					res.Warmup.Status = "failed"
 				}
-				if _, included := selected[s.Height]; included {
+				if _, included := selected[s.activeHeight()]; included {
 					s.Class = "not_comparable"
 					if r.Code == "env_exhausted" || r.Code == "input_gap" {
 						s.Class = r.Code
@@ -297,6 +327,8 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 						if res.FirstMismatch == nil {
 							n := s.Ordinal
 							res.FirstMismatch = &n
+							cursor := s.Cursor()
+							res.FirstMismatchExecution = &cursor
 						}
 					} else {
 						res.NotComparable++
@@ -331,6 +363,23 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			if *r.Match && r.Digest != s.Recorded {
 				return res, ErrHelper
 			}
+			if h.Schedule != nil {
+				if r.Scheduled == nil || !reflect.DeepEqual(inputPosition(*r.Scheduled), s.Scheduled) {
+					return res, ErrHelper
+				}
+				if r.ScheduleReason == "reservation_unavailable" && !s.scheduleAffected {
+					return res, ErrHelper
+				}
+				s.ScheduleReason = r.ScheduleReason
+				if r.ScheduleReason != "" && r.ScheduleReason != "requested_drop" && r.ScheduleReason != "reservation_unavailable" {
+					return res, ErrHelper
+				}
+				if r.Omitted != (r.ScheduleReason != "") || (s.Scheduled.Removed != (r.ScheduleReason == "requested_drop")) || r.Omitted && (r.Outputs != 0 || r.Digest != emptyOutputDigest()) {
+					return res, ErrHelper
+				}
+			} else if r.Scheduled != nil || r.ScheduleReason != "" {
+				return res, ErrHelper
+			}
 			s.ContextAnswers = r.ContextAnswers
 			if r.ContextAnswers != (scope == "context") {
 				return res, ErrHelper
@@ -341,10 +390,10 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			}
 			s.AnswerSources = sources
 			s.Omitted = r.Omitted
-			if r.Omitted != (h.OmitMissing && s.Capture != "" && onlyMissingCapture(s.Issues)) {
+			if h.Schedule == nil && r.Omitted != (h.OmitMissing && s.Capture != "" && onlyMissingCapture(s.Issues)) {
 				return res, ErrHelper
 			}
-			row, included := selected[s.Height]
+			row, included := selected[s.activeHeight()]
 			if !included {
 				if index <= firstSelected || execution.bounded && s.Warmup {
 					s = classifyStep(s, r, s.Completeness == "complete" || approximateComparable(s))
@@ -367,6 +416,8 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 				if res.FirstMismatch == nil {
 					n := s.Ordinal
 					res.FirstMismatch = &n
+					cursor := s.Cursor()
+					res.FirstMismatchExecution = &cursor
 				}
 			default:
 				res.NotComparable++
@@ -375,6 +426,14 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 				return res, e
 			}
 		case "done":
+			if h.Schedule != nil {
+				c, e := h.Schedule.core()
+				if e != nil || !reflect.DeepEqual(c, r.Schedule) {
+					return res, ErrHelper
+				}
+			} else if r.Schedule != nil {
+				return res, ErrHelper
+			}
 			if (h.OmitMissing || scope == "context") != r.Counterfactual || scope == "context" && r.AnswerScope != "context" || scope == "step" && r.AnswerScope != "" && r.AnswerScope != "step" {
 				return res, ErrHelper
 			}

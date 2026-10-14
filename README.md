@@ -770,10 +770,29 @@ experiments remain counterfactual even when all output digests match. Recorded
 receipt clocks and source files are preserved. Timer-policy rescheduling and
 other-node reactions are separate requirements.
 
-The stored replay command and job worker currently accept original input order
-only. Schedule requests use the helper protocol; stored experiment jobs and their
-execution-order screen are pending. The helper capability alone does not establish
-full what-if acceptance.
+Use `reexec --input-schedule /private/change.json --answer-scope context
+--warmup-heights 0` for a stored experiment. Schedule coordinates are decimal
+strings to preserve full uint64 values in browsers:
+
+```json
+{"action":"drop","writer_run":"synthetic-writer","engine_run":"1","step":"8"}
+```
+
+`delay` and `swap` also require `other_step`. The operator's private replay
+source configuration must set both `allow_context` and `allow_schedule` to true
+before HTTP jobs can request a schedule. The allowed policy is included in the
+source fingerprint. Schedule jobs use original-input mode, context answers and
+zero warmup; missing-input omission cannot be combined with them. Exact schedule
+identity is checked when linking a durable job to its stored result.
+
+The result screen compares recorded and experiment order, preserves original
+source links, and shows suppression reasons. Pages and the first difference use
+verified execution positions; recorded receipt clocks and source positions stay
+unchanged. When application provenance cannot be verified against the execution
+slot's full recorded context, comparison stops rather than accepting a response
+from a different head or validator context. Timer-policy rescheduling, proven
+open-loop validity boundaries and scenario fitting remain separate acceptance
+requirements.
 
 Bounds: 10000 active canonical heights, 100000 steps, one million journal
 records, a 256 MiB chain file, 64 KiB protocol lines, 64 MiB helper output and
@@ -784,7 +803,7 @@ backup. Migration 17 stores replay summaries and metadata-only steps outside
 canonical network facts. Finished runs are immutable.
 
 Read the latest 100 runs at `/networks/{net}/datasets/{dataset}/reexec`, one
-summary at `/reexec/{reexec}`, and bounded original-ordinal pages at
+summary at `/reexec/{reexec}`, and bounded execution-ordinal pages at
 `/reexec/{reexec}/steps?after=0&limit=500&class=match&height=1` (paths below the
 same network/dataset prefix). Structured helper failures identify their original writer, engine and step.
 Recorded input gaps and exhausted application answers retain that exact source
@@ -792,7 +811,7 @@ position; generic failures remain not comparable. Older helpers without
 structured positions retain a run-level issue without an inferred step.
 
 The core replay screen shows versions,
-completeness, a source-order difference strip, the first difference and the
+completeness, an execution-order difference strip, the first difference and the
 exact original journal record. HTTP reads do not execute a replay. Start a
 run with the local command or enable the bounded job worker below.
 

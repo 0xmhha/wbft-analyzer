@@ -21,7 +21,7 @@ func verifiedAnswerSources(p Plan, s Step, raw []helperAnswerSource, used map[st
 	if len(raw) == 0 {
 		return nil, nil
 	}
-	context, ok := p.Contexts[s.Ordinal]
+	context, ok := p.Contexts[s.contextOrdinal()]
 	if !ok {
 		return nil, ErrHelper
 	}

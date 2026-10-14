@@ -39,7 +39,11 @@ func (s *Store) PutReexecStep(ctx context.Context, id int64, step reexec.Step) e
 	if err != nil {
 		return err
 	}
-	tag, err := s.pool.Exec(ctx, `WITH writable AS (SELECT id FROM reexec_runs WHERE id=$1 AND status='running' FOR UPDATE) INSERT INTO reexec_steps(run_id,ordinal,height,class,record) SELECT id,$2,$3::numeric,$4,$5 FROM writable`, id, step.Ordinal, step.Height, step.Class, raw)
+	height := step.Height
+	if step.ExecutionHeight != "" {
+		height = step.ExecutionHeight
+	}
+	tag, err := s.pool.Exec(ctx, `WITH writable AS (SELECT id FROM reexec_runs WHERE id=$1 AND status='running' FOR UPDATE) INSERT INTO reexec_steps(run_id,ordinal,height,class,record,execution_ordinal) SELECT id,$2,$3::numeric,$4,$5,$6 FROM writable`, id, step.Ordinal, height, step.Class, raw, step.Cursor())
 	if err == nil && tag.RowsAffected() != 1 {
 		return ErrReexecFinished
 	}
@@ -54,7 +58,7 @@ func (s *Store) FinishReexec(ctx context.Context, id int64, result reexec.Result
 		if state != "running" {
 			return ErrReexecFinished
 		}
-		if err := tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER(WHERE class='match'),count(*) FILTER(WHERE class IN ('output_diverged','env_mismatch','env_exhausted')),count(*) FILTER(WHERE class IN ('not_comparable','input_gap')),count(*) FILTER(WHERE class='warmup_suspect'),min(ordinal) FILTER(WHERE class IN ('output_diverged','env_mismatch','env_exhausted')) FROM reexec_steps WHERE run_id=$1`, id).Scan(&result.Total, &result.Matches, &result.Mismatches, &result.NotComparable, &result.WarmupSuspect, &result.FirstMismatch); err != nil {
+		if err := tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER(WHERE class='match'),count(*) FILTER(WHERE class IN ('output_diverged','env_mismatch','env_exhausted')),count(*) FILTER(WHERE class IN ('not_comparable','input_gap')),count(*) FILTER(WHERE class='warmup_suspect'),(array_agg(ordinal ORDER BY execution_ordinal) FILTER(WHERE class IN ('output_diverged','env_mismatch','env_exhausted')))[1],min(execution_ordinal) FILTER(WHERE class IN ('output_diverged','env_mismatch','env_exhausted')) FROM reexec_steps WHERE run_id=$1`, id).Scan(&result.Total, &result.Matches, &result.Mismatches, &result.NotComparable, &result.WarmupSuspect, &result.FirstMismatch, &result.FirstMismatchExecution); err != nil {
 			return err
 		}
 		raw, err := json.Marshal(result)
@@ -92,7 +96,7 @@ func (s *Store) ReexecRun(ctx context.Context, dataset, id int64) (ReexecRun, er
 	return one(rows, scanReexec)
 }
 func (s *Store) ReexecSteps(ctx context.Context, id, after int64, class, height string, limit int) ([]reexec.Step, error) {
-	rows, err := s.pool.Query(ctx, `SELECT record FROM reexec_steps WHERE run_id=$1 AND ordinal>$2 AND ($3='' OR class=$3) AND ($4='' OR height=nullif($4,'')::numeric) ORDER BY ordinal LIMIT $5`, id, after, class, height, limit)
+	rows, err := s.pool.Query(ctx, `SELECT record FROM reexec_steps WHERE run_id=$1 AND execution_ordinal>$2 AND ($3='' OR class=$3) AND ($4='' OR height=nullif($4,'')::numeric) ORDER BY execution_ordinal LIMIT $5`, id, after, class, height, limit)
 	if err != nil {
 		return nil, err
 	}
