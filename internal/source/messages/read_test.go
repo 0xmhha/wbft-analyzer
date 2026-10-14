@@ -236,6 +236,69 @@ func TestFramesPayloadValidationAndUnorderedSequence(t *testing.T) {
 		t.Fatal("payload SHA mismatch accepted")
 	}
 }
+
+func TestFramesExplicitWritesAndZeroSequencePreserveEvidence(t *testing.T) {
+	payload := vote(t, codec.CodePrepare)
+	for _, tc := range []struct {
+		name             string
+		value            any
+		present          bool
+		want             string
+		invalid          bool
+		dir, legacyError string
+	}{
+		{name: "old_absence", want: "no_error_recorded"},
+		{name: "explicit_ok", value: "ok", present: true, want: "ok"},
+		{name: "explicit_error", value: "error", present: true, want: "error"},
+		{name: "explicit_unattached", value: "not_attached", present: true, want: "not_attached"},
+		{name: "null", present: true, invalid: true},
+		{name: "boolean", value: true, present: true, invalid: true},
+		{name: "unknown", value: "queued", present: true, invalid: true},
+		{name: "contradiction", value: "ok", present: true, legacyError: "error", invalid: true},
+		{name: "received", value: "ok", present: true, dir: "in", invalid: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			x := frame(0, payload)
+			if tc.present {
+				x["write_result"] = tc.value
+			}
+			if tc.legacyError != "" {
+				x["write_error"] = tc.legacyError
+			}
+			if tc.dir != "" {
+				x["dir"] = tc.dir
+			}
+			in := writeFrames(t, []map[string]any{x}, payload)
+			sum, err := Fingerprint(context.Background(), in)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var rows []Record
+			_, err = Read(context.Background(), Prepared{in, sum}, "7", genesis, func(r Record) error { rows = append(rows, r); return nil })
+			if tc.invalid {
+				if err == nil {
+					t.Fatal("invalid write declaration accepted")
+				}
+				return
+			}
+			if err != nil || len(rows) != 1 || rows[0].Seq != "0" || rows[0].Write != tc.want {
+				t.Fatal(rows, err)
+			}
+			if _, err = Read(context.Background(), Prepared{in, sum}, "7", genesis, func(Record) error { return nil }); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+	x := frame(0, payload)
+	in := writeFrames(t, []map[string]any{x, x}, payload)
+	sum, err := Fingerprint(context.Background(), in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = Read(context.Background(), Prepared{in, sum}, "7", genesis, func(Record) error { return nil }); err == nil {
+		t.Fatal("duplicate zero sequence accepted")
+	}
+}
 func TestArtifactBoundsAndCancellation(t *testing.T) {
 	in := syntheticJournal(t)
 	ctx, cancel := context.WithCancel(context.Background())
