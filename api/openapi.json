@@ -4829,6 +4829,51 @@
         ],
         "type": "object"
       },
+      "ScenarioApplicationPolicy": {
+        "additionalProperties": false,
+        "properties": {
+          "assembly_return": {
+            "type": "string"
+          },
+          "build_queue": {
+            "type": "string"
+          },
+          "done_result": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "selection": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "assembly_return",
+          "build_queue",
+          "done_result",
+          "input",
+          "line",
+          "node",
+          "run",
+          "selection",
+          "status"
+        ],
+        "type": "object"
+      },
       "ScenarioAssessment": {
         "additionalProperties": false,
         "properties": {
@@ -5661,6 +5706,12 @@
       "ScenariojobSourceInfo": {
         "additionalProperties": false,
         "properties": {
+          "application_policies": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioApplicationPolicy"
+            },
+            "type": "array"
+          },
           "dataset_id": {
             "format": "int64",
             "type": "integer"
@@ -5716,6 +5767,7 @@
           }
         },
         "required": [
+          "application_policies",
           "dataset_id",
           "duration_ns",
           "epochs",

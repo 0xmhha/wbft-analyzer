@@ -1224,3 +1224,20 @@ preferred first value or a complete execution model. The single `startup` field
 is a historical compatibility field; use `startups` and `configurations` to read
 the full history. Later effective settings, native options, input handling,
 application queues and receiver coverage remain unproved by these snapshots.
+
+### Declared application execution policies
+
+Event normalization version 9 retains the closed optional
+`NODE_START.application_model` declaration through persistence. Network fitting
+version 8 includes every startup source, node, writer and line in model
+provenance and exposes them in the network experiment source screen. Existing
+datasets are preserved; import a new dataset to retain the new metadata.
+
+The supported declaration is the per-node `serial-latest` simulator queue,
+`sampled` assembly return and `callbacks_then_done_then_pending` selection,
+with an explicit `failed` or `submitted` Done result. Every startup must agree
+for that node. Missing, duplicate or conflicting declarations keep fitting
+partial. Measured successful durations never supply a queue or executor policy.
+Known unsupported failures and cancellations remain separate from successful
+timing samples. Physical executors, other application queues, input handling
+and receiver coverage still require their own evidence and execution models.

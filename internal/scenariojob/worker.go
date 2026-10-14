@@ -62,20 +62,21 @@ func publicEpochs(epochs []scenario.RecordedEpoch) []EpochInfo {
 }
 
 type SourceInfo struct {
-	RuntimeObservations []scenario.RuntimeBinding `json:"runtime_observations"`
-	WireMetric          string                    `json:"wire_metric"`
-	Epochs              []EpochInfo               `json:"epochs"`
-	Scope               scenario.ScopeCounts      `json:"scope"`
-	Nodes               []string                  `json:"nodes"`
-	DurationNS          int64                     `json:"duration_ns"`
-	ID                  string                    `json:"id"`
-	Dataset             int64                     `json:"dataset_id"`
-	From                string                    `json:"from"`
-	To                  string                    `json:"to"`
-	SourceSHA           string                    `json:"source_sha256"`
-	ExecutionSHA        string                    `json:"execution_sha256"`
-	Status              string                    `json:"status"`
-	Model               scenario.Assessment       `json:"model"`
+	ApplicationPolicies []scenario.ApplicationPolicy `json:"application_policies"`
+	RuntimeObservations []scenario.RuntimeBinding    `json:"runtime_observations"`
+	WireMetric          string                       `json:"wire_metric"`
+	Epochs              []EpochInfo                  `json:"epochs"`
+	Scope               scenario.ScopeCounts         `json:"scope"`
+	Nodes               []string                     `json:"nodes"`
+	DurationNS          int64                        `json:"duration_ns"`
+	ID                  string                       `json:"id"`
+	Dataset             int64                        `json:"dataset_id"`
+	From                string                       `json:"from"`
+	To                  string                       `json:"to"`
+	SourceSHA           string                       `json:"source_sha256"`
+	ExecutionSHA        string                       `json:"execution_sha256"`
+	Status              string                       `json:"status"`
+	Model               scenario.Assessment          `json:"model"`
 }
 
 type registered struct {
@@ -159,7 +160,7 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 		if err != nil {
 			return nil, err
 		}
-		public := SourceInfo{RuntimeObservations: fitted.RuntimeObservations, WireMetric: fitted.WireMetric, Epochs: publicEpochs(fitted.Epochs), Scope: fitted.Scope, Nodes: []string{}, DurationNS: int64(duration), ID: spec.ID, Dataset: spec.Dataset, From: strconv.FormatUint(spec.From, 10), To: strconv.FormatUint(spec.To, 10), SourceSHA: fitted.SourceSHA256, Status: fitted.Model.Status, Model: fitted.Model}
+		public := SourceInfo{ApplicationPolicies: fitted.App.Policies, RuntimeObservations: fitted.RuntimeObservations, WireMetric: fitted.WireMetric, Epochs: publicEpochs(fitted.Epochs), Scope: fitted.Scope, Nodes: []string{}, DurationNS: int64(duration), ID: spec.ID, Dataset: spec.Dataset, From: strconv.FormatUint(spec.From, 10), To: strconv.FormatUint(spec.To, 10), SourceSHA: fitted.SourceSHA256, Status: fitted.Model.Status, Model: fitted.Model}
 		for _, node := range fitted.NodeOptions {
 			public.Nodes = append(public.Nodes, node.Address.Hex())
 		}

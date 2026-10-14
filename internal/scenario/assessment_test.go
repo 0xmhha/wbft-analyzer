@@ -10,6 +10,7 @@ func TestSyntheticExecutionDoesNotProveSourceCoverage(t *testing.T) {
 	}
 	app := AppTiming{Build: []AppSample{}, Import: []AppSample{}}
 	for _, node := range nodes {
+		app.Policies = append(app.Policies, declaredApplicationPolicy(node.Address.Hex(), "r", 1))
 		app.Build = append(app.Build, AppSample{Node: node.Address.Hex(), Nanoseconds: 1})
 		app.Import = append(app.Import, AppSample{Node: node.Address.Hex(), Nanoseconds: 1})
 	}

@@ -2443,6 +2443,18 @@ export interface components {
             start_line: number;
             state: string;
         };
+        ScenarioApplicationPolicy: {
+            assembly_return: string;
+            build_queue: string;
+            done_result: string;
+            input: string;
+            /** Format: int64 */
+            line: number;
+            node: string;
+            run: string;
+            selection: string;
+            status: string;
+        };
         ScenarioAssessment: {
             issues: components["schemas"]["ScenarioIssue"][];
             status: string;
@@ -2649,6 +2661,7 @@ export interface components {
             validators: string[];
         };
         ScenariojobSourceInfo: {
+            application_policies: components["schemas"]["ScenarioApplicationPolicy"][];
             /** Format: int64 */
             dataset_id: number;
             /** Format: int64 */
