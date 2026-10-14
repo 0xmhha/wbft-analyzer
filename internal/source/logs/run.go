@@ -19,12 +19,12 @@ import (
 )
 
 const EventProfile = "wbft@events-v1"
-const EventNormalizer = "wbft-event-normalization/9"
+const EventNormalizer = "wbft-event-normalization/10"
 
 // HealthMetadataPreserved recognizes versions that retained the health fields
 // needed by the missing-data view; version 6 additionally preserves null floors.
 func HealthMetadataPreserved(version string) bool {
-	return version == "wbft-event-normalization/5" || version == "wbft-event-normalization/6" || version == "wbft-event-normalization/7" || version == "wbft-event-normalization/8" || version == EventNormalizer
+	return version == "wbft-event-normalization/5" || version == "wbft-event-normalization/6" || version == "wbft-event-normalization/7" || version == "wbft-event-normalization/8" || version == "wbft-event-normalization/9" || version == EventNormalizer
 }
 
 const ManifestFormat = "wbft-analyzer-run/1"

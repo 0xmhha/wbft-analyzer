@@ -425,6 +425,66 @@
         ],
         "type": "object"
       },
+      "EventsSealingDeclaration": {
+        "additionalProperties": false,
+        "properties": {
+          "assembly_delay_ns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "call_return_delay_ns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "commit_capacity": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "head_capacity": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "import_delay_ns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "pending_age": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "post_delay_ns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "result_capacity": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "running_gate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "assembly_delay_ns",
+          "call_return_delay_ns",
+          "commit_capacity",
+          "head_capacity",
+          "import_delay_ns",
+          "pending_age",
+          "post_delay_ns",
+          "result_capacity",
+          "running_gate"
+        ],
+        "type": "object"
+      },
       "HeaderList": {
         "additionalProperties": false,
         "properties": {
@@ -4853,6 +4913,16 @@
           },
           "run": {
             "type": "string"
+          },
+          "sealing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventsSealingDeclaration"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "selection": {
             "type": "string"

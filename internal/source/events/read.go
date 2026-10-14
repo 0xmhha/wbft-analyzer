@@ -172,6 +172,9 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 	out := logs.Metadata(m)
 	var kind event.Kind
 	_ = json.Unmarshal(m["kind"], &kind)
+	if kind == "SIM_SEALING_STAGE" {
+		sealingStageMetadata(m, out)
+	}
 	if kind == event.BuildHandover || kind == event.BuildStarted || kind == event.BuildFinished {
 		var id string
 		if json.Unmarshal(m["build_id"], &id) == nil && len(id) <= 26 && strings.HasPrefix(id, "build-") {
