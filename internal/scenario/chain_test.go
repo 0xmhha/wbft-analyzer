@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"math/big"
 	"testing"
 	"time"
 
@@ -48,4 +49,9 @@ func TestChainFactsUseChildDecisionRound(t *testing.T) {
 		t.Fatal("different parent accepted")
 	}
 	res.Chain[2].Header.ParentHash = saved
+	// From does not hide an unsupported warm-up configuration transition.
+	changed := types.NewConfig(types.WBFTParams{RequestTimeoutSeconds: 2, BlockPeriodSeconds: 1, EpochLength: 100, ProposerPolicy: &pol}, []types.Transition{{Block: big.NewInt(2), WBFT: &types.WBFTParams{RequestTimeoutSeconds: 3}}}, types.GenesisInit{}, nil)
+	if _, err := InspectChain(res.Chain, changed, 3, 4); err == nil {
+		t.Fatal("configuration transition before comparison range accepted")
+	}
 }

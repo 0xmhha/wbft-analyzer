@@ -9,7 +9,19 @@ import (
 	"time"
 
 	"github.com/0xmhha/wbft-analyzer/internal/scenario"
+	"github.com/0xmhha/wbft/types"
 )
+
+func TestPublicEpochEvidencePreservesOrderAndLargeHeight(t *testing.T) {
+	a, b := types.Address{19: 1}, types.Address{19: 2}
+	e := publicEpochs([]scenario.RecordedEpoch{{Block: ^uint64(0), Candidates: []types.Address{a, b}, Validators: []types.Address{b, a}, HeaderInputsVerified: true}})
+	if len(e) != 1 || e[0].Block != "18446744073709551615" || e[0].Candidates[0] != a.Hex() || e[0].Validators[0] != b.Hex() || !e[0].HeaderInputsVerified {
+		t.Fatal(e)
+	}
+	if publicEpochs(nil) == nil {
+		t.Fatal("absent epoch history must be an empty array")
+	}
+}
 
 func TestScenarioRegistryRejectsUnsafeOrAmbiguousConfiguration(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "sources.json")

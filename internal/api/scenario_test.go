@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,6 +15,28 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
 )
+
+func TestScenarioEpochEvidenceJSONContract(t *testing.T) {
+	v := ScenarioSources{Sources: []scenariojob.SourceInfo{{Epochs: []scenariojob.EpochInfo{{Block: "18446744073709551615", Candidates: []string{"0x0000000000000000000000000000000000000001"}, Validators: []string{"0x0000000000000000000000000000000000000001"}, HeaderInputsVerified: true}}, Nodes: []string{}, Model: scenario.Assessment{Issues: []scenario.Issue{}}}}}
+	raw, err := json.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var value any
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if err := decoder.Decode(&value); err != nil {
+		t.Fatal(err)
+	}
+	s := loadSpec(t)
+	sch, err := s.answerSchema("GET", "/v1/networks/1/datasets/2/scenario-sources", 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.check(value, sch, "$"); err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestScenarioAvailabilityTracksSharedWorkerLifecycle(t *testing.T) {
 	s := testStore(t)

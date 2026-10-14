@@ -5009,6 +5009,36 @@
         ],
         "type": "object"
       },
+      "ScenariojobEpochInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "block": {
+            "type": "string"
+          },
+          "candidates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "header_inputs_verified": {
+            "type": "boolean"
+          },
+          "validators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "block",
+          "candidates",
+          "header_inputs_verified",
+          "validators"
+        ],
+        "type": "object"
+      },
       "ScenariojobSourceInfo": {
         "additionalProperties": false,
         "properties": {
@@ -5019,6 +5049,12 @@
           "duration_ns": {
             "format": "int64",
             "type": "integer"
+          },
+          "epochs": {
+            "items": {
+              "$ref": "#/components/schemas/ScenariojobEpochInfo"
+            },
+            "type": "array"
           },
           "execution_sha256": {
             "type": "string"
@@ -5054,6 +5090,7 @@
         "required": [
           "dataset_id",
           "duration_ns",
+          "epochs",
           "execution_sha256",
           "from",
           "id",

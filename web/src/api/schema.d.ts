@@ -2422,11 +2422,18 @@ export interface components {
             enabled: boolean;
             sources: components["schemas"]["ScenariojobSourceInfo"][];
         };
+        ScenariojobEpochInfo: {
+            block: string;
+            candidates: string[];
+            header_inputs_verified: boolean;
+            validators: string[];
+        };
         ScenariojobSourceInfo: {
             /** Format: int64 */
             dataset_id: number;
             /** Format: int64 */
             duration_ns: number;
+            epochs: components["schemas"]["ScenariojobEpochInfo"][];
             execution_sha256: string;
             from: string;
             id: string;
