@@ -1378,6 +1378,8 @@ export interface components {
             step?: string;
             t_mono_ns?: string | null;
             t_wall?: string;
+            timer_operation?: components["schemas"]["MessagesTimerOperation"] | null;
+            timer_trace_version?: string;
             type: string;
             via?: string;
             wire_code?: string | null;
@@ -1444,6 +1446,24 @@ export interface components {
             /** Format: int64 */
             pairs: number;
             points: components["schemas"]["MessagesSeriesPoint"][];
+        };
+        MessagesTimerOperation: {
+            action: string;
+            arm_engine_run: string;
+            arm_entry_mono_ns: string;
+            arm_output: string;
+            arm_step: string;
+            cancel_kinds: string[];
+            deadline_mono_ns: string;
+            decode: string;
+            generation?: string;
+            height?: string;
+            output: string;
+            round?: string;
+            sequence: string;
+            source: string;
+            timeout_sha256?: string;
+            timer?: string;
         };
         MessagesView: {
             height: string;

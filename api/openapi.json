@@ -1902,6 +1902,19 @@
           "t_wall": {
             "type": "string"
           },
+          "timer_operation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesTimerOperation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timer_trace_version": {
+            "type": "string"
+          },
           "type": {
             "type": "string"
           },
@@ -2136,6 +2149,76 @@
           "method",
           "pairs",
           "points"
+        ],
+        "type": "object"
+      },
+      "MessagesTimerOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "arm_engine_run": {
+            "type": "string"
+          },
+          "arm_entry_mono_ns": {
+            "type": "string"
+          },
+          "arm_output": {
+            "type": "string"
+          },
+          "arm_step": {
+            "type": "string"
+          },
+          "cancel_kinds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "deadline_mono_ns": {
+            "type": "string"
+          },
+          "decode": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "output": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "timeout_sha256": {
+            "type": "string"
+          },
+          "timer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "arm_engine_run",
+          "arm_entry_mono_ns",
+          "arm_output",
+          "arm_step",
+          "cancel_kinds",
+          "deadline_mono_ns",
+          "decode",
+          "output",
+          "sequence",
+          "source"
         ],
         "type": "object"
       },

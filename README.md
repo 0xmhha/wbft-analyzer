@@ -952,3 +952,14 @@ preserve both; measured entry zero is retained. Older journals and reconstructed
 WAL steps keep entry unknown. Message normalization version 5 binds this metadata
 projection into new dataset fingerprints. These stamps do not establish timer
 policy replay on their own; changed-duration expiry regeneration remains pending.
+
+
+Measured timer journal records are available in the message metadata view and
+original source panels. Operation sequence, timestamp, arm cause, full view,
+generation, deadline and cancellation kinds remain exact decimal strings.
+A timer operation is local scheduler evidence, not a wire message. Missing arm
+context stays explicit; lifecycle/restoration coordinates do not invent a
+source core output. The timeout context is identified by its SHA256; payload
+bytes are retained only in the original source. Legacy journals do not acquire
+guessed operation times. Projection version 6 invalidates older normalization
+fingerprints without changing retained source files.
