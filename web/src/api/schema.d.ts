@@ -2339,6 +2339,7 @@ export interface components {
             run: string;
             source_sha256: string;
             start: components["schemas"]["RuntimeobsPoint"];
+            task: components["schemas"]["RuntimeobsTaskEvidence"] | null;
         };
         RuntimeSummary: {
             application_request_completion_proven: boolean;
@@ -2355,6 +2356,8 @@ export interface components {
             sequence_gaps: string;
             source_sha256: string;
             startup: components["schemas"]["RuntimeobsPoint"] | null;
+            /** Format: int64 */
+            task_count: number;
             unavailable: string[];
         };
         RuntimeobsCall: {
@@ -2368,6 +2371,14 @@ export interface components {
             result: string;
             /** Format: int64 */
             start_line: number;
+        };
+        RuntimeobsInterval: {
+            definition: string;
+            /** Format: int64 */
+            from_line: number;
+            nanoseconds: string;
+            /** Format: int64 */
+            to_line: number;
         };
         RuntimeobsPoint: {
             config?: components["schemas"]["RuntimeobsStartup"] | null;
@@ -2383,6 +2394,7 @@ export interface components {
             operation?: string;
             result?: string;
             seq: string;
+            stage?: string;
             t_mono_ns: string;
             t_wall: string;
             type: string;
@@ -2398,6 +2410,16 @@ export interface components {
             request_timeout_ms: string;
             system_contract_upgrades: string;
             transitions: string;
+        };
+        RuntimeobsTaskEvidence: {
+            /** Format: int64 */
+            end_line: number;
+            id: string;
+            intervals: components["schemas"]["RuntimeobsInterval"][];
+            stages: components["schemas"]["RuntimeobsPoint"][];
+            /** Format: int64 */
+            start_line: number;
+            state: string;
         };
         ScenarioAssessment: {
             issues: components["schemas"]["ScenarioIssue"][];
@@ -2544,6 +2566,9 @@ export interface components {
             run: string;
             source: components["schemas"]["ScenarioInput"];
             startup: components["schemas"]["RuntimeobsPoint"] | null;
+            task_states: {
+                [key: string]: number;
+            };
             unavailable: string[];
         };
         ScenarioScopeCounts: {

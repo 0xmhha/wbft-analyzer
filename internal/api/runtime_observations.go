@@ -10,6 +10,7 @@ import (
 )
 
 type RuntimeSummary struct {
+	TaskCount                          int               `json:"task_count"`
 	Startup                            *runtimeobs.Point `json:"startup"`
 	Normalizer                         string            `json:"normalizer"`
 	SourceSHA                          string            `json:"source_sha256"`
@@ -29,12 +30,13 @@ type RuntimeCallPage struct {
 	Next  *int              `json:"next"`
 }
 type RuntimeCallSource struct {
-	Call      runtimeobs.Call  `json:"call"`
-	Start     runtimeobs.Point `json:"start"`
-	End       runtimeobs.Point `json:"end"`
-	SourceSHA string           `json:"source_sha256"`
-	Node      string           `json:"node"`
-	Run       string           `json:"run"`
+	Task      *runtimeobs.TaskEvidence `json:"task"`
+	Call      runtimeobs.Call          `json:"call"`
+	Start     runtimeobs.Point         `json:"start"`
+	End       runtimeobs.Point         `json:"end"`
+	SourceSHA string                   `json:"source_sha256"`
+	Node      string                   `json:"node"`
+	Run       string                   `json:"run"`
 }
 
 func (s *Server) runtimeData(w http.ResponseWriter, r *http.Request) (runtimeobs.Capture, bool) {
@@ -70,7 +72,7 @@ func (s *Server) runtimeSummary(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	writeJSON(w, 200, RuntimeSummary{startup, c.Normalizer, c.SourceSHA, c.Node, c.Run, c.Complete, c.SequenceGaps, c.Unavailable, len(c.Calls), len(c.Points), false, false, false})
+	writeJSON(w, 200, RuntimeSummary{len(c.Tasks), startup, c.Normalizer, c.SourceSHA, c.Node, c.Run, c.Complete, c.SequenceGaps, c.Unavailable, len(c.Calls), len(c.Points), false, false, false})
 }
 func (s *Server) runtimeCalls(w http.ResponseWriter, r *http.Request) {
 	for k := range r.URL.Query() {
@@ -122,7 +124,19 @@ func (s *Server) runtimeCall(w http.ResponseWriter, r *http.Request) {
 			s.fail(w, r, errors.New("runtime source invalid"))
 			return
 		}
-		writeJSON(w, 200, RuntimeCallSource{x, c.Points[x.StartLine-1], c.Points[x.EndLine-1], c.SourceSHA, c.Node, c.Run})
+		var task *runtimeobs.TaskEvidence
+		for _, t := range c.Tasks {
+			if t.ID == id {
+				if len(t.Stages) > 256 {
+					writeError(w, 400, "runtime stage candidate limit exceeded")
+					return
+				}
+				copy := t
+				task = &copy
+				break
+			}
+		}
+		writeJSON(w, 200, RuntimeCallSource{task, x, c.Points[x.StartLine-1], c.Points[x.EndLine-1], c.SourceSHA, c.Node, c.Run})
 		return
 	}
 	writeError(w, 404, "runtime call not found")
