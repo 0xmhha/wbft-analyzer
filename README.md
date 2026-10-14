@@ -963,3 +963,56 @@ source core output. The timeout context is identified by its SHA256; payload
 bytes are retained only in the original source. Legacy journals do not acquire
 guessed operation times. Projection version 6 invalidates older normalization
 fingerprints without changing retained source files.
+
+### Timer policy experiments
+
+`whatif` executes a bounded counterfactual policy against a complete retained
+journal and its recorded chain. It verifies original core outputs and measured
+timer operations before regenerating expiries and internal inputs. Undeclared
+or incomplete timing evidence, WAL timing, and unrecorded application or signing
+answers are refused. Generated inputs have execution coordinates and nullable
+source references; they never acquire an invented original ordinal.
+
+```sh
+wbft-analyzer whatif --db "$WBFT_ANALYZER_DB" --dataset 1 --input journal \
+  --chain ./chain.rlp --timer-policy ./timer-policy.json
+```
+
+Policy values are exact decimal strings. Omitted fields preserve the source
+configuration; duplicate fields, numeric values, zero request timeouts and
+values outside the duration range are rejected.
+
+```json
+{"request_timeout_seconds":"2"}
+```
+
+To enable HTTP jobs, register retained inputs with `--reexec-sources`. A timer
+source must explicitly set both `allow_timer` and `allow_context`. The worker
+pins source, chain and helper hashes and snapshots the helper executable before
+running it. External helpers must declare `timed_inputs_v1`, `timed_state_v1`
+and `context_answers_v1`, and identify the exact known core version.
+
+```json
+[{"id":"local-node","dataset":1,"input":"journal","chain":"./chain.rlp",
+  "allow_context":true,"allow_timer":true,"timeout":"5m"}]
+```
+
+The **timer experiments** page submits a policy, follows durable job status and
+opens the linked result. Read routes are dataset-scoped `/whatif`,
+`/whatif/{id}`, `/whatif/{id}/results`, and `/whatif-jobs`; POST `/whatif`
+returns a job. Replay and timer jobs share a queue bound and one worker owner.
+Interrupted running jobs become failed; already stored execution rows remain
+partial. Completed jobs retain their finite source horizon and pending work.
+
+Experiments hold recorded external slots fixed, assign zero processing cost to
+generated inputs, and reuse only recorded signing results and application
+answers. Every result remains counterfactual. Changed-output delivery and other
+nodes' reactions are not reconstructed; completion cannot establish a network
+future. Canonical facts, source-ordinal replay rows and experiment execution
+rows remain separate. Seed fitting, network simulation and round distributions
+require separate validation.
+
+`dump-check.sh` includes a complete synthetic timer journal, non-empty stored
+experiment results and exact original-record lookup. Its retained timer inputs
+remain alongside the database dump. A restored database must adopt retained
+objects into its own namespace before modifying or deleting them.

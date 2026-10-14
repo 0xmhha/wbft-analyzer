@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/0xmhha/wbft-analyzer/internal/reexec"
+	"github.com/0xmhha/wbft-analyzer/internal/whatif"
 	"os"
 	"path/filepath"
 	"testing"
@@ -79,5 +80,29 @@ func TestInputExperimentRequiresExplicitOperatorPolicy(t *testing.T) {
 		if _, e := w.Submit(context.Background(), 1, 2, bad); !errors.Is(e, ErrScope) {
 			t.Fatal("conflicting experiment policy accepted", e)
 		}
+	}
+}
+
+func TestTimerExperimentRequiresRegisteredTimerCapability(t *testing.T) {
+	w := &Worker{sources: map[string]source{"registered": {info: SourceInfo{ID: "registered", Input: "journal"}, network: 1, dataset: 2}}}
+	w.running.Store(true)
+	value := "2"
+	request := WhatifRequest{Source: "registered", Policy: whatif.Policy{Request: &value}}
+	if _, err := w.SubmitWhatif(context.Background(), 1, 2, request); !errors.Is(err, ErrSource) {
+		t.Fatal("timer capability bypassed", err)
+	}
+	registered := w.sources["registered"]
+	registered.info.AllowTimer = true
+	w.sources["registered"] = registered
+	if _, err := w.SubmitWhatif(context.Background(), 9, 2, request); !errors.Is(err, ErrSource) {
+		t.Fatal("cross-network timer source", err)
+	}
+	request.Policy = whatif.Policy{}
+	if _, err := w.SubmitWhatif(context.Background(), 1, 2, request); !errors.Is(err, ErrScope) {
+		t.Fatal("implicit timer policy", err)
+	}
+	w.running.Store(false)
+	if _, err := w.SubmitWhatif(context.Background(), 1, 2, request); !errors.Is(err, ErrSource) {
+		t.Fatal("stopped timer worker", err)
 	}
 }

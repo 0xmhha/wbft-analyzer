@@ -20,7 +20,7 @@ func (s *Store) AdoptDatasetInputs(ctx context.Context, network, id int64, direc
 	}
 	defer release()
 	var eligible bool
-	e = s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM datasets WHERE id=$1 AND network_id=$2 AND kind='messages') AND NOT EXISTS(SELECT 1 FROM reexec_jobs WHERE dataset_id=$1 AND status IN ('queued','running'))`, id, network).Scan(&eligible)
+	e = s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM datasets WHERE id=$1 AND network_id=$2 AND kind='messages') AND NOT EXISTS(SELECT 1 FROM reexec_jobs WHERE dataset_id=$1 AND status IN ('queued','running')) AND NOT EXISTS(SELECT 1 FROM whatif_runs WHERE dataset_id=$1 AND status='running') AND NOT EXISTS(SELECT 1 FROM whatif_jobs WHERE dataset_id=$1 AND status IN ('queued','running'))`, id, network).Scan(&eligible)
 	if e != nil {
 		return e
 	}
@@ -86,7 +86,7 @@ func (s *Store) AdoptDatasetInputs(ctx context.Context, network, id int64, direc
 	if e != nil {
 		return e
 	}
-	rows, e = s.pool.Query(ctx, `SELECT chain_path,COALESCE(summary->>'chain_sha256','') FROM reexec_runs WHERE dataset_id=$1`, id)
+	rows, e = s.pool.Query(ctx, `SELECT chain_path,COALESCE(summary->>'chain_sha256','') FROM reexec_runs WHERE dataset_id=$1 UNION ALL SELECT chain_path,chain_sha256 FROM whatif_runs WHERE dataset_id=$1`, id)
 	if e != nil {
 		return e
 	}
@@ -133,6 +133,9 @@ func (s *Store) AdoptDatasetInputs(ctx context.Context, network, id int64, direc
 				return e
 			}
 			if _, e := tx.Exec(ctx, `UPDATE reexec_runs SET chain_path=$3 WHERE dataset_id=$1 AND summary->>'chain_sha256'=$2`, id, sha, path); e != nil {
+				return e
+			}
+			if _, e := tx.Exec(ctx, `UPDATE whatif_runs SET chain_path=$3 WHERE dataset_id=$1 AND chain_sha256=$2`, id, sha, path); e != nil {
 				return e
 			}
 		}

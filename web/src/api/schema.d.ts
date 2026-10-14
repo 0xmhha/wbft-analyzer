@@ -703,6 +703,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/whatif": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest bounded timer-policy experiments, separate from canonical network facts. */
+        get: operations["listWhatifRuns"];
+        put?: never;
+        /** Queue a full retained timer experiment on an operator-registered immutable source. */
+        post: operations["enqueueWhatif"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/whatif-jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest 100 durable timer experiment jobs, including explicit interrupted and failed states. */
+        get: operations["listWhatifJobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/whatif-jobs/{job}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Timer policy and registered-source identity with its independently linked experiment result. */
+        get: operations["getWhatifJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/whatif/{whatif}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exact source, policy and helper identity with explicit counterfactual horizon and failures. */
+        get: operations["getWhatifRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/whatif/{whatif}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Execution-ordered experiment metadata with nullable original evidence; no input bytes or block hashes. */
+        get: operations["listWhatifResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/epochs": {
         parameters: {
             query?: never;
@@ -1923,10 +2009,15 @@ export interface components {
         };
         ReplayjobSourceInfo: {
             allow_schedule: boolean;
+            allow_timer: boolean;
             answer_scopes: string[];
             id: string;
             input_id: string;
             modes: string[];
+        };
+        ReplayjobWhatifRequest: {
+            source_id: string;
+            timer_policy: components["schemas"]["WhatifPolicy"];
         };
         Report: {
             catalog_sha256: string;
@@ -2407,6 +2498,48 @@ export interface components {
             /** Format: int64 */
             unknown: number;
         };
+        StoreWhatifJob: {
+            chain_sha256: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: int64 */
+            dataset_id: number;
+            /** Format: date-time */
+            finished_at: string | null;
+            helper_sha256: string;
+            /** Format: int64 */
+            id: number;
+            input_id: string;
+            input_sha256: string;
+            issue?: string;
+            policy_sha256: string;
+            source_id: string;
+            source_sha256: string;
+            /** Format: date-time */
+            started_at: string | null;
+            status: string;
+            timer_policy: components["schemas"]["WhatifPolicy"];
+            /** Format: int64 */
+            whatif_id: number | null;
+        };
+        StoreWhatifRun: {
+            chain_sha256: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: int64 */
+            dataset_id: number;
+            /** Format: date-time */
+            finished_at: string | null;
+            helper_sha256: string;
+            /** Format: int64 */
+            id: number;
+            input_id: string;
+            policy_sha256: string;
+            source_sha256: string;
+            status: string;
+            summary: components["schemas"]["WhatifSummary"];
+            timer_policy: components["schemas"]["WhatifPolicy"];
+        };
         TrendPoint: {
             at: string;
             kind: string;
@@ -2417,6 +2550,102 @@ export interface components {
         };
         TrendPointList: {
             points: components["schemas"]["TrendPoint"][];
+        };
+        WhatifAnswer: {
+            /** Format: int64 */
+            call: number;
+            engine_run: string;
+            /** Format: int64 */
+            kind: number;
+            step: string;
+            writer_run: string;
+        };
+        WhatifJobs: {
+            jobs: components["schemas"]["StoreWhatifJob"][];
+        };
+        WhatifList: {
+            runs: components["schemas"]["StoreWhatifRun"][];
+        };
+        WhatifPage: {
+            /** Format: int64 */
+            next: number | null;
+            steps: components["schemas"]["WhatifStep"][];
+        };
+        WhatifPolicy: {
+            max_request_timeout_seconds?: string | null;
+            request_timeout_seconds?: string | null;
+        };
+        WhatifQuestion: {
+            output: string;
+            source_input: components["schemas"]["WhatifSource"];
+        };
+        WhatifScope: {
+            /** Format: int64 */
+            armed_timers: number;
+            engine_run: string;
+            execution_step: string;
+            horizon_mono_ns: string;
+            /** Format: int64 */
+            pending_internal: number;
+            /** Format: int64 */
+            queued_timers: number;
+            writer_run: string;
+        };
+        WhatifSource: {
+            engine_run: string;
+            ordinal: string;
+            step: string;
+            writer_run: string;
+        };
+        WhatifState: {
+            height: string | null;
+            round: string | null;
+            running: boolean;
+            state?: string;
+        };
+        WhatifStep: {
+            answer_sources: components["schemas"]["WhatifAnswer"][];
+            application_question_sources: components["schemas"]["WhatifQuestion"][];
+            cause: components["schemas"]["WhatifSource"] | null;
+            comparable: boolean;
+            counterfactual: boolean;
+            execution_model: string;
+            execution_state: components["schemas"]["WhatifState"];
+            execution_step: string;
+            generated: boolean;
+            input: string;
+            match: boolean;
+            out_digest: string;
+            /** Format: int64 */
+            outputs: number;
+            parent_execution_step: string;
+            signing_evidence: components["schemas"]["WhatifSource"] | null;
+            source_input: components["schemas"]["WhatifSource"] | null;
+            suppression_reason: string;
+            t_mono_ns: string;
+            timer_arm: components["schemas"]["WhatifSource"] | null;
+            timer_arm_execution_step: string;
+            timer_deadline_mono_ns: string | null;
+        };
+        WhatifSummary: {
+            baseline_validated: boolean;
+            execution_model: string;
+            failure_execution_step?: string | null;
+            future_tail_generated: boolean;
+            /** Format: int64 */
+            generated_steps: number;
+            helper_version: string;
+            horizon: string;
+            issue?: string;
+            scopes: components["schemas"]["WhatifScope"][];
+            /** Format: int64 */
+            source_steps: number;
+            source_versions: string[];
+            status: string;
+            /** Format: int64 */
+            steps: number;
+            timer_trace_validated: boolean;
+            version: string;
         };
     };
     responses: never;
@@ -4552,6 +4781,279 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoundsSummary"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listWhatifRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatifList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    enqueueWhatif: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplayjobWhatifRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreWhatifJob"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listWhatifJobs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatifJobs"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getWhatifJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description timer experiment job ID */
+                job: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreWhatifJob"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getWhatifRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description counterfactual experiment ID */
+                whatif: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreWhatifRun"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listWhatifResults: {
+        parameters: {
+            query?: {
+                /** @description last execution step */
+                after?: number;
+                /** @description page limit, 1..1000 */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description counterfactual experiment ID */
+                whatif: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatifPage"];
                 };
             };
             /** @description the request failed */

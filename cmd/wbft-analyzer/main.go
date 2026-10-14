@@ -44,6 +44,7 @@ Commands:
   follow    load the blocks of a network as they come
   dataset   adopt retained inputs, delete a dataset, or inspect deletion
   reexec    compare recorded journal steps with the actual WBFT core
+  whatif    run a counterfactual timer policy on complete retained input
   reindex   rebuild the derived tables of a dataset
   export    write a dataset to a directory
   version   print the version
@@ -59,6 +60,7 @@ var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
 	"follow":        runFollow,
 	"reindex":       runReindex,
 	"reexec":        runReexec,
+	"whatif":        runWhatif,
 	"reexec-helper": runReexecHelper,
 	"export":        notYet("export"),
 }

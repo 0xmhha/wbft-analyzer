@@ -91,6 +91,13 @@ func (s *Store) DeleteDataset(ctx context.Context, network, id int64, confirm st
 	}
 	var result DatasetDeletion
 	e = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		var activeExperiment bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM whatif_runs WHERE dataset_id=$1 AND status='running') OR EXISTS(SELECT 1 FROM whatif_jobs WHERE dataset_id=$1 AND status='running')`, id).Scan(&activeExperiment); err != nil {
+			return err
+		}
+		if activeExperiment {
+			return ErrDatasetBusy
+		}
 		var dependency, adopting bool
 		if e := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM follow_batches WHERE headers_dataset=$1 OR observations_dataset=$1),EXISTS(SELECT 1 FROM dataset_storage_adoptions WHERE dataset_id=$1)`, id).Scan(&dependency, &adopting); e != nil {
 			return e
@@ -121,7 +128,7 @@ func (s *Store) DeleteDataset(ctx context.Context, network, id int64, confirm st
 		if e != nil {
 			return e
 		}
-		refs, e := tx.Query(ctx, `SELECT path,sha256 FROM input_files WHERE dataset_id=$1 UNION ALL SELECT chain_path,COALESCE(summary->>'chain_sha256','') FROM reexec_runs WHERE dataset_id=$1`, id)
+		refs, e := tx.Query(ctx, `SELECT path,sha256 FROM input_files WHERE dataset_id=$1 UNION ALL SELECT chain_path,COALESCE(summary->>'chain_sha256','') FROM reexec_runs WHERE dataset_id=$1 UNION ALL SELECT chain_path,chain_sha256 FROM whatif_runs WHERE dataset_id=$1`, id)
 		if e != nil {
 			return e
 		}
@@ -142,6 +149,9 @@ func (s *Store) DeleteDataset(ctx context.Context, network, id int64, confirm st
 			return e
 		}
 		if _, e = tx.Exec(ctx, `UPDATE reexec_jobs SET status='cancelled',issue='dataset_deleted',finished_at=now() WHERE dataset_id=$1 AND status='queued'`, id); e != nil {
+			return e
+		}
+		if _, e = tx.Exec(ctx, `UPDATE whatif_jobs SET status='cancelled',issue='dataset_deleted',finished_at=now() WHERE dataset_id=$1 AND status='queued'`, id); e != nil {
 			return e
 		}
 		if _, e = tx.Exec(ctx, `UPDATE datasets SET status='deleting',updated_at=now() WHERE id=$1 AND network_id=$2`, id, network); e != nil {
@@ -174,7 +184,7 @@ func (s *Store) finishDatasetDeletion(ctx context.Context, d DatasetDeletion) (D
 		}
 	}
 	e = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		for _, table := range []string{"reexec_jobs", "reexec_runs", "dataset_storage"} {
+		for _, table := range []string{"reexec_jobs", "reexec_runs", "whatif_jobs", "whatif_runs", "dataset_storage"} {
 			if _, e := tx.Exec(ctx, `DELETE FROM `+table+` WHERE dataset_id=$1`, d.Dataset); e != nil {
 				return e
 			}
