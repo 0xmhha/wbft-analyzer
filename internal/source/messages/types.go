@@ -6,7 +6,7 @@ package messages
 import "github.com/0xmhha/wbft-analyzer/internal/source/logs"
 
 const Format = "wbft-analyzer-messages/1"
-const Normalizer = "wbft-message-normalization/7"
+const Normalizer = "wbft-message-normalization/8"
 
 type Clock struct {
 	Model  string `json:"model"`
@@ -67,6 +67,7 @@ type TimerOperation struct {
 	Decode        string   `json:"decode"`
 }
 type Record struct {
+	IO            *IOInterval     `json:"io,omitempty"`
 	Timer         *TimerOperation `json:"timer_operation,omitempty"`
 	TimerTrace    string          `json:"timer_trace_version,omitempty"`
 	EntryMono     *string         `json:"entry_t_mono_ns,omitempty"`
