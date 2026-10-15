@@ -52,20 +52,21 @@ func ExecutionHash(sc sim.Scenario) (string, error) {
 		nodes = append(nodes, x)
 	}
 	raw, err := json.Marshal(struct {
-		WallOrigin  string
-		Validators  []types.Address
-		Genesis     int
-		Nodes       []node
-		Params      sim.Params
-		DefaultLink sim.Link
-		Links       []sim.Link
-		Partitions  []sim.Partition
-		Schedule    []sim.NodeEvent
-		App         sim.AppModel
-		Epochs      []sim.EpochChange
-		Until       sim.Stop
-		NoProgress  bool
-	}{scenarioWallOrigin(sc).Format(time.RFC3339Nano), addresses, sc.Genesis, nodes, sc.Params, sc.DefaultLink, sc.Links, sc.Partitions, sc.Schedule, sc.App, sc.Epochs, sc.Until, sc.NoProgress})
+		WallOrigin     string
+		Validators     []types.Address
+		Genesis        int
+		Nodes          []node
+		Params         sim.Params
+		DefaultLink    sim.Link
+		Links          []sim.Link
+		Partitions     []sim.Partition
+		Schedule       []sim.NodeEvent
+		App            sim.AppModel
+		Epochs         []sim.EpochChange
+		Until          sim.Stop
+		NoProgress     bool
+		MessageChanges []sim.MessageDeliveryChange `json:"MessageChanges,omitempty"`
+	}{scenarioWallOrigin(sc).Format(time.RFC3339Nano), addresses, sc.Genesis, nodes, sc.Params, sc.DefaultLink, sc.Links, sc.Partitions, sc.Schedule, sc.App, sc.Epochs, sc.Until, sc.NoProgress, sc.MessageChanges})
 	if err != nil {
 		return "", err
 	}

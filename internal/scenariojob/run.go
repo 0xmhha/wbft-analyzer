@@ -13,6 +13,7 @@ import (
 )
 
 type Options struct {
+	MessageBindings []scenario.RecordedMessageBinding
 	JobID           int64
 	JobOwner        string
 	OnSeedStored    func(scenario.SeedRecord) error
@@ -48,7 +49,7 @@ func run(ctx context.Context, s *store.Store, o Options) (Result, error) {
 		return out, err
 	}
 	defer release()
-	final, runErr := scenario.ExecuteExperimentWithRecorded(ctx, o.Scenario, o.Provenance, o.Model, o.Recorded, o.RecordedHeights, o.Change, o.From, o.To, func(initial scenario.Experiment) error {
+	final, runErr := scenario.ExecuteExperimentWithMessages(ctx, o.Scenario, o.Provenance, o.Model, o.Recorded, o.RecordedHeights, o.Change, o.MessageBindings, o.From, o.To, func(initial scenario.Experiment) error {
 		var id int64
 		var err error
 		if o.JobID > 0 {

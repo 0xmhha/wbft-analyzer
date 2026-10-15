@@ -216,6 +216,11 @@ func (g *schemas) component(t reflect.Type) string {
 			props[field].(map[string]any)["pattern"] = "^[1-9][0-9]*$"
 		}
 	}
+	if t == reflect.TypeOf(scenario.RecordedMessageSelection{}) {
+		for _, field := range []string{"ordinal", "model_occurrence"} {
+			props[field].(map[string]any)["pattern"] = "^[1-9][0-9]*$"
+		}
+	}
 	if t == reflect.TypeOf(scenario.TimingChange{}) {
 		sch["minProperties"] = 1
 		props["nodes"].(map[string]any)["minItems"] = 1
@@ -232,7 +237,19 @@ func (g *schemas) component(t reflect.Type) string {
 			sort.Strings(required)
 			return map[string]any{"type": "object", "properties": properties, "required": required, "additionalProperties": false}
 		}
-		sch = map[string]any{"anyOf": []any{variant("cut_outgoing", "node", "from_ns", "to_ns"), variant("partition", "from_ns", "to_ns", "edges"), variant("set_link_delay", "from_ns", "to_ns", "edges", "delay_ns"), variant("scale_link_delay", "from_ns", "to_ns", "edges", "scale"), variant("node_lifecycle", "from_ns", "to_ns", "lifecycle", "schedule_policy"), variant("set_timing", "from_ns", "to_ns", "timing")}, "discriminator": map[string]any{"propertyName": "kind"}}
+		messageVariant := func(kind string, count int) map[string]any {
+			v := variant(kind, "from_ns", "to_ns", "messages")
+			fields := v["properties"].(map[string]any)
+			original := fields["messages"].(map[string]any)
+			array := map[string]any{}
+			for key, value := range original {
+				array[key] = value
+			}
+			array["minItems"], array["maxItems"] = count, count
+			fields["messages"] = array
+			return v
+		}
+		sch = map[string]any{"anyOf": []any{variant("cut_outgoing", "node", "from_ns", "to_ns"), variant("partition", "from_ns", "to_ns", "edges"), variant("set_link_delay", "from_ns", "to_ns", "edges", "delay_ns"), variant("scale_link_delay", "from_ns", "to_ns", "edges", "scale"), variant("node_lifecycle", "from_ns", "to_ns", "lifecycle", "schedule_policy"), variant("set_timing", "from_ns", "to_ns", "timing"), messageVariant("drop_message", 1), messageVariant("swap_messages", 2)}, "discriminator": map[string]any{"propertyName": "kind"}}
 	}
 	g.components[name] = sch
 	return name

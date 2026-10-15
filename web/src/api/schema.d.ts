@@ -806,6 +806,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/scenario-messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** At most 100 scanned frames from a registered transport input, projected into exact recorded message coordinates; queueing performs full validation. */
+        get: operations["listScenarioMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/scenario-runs": {
         parameters: {
             query?: never;
@@ -2662,6 +2679,7 @@ export interface components {
             execution_sha256: string;
             from: string;
             lifecycle_effect?: components["schemas"]["ScenarioLifecycleEffect"] | null;
+            message_effect?: components["schemas"]["ScenarioMessageEffect"] | null;
             model: components["schemas"]["ScenarioAssessment"];
             provenance: components["schemas"]["ScenarioProvenance"];
             recorded_counts: components["schemas"]["ScenarioRoundCount"][];
@@ -2761,6 +2779,30 @@ export interface components {
             /** Format: int64 */
             node: number;
         };
+        ScenarioMessageEffect: {
+            execution_sha256: string;
+            scope: string;
+            selections: components["schemas"]["ScenarioRecordedMessageBinding"][];
+            source: string;
+        };
+        ScenarioMessagePage: {
+            messages: components["schemas"]["ScenarioRecordedMessageEvidence"][];
+            next: string | null;
+            source_sha256: string;
+            verification: string;
+        };
+        ScenarioModelMessageSelector: {
+            code: string;
+            height: string;
+            occurrence: string;
+            /** Format: int64 */
+            peer_node: number;
+            /** Format: int64 */
+            receiver_node: number;
+            round: string;
+            /** Format: int64 */
+            signer_node: number;
+        };
         ScenarioNetworkChange: {
             /** Format: int64 */
             from_ns: number;
@@ -2813,6 +2855,22 @@ export interface components {
             /** @enum {string} */
             kind: "set_timing";
             timing: components["schemas"]["ScenarioTimingChange"];
+            /** Format: int64 */
+            to_ns: number;
+        } | {
+            /** Format: int64 */
+            from_ns: number;
+            /** @enum {string} */
+            kind: "drop_message";
+            messages: components["schemas"]["ScenarioRecordedMessageSelection"][];
+            /** Format: int64 */
+            to_ns: number;
+        } | {
+            /** Format: int64 */
+            from_ns: number;
+            /** @enum {string} */
+            kind: "swap_messages";
+            messages: components["schemas"]["ScenarioRecordedMessageSelection"][];
             /** Format: int64 */
             to_ns: number;
         };
@@ -2887,6 +2945,31 @@ export interface components {
             seeds: number[];
             substitutions?: components["schemas"]["ScenarioCoreSubstitution"][];
             transport_inputs?: string[];
+        };
+        ScenarioRecordedMessageBinding: {
+            effective_selector: components["schemas"]["ScenarioModelMessageSelector"];
+            recorded_message: components["schemas"]["ScenarioRecordedMessageEvidence"];
+            selection: components["schemas"]["ScenarioRecordedMessageSelection"];
+        };
+        ScenarioRecordedMessageEvidence: {
+            file: string;
+            height: string;
+            input: string;
+            input_sha256: string;
+            ordinal: string;
+            payload_sha256: string;
+            peer: string;
+            phase: string;
+            receiver: string;
+            receiver_run: string;
+            round: string;
+            signer: string;
+        };
+        ScenarioRecordedMessageSelection: {
+            file: string;
+            input: string;
+            model_occurrence: string;
+            ordinal: string;
         };
         ScenarioRequest: {
             change: components["schemas"]["ScenarioNetworkChange"];
@@ -2986,6 +3069,7 @@ export interface components {
             configured_duration_ns: string;
             configured_stop_height: string;
             lifecycle_observations?: components["schemas"]["ScenarioSeedLifecycleObservations"] | null;
+            message_observations?: components["schemas"]["ScenarioSeedMessageObservations"] | null;
             nodes: components["schemas"]["ScenarioSeedNode"][];
             timing_observations?: components["schemas"]["ScenarioSeedTimingObservations"] | null;
             violations: components["schemas"]["ScenarioSeedViolation"][];
@@ -3002,6 +3086,38 @@ export interface components {
         };
         ScenarioSeedLifecycleObservations: {
             node_starts: components["schemas"]["ScenarioSeedNodeStart"][];
+            source: string;
+        };
+        ScenarioSeedMessageChange: {
+            first?: components["schemas"]["ScenarioSeedMessageDelivery"] | null;
+            first_matches: string;
+            kind: string;
+            second?: components["schemas"]["ScenarioSeedMessageDelivery"] | null;
+            second_matches: string;
+            status: string;
+        };
+        ScenarioSeedMessageCoreInput: {
+            engine_run: string;
+            entry_ns?: string;
+            journal_sequence: string;
+            recorded_step_mono_ns: string;
+            step: string;
+        };
+        ScenarioSeedMessageDelivery: {
+            arrival_order: string;
+            capture_id: string;
+            eligible_ns: string;
+            offer: string;
+            peer_run: string;
+            receiver_run: string;
+            recorded_core_inputs: components["schemas"]["ScenarioSeedMessageCoreInput"][];
+            release_order: string;
+            released_ns?: string;
+            sent_ns: string;
+            simulated_payload_sha256: string;
+        };
+        ScenarioSeedMessageObservations: {
+            changes: components["schemas"]["ScenarioSeedMessageChange"][];
             source: string;
         };
         ScenarioSeedNode: {
@@ -4996,8 +5112,8 @@ export interface operations {
                 input: string;
                 /** @description original journal/frame file name */
                 file: string;
-                /** @description positive original source ordinal */
-                ordinal: number;
+                /** @description positive full decimal original source ordinal */
+                ordinal: string;
             };
             header?: never;
             path: {
@@ -6340,6 +6456,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreScenarioJob"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listScenarioMessages: {
+        parameters: {
+            query: {
+                /** @description registered source ID */
+                source: string;
+                /** @description selected transport input ID */
+                input: string;
+                /** @description full decimal height */
+                height?: string;
+                /** @description full decimal round */
+                round?: string;
+                /** @description opaque cursor scoped to this source and filters */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioMessagePage"];
                 };
             };
             /** @description the request failed */

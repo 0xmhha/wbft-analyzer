@@ -20,7 +20,7 @@ export function MessageLatency({ net, onAuth }: { net: number; onAuth: () => voi
  const [draft, edit] = useState<Filters>(empty), [filter, apply] = useState<Filters>(empty);
  const [cursors, setCursors] = useState<string[]>([]), [selected, select] = useState<Pair | null>(null);
  const [selectedSource, setSource] = useState<Source | null>(null);
- const sourceRecord = useLoad(async () => !selectedSource ? null : selectedSource.kind === "message" ? get("/v1/networks/{net}/datasets/{dataset}/messages/source", { path: {net, dataset:selectedSource.dataset_id || id}, query: {input:selectedSource.input, file:selectedSource.file || "", ordinal:selectedSource.ordinal} }) : get("/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}", {path:{net,dataset:selectedSource.dataset_id || id,input:selectedSource.input,line:selectedSource.ordinal}}), [net,id,JSON.stringify(selectedSource)]);
+ const sourceRecord = useLoad(async () => !selectedSource ? null : selectedSource.kind === "message" ? get("/v1/networks/{net}/datasets/{dataset}/messages/source", { path: {net, dataset:selectedSource.dataset_id || id}, query: {input:selectedSource.input, file:selectedSource.file || "", ordinal:String(selectedSource.ordinal)} }) : get("/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}", {path:{net,dataset:selectedSource.dataset_id || id,input:selectedSource.input,line:selectedSource.ordinal}}), [net,id,JSON.stringify(selectedSource)]);
  const [tail,setTail]=useState("");
  const [motion, setMotion] = useState(true);
  const query = Object.fromEntries(Object.entries(filter).filter(([, v]) => v));
