@@ -2811,6 +2811,45 @@ export interface components {
             enabled: boolean;
             sources: components["schemas"]["ScenariojobSourceInfo"][];
         };
+        ScenarioTransportScope: {
+            assumptions: string[];
+            controller: components["schemas"]["ScenarioInput"];
+            /** Format: date-time */
+            cutoff: string;
+            physical_delivery_proven: boolean;
+            sessions: components["schemas"]["ScenarioTransportSession"][];
+            sources: components["schemas"]["ScenarioInput"][];
+            status: string;
+            through_height: string;
+            windows: components["schemas"]["ScenarioTransportWindow"][];
+        };
+        ScenarioTransportSession: {
+            /** Format: date-time */
+            from: string;
+            /** Format: int64 */
+            from_line: number;
+            input: string;
+            node: string;
+            peer: string;
+            run: string;
+            /** Format: date-time */
+            to: string;
+            /** Format: int64 */
+            to_line: number;
+        };
+        ScenarioTransportWindow: {
+            certificate: components["schemas"]["ScenarioInput"];
+            frame_sha256: string;
+            /** Format: date-time */
+            from: string;
+            input: string;
+            node: string;
+            run: string;
+            /** Format: date-time */
+            settled_through: string;
+            /** Format: date-time */
+            to: string;
+        };
         ScenarioWALPolicy: {
             available: boolean | null;
             enabled: boolean | null;
@@ -2848,6 +2887,7 @@ export interface components {
             status: string;
             to: string;
             transport_inputs: components["schemas"]["ScenarioInput"][];
+            transport_scope?: components["schemas"]["ScenarioTransportScope"] | null;
             wire_metric: string;
         };
         StoreBuildLifecycle: {

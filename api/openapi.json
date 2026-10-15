@@ -6309,6 +6309,151 @@
         ],
         "type": "object"
       },
+      "ScenarioTransportScope": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "controller": {
+            "$ref": "#/components/schemas/ScenarioInput"
+          },
+          "cutoff": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "physical_delivery_proven": {
+            "type": "boolean"
+          },
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioTransportSession"
+            },
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioInput"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "through_height": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "windows": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioTransportWindow"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "assumptions",
+          "controller",
+          "cutoff",
+          "physical_delivery_proven",
+          "sessions",
+          "sources",
+          "status",
+          "through_height",
+          "windows"
+        ],
+        "type": "object"
+      },
+      "ScenarioTransportSession": {
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "from_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "peer": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "to": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "to_line": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from",
+          "from_line",
+          "input",
+          "node",
+          "peer",
+          "run",
+          "to",
+          "to_line"
+        ],
+        "type": "object"
+      },
+      "ScenarioTransportWindow": {
+        "additionalProperties": false,
+        "properties": {
+          "certificate": {
+            "$ref": "#/components/schemas/ScenarioInput"
+          },
+          "frame_sha256": {
+            "type": "string"
+          },
+          "from": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "settled_through": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "to": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "certificate",
+          "frame_sha256",
+          "from",
+          "input",
+          "node",
+          "run",
+          "settled_through",
+          "to"
+        ],
+        "type": "object"
+      },
       "ScenarioWALPolicy": {
         "additionalProperties": false,
         "properties": {
@@ -6465,6 +6610,16 @@
               "$ref": "#/components/schemas/ScenarioInput"
             },
             "type": "array"
+          },
+          "transport_scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioTransportScope"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "wire_metric": {
             "type": "string"

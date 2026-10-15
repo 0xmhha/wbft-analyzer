@@ -16,11 +16,12 @@ import (
 )
 
 type FitRequest struct {
-	Options         scenario.FitOptions
-	ChainPath       string
-	RuntimeManifest string
-	EventManifest   string
-	Snapshot        *scenario.SourceSnapshot
+	TransportManifest string
+	Options           scenario.FitOptions
+	ChainPath         string
+	RuntimeManifest   string
+	EventManifest     string
+	Snapshot          *scenario.SourceSnapshot
 }
 
 // FitDataset reconstructs verified private snapshots and keeps their bytes
@@ -210,6 +211,19 @@ func PrepareDataset(ctx context.Context, s *store.Store, r FitRequest) (scenario
 			return out, snapshot, e
 		}
 		r.Options.RuntimeObservations = append(r.Options.RuntimeObservations, observed)
+	}
+	if r.Snapshot == nil && r.TransportManifest != "" {
+		snapshot.Transport, err = retainTransportEvidence(ctx, r.TransportManifest, storage, network.ChainID, network.GenesisHash)
+		if err != nil {
+			return out, snapshot, err
+		}
+	}
+	r.Options.TransportEvidence = nil
+	if snapshot.Transport != nil {
+		r.Options.TransportEvidence, err = readTransportEvidence(ctx, *snapshot.Transport, tmp)
+		if err != nil {
+			return out, snapshot, err
+		}
 	}
 	fitted, err := scenario.Fit(ctx, r.Options)
 	return fitted, snapshot, err

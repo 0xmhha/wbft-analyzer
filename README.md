@@ -1313,3 +1313,39 @@ shutdown scope, missing evidence and replay policy coordinates. These observed
 controls remain part of the empirical fake-application model and its immutable
 identity. A complete lifecycle does not establish peer availability, physical
 executor equivalence, or baseline round and time credibility.
+
+
+### Closed observer transport scope
+
+`scenario fit --transport-manifest FILE` and a registered source's
+`transport_manifest` retain a closed capture's controller, per-node RPC header
+copies and recording certificates as private SHA256 objects. The manifest uses
+format `wbft-analyzer-transport-manifest/1`, an `id`, the message `network`, a
+`controller` file, a `headers` file array and `windows` entries containing a
+message `input` ID and a `certificate` file. Each file has `id`, `node`, `path`
+and `sha256`; the controller node is `network`. Paths resolve relative to the
+manifest and never appear in the fitted public scope.
+
+The controller format is `wbft-local-takeover-case/1`. Its stopped processes,
+normal exit codes, launch identities, independent `captured` cutoff and verified
+header range are checked against the original frame streams and chain. Every
+node's header hashes must match the retained RLP chain. Recording certificates
+use `wbft-transport-recording-window/1` and keep
+`delivery_coverage_proven=false`. Exact frame hashes, sequence, source lines,
+closed peer sessions, pending operations and native node shutdown/restart gaps
+are verified. An engine pause cannot establish a process recording gap.
+
+Version 13 supports this explicit empirical model for shared-host clocks with
+zero skew and selected frame inputs. A separate `coverage` override is refused.
+Local outbound session intervals become directed simulator partitions; the
+simulator still lists all other live nodes as peers and drops in-flight delivery
+at a closing boundary. Boundary clock uncertainty is not modeled. These choices,
+all retained witness hashes and the finite receiver windows belong to immutable
+model provenance. Controller process-state claims are attestations; content
+hashes establish source identity, not authenticity or physical network delivery.
+
+Stored sources reload the owned witness objects after external files change.
+Dataset adoption, deletion and dump/restore include these objects. The source
+screen shows windows, sessions, assumptions and exact source coordinates.
+Completing this transport model does not establish baseline round or time
+credibility, executor equivalence or a validated counterfactual.
