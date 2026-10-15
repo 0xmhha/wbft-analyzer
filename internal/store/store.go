@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0xmhha/wbft-analyzer/internal/privacy"
 	"github.com/0xmhha/wbft-analyzer/internal/reports"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -36,6 +37,14 @@ func Open(ctx context.Context, dsn string) (*Store, error) {
 	if err := pool.Ping(ctx); err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("store: %w", err)
+	}
+	if err := privacy.Check(); err != nil {
+		pool.Close()
+		return nil, err
+	}
+	if err := checkScope(ctx, pool); err != nil {
+		pool.Close()
+		return nil, err
 	}
 	return &Store{pool: pool}, nil
 }
@@ -108,6 +117,9 @@ func (s *Store) Migrate(ctx context.Context) (int, error) {
 		}
 		have = m.version
 	}
+	if err := s.claimScope(ctx); err != nil {
+		return have, err
+	}
 	return have, nil
 }
 
@@ -117,6 +129,7 @@ type Report struct {
 	RunID            string
 	StartedAt        string
 	FinishedAt       string
+	InspectorBuild   string
 	InspectorVersion string
 	InspectorCommit  string
 	CatalogSHA256    string
@@ -187,21 +200,33 @@ var ErrNotFound = errors.New("store: not found")
 // it.
 func (s *Store) PutReport(ctx context.Context, r *Report) (added bool, networkID int64, err error) {
 	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		scope := privacy.Visibility()
 		var nid *int64
 		if k := r.NetworkKey; k != nil {
 			var id int64
-			if err := tx.QueryRow(ctx, `INSERT INTO networks (chain_id, genesis_hash, name, visibility) VALUES ($1, $2, $3, 'public')
+			if err := tx.QueryRow(ctx, `INSERT INTO networks (chain_id, genesis_hash, name, visibility) VALUES ($1, $2, $3, $4)
 				ON CONFLICT (chain_id, genesis_hash) DO UPDATE SET chain_id = EXCLUDED.chain_id RETURNING id`,
-				k.ChainID, k.GenesisHash, k.Name).Scan(&id); err != nil {
+				k.ChainID, k.GenesisHash, k.Name, scope).Scan(&id); err != nil {
 				return err
 			}
 			nid, networkID = &id, id
 		}
+		var dataset int64
+		if err := tx.QueryRow(ctx, `INSERT INTO datasets(network_id,name,kind,visibility,status) VALUES($1,$2,'reports',$3,'complete') ON CONFLICT(name) DO UPDATE SET name=EXCLUDED.name WHERE datasets.kind='reports' AND datasets.network_id IS NOT DISTINCT FROM EXCLUDED.network_id AND datasets.visibility=EXCLUDED.visibility RETURNING id`, nid, "report:"+r.ID, scope).Scan(&dataset); err != nil {
+			return err
+		}
+		build := r.InspectorBuild
+		if build == "" {
+			build = "public"
+		}
+		if !privacy.TrustedBuild(build) {
+			return ErrBuildScope
+		}
 		tag, err := tx.Exec(ctx, `INSERT INTO reports (id, run_id, started_at, finished_at, inspector_version, inspector_commit,
-			catalog_sha256, spec_commit, network, range_, summary, network_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			catalog_sha256, spec_commit, network, range_, summary, network_id, dataset_id, inspector_build) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 			ON CONFLICT (id) DO NOTHING`,
 			r.ID, r.RunID, r.StartedAt, r.FinishedAt, r.InspectorVersion, r.InspectorCommit, r.CatalogSHA256, r.SpecCommit,
-			nullJSON(r.Network), nullJSON(r.Range), r.Summary, nid)
+			nullJSON(r.Network), nullJSON(r.Range), r.Summary, nid, dataset, build)
 		if err != nil {
 			return err
 		}

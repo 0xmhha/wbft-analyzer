@@ -63,7 +63,7 @@ stop() {
 
 # capture PORT DIR writes the answers of the read endpoints to DIR.
 capture() {
-	local base=http://127.0.0.1:$1/v1 dir=$2 header_net run_net run_id log_report baseline_net baseline_ids message_net message_id missing_id observation_net observation_id timer_net timer_dataset timer_run
+	local base=http://127.0.0.1:$1/v1 dir=$2 header_net header_dataset run_net run_id log_report baseline_net baseline_ids message_net message_id missing_id observation_net observation_id timer_net timer_dataset timer_run
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
@@ -106,7 +106,8 @@ capture() {
 	test -n "$header_net"
 	get "/networks/$header_net/datasets" header-datasets
 	get "/networks/$header_net/header-bounds" header-bounds
-	get "/networks/$header_net/headers?from=0&to=3&dataset=1&node=fixture" header-rows
+	header_dataset=$(jq -er '[.datasets[] | select(.kind=="range" and .name=="dump-headers")] | if length==1 then .[0].id else error("expected one dump-headers dataset") end' "$dir/header-datasets.json")
+	get "/networks/$header_net/headers?from=0&to=3&dataset=$header_dataset&node=fixture" header-rows
 	get "/networks/$header_net/headers/summary?from=0&to=3" header-summary
 	get "/networks/$header_net/epochs?from=0&to=3" header-epochs
  missing_id=$(jq -r '.datasets[] | select(.kind=="run" and .name=="synthetic-vote-evidence") | .id' "$dir/header-datasets.json")
@@ -127,11 +128,11 @@ capture() {
  get "/networks/$run_net/datasets/$run_id/replay/keyframe?node=node2&t=2026-10-12T17:23:01Z" run-replay-state
  baseline_net=$(jq -r '.networks[]|select(.chain_id=="7" and .name=="synthetic-baseline")|.id' "$dir/networks.json")
  get "/networks/$baseline_net/datasets" baseline-datasets
- baseline_ids=$(jq -r '.datasets[].id' "$dir/baseline-datasets.json" | paste -sd, -)
+ baseline_ids=$(jq -r '.datasets[] | select(.kind=="run") | .id' "$dir/baseline-datasets.json" | paste -sd, -)
  get "/networks/$baseline_net/rounds/baseline?datasets=$baseline_ids&from=31&to=32&node=n1" run-baseline
  message_net=$(jq -r '.networks[]|select(.name=="synthetic-messages")|.id' "$dir/networks.json")
  get "/networks/$message_net/datasets" message-datasets
- message_id=$(jq -r '.datasets[0].id' "$dir/message-datasets.json")
+ message_id=$(jq -r '[.datasets[] | select(.kind=="messages" and .name=="synthetic-messages")] | if length==1 then .[0].id else error("expected one synthetic-messages dataset") end' "$dir/message-datasets.json")
  timer_net=$(jq -r '.networks[]|select(.name=="synthetic-timer")|.id' "$dir/networks.json")
  get "/networks/$timer_net/datasets" timer-datasets
  timer_dataset=$(jq -r '.datasets[]|select(.name=="synthetic-timer-experiment")|.id' "$dir/timer-datasets.json")

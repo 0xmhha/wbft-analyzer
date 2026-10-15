@@ -24,11 +24,11 @@ The analyzer is built in stages; the A0 foundation is complete:
 | A0 | command skeleton, inspector report loader with the public-build checks, PostgreSQL store, observation trends and alerts, API and front-end skeleton | complete |
 | A1 | header analysis: participation, proposers, epochs | implemented and validated on real testnet/G7 inputs |
 | A2 | node logs and chainbench runs | run ingestion, metadata timelines, round causes, inspector source overlay and phase latency implemented; visual replay and independent-run baseline comparison implemented |
-| A3 | wbft event streams and mixed networks | not started |
+| A3 | wbft event streams and mixed networks | message matching, clock models, latency views and follow implemented; full acceptance in progress |
 | A4 | governance history | not started |
+| A5 | private builds and comparisons | private overlay admission and dataset export implemented; comparisons pending |
 
-Every command is listed by `wbft-analyzer help`; a command that is not built
-yet says so and exits with code 69.
+`wbft-analyzer help` lists the commands and their available options.
 
 Built so far:
 
@@ -158,7 +158,7 @@ An optional input `sha256` checks the canonical, sorted file manifest hash.
 
 To retain original inputs for subsequent replay, pass `--inputs-dir DIR`.
 The directory must be private (mode 0700); a missing directory is created.
-Files are copied as `DIR/<sha256>` with mode 0600 and verified against the
+Files are copied as `DIR/datasets/TOKEN/<sha256>` with mode 0600 and verified against the
 manifest fingerprint. Objects are published without overwriting existing
 files; existing objects must verify too. Each file is bounded to 256 MiB
 and a retention request to 16 GiB. Keep this directory outside the checkout.
@@ -1657,3 +1657,52 @@ simulator's longest result chain, not every node's imported chain or universal
 agreement. Per-node heads and actual violations remain separate. Requested
 epochs without an observed header remain explicit and make the result partial.
 Historical experiment and seed JSON omit all new optional evidence fields.
+
+## Dataset export and private deployments
+
+`export --db DSN --dataset NAME --out NEW_DIR [--target private|public]`
+creates a logical `wbft-analyzer-dataset/1` bundle. The default target is
+private. A public target is a classification check; this command does not
+upload or publish anything. Private datasets, their networks or a private
+dependency cannot be exported to a public target. A private overlay also
+classifies all its exports as private, even when a report contains only
+public requirements.
+
+The bundle contains JSONL tables for the chosen dataset and its required
+follow, message association and missing-message dependencies; source-schema
+identities are retained. Canonical headers are bounded by those datasets'
+header copies. Unrelated datasets and network-wide alert configuration are
+excluded. Retained input files, replay chains and scenario source objects
+are copied with verified SHA256 and byte counts. Storage paths become
+relative `object-SHA256` references. Inputs that were never retained cannot
+be reconstructed. The bundle is a logical snapshot for inspection and
+archival, not a replacement for `pg_dump` or an automatic database import.
+
+Imports, queued/running experiments, deletion and storage adoption prevent
+export. All dependencies are locked while a repeatable-read snapshot is
+copied. A new schema table without an explicit export ownership rule also
+refuses export. Existing output directories are never replaced. Files have
+mode 0600 inside a 0700 directory; `manifest.json` is committed last and
+lists each table/object's digest, size, scope and deliberate exclusions.
+A directory without that manifest is incomplete. Failure or cancellation
+removes only files created by that invocation.
+
+The stock binary admits only its embedded public requirement and catalog
+sets. An operator may build a separate private binary with `go build
+-overlay OVERLAY.json`: an operator-owned `internal/withheld` package,
+blank-imported through an overlaid command source, calls
+`privacy.RegisterExtension` from `init`. Each extension supplies an exact
+inspector build name, complete requirement set and complete catalog hashes.
+Registration copies the sets and closes at first policy use. An extension
+cannot alter the public profile or grant public classification. There is
+no stock environment variable or request that adds trust. Keep overlay
+sources and private specification inputs outside the checkout.
+
+Use a separate database/schema for each deployment class. Migration 28
+claims that scope and attaches previously unowned reports to dedicated
+`report:SHA256` datasets without changing their verdict rows. Private
+migration classifies all existing networks/datasets as private. Once a
+scope is claimed, a binary of the other class refuses to open it. A copied
+database still requires verified input adoption into its own namespace
+before retained objects can be exported; physical ownership metadata is
+never included in the bundle.

@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0xmhha/wbft-analyzer/internal/privacy"
 	"github.com/0xmhha/wbft-analyzer/internal/source/headers"
 	"github.com/0xmhha/wbft/types"
 	"github.com/jackc/pgx/v5"
@@ -59,10 +60,10 @@ func (s *Store) BeginRun(ctx context.Context, k NetworkKey, name string, metadat
 func (s *Store) beginDataset(ctx context.Context, k NetworkKey, name, kind string, metadata json.RawMessage) (Dataset, func(), error) {
 	var nid, id int64
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		if err := tx.QueryRow(ctx, `INSERT INTO networks(chain_id,genesis_hash,name,visibility) VALUES($1,$2,$3,'public') ON CONFLICT(chain_id,genesis_hash) DO UPDATE SET chain_id=EXCLUDED.chain_id RETURNING id`, k.ChainID, k.GenesisHash, k.Name).Scan(&nid); err != nil {
+		if err := tx.QueryRow(ctx, `INSERT INTO networks(chain_id,genesis_hash,name,visibility) VALUES($1,$2,$3,$4) ON CONFLICT(chain_id,genesis_hash) DO UPDATE SET chain_id=EXCLUDED.chain_id RETURNING id`, k.ChainID, k.GenesisHash, k.Name, privacy.Visibility()).Scan(&nid); err != nil {
 			return err
 		}
-		return tx.QueryRow(ctx, `INSERT INTO datasets(network_id,name,kind,visibility,metadata) VALUES($1,$2,$3,'public',$4) ON CONFLICT(name) DO UPDATE SET name=EXCLUDED.name RETURNING id`, nid, name, kind, metadata).Scan(&id)
+		return tx.QueryRow(ctx, `INSERT INTO datasets(network_id,name,kind,visibility,metadata) VALUES($1,$2,$3,$5,$4) ON CONFLICT(name) DO UPDATE SET name=EXCLUDED.name RETURNING id`, nid, name, kind, metadata, privacy.Visibility()).Scan(&id)
 	})
 	if err != nil {
 		return Dataset{}, nil, err

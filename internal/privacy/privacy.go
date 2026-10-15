@@ -65,6 +65,7 @@ func lines(s string) []string {
 
 // Check reports an error in the embedded lists.
 func Check() error {
+	_ = Visibility()
 	once.Do(load)
 	return loadErr
 }
