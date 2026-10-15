@@ -6649,6 +6649,60 @@
         ],
         "type": "object"
       },
+      "ScenarioSeedExecution": {
+        "additionalProperties": false,
+        "properties": {
+          "configured_duration_ns": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "configured_stop_height": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedNode"
+            },
+            "type": "array"
+          },
+          "violations": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedViolation"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "configured_duration_ns",
+          "configured_stop_height",
+          "nodes",
+          "violations"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedNode": {
+        "additionalProperties": false,
+        "properties": {
+          "head": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "index": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "simulated_address": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "head",
+          "index",
+          "simulated_address"
+        ],
+        "type": "object"
+      },
       "ScenarioSeedPage": {
         "additionalProperties": false,
         "properties": {
@@ -6675,6 +6729,16 @@
       "ScenarioSeedResult": {
         "additionalProperties": false,
         "properties": {
+          "execution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSeedExecution"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "heights": {
             "items": {
               "$ref": "#/components/schemas/ScenarioHeight"
@@ -6703,6 +6767,26 @@
           "simulation_ns",
           "status",
           "violations"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedViolation": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "simulated_node": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail",
+          "kind",
+          "simulated_node"
         ],
         "type": "object"
       },

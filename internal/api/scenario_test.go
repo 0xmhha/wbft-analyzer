@@ -38,6 +38,31 @@ func TestScenarioEpochEvidenceJSONContract(t *testing.T) {
 	}
 }
 
+func TestScenarioSeedExecutionJSONContract(t *testing.T) {
+	v := ScenarioSeedPage{Seeds: []store.ScenarioSeed{{Result: scenario.SeedResult{Heights: []scenario.Height{}, Execution: &scenario.SeedExecution{StopHeight: ^uint64(0), DurationNS: 120000000000, Nodes: []scenario.SeedNode{{Index: 0, Address: "simulated-test-node", Head: 9007199254740993}}, Violations: []scenario.SeedViolation{{Kind: "progress", Node: "simulated-test-node", Detail: "head below configured target"}}}, Violations: 1}}}}
+	raw, err := json.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(raw, []byte(`"head":"9007199254740993"`)) || !bytes.Contains(raw, []byte(`"configured_stop_height":"18446744073709551615"`)) {
+		t.Fatal("large simulator quantities changed JSON representation", string(raw))
+	}
+	var value any
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if err := decoder.Decode(&value); err != nil {
+		t.Fatal(err)
+	}
+	s := loadSpec(t)
+	sch, err := s.answerSchema("GET", "/v1/networks/1/datasets/2/scenario-runs/3/seeds", 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.check(value, sch, "$"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestScenarioEmpiricalEvidenceJSONContract(t *testing.T) {
 	source := scenario.Input{ID: "synthetic-runtime", Kind: "runtime", Node: "0x1111111111111111111111111111111111111111", SHA256: strings.Repeat("a", 64)}
 	timing := scenario.EmpiricalTimings{Source: source, Build: []scenario.AppSample{}, Import: []scenario.AppSample{}, Excluded: []scenario.EmpiricalExcluded{{Kind: "build", ID: "18446744073709551615", Reason: "height_outside_scope", FromLine: 1, ToLine: 2}}, TaskStates: map[string]int{"observed_cancellation": 1}, ImportResults: map[string]int{}}

@@ -4,6 +4,7 @@ import { useEffect,useState } from "react";
 import { ApiError,get,post,type Schemas } from "../api/client";
 import { Pending,type Load } from "../ui";
 import { ScenarioComparison } from "./ScenarioComparison";
+import { SeedDiagnostics } from "./SeedDiagnostics";
 type Run=Schemas["StoreScenarioRunInfo"];
 export function EngineHistories({runtimes}:{runtimes:Schemas["ScenarioRuntime"][]}){
  return <section aria-label="Recorded consensus engine histories">{runtimes.filter(r=>r.engine_history!=null).map(r=><details key={r.node}><summary>{r.input}: {r.starts} node starts · {r.engine_history!.instances.length} engine instances · {r.engine_history!.status}</summary><p>{r.node}. Node shutdown and intermediate engine pauses remain separate. Closed observations do not establish baseline credibility.</p><table><thead><tr><th>Writer / engine</th><th>Source lines</th><th>Stop scope</th></tr></thead><tbody>{r.engine_history!.instances.map((instance,i)=><tr key={`${instance.run}:${instance.engine_run}:${instance.start_line}:${i}`}><td>{instance.run} / {instance.engine_run}</td><td>{instance.start_line} → {instance.stop_line||"unavailable"}</td><td>{instance.stop_ns==null?"unclosed":instance.node_shutdown?"node shutdown":"engine pause"}</td></tr>)}</tbody></table>{r.engine_history!.issues.length>0&&<ul>{r.engine_history!.issues.map((issue,i)=><li key={i}>{issue.code} · {issue.run} · line {issue.line}</li>)}</ul>}<p>Replay policy sources: {r.wal_policies.map(p=>`${p.run}/${p.engine_run} line ${p.line}: enabled ${p.enabled==null?"unavailable":String(p.enabled)}`).join("; ")}</p></details>)}</section>;
@@ -59,7 +60,9 @@ export function ScenarioSummary({run,net,dataset,onAuth}:{run:Run;net?:number;da
 }
 function Details({net,dataset,run,tick,onAuth}:{net:number;dataset:number;run:Run;tick:number;onAuth:()=>void}){
  const load=useRefreshingLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}/comparison",{path:{net,dataset,scenario:run.id}}),[net,dataset,run.id,tick]);
- return <><ScenarioSummary run={run} net={net} dataset={dataset} onAuth={onAuth}/><Pending load={load} onAuth={onAuth}/>{load.state==="done"&&<ScenarioComparison plot={load.data}/>}</>;
+ const baseline=useRefreshingLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}/seeds",{path:{net,dataset,scenario:run.id},query:{mode:"baseline",limit:128}}),[net,dataset,run.id,tick]);
+ const changed=useRefreshingLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/scenario-runs/{scenario}/seeds",{path:{net,dataset,scenario:run.id},query:{mode:"counterfactual",limit:128}}),[net,dataset,run.id,tick]);
+ return <><ScenarioSummary run={run} net={net} dataset={dataset} onAuth={onAuth}/><Pending load={load} onAuth={onAuth}/>{load.state==="done"&&<ScenarioComparison plot={load.data}/>}<Pending load={baseline} onAuth={onAuth}/>{baseline.state==="done"&&<SeedDiagnostics mode="Baseline" rows={baseline.data.seeds.map(s=>s.result)} expected={run.summary.provenance.seeds.length}/>}<Pending load={changed} onAuth={onAuth}/>{changed.state==="done"&&<SeedDiagnostics mode="Counterfactual" rows={changed.data.seeds.map(s=>s.result)} expected={run.summary.provenance.seeds.length}/>}</>;
 }
 
 // Refresh an immutable scope without remounting selected charts and tables.

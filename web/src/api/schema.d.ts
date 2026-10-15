@@ -2891,12 +2891,25 @@ export interface components {
             /** Format: int64 */
             seeds: number;
         };
+        ScenarioSeedExecution: {
+            configured_duration_ns: string;
+            configured_stop_height: string;
+            nodes: components["schemas"]["ScenarioSeedNode"][];
+            violations: components["schemas"]["ScenarioSeedViolation"][];
+        };
+        ScenarioSeedNode: {
+            head: string;
+            /** Format: int64 */
+            index: number;
+            simulated_address: string;
+        };
         ScenarioSeedPage: {
             /** Format: int64 */
             next: number | null;
             seeds: components["schemas"]["StoreScenarioSeed"][];
         };
         ScenarioSeedResult: {
+            execution?: components["schemas"]["ScenarioSeedExecution"] | null;
             heights: components["schemas"]["ScenarioHeight"][];
             /** Format: int64 */
             seed: number;
@@ -2905,6 +2918,11 @@ export interface components {
             status: string;
             /** Format: int64 */
             violations: number;
+        };
+        ScenarioSeedViolation: {
+            detail: string;
+            kind: string;
+            simulated_node: string;
         };
         ScenarioSources: {
             enabled: boolean;

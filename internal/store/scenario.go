@@ -81,6 +81,9 @@ func (s *Store) PutScenarioSeed(ctx context.Context, id int64, record scenario.S
 			return err
 		}
 		r := record.Result
+		if x := r.Execution; x != nil && (x.DurationNS < 0 || len(x.Nodes) > 256 || len(x.Violations) != r.Violations) {
+			return ErrScenarioState
+		}
 		if count >= len(e.Provenance.Seeds) || r.Seed != e.Provenance.Seeds[count] || r.SimulationNS < 0 || r.Status != "complete" && r.Status != "partial" && r.Status != "violations" || r.Violations < 0 || len(r.Heights) > int(e.To-e.From+1) {
 			return ErrScenarioState
 		}
