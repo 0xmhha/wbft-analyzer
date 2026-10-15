@@ -2682,6 +2682,7 @@ export interface components {
             membership_effect?: components["schemas"]["ScenarioMembershipEffect"] | null;
             message_effect?: components["schemas"]["ScenarioMessageEffect"] | null;
             model: components["schemas"]["ScenarioAssessment"];
+            modeled_static_configuration?: components["schemas"]["ScenarioStaticChainConfiguration"] | null;
             provenance: components["schemas"]["ScenarioProvenance"];
             recorded_counts: components["schemas"]["ScenarioRoundCount"][];
             recorded_heights: components["schemas"]["ScenarioHeight"][];
@@ -3132,6 +3133,7 @@ export interface components {
             membership_observations?: components["schemas"]["ScenarioSeedMembershipObservations"] | null;
             message_observations?: components["schemas"]["ScenarioSeedMessageObservations"] | null;
             nodes: components["schemas"]["ScenarioSeedNode"][];
+            static_configuration_observations?: components["schemas"]["ScenarioSeedStaticConfigurationObservations"] | null;
             timing_observations?: components["schemas"]["ScenarioSeedTimingObservations"] | null;
             violations: components["schemas"]["ScenarioSeedViolation"][];
         };
@@ -3240,6 +3242,22 @@ export interface components {
             /** Format: int64 */
             violations: number;
         };
+        ScenarioSeedStaticConfigurationObservations: {
+            journal_configurations: components["schemas"]["ScenarioSeedStaticJournalConfiguration"][];
+            source: string;
+            unobserved_nodes: number[];
+        };
+        ScenarioSeedStaticJournalConfiguration: {
+            chain_config_sha256: string;
+            configuration: components["schemas"]["ScenarioStaticChainConfiguration"];
+            engine_run: string;
+            generated_rules_digest: string;
+            /** Format: int64 */
+            journal_segments: number;
+            /** Format: int64 */
+            node: number;
+            run: string;
+        };
         ScenarioSeedTimerArm: {
             at_ns: string;
             deadline_ns?: string;
@@ -3275,6 +3293,13 @@ export interface components {
         ScenarioSources: {
             enabled: boolean;
             sources: components["schemas"]["ScenariojobSourceInfo"][];
+        };
+        ScenarioStaticChainConfiguration: {
+            allowed_future_block_time_seconds: string;
+            rule_activations: {
+                [key: string]: string;
+            };
+            source_rules_digest?: string;
         };
         ScenarioSyntheticNodeIdentity: {
             alias: string;
@@ -3385,6 +3410,7 @@ export interface components {
             runtime_observations: components["schemas"]["ScenarioRuntimeBinding"][];
             scope: components["schemas"]["ScenarioScopeCounts"];
             source_sha256: string;
+            static_configuration?: components["schemas"]["ScenarioStaticChainConfiguration"] | null;
             status: string;
             to: string;
             transport_inputs: components["schemas"]["ScenarioInput"][];

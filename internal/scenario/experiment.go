@@ -11,29 +11,30 @@ import (
 const ExperimentVersion = "wbft-network-experiment/2"
 
 type Experiment struct {
-	Membership      *MembershipEffect     `json:"membership_effect,omitempty"`
-	Messages        *MessageEffect        `json:"message_effect,omitempty"`
-	Timing          *TimingEffect         `json:"timing_effect,omitempty"`
-	Lifecycle       *LifecycleEffect      `json:"lifecycle_effect,omitempty"`
-	WallOrigin      string                `json:"wall_origin,omitempty"`
-	ExecutionSHA256 string                `json:"execution_sha256"`
-	From            uint64                `json:"from,string"`
-	To              uint64                `json:"to,string"`
-	RecordedHeights []Height              `json:"recorded_heights"`
-	RecordedSHA256  string                `json:"recorded_sha256"`
-	RecordedCounts  []RoundCount          `json:"recorded_counts"`
-	Version         string                `json:"version"`
-	Status          string                `json:"status"`
-	Provenance      Provenance            `json:"provenance"`
-	SourceSHA256    string                `json:"source_sha256"`
-	Change          NetworkChange         `json:"change"`
-	ChangeSHA256    string                `json:"change_sha256"`
-	Model           Assessment            `json:"model"`
-	Baseline        *RoundComparison      `json:"baseline_rounds"`
-	BaselineTime    *HeaderTimeComparison `json:"baseline_time,omitempty"`
-	TimeCheck       string                `json:"baseline_time_check"`
-	BaselineSeeds   []SeedResult          `json:"-"`
-	ChangedSeeds    []SeedResult          `json:"-"`
+	StaticConfiguration *StaticChainConfiguration `json:"modeled_static_configuration,omitempty"`
+	Membership          *MembershipEffect         `json:"membership_effect,omitempty"`
+	Messages            *MessageEffect            `json:"message_effect,omitempty"`
+	Timing              *TimingEffect             `json:"timing_effect,omitempty"`
+	Lifecycle           *LifecycleEffect          `json:"lifecycle_effect,omitempty"`
+	WallOrigin          string                    `json:"wall_origin,omitempty"`
+	ExecutionSHA256     string                    `json:"execution_sha256"`
+	From                uint64                    `json:"from,string"`
+	To                  uint64                    `json:"to,string"`
+	RecordedHeights     []Height                  `json:"recorded_heights"`
+	RecordedSHA256      string                    `json:"recorded_sha256"`
+	RecordedCounts      []RoundCount              `json:"recorded_counts"`
+	Version             string                    `json:"version"`
+	Status              string                    `json:"status"`
+	Provenance          Provenance                `json:"provenance"`
+	SourceSHA256        string                    `json:"source_sha256"`
+	Change              NetworkChange             `json:"change"`
+	ChangeSHA256        string                    `json:"change_sha256"`
+	Model               Assessment                `json:"model"`
+	Baseline            *RoundComparison          `json:"baseline_rounds"`
+	BaselineTime        *HeaderTimeComparison     `json:"baseline_time,omitempty"`
+	TimeCheck           string                    `json:"baseline_time_check"`
+	BaselineSeeds       []SeedResult              `json:"-"`
+	ChangedSeeds        []SeedResult              `json:"-"`
 }
 
 type SeedRecord struct {
@@ -66,6 +67,7 @@ func ExecuteExperimentWithMessages(ctx context.Context, sc sim.Scenario, provena
 
 	sc.WallOrigin = scenarioWallOrigin(sc)
 	out := Experiment{WallOrigin: sc.WallOrigin.Format(time.RFC3339Nano), From: from, To: to, RecordedCounts: append([]RoundCount(nil), recorded...), RecordedHeights: append([]Height{}, heights...), Version: ExperimentVersion, Status: "running", Model: model, Change: change, TimeCheck: "pending", BaselineSeeds: []SeedResult{}, ChangedSeeds: []SeedResult{}}
+	out.StaticConfiguration = modeledStaticConfiguration(sc)
 	if err := ValidateRecorded(out.RecordedHeights, recorded, from, to); err != nil {
 		out.Status = "failed"
 		return out, err

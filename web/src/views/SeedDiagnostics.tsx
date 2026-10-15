@@ -1,3 +1,4 @@
+import { SeedStaticChainSettings } from "./StaticChainSettings";
 import {SeedMembershipEvidence} from "./MembershipEvidence";
 import type {Schemas} from "../api/client";
 import {useState} from "react";
@@ -18,7 +19,7 @@ export function SeedDiagnostics({mode,rows,expected}:{mode:string;rows:Seed[];ex
    <table><thead><tr><th>Node index</th><th>Simulated address</th><th>Last head</th></tr></thead><tbody>{r.execution.nodes.map(n=><tr key={n.index}><td>{n.index}</td><td>{n.simulated_address||"unavailable"}</td><td>{n.head}</td></tr>)}</tbody></table>
    {r.execution.lifecycle_observations?<NodeStarts observations={r.execution.lifecycle_observations}/>:<p>Node-start observations were not retained for this seed.</p>}
    {r.execution.timing_observations?<SeedTimingEvidence observations={r.execution.timing_observations}/>:<p>Timing observations were not retained for this seed.</p>}
-   {r.execution.membership_observations&&<SeedMembershipEvidence observations={r.execution.membership_observations}/>}
+   <SeedStaticChainSettings observations={r.execution.static_configuration_observations}/>{r.execution.membership_observations&&<SeedMembershipEvidence observations={r.execution.membership_observations}/>}
    {r.execution.message_observations&&<SeedMessageEvidence observations={r.execution.message_observations}/>}
    {r.execution.violations.length!==r.violations&&<p role="alert">Stored violation count and details disagree.</p>}
    {r.execution.violations.length===0?<p>{r.violations===0?"No simulator violations reported in this execution record.":"Violation details are unavailable or inconsistent."}</p>:<ul>{r.execution.violations.map((v,i)=><li key={i}><strong>{v.kind}</strong> · simulated node {v.simulated_node}<p>{v.detail}</p></li>)}</ul>}

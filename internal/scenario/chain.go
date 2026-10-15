@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"errors"
+	"maps"
 
 	"github.com/0xmhha/wbft/codec"
 	"github.com/0xmhha/wbft/conformance/sim"
@@ -9,12 +10,13 @@ import (
 )
 
 type ChainFacts struct {
-	GenesisCount int
-	Epochs       []RecordedEpoch
-	Issues       []Issue
-	Validators   []types.Address
-	Params       sim.Params
-	Heights      []Height
+	StaticConfiguration *StaticChainConfiguration
+	GenesisCount        int
+	Epochs              []RecordedEpoch
+	Issues              []Issue
+	Validators          []types.Address
+	Params              sim.Params
+	Heights             []Height
 }
 
 // InspectChain derives network observations from the canonical block chain.
@@ -51,10 +53,27 @@ func InspectChain(blocks []*types.Block, cfg *types.Config, from, to uint64) (Ch
 	}
 	capSeconds := base.MaxRequestTimeoutSeconds
 	out.Params = sim.Params{RequestTimeoutSeconds: base.RequestTimeoutMs / 1000, BlockPeriodSeconds: base.BlockPeriodSeconds, EpochLength: base.EpochLength, ProposerPolicy: base.ProposerPolicy.ID, MaxRequestTimeoutSeconds: &capSeconds}
+	activations := cfg.RuleActivations()
+	if len(activations) > 0 {
+		out.Params.RuleActivations = maps.Clone(activations)
+	}
+	if base.AllowedFutureBlockTime != 0 {
+		future := base.AllowedFutureBlockTime
+		out.Params.AllowedFutureBlockTime = &future
+	}
+	if len(activations) > 0 || base.AllowedFutureBlockTime != 0 {
+		out.StaticConfiguration = &StaticChainConfiguration{RuleActivations: map[string]string{}, AllowedFutureBlockTime: base.AllowedFutureBlockTime}
+		for name, at := range activations {
+			out.StaticConfiguration.RuleActivations[string(name)] = at
+		}
+		if cfg.RulesDigest() != (types.Hash{}) {
+			out.StaticConfiguration.SourceRulesDigest = cfg.RulesDigest().Hex()
+		}
+	}
 	// Simulation starts at genesis, including the warm-up before From.
 	for h := uint64(0); h <= to; h++ {
 		params := cfg.ConfigAt(types.HeightFromUint64(h))
-		if params.ProposerPolicy == nil || params.ProposerPolicy.ID != base.ProposerPolicy.ID || params.RequestTimeoutMs != base.RequestTimeoutMs || params.BlockPeriodSeconds != base.BlockPeriodSeconds || params.EpochLength != base.EpochLength || params.MaxRequestTimeoutSeconds != base.MaxRequestTimeoutSeconds {
+		if params.ProposerPolicy == nil || params.ProposerPolicy.ID != base.ProposerPolicy.ID || params.RequestTimeoutMs != base.RequestTimeoutMs || params.BlockPeriodSeconds != base.BlockPeriodSeconds || params.EpochLength != base.EpochLength || params.MaxRequestTimeoutSeconds != base.MaxRequestTimeoutSeconds || params.AllowedFutureBlockTime != base.AllowedFutureBlockTime {
 			return out, errors.New("scenario configuration transitions require explicit fitting")
 		}
 		if h < from {

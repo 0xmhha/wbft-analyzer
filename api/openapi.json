@@ -5718,6 +5718,16 @@
           "model": {
             "$ref": "#/components/schemas/ScenarioAssessment"
           },
+          "modeled_static_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioStaticChainConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "provenance": {
             "$ref": "#/components/schemas/ScenarioProvenance"
           },
@@ -7618,6 +7628,16 @@
             },
             "type": "array"
           },
+          "static_configuration_observations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSeedStaticConfigurationObservations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "timing_observations": {
             "anyOf": [
               {
@@ -8091,6 +8111,72 @@
         ],
         "type": "object"
       },
+      "ScenarioSeedStaticConfigurationObservations": {
+        "additionalProperties": false,
+        "properties": {
+          "journal_configurations": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedStaticJournalConfiguration"
+            },
+            "type": "array"
+          },
+          "source": {
+            "type": "string"
+          },
+          "unobserved_nodes": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "journal_configurations",
+          "source",
+          "unobserved_nodes"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedStaticJournalConfiguration": {
+        "additionalProperties": false,
+        "properties": {
+          "chain_config_sha256": {
+            "type": "string"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/ScenarioStaticChainConfiguration"
+          },
+          "engine_run": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "generated_rules_digest": {
+            "type": "string"
+          },
+          "journal_segments": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chain_config_sha256",
+          "configuration",
+          "engine_run",
+          "generated_rules_digest",
+          "journal_segments",
+          "node",
+          "run"
+        ],
+        "type": "object"
+      },
       "ScenarioSeedTimerArm": {
         "additionalProperties": false,
         "properties": {
@@ -8240,6 +8326,31 @@
         "required": [
           "enabled",
           "sources"
+        ],
+        "type": "object"
+      },
+      "ScenarioStaticChainConfiguration": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed_future_block_time_seconds": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "rule_activations": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "source_rules_digest": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "allowed_future_block_time_seconds",
+          "rule_activations"
         ],
         "type": "object"
       },
@@ -8687,6 +8798,16 @@
           },
           "source_sha256": {
             "type": "string"
+          },
+          "static_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioStaticChainConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "status": {
             "type": "string"
