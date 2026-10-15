@@ -4889,6 +4889,135 @@
         ],
         "type": "object"
       },
+      "ScenarioAppOutcome": {
+        "additionalProperties": false,
+        "properties": {
+          "build_id": {
+            "type": "string"
+          },
+          "end_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "handover_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "start_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "build_id",
+          "end_line",
+          "handover_line",
+          "input",
+          "node",
+          "run",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ScenarioAppSample": {
+        "additionalProperties": false,
+        "properties": {
+          "build_id": {
+            "type": "string"
+          },
+          "definition": {
+            "type": "string"
+          },
+          "from_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input": {
+            "type": "string"
+          },
+          "nanoseconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "to_line": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from_line",
+          "input",
+          "nanoseconds",
+          "node",
+          "run",
+          "to_line"
+        ],
+        "type": "object"
+      },
+      "ScenarioAppTiming": {
+        "additionalProperties": false,
+        "properties": {
+          "build": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioAppSample"
+            },
+            "type": "array"
+          },
+          "import": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioAppSample"
+            },
+            "type": "array"
+          },
+          "outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioAppOutcome"
+            },
+            "type": "array"
+          },
+          "policies": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioApplicationPolicy"
+            },
+            "type": "array"
+          },
+          "unproved": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unsupported": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "build",
+          "import",
+          "outcomes",
+          "policies",
+          "unproved",
+          "unsupported"
+        ],
+        "type": "object"
+      },
       "ScenarioApplicationPolicy": {
         "additionalProperties": false,
         "properties": {
@@ -5005,6 +5134,30 @@
         ],
         "type": "object"
       },
+      "ScenarioCoreSubstitution": {
+        "additionalProperties": false,
+        "properties": {
+          "node": {
+            "type": "string"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "signing_state": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ScenarioInput"
+          }
+        },
+        "required": [
+          "node",
+          "policy",
+          "signing_state",
+          "source"
+        ],
+        "type": "object"
+      },
       "ScenarioCutOutgoing": {
         "additionalProperties": false,
         "properties": {
@@ -5109,6 +5262,189 @@
           "count",
           "cumulative",
           "value"
+        ],
+        "type": "object"
+      },
+      "ScenarioEmpiricalExcluded": {
+        "additionalProperties": false,
+        "properties": {
+          "from_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "to_line": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from_line",
+          "id",
+          "kind",
+          "reason",
+          "to_line"
+        ],
+        "type": "object"
+      },
+      "ScenarioEmpiricalNode": {
+        "additionalProperties": false,
+        "properties": {
+          "application_policy": {
+            "type": "string"
+          },
+          "backlog_limit": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "improvements": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "option_evidence": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "runtime_evidence": {
+            "type": "string"
+          },
+          "signing_state": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ScenarioInput"
+          },
+          "substituted": {
+            "type": "boolean"
+          },
+          "wal_replay": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "application_policy",
+          "backlog_limit",
+          "improvements",
+          "node",
+          "option_evidence",
+          "profile",
+          "runtime_evidence",
+          "signing_state",
+          "source",
+          "substituted",
+          "wal_replay"
+        ],
+        "type": "object"
+      },
+      "ScenarioEmpiricalProjection": {
+        "additionalProperties": false,
+        "properties": {
+          "application": {
+            "$ref": "#/components/schemas/ScenarioAppTiming"
+          },
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "native_excluded": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioAppOutcome"
+            },
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioEmpiricalNode"
+            },
+            "type": "array"
+          },
+          "runtime_timings": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioEmpiricalTimings"
+            },
+            "type": "array"
+          },
+          "runtimes": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuntime"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "application",
+          "assumptions",
+          "native_excluded",
+          "nodes",
+          "runtime_timings",
+          "runtimes"
+        ],
+        "type": "object"
+      },
+      "ScenarioEmpiricalTimings": {
+        "additionalProperties": false,
+        "properties": {
+          "build": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioAppSample"
+            },
+            "type": "array"
+          },
+          "excluded": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioEmpiricalExcluded"
+            },
+            "type": "array"
+          },
+          "import": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioAppSample"
+            },
+            "type": "array"
+          },
+          "import_results": {
+            "additionalProperties": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ScenarioInput"
+          },
+          "task_states": {
+            "additionalProperties": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          }
+        },
+        "required": [
+          "build",
+          "excluded",
+          "import",
+          "import_results",
+          "source",
+          "task_states"
         ],
         "type": "object"
       },
@@ -5341,6 +5677,12 @@
       "ScenarioProvenance": {
         "additionalProperties": false,
         "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "chain_sha256": {
             "type": "string"
           },
@@ -5360,6 +5702,9 @@
             },
             "type": "array"
           },
+          "mode": {
+            "type": "string"
+          },
           "model_sha256": {
             "type": "string"
           },
@@ -5367,6 +5712,12 @@
             "items": {
               "format": "int64",
               "type": "integer"
+            },
+            "type": "array"
+          },
+          "substitutions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioCoreSubstitution"
             },
             "type": "array"
           }
@@ -5493,6 +5844,68 @@
         ],
         "type": "object"
       },
+      "ScenarioRuntime": {
+        "additionalProperties": false,
+        "properties": {
+          "engine_stop_observed": {
+            "type": "boolean"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuntimeEvent"
+            },
+            "type": "array"
+          },
+          "input": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "sign_floor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sign_floor_state": {
+            "type": "string"
+          },
+          "start_ns": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "starts": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "wal_policies": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioWALPolicy"
+            },
+            "type": "array"
+          },
+          "wal_replay": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "engine_stop_observed",
+          "events",
+          "input",
+          "node",
+          "sign_floor",
+          "sign_floor_state",
+          "start_ns",
+          "starts",
+          "wal_policies",
+          "wal_replay"
+        ],
+        "type": "object"
+      },
       "ScenarioRuntimeBinding": {
         "additionalProperties": false,
         "properties": {
@@ -5603,6 +6016,32 @@
           "parent_id",
           "point",
           "state"
+        ],
+        "type": "object"
+      },
+      "ScenarioRuntimeEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "at_ns": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "at_ns",
+          "line",
+          "run"
         ],
         "type": "object"
       },
@@ -5743,6 +6182,52 @@
         ],
         "type": "object"
       },
+      "ScenarioWALPolicy": {
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "engine_run": {
+            "type": "string"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "replayed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "run": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "enabled",
+          "engine_run",
+          "line",
+          "replayed",
+          "run",
+          "status"
+        ],
+        "type": "object"
+      },
       "ScenariojobEpochInfo": {
         "additionalProperties": false,
         "properties": {
@@ -5786,9 +6271,22 @@
             "format": "int64",
             "type": "integer"
           },
+          "declared_runtime_model": {
+            "$ref": "#/components/schemas/ScenarioAssessment"
+          },
           "duration_ns": {
             "format": "int64",
             "type": "integer"
+          },
+          "empirical": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioEmpiricalProjection"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "epochs": {
             "items": {
@@ -5803,6 +6301,9 @@
             "type": "string"
           },
           "id": {
+            "type": "string"
+          },
+          "mode": {
             "type": "string"
           },
           "model": {
@@ -5839,11 +6340,13 @@
         "required": [
           "application_policies",
           "dataset_id",
+          "declared_runtime_model",
           "duration_ns",
           "epochs",
           "execution_sha256",
           "from",
           "id",
+          "mode",
           "model",
           "nodes",
           "runtime_observations",

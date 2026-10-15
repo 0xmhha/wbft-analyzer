@@ -46,11 +46,23 @@ func (s *Store) datasetLease(ctx context.Context, id int64, shared, allowDeletin
 		}
 		return nil, ErrDatasetBusy
 	}
+	unlock := "pg_advisory_unlock"
+	if shared {
+		unlock += "_shared"
+	}
+	unlockConn := func() {
+		cleanup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		// Closing the socket does not acknowledge server-side lock release.
+		// Wait for the unlock before a following claim or deletion can proceed.
+		_, _ = conn.Exec(cleanup, `SELECT `+unlock+`(hashtextextended('wbft-analyzer:range:'||current_schema()||':'||$1::bigint::text,0))`, id)
+		closeConn()
+	}
 	if !allowDeleting {
 		var exists, deleting bool
 		e = conn.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM datasets WHERE id=$1),EXISTS(SELECT 1 FROM dataset_deletions WHERE dataset_id=$1)`, id).Scan(&exists, &deleting)
 		if e != nil || !exists || deleting {
-			closeConn()
+			unlockConn()
 			if e != nil {
 				return nil, e
 			}
@@ -61,7 +73,7 @@ func (s *Store) datasetLease(ctx context.Context, id int64, shared, allowDeletin
 		}
 	}
 	var once sync.Once
-	return func() { once.Do(closeConn) }, nil
+	return func() { once.Do(unlockConn) }, nil
 }
 
 // StorageOwner binds a namespace to this database, schema and server endpoint.
