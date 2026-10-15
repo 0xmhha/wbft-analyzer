@@ -1434,3 +1434,19 @@ execution cost samples also belong to the execution hash. Source and stored
 experiment screens show measured ranges, paginated samples and exclusions, and
 links to original timing records. Enabling the policy does not establish round
 or time baseline credibility; those checks retain their independent criteria.
+
+### Per-seed execution diagnostics
+
+New seed results retain the official simulator's violation kind, simulated node
+and detail, each final node head, and configured stop height and duration. The
+seed API and experiment screen keep these outcomes separate from baseline
+distribution checks. Simulated addresses belong to test keys and are not
+presented as recorded validator addresses. A progress failure at the configured
+horizon remains a failed execution; it does not become a safety conflict or a
+complete distribution sample.
+
+Historical seeds without execution details retain their original counts and
+status. Their violation kinds and final node heads stay unavailable. No cause is
+inferred from a violation count. New results with inconsistent detail counts are
+refused by storage. This output metadata does not change fitting or execution
+identity, and existing experiments are not rewritten.

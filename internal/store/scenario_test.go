@@ -89,6 +89,32 @@ func TestScenarioProcessingModelCannotChangeDuringFinalization(t *testing.T) {
 	}
 }
 
+func TestScenarioSeedRetainsDiagnosticsAndRejectsConflictingCount(t *testing.T) {
+	s, _ := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	dataset := jobDataset(t, s)
+	e, _ := scenarioFixture(dataset)
+	id, err := s.BeginScenario(ctx, e)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := scenario.SeedResult{Seed: e.Provenance.Seeds[0], Status: "violations", Heights: []scenario.Height{}, Violations: 1, Execution: &scenario.SeedExecution{StopHeight: e.To, DurationNS: 100, Nodes: []scenario.SeedNode{{Index: 0, Address: "simulated-test-node", Head: 1}}, Violations: []scenario.SeedViolation{}}}
+	if err := s.PutScenarioSeed(ctx, id, scenario.SeedRecord{Mode: "baseline", Result: r}); err != ErrScenarioState {
+		t.Fatal("inconsistent violation count stored", err)
+	}
+	r.Execution.Violations = append(r.Execution.Violations, scenario.SeedViolation{Kind: "progress", Node: "simulated-test-node", Detail: "head below configured target"})
+	if err := s.PutScenarioSeed(ctx, id, scenario.SeedRecord{Mode: "baseline", Result: r}); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := s.ScenarioSeeds(ctx, dataset, id, "baseline", 0, 128)
+	if err != nil || len(rows) != 1 || !reflect.DeepEqual(rows[0].Result.Execution, r.Execution) {
+		t.Fatal("diagnostics not retained", rows, err)
+	}
+}
+
 func TestScenarioTimeProofIsRecomputedFromRetainedRows(t *testing.T) {
 	for _, different := range []bool{false, true} {
 		t.Run(map[bool]string{false: "matching", true: "different"}[different], func(t *testing.T) {

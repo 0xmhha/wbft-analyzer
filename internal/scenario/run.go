@@ -17,11 +17,48 @@ type Height struct {
 }
 
 type SeedResult struct {
-	Seed         int64    `json:"seed"`
-	Status       string   `json:"status"`
-	Heights      []Height `json:"heights"`
-	Violations   int      `json:"violations"`
-	SimulationNS int64    `json:"simulation_ns"`
+	Execution    *SeedExecution `json:"execution,omitempty"`
+	Seed         int64          `json:"seed"`
+	Status       string         `json:"status"`
+	Heights      []Height       `json:"heights"`
+	Violations   int            `json:"violations"`
+	SimulationNS int64          `json:"simulation_ns"`
+}
+
+// SeedExecution retains the official simulator's outcomes without inferring
+// violation kinds from counts or assigning recorded identities to test keys.
+type SeedExecution struct {
+	StopHeight uint64          `json:"configured_stop_height,string"`
+	DurationNS int64           `json:"configured_duration_ns,string"`
+	Nodes      []SeedNode      `json:"nodes"`
+	Violations []SeedViolation `json:"violations"`
+}
+
+type SeedNode struct {
+	Index   int    `json:"index"`
+	Address string `json:"simulated_address"`
+	Head    uint64 `json:"head,string"`
+}
+
+type SeedViolation struct {
+	Kind   string `json:"kind"`
+	Node   string `json:"simulated_node"`
+	Detail string `json:"detail"`
+}
+
+func seedExecution(sc sim.Scenario, result *sim.Result) *SeedExecution {
+	out := &SeedExecution{StopHeight: sc.Until.Height, DurationNS: int64(sc.Until.Duration), Nodes: []SeedNode{}, Violations: []SeedViolation{}}
+	for i, head := range result.Heads {
+		address := ""
+		if i < len(sc.Validators) {
+			address = sc.Validators[i].Address().Hex()
+		}
+		out.Nodes = append(out.Nodes, SeedNode{Index: i, Address: address, Head: head})
+	}
+	for _, v := range result.Violations {
+		out.Violations = append(out.Violations, SeedViolation{Kind: v.Kind, Node: v.Node.Hex(), Detail: v.Detail})
+	}
+	return out
 }
 
 // RunSeeds uses the official simulator with one independent run per seed.
@@ -46,7 +83,7 @@ func RunSeeds(ctx context.Context, sc sim.Scenario, seeds []int64, from, to uint
 		if err != nil {
 			return err
 		}
-		out := SeedResult{Seed: seed, Status: "complete", Heights: []Height{}, Violations: len(result.Violations), SimulationNS: int64(result.SimTime)}
+		out := SeedResult{Execution: seedExecution(sc, result), Seed: seed, Status: "complete", Heights: []Height{}, Violations: len(result.Violations), SimulationNS: int64(result.SimTime)}
 		for _, b := range result.Chain {
 			n := b.Header.Number
 			if !n.IsUint64() {
