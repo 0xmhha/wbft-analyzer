@@ -327,26 +327,27 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		buildRuntimes, buildApp = projection.Runtimes, projection.Application
 	}
 	modelRaw, err := json.Marshal(struct {
-		TransportScope  *TransportScope
-		Mode            string
-		Empirical       *EmpiricalProjection
-		WireMetric      string
-		TransportInputs []Input
-		From, To        uint64
-		Origin          string
-		UntilNS         int64
-		Clock           pairs.Clock
-		Coverage        []Coverage
-		Nodes           []Node
-		Params          sim.Params
-		Links           []Link
-		Runtimes        []Runtime
-		Application     AppTiming
-		Scope           ScopeCounts
-		GenesisCount    int
-		Epochs          []RecordedEpoch
-		ObservedRuntime []RuntimeBinding
-	}{out.TransportScope, o.Model, out.Empirical, o.WireMetric, out.TransportInputs, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs, out.RuntimeObservations})
+		HeaderTimeBaseline string
+		TransportScope     *TransportScope
+		Mode               string
+		Empirical          *EmpiricalProjection
+		WireMetric         string
+		TransportInputs    []Input
+		From, To           uint64
+		Origin             string
+		UntilNS            int64
+		Clock              pairs.Clock
+		Coverage           []Coverage
+		Nodes              []Node
+		Params             sim.Params
+		Links              []Link
+		Runtimes           []Runtime
+		Application        AppTiming
+		Scope              ScopeCounts
+		GenesisCount       int
+		Epochs             []RecordedEpoch
+		ObservedRuntime    []RuntimeBinding
+	}{HeaderTimeBaselineMethod, out.TransportScope, o.Model, out.Empirical, o.WireMetric, out.TransportInputs, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs, out.RuntimeObservations})
 	if err != nil {
 		return out, err
 	}

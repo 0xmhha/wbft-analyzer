@@ -2522,6 +2522,27 @@ export interface components {
             recorded_sha256: string;
             to: string;
         };
+        ScenarioConditionalProbability: {
+            /** Format: double */
+            error_probability: number;
+            exact: boolean;
+            issue?: string;
+            /** Format: double */
+            log_mass_tolerance: number;
+            /** Format: double */
+            log_p?: number | null;
+            /** Format: double */
+            lower: number;
+            method: string;
+            /** Format: double */
+            p: number | null;
+            /** Format: int64 */
+            samples: number;
+            seed: string;
+            underflow: boolean;
+            /** Format: double */
+            upper: number;
+        };
         ScenarioCoreSubstitution: {
             node: string;
             policy: string;
@@ -2631,6 +2652,7 @@ export interface components {
         };
         ScenarioExperiment: {
             baseline_rounds: components["schemas"]["ScenarioRoundComparison"] | null;
+            baseline_time?: components["schemas"]["ScenarioHeaderTimeComparison"] | null;
             baseline_time_check: string;
             change: components["schemas"]["ScenarioCutOutgoing"];
             change_sha256: string;
@@ -2646,6 +2668,29 @@ export interface components {
             to: string;
             version: string;
             wall_origin?: string;
+        };
+        ScenarioHeaderTimeComparison: {
+            /** Format: double */
+            alpha: number;
+            assumptions: string[];
+            comparison: components["schemas"]["ScenarioConditionalProbability"] | null;
+            from: string;
+            issue?: string;
+            /** Format: double */
+            maximum_cdf_difference: number;
+            method: string;
+            /** Format: double */
+            numerical_error_probability: number;
+            recorded: components["schemas"]["ScenarioIntervalHistogram"][];
+            recorded_homogeneity: components["schemas"]["ScenarioConditionalProbability"] | null;
+            /** Format: int64 */
+            recorded_runs: number;
+            simulated: components["schemas"]["ScenarioIntervalHistogram"][];
+            simulated_homogeneity: components["schemas"]["ScenarioConditionalProbability"] | null;
+            /** Format: int64 */
+            simulated_runs: number;
+            status: string;
+            to: string;
         };
         ScenarioHeight: {
             number: string;
@@ -2668,6 +2713,18 @@ export interface components {
             kind: string;
             node: string;
             sha256: string;
+        };
+        ScenarioIntervalCount: {
+            /** Format: int64 */
+            count: number;
+            seconds: string;
+        };
+        ScenarioIntervalHistogram: {
+            counts: components["schemas"]["ScenarioIntervalCount"][];
+            run: string;
+            /** Format: int64 */
+            samples: number;
+            seed?: string;
         };
         ScenarioIssue: {
             code: string;

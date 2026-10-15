@@ -1365,3 +1365,40 @@ The empirical model explicitly records that receive checks and core steps
 consume no simulated time. Clock alignment does not establish baseline
 reproducibility. Round and time
 checks remain independent; an unconfigured time criterion stays unproved.
+
+### Header interval baseline evidence
+
+Fitting version 15 binds `wbft-header-interval-baseline/1` to the model hash.
+Experiment version 2 derives `baseline_time` from retained canonical recorded
+headers and complete baseline seed rows. Storage independently recomputes it
+before finalization. Changed criteria require a new source identity; existing
+version 1 experiments retain their original unconfigured time check.
+
+The criterion compares the full integer-second header interval distribution
+over the same contiguous height range. Nodes do not supply extra independent
+observations. Every category is retained, including long intervals. At
+significance level 0.01, homogeneous runs use a fixed-row-and-column-margin
+probability-mass test. Heterogeneous runs require at least two recorded runs
+and use a whole-run CDF permutation test preserving within-run order. A single
+recorded chain cannot satisfy that replicate requirement. Homogeneity
+non-rejection does not establish independence within a run. See the
+[conditional table definition](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fisher_exact.html).
+
+Bounded complete enumeration is preferred. Larger tables or label spaces use
+deterministic conditional Monte Carlo with a plus-one p-value, following the
+[random permutation correction](https://arxiv.org/abs/1603.05766). The sample
+count is fixed before sampling, up to 200,000 samples and a bounded work budget.
+Fixed-sample Bernoulli Chernoff/KL tail bounds quantify numerical uncertainty
+with error probability at most 0.000001 per sampled test. The summary includes
+their union bound across all sampled tests. Acceptance is unproved if those
+bounds straddle 0.01, precision cannot resolve probability-mass ties, recorded
+times are missing, or dimension/work limits are exceeded. Monte Carlo never
+reports a zero p-value. Exact floating-point underflow retains log(p).
+
+`baseline_time_check` distinguishes `passed`, `failed`, and `unproved`;
+`pending` precedes baseline completion. A rejected time distribution yields
+`baseline_time_failed` when model and round gates otherwise pass. A failed
+baseline retains counterfactual outputs. Statistical non-rejection is
+conditional on the stated sampling assumptions and does not prove physical
+equivalence. The UI shows homogeneity and comparison methods, numerical bounds,
+complete histograms, and assumptions separately from execution completion.
