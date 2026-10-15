@@ -23,8 +23,8 @@ type ScenarioRuns struct {
 	Runs []store.ScenarioRunInfo `json:"runs"`
 }
 type ScenarioRequest struct {
-	Source string               `json:"source_id"`
-	Change scenario.CutOutgoing `json:"change"`
+	Source string                 `json:"source_id"`
+	Change scenario.NetworkChange `json:"change"`
 }
 type ScenarioSeedPage struct {
 	Seeds []store.ScenarioSeed `json:"seeds"`
@@ -60,9 +60,9 @@ func (s *Server) postScenarioJob(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "unexpected scenario query")
 		return
 	}
-	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 4096))
+	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, scenario.MaxChangeRequestBytes))
 	var request ScenarioRequest
-	if err != nil || whatif.DecodeJSON(raw, &request) != nil {
+	if err != nil || whatif.DecodeJSONSize(raw, &request, scenario.MaxChangeRequestBytes) != nil {
 		writeError(w, 400, "invalid scenario request")
 		return
 	}

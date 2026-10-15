@@ -1368,6 +1368,33 @@ capture cutoff. Changed fitting requires a new source identity; stored
 historical experiments remain unchanged.
 
 
+### Directed network partitions
+
+Network experiments accept either the existing `cut_outgoing` intervention or
+an explicit `partition`. A partition lists recorded validator indices as directed
+sender/receiver edges for the half-open interval `[from_ns, to_ns)`. Reverse
+edges remain available unless separately listed. The registered source determines
+node order and bounds every selected node and the simulation interval.
+
+```json
+{"source_id":"registered-model","change":{"kind":"partition","from_ns":0,"to_ns":10000000000,"edges":[{"from":0,"to":1},{"from":2,"to":1}]}}
+```
+
+Edge order is normalized before hashing and storage. Empty sets, duplicate edges,
+self-links, missing endpoints, unrelated fields, unsupported behaviors and nodes
+or intervals outside the registered model are refused. The request limit is
+2 MiB so the full directed edge set of a bounded 256-node model is representable;
+other operator requests retain their existing limits. Existing outgoing-cut JSON
+and change hashes remain unchanged. Fitting source and baseline identities are
+independent of this additional intervention type.
+
+The network screen supports one `sender -> receiver` index per line and shows
+the selected directions in retained experiment evidence. Both interventions use
+the official WBFT simulator and independent baseline and counterfactual seeds.
+The baseline must still pass its unchanged round and time criteria; a new
+partition request never establishes physical network delivery or a real-network
+prediction.
+
 ### Scenario wall-clock origin
 
 Recorded network fitting binds the declared `origin` to simulated time zero,

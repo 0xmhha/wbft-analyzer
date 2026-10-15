@@ -781,7 +781,7 @@ export interface paths {
         /** Latest 100 durable network experiment jobs and linked runs. */
         get: operations["listScenarioJobs"];
         put?: never;
-        /** Queue a bounded baseline and outgoing-link change on a complete registered model. */
+        /** Queue a bounded baseline and directed outgoing-link or explicit partition change on a complete registered model. */
         post: operations["createScenarioJob"];
         delete?: never;
         options?: never;
@@ -2551,14 +2551,11 @@ export interface components {
             signing_state: string;
             source: components["schemas"]["ScenarioInput"];
         };
-        ScenarioCutOutgoing: {
+        ScenarioDirectedEdge: {
             /** Format: int64 */
-            from_ns: number;
-            kind: string;
+            from: number;
             /** Format: int64 */
-            node: number;
-            /** Format: int64 */
-            to_ns: number;
+            to: number;
         };
         ScenarioDistribution: {
             /** Format: int64 */
@@ -2656,7 +2653,7 @@ export interface components {
             baseline_rounds: components["schemas"]["ScenarioRoundComparison"] | null;
             baseline_time?: components["schemas"]["ScenarioHeaderTimeComparison"] | null;
             baseline_time_check: string;
-            change: components["schemas"]["ScenarioCutOutgoing"];
+            change: components["schemas"]["ScenarioNetworkChange"];
             change_sha256: string;
             execution_sha256: string;
             from: string;
@@ -2736,6 +2733,24 @@ export interface components {
         ScenarioJobs: {
             jobs: components["schemas"]["StoreScenarioJob"][];
         };
+        ScenarioNetworkChange: {
+            /** Format: int64 */
+            from_ns: number;
+            /** @enum {string} */
+            kind: "cut_outgoing";
+            /** Format: int64 */
+            node: number;
+            /** Format: int64 */
+            to_ns: number;
+        } | {
+            edges: components["schemas"]["ScenarioDirectedEdge"][];
+            /** Format: int64 */
+            from_ns: number;
+            /** @enum {string} */
+            kind: "partition";
+            /** Format: int64 */
+            to_ns: number;
+        };
         ScenarioPermutation: {
             exact: boolean;
             /** Format: double */
@@ -2798,7 +2813,7 @@ export interface components {
             transport_inputs?: string[];
         };
         ScenarioRequest: {
-            change: components["schemas"]["ScenarioCutOutgoing"];
+            change: components["schemas"]["ScenarioNetworkChange"];
             source_id: string;
         };
         ScenarioRoundComparison: {
@@ -3409,7 +3424,7 @@ export interface components {
             round: number;
         };
         StoreScenarioJob: {
-            change: components["schemas"]["ScenarioCutOutgoing"];
+            change: components["schemas"]["ScenarioNetworkChange"];
             change_sha256: string;
             /** Format: date-time */
             created_at: string;

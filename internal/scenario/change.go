@@ -1,50 +1,179 @@
 package scenario
 
 import (
+	"bytes"
+	"cmp"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"slices"
 	"time"
 
 	"github.com/0xmhha/wbft/conformance/sim"
 	"github.com/0xmhha/wbft/types"
 )
 
-type CutOutgoing struct {
-	Kind   string `json:"kind"`
-	Node   int    `json:"node"`
-	FromNS int64  `json:"from_ns"`
-	ToNS   int64  `json:"to_ns"`
+// MaxChangeRequestBytes permits every directed edge in a 256-node model.
+const MaxChangeRequestBytes = 2 << 20
+const maxChangeNodes = 256
+
+// NetworkChange is a bounded directed network intervention. Node is used only
+// by cut_outgoing; partition uses explicit edges. Indices refer to fitted
+// recorded validators, never private keys or sorted simulated addresses.
+type NetworkChange struct {
+	Kind   string         `json:"kind" enum:"cut_outgoing,partition"`
+	Node   *int           `json:"node,omitempty" nullable:"false"`
+	FromNS int64          `json:"from_ns"`
+	ToNS   int64          `json:"to_ns"`
+	Edges  []DirectedEdge `json:"edges,omitempty"`
+}
+type DirectedEdge struct {
+	From *int `json:"from" nullable:"false"`
+	To   *int `json:"to" nullable:"false"`
 }
 
-// ApplyCutOutgoing changes only links leaving the selected simulated node.
-// The node index is the fitted recorded validator index, never a private key.
-func ApplyCutOutgoing(sc sim.Scenario, change CutOutgoing) (sim.Scenario, string, error) {
-	if change.Kind != "cut_outgoing" || change.Node < 0 || change.Node >= len(sc.Validators) || change.FromNS < 0 || change.ToNS <= change.FromNS || time.Duration(change.ToNS) > sc.Until.Duration {
-		return sc, "", errors.New("invalid outgoing link change")
+// UnmarshalJSON refuses irrelevant fields even when they contain null.
+func (c *NetworkChange) UnmarshalJSON(raw []byte) error {
+	type wire NetworkChange
+	var decoded wire
+	d := json.NewDecoder(bytes.NewReader(raw))
+	d.DisallowUnknownFields()
+	if err := d.Decode(&decoded); err != nil {
+		return err
 	}
-	from := sc.Validators[change.Node].Address()
-	cut := [][2]types.Address{}
-	for i, v := range sc.Validators {
-		if i != change.Node {
-			cut = append(cut, [2]types.Address{from, v.Address()})
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return err
+	}
+	for key := range fields {
+		switch key {
+		case "kind", "node", "from_ns", "to_ns", "edges":
+		default:
+			return errNetworkChange
 		}
 	}
-	sc.Partitions = append(append([]sim.Partition(nil), sc.Partitions...), sim.Partition{From: time.Duration(change.FromNS), To: time.Duration(change.ToNS), DirectedCut: cut})
-	raw, err := json.Marshal(change)
+	for _, key := range []string{"kind", "from_ns", "to_ns"} {
+		value, ok := fields[key]
+		if !ok || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return errNetworkChange
+		}
+	}
+	if _, ok := fields["edges"]; decoded.Kind == "cut_outgoing" && ok {
+		return errNetworkChange
+	}
+	if _, ok := fields["node"]; decoded.Kind == "partition" && ok {
+		return errNetworkChange
+	}
+	normalized, err := NetworkChange(decoded).Normalized()
+	if err != nil {
+		return err
+	}
+	*c = normalized
+	return nil
+}
+
+var errNetworkChange = errors.New("invalid bounded directed network change")
+
+func copyNode(index *int) *int {
+	if index == nil {
+		return nil
+	}
+	n := *index
+	return &n
+}
+
+// Normalized snapshots caller-owned indices and sorts the directed edge set.
+// Existing cut_outgoing canonical JSON and hashes remain unchanged.
+func (c NetworkChange) Normalized() (NetworkChange, error) {
+	if c.FromNS < 0 || c.ToNS <= c.FromNS || c.ToNS > int64(24*time.Hour) {
+		return NetworkChange{}, errNetworkChange
+	}
+	switch c.Kind {
+	case "cut_outgoing":
+		if c.Node == nil || *c.Node < 0 || *c.Node >= maxChangeNodes || c.Edges != nil {
+			return NetworkChange{}, errNetworkChange
+		}
+		c.Node = copyNode(c.Node)
+	case "partition":
+		if c.Node != nil || len(c.Edges) == 0 || len(c.Edges) > maxChangeNodes*(maxChangeNodes-1) {
+			return NetworkChange{}, errNetworkChange
+		}
+		edges := make([]DirectedEdge, len(c.Edges))
+		for i, e := range c.Edges {
+			if e.From == nil || e.To == nil || *e.From < 0 || *e.To < 0 || *e.From >= maxChangeNodes || *e.To >= maxChangeNodes || *e.From == *e.To {
+				return NetworkChange{}, errNetworkChange
+			}
+			edges[i] = DirectedEdge{From: copyNode(e.From), To: copyNode(e.To)}
+		}
+		slices.SortFunc(edges, func(a, b DirectedEdge) int {
+			if n := cmp.Compare(*a.From, *b.From); n != 0 {
+				return n
+			}
+			return cmp.Compare(*a.To, *b.To)
+		})
+		for i := 1; i < len(edges); i++ {
+			if *edges[i-1].From == *edges[i].From && *edges[i-1].To == *edges[i].To {
+				return NetworkChange{}, errNetworkChange
+			}
+		}
+		c.Edges = edges
+	default:
+		return NetworkChange{}, errNetworkChange
+	}
+	return c, nil
+}
+
+func (c NetworkChange) ValidateFor(nodes int, duration time.Duration) error {
+	normalized, err := c.Normalized()
+	if err != nil || nodes < 2 || nodes > maxChangeNodes || duration <= 0 || time.Duration(c.ToNS) > duration {
+		return errNetworkChange
+	}
+	if normalized.Node != nil && *normalized.Node >= nodes {
+		return errNetworkChange
+	}
+	for _, e := range normalized.Edges {
+		if *e.From >= nodes || *e.To >= nodes {
+			return errNetworkChange
+		}
+	}
+	return nil
+}
+
+// ApplyNetworkChange uses the official simulator's directed partition policy.
+// It leaves reverse edges and the caller's baseline scenario unchanged.
+func ApplyNetworkChange(sc sim.Scenario, change NetworkChange) (sim.Scenario, string, error) {
+	if err := change.ValidateFor(len(sc.Validators), sc.Until.Duration); err != nil {
+		return sc, "", err
+	}
+	normalized, err := change.Normalized()
 	if err != nil {
 		return sc, "", err
 	}
-	sum := sha256.Sum256(raw)
-	return sc, hex.EncodeToString(sum[:]), nil
+	cut := [][2]types.Address{}
+	if normalized.Kind == "cut_outgoing" {
+		from := sc.Validators[*normalized.Node].Address()
+		for i, v := range sc.Validators {
+			if i != *normalized.Node {
+				cut = append(cut, [2]types.Address{from, v.Address()})
+			}
+		}
+	} else {
+		for _, e := range normalized.Edges {
+			cut = append(cut, [2]types.Address{sc.Validators[*e.From].Address(), sc.Validators[*e.To].Address()})
+		}
+	}
+	sc.Partitions = append(append([]sim.Partition(nil), sc.Partitions...), sim.Partition{From: time.Duration(normalized.FromNS), To: time.Duration(normalized.ToNS), DirectedCut: cut})
+	_, hash, err := normalized.Canonical()
+	return sc, hash, err
 }
 
-func (c CutOutgoing) Canonical() ([]byte, string, error) {
-	if c.Kind != "cut_outgoing" || c.Node < 0 || c.Node >= 256 || c.FromNS < 0 || c.ToNS <= c.FromNS || c.ToNS > int64(24*time.Hour) {
-		return nil, "", errors.New("invalid bounded network change")
+func (c NetworkChange) Canonical() ([]byte, string, error) {
+	normalized, err := c.Normalized()
+	if err != nil {
+		return nil, "", err
 	}
-	raw, err := json.Marshal(c)
+	raw, err := json.Marshal(normalized)
 	if err != nil {
 		return nil, "", err
 	}

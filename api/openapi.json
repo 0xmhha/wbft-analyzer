@@ -5242,30 +5242,21 @@
         ],
         "type": "object"
       },
-      "ScenarioCutOutgoing": {
+      "ScenarioDirectedEdge": {
         "additionalProperties": false,
         "properties": {
-          "from_ns": {
+          "from": {
             "format": "int64",
             "type": "integer"
           },
-          "kind": {
-            "type": "string"
-          },
-          "node": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "to_ns": {
+          "to": {
             "format": "int64",
             "type": "integer"
           }
         },
         "required": [
-          "from_ns",
-          "kind",
-          "node",
-          "to_ns"
+          "from",
+          "to"
         ],
         "type": "object"
       },
@@ -5664,7 +5655,7 @@
             "type": "string"
           },
           "change": {
-            "$ref": "#/components/schemas/ScenarioCutOutgoing"
+            "$ref": "#/components/schemas/ScenarioNetworkChange"
           },
           "change_sha256": {
             "type": "string"
@@ -6002,6 +5993,75 @@
         ],
         "type": "object"
       },
+      "ScenarioNetworkChange": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "from_ns": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "kind": {
+                "enum": [
+                  "cut_outgoing"
+                ],
+                "type": "string"
+              },
+              "node": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "to_ns": {
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "from_ns",
+              "kind",
+              "node",
+              "to_ns"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "edges": {
+                "items": {
+                  "$ref": "#/components/schemas/ScenarioDirectedEdge"
+                },
+                "type": "array"
+              },
+              "from_ns": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "kind": {
+                "enum": [
+                  "partition"
+                ],
+                "type": "string"
+              },
+              "to_ns": {
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "edges",
+              "from_ns",
+              "kind",
+              "to_ns"
+            ],
+            "type": "object"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind"
+        }
+      },
       "ScenarioPermutation": {
         "additionalProperties": false,
         "properties": {
@@ -6267,7 +6327,7 @@
         "additionalProperties": false,
         "properties": {
           "change": {
-            "$ref": "#/components/schemas/ScenarioCutOutgoing"
+            "$ref": "#/components/schemas/ScenarioNetworkChange"
           },
           "source_id": {
             "type": "string"
@@ -8631,7 +8691,7 @@
         "additionalProperties": false,
         "properties": {
           "change": {
-            "$ref": "#/components/schemas/ScenarioCutOutgoing"
+            "$ref": "#/components/schemas/ScenarioNetworkChange"
           },
           "change_sha256": {
             "type": "string"
@@ -14216,7 +14276,7 @@
             "description": "the request failed"
           }
         },
-        "summary": "Queue a bounded baseline and outgoing-link change on a complete registered model."
+        "summary": "Queue a bounded baseline and directed outgoing-link or explicit partition change on a complete registered model."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/scenario-jobs/{job}": {
