@@ -3593,6 +3593,7 @@ export interface components {
         StoreMissingIndex: {
             /** Format: int64 */
             cells: number;
+            checkpoint_snapshot?: string;
             counts: {
                 [key: string]: number;
             };

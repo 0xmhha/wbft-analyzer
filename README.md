@@ -561,10 +561,21 @@ classification indexes require `reindex missing`. To recover previously discarde
 conditions, ingest the original sources under a new dataset name before rebuilding.
 
 `NOT_SENT` requires a closed active native view or a complete active event capture
-with matching canonical head bounds and known send identities. An observer,
-open prefix, lost records or opaque identity remains unknown. Active sign-floor
-metadata retains its original node-start evidence. Sender capture coverage is
-never counted as receiver coverage. Original event and header pointers remain
+with matching canonical head bounds and known send identities. A journal step
+may supply a lower head checkpoint only after its stepped outcomes are matched
+to the same native node/run. Its recorded monotonic clock must lie inside that
+closed active event capture and before the later canonical imported head. The
+checkpoint must strictly precede the target height; a startup head at the target
+cannot establish that the height was captured. Conflicting or ambiguous inputs,
+journal gaps, missing clocks and foreign hashes retain unknown classifications.
+Journal checkpoints never supply receiver coverage. An observer, open prefix,
+lost records or opaque identity remains unknown. Active sign-floor
+metadata retains its original node-start evidence. Missing projection version 3
+requires an explicit `reindex missing`; older stored indexes are stale. Its
+snapshot binds the companion records and all checkpoint headers, including
+context outside the displayed range. Exact journal evidence opens in the
+message dataset, while event coverage points open in the event run.
+Sender capture coverage is never counted as receiver coverage. Original event and header pointers remain
 available from a selected matrix cell, including a replay link.
 
 Read-only endpoints `GET /v1/networks/{net}/datasets/{dataset}/missing/index` and
