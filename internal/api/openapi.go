@@ -214,7 +214,7 @@ func (g *schemas) component(t reflect.Type) string {
 			sort.Strings(required)
 			return map[string]any{"type": "object", "properties": properties, "required": required, "additionalProperties": false}
 		}
-		sch = map[string]any{"anyOf": []any{variant("cut_outgoing", "node", "from_ns", "to_ns"), variant("partition", "from_ns", "to_ns", "edges")}, "discriminator": map[string]any{"propertyName": "kind"}}
+		sch = map[string]any{"anyOf": []any{variant("cut_outgoing", "node", "from_ns", "to_ns"), variant("partition", "from_ns", "to_ns", "edges"), variant("set_link_delay", "from_ns", "to_ns", "edges", "delay_ns"), variant("scale_link_delay", "from_ns", "to_ns", "edges", "scale")}, "discriminator": map[string]any{"propertyName": "kind"}}
 	}
 	g.components[name] = sch
 	return name

@@ -781,7 +781,7 @@ export interface paths {
         /** Latest 100 durable network experiment jobs and linked runs. */
         get: operations["listScenarioJobs"];
         put?: never;
-        /** Queue a bounded baseline and directed outgoing-link or explicit partition change on a complete registered model. */
+        /** Queue a bounded baseline and directed network change on a complete registered model. */
         post: operations["createScenarioJob"];
         delete?: never;
         options?: never;
@@ -2551,6 +2551,10 @@ export interface components {
             signing_state: string;
             source: components["schemas"]["ScenarioInput"];
         };
+        ScenarioDelayScale: {
+            denominator: string;
+            numerator: string;
+        };
         ScenarioDirectedEdge: {
             /** Format: int64 */
             from: number;
@@ -2748,6 +2752,25 @@ export interface components {
             from_ns: number;
             /** @enum {string} */
             kind: "partition";
+            /** Format: int64 */
+            to_ns: number;
+        } | {
+            /** Format: int64 */
+            delay_ns: number;
+            edges: components["schemas"]["ScenarioDirectedEdge"][];
+            /** Format: int64 */
+            from_ns: number;
+            /** @enum {string} */
+            kind: "set_link_delay";
+            /** Format: int64 */
+            to_ns: number;
+        } | {
+            edges: components["schemas"]["ScenarioDirectedEdge"][];
+            /** Format: int64 */
+            from_ns: number;
+            /** @enum {string} */
+            kind: "scale_link_delay";
+            scale: components["schemas"]["ScenarioDelayScale"];
             /** Format: int64 */
             to_ns: number;
         };

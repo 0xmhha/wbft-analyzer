@@ -1395,6 +1395,32 @@ The baseline must still pass its unchanged round and time criteria; a new
 partition request never establishes physical network delivery or a real-network
 prediction.
 
+### Directed link delay interventions
+
+`set_link_delay` assigns a constant integer-nanosecond delay to selected directed
+links. `scale_link_delay` multiplies each existing delay sample by an exact
+nonnegative rational and rounds down to integer nanoseconds. Both preserve sample
+cardinality, loss probabilities, unselected directions, and the baseline scenario.
+A missing explicit link never uses a synthetic fallback.
+
+```json
+{"source_id":"registered-model","change":{"kind":"scale_link_delay","from_ns":0,"to_ns":120000000000,"edges":[{"from":0,"to":1}],"scale":{"numerator":"2","denominator":"1"}}}
+```
+
+Delay changes apply throughout the registered simulation: `from_ns` must be zero
+and `to_ns` must equal its duration. The form states this full-run scope and does
+not offer a partial delay window. Partitions retain their existing bounded cut
+intervals. Ratio terms are unsigned 64-bit decimal strings, reduced by their GCD
+before hashing; the denominator must be positive. Constant and transformed delays
+must lie between zero and 24 hours. Source-dependent overflow is rejected before
+queuing and rechecked against reconstructed samples during execution.
+
+Existing cut and partition requests and hashes remain unchanged. Retained delay
+results show the exact value or rational and the selected directions. Direction
+evidence renders at most 100 rows per page, with first/previous/next/last controls
+for the complete bounded edge set. These interventions do not establish physical
+network predictions; the existing baseline round and time checks remain required.
+
 ### Scenario wall-clock origin
 
 Recorded network fitting binds the declared `origin` to simulated time zero,

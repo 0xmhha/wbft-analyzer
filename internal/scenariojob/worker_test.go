@@ -78,7 +78,7 @@ func TestEmptyScenarioRegistryDoesNotClaimQueue(t *testing.T) {
 
 func TestScenarioRegistryRejectsChangeOutsideFittedScope(t *testing.T) {
 	w := &Worker{sources: map[string]registered{"complete": {network: 1, nodes: 4, duration: time.Second, info: SourceInfo{ID: "complete", Dataset: 2, Status: "complete", ExecutionSHA: "synthetic"}}}}
-	for _, change := range []scenario.NetworkChange{{Kind: "cut_outgoing", Node: invalidRecordedNode(), ToNS: 1}, {Kind: "cut_outgoing", Node: new(int), ToNS: int64(2 * time.Second)}, {Kind: "unknown", Node: new(int), ToNS: 1}, {Kind: "partition", ToNS: 1, Edges: []scenario.DirectedEdge{{From: invalidRecordedNode(), To: new(int)}}}} {
+	for _, change := range []scenario.NetworkChange{{Kind: "cut_outgoing", Node: invalidRecordedNode(), ToNS: 1}, {Kind: "cut_outgoing", Node: new(int), ToNS: int64(2 * time.Second)}, {Kind: "unknown", Node: new(int), ToNS: 1}, {Kind: "scale_link_delay", ToNS: int64(time.Second), Edges: []scenario.DirectedEdge{{From: new(int), To: invalidRecordedNode()}}, Scale: &scenario.DelayScale{Numerator: 1, Denominator: 1}}, {Kind: "partition", ToNS: 1, Edges: []scenario.DirectedEdge{{From: invalidRecordedNode(), To: new(int)}}}} {
 		if _, err := w.Enqueue(context.Background(), 1, 2, "complete", change); !errors.Is(err, ErrChange) {
 			t.Fatal("change exceeded registered model", err)
 		}
@@ -86,3 +86,12 @@ func TestScenarioRegistryRejectsChangeOutsideFittedScope(t *testing.T) {
 }
 
 func invalidRecordedNode() *int { n := 4; return &n }
+
+func TestScenarioRegistryRejectsDelayOverflowBeforeQueuing(t *testing.T) {
+	one := 1
+	w := &Worker{sources: map[string]registered{"complete": {network: 1, nodes: 4, duration: time.Second, delays: map[[2]int]time.Duration{{0, 1}: 24 * time.Hour}, info: SourceInfo{ID: "complete", Dataset: 2, Status: "complete", ExecutionSHA: "synthetic"}}}}
+	change := scenario.NetworkChange{Kind: "scale_link_delay", ToNS: int64(time.Second), Edges: []scenario.DirectedEdge{{From: new(int), To: &one}}, Scale: &scenario.DelayScale{Numerator: 2, Denominator: 1}}
+	if _, err := w.Enqueue(context.Background(), 1, 2, "complete", change); !errors.Is(err, ErrChange) {
+		t.Fatal("unrepresentable source delay reached storage", err)
+	}
+}

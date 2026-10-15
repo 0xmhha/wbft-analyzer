@@ -139,7 +139,8 @@ func TestScenarioAPIScopedRunsAndSavedSeedPages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	change := scenario.NetworkChange{Kind: "cut_outgoing", Node: new(int), ToNS: 1000000000}
+	one := 1
+	change := scenario.NetworkChange{Kind: "scale_link_delay", ToNS: 1000000000, Edges: []scenario.DirectedEdge{{From: new(int), To: &one}}, Scale: &scenario.DelayScale{Numerator: 2, Denominator: 1}}
 	_, ch, err := change.Canonical()
 	if err != nil {
 		t.Fatal(err)
@@ -242,6 +243,8 @@ func TestNetworkChangeRequestJSONContract(t *testing.T) {
 	for _, raw := range []string{
 		`{"source_id":"synthetic","change":{"kind":"cut_outgoing","node":0,"from_ns":0,"to_ns":1}}`,
 		`{"source_id":"synthetic","change":{"kind":"partition","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}]}}`,
+		`{"source_id":"synthetic","change":{"kind":"set_link_delay","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}],"delay_ns":0}}`,
+		`{"source_id":"synthetic","change":{"kind":"scale_link_delay","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}],"scale":{"numerator":"9007199254740993","denominator":"1"}}}`,
 	} {
 		var v any
 		if err := json.Unmarshal([]byte(raw), &v); err != nil {
@@ -260,6 +263,9 @@ func TestNetworkChangeRequestJSONContract(t *testing.T) {
 		`{"source_id":"synthetic","change":{"kind":"partition","node":0,"from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}]}}`,
 		`{"source_id":"synthetic","change":{"kind":"cut_outgoing","node":0,"from_ns":0,"to_ns":1,"edges":[]}}`,
 		`{"source_id":"synthetic","change":{"kind":"byzantine","node":0,"from_ns":0,"to_ns":1}}`,
+		`{"source_id":"synthetic","change":{"kind":"set_link_delay","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}]}}`,
+		`{"source_id":"synthetic","change":{"kind":"scale_link_delay","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}],"scale":{"numerator":2,"denominator":"1"}}}`,
+
 		`{"source_id":"synthetic","change":{"kind":"partition","from_ns":0,"to_ns":1,"edges":[{"from":null,"to":1}]}}`,
 	} {
 		var v any
