@@ -5722,6 +5722,16 @@
           "status": {
             "type": "string"
           },
+          "timing_effect": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioTimingEffect"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "to": {
             "pattern": "^[0-9]+$",
             "type": "string"
@@ -6273,11 +6283,78 @@
               "to_ns"
             ],
             "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "from_ns": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "kind": {
+                "enum": [
+                  "set_timing"
+                ],
+                "type": "string"
+              },
+              "timing": {
+                "$ref": "#/components/schemas/ScenarioTimingChange"
+              },
+              "to_ns": {
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "from_ns",
+              "kind",
+              "timing",
+              "to_ns"
+            ],
+            "type": "object"
           }
         ],
         "discriminator": {
           "propertyName": "kind"
         }
+      },
+      "ScenarioNodeTimingChange": {
+        "additionalProperties": false,
+        "properties": {
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "values": {
+            "$ref": "#/components/schemas/ScenarioTimingValues"
+          }
+        },
+        "required": [
+          "node",
+          "values"
+        ],
+        "type": "object"
+      },
+      "ScenarioNodeTimingEffect": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "$ref": "#/components/schemas/ScenarioTimingConfiguration"
+          },
+          "before": {
+            "$ref": "#/components/schemas/ScenarioTimingConfiguration"
+          },
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "after",
+          "before",
+          "node"
+        ],
+        "type": "object"
       },
       "ScenarioPermutation": {
         "additionalProperties": false,
@@ -6953,6 +7030,16 @@
             },
             "type": "array"
           },
+          "timing_observations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSeedTimingObservations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "violations": {
             "items": {
               "$ref": "#/components/schemas/ScenarioSeedViolation"
@@ -6965,6 +7052,41 @@
           "configured_stop_height",
           "nodes",
           "violations"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedJournalConfiguration": {
+        "additionalProperties": false,
+        "properties": {
+          "chain_config_sha256": {
+            "type": "string"
+          },
+          "engine_run": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "journal_segments": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/ScenarioTimingConfiguration"
+          },
+          "run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chain_config_sha256",
+          "engine_run",
+          "journal_segments",
+          "node",
+          "parameters",
+          "run"
         ],
         "type": "object"
       },
@@ -7110,6 +7232,119 @@
         ],
         "type": "object"
       },
+      "ScenarioSeedTimerArm": {
+        "additionalProperties": false,
+        "properties": {
+          "at_ns": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "deadline_ns": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "duration_ms": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "engine_run": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "generation": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rearmed": {
+            "type": "boolean"
+          },
+          "round": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "at_ns",
+          "duration_ms",
+          "engine_run",
+          "generation",
+          "height",
+          "node",
+          "rearmed",
+          "round",
+          "run"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedTimerCoverage": {
+        "additionalProperties": false,
+        "properties": {
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "retained_round_timer_arms": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total_round_timer_arms": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "node",
+          "retained_round_timer_arms",
+          "total_round_timer_arms"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedTimingObservations": {
+        "additionalProperties": false,
+        "properties": {
+          "journal_configurations": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedJournalConfiguration"
+            },
+            "type": "array"
+          },
+          "round_timer_arms": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedTimerArm"
+            },
+            "type": "array"
+          },
+          "source": {
+            "type": "string"
+          },
+          "timer_coverage": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedTimerCoverage"
+            },
+            "type": "array"
+          },
+          "timer_sampling": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "journal_configurations",
+          "round_timer_arms",
+          "source",
+          "timer_coverage",
+          "timer_sampling"
+        ],
+        "type": "object"
+      },
       "ScenarioSeedViolation": {
         "additionalProperties": false,
         "properties": {
@@ -7147,6 +7382,93 @@
           "enabled",
           "sources"
         ],
+        "type": "object"
+      },
+      "ScenarioTimingChange": {
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "global": {
+            "$ref": "#/components/schemas/ScenarioTimingValues"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioNodeTimingChange"
+            },
+            "maxItems": 256,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "ScenarioTimingConfiguration": {
+        "additionalProperties": false,
+        "properties": {
+          "block_period_seconds": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "max_request_timeout_seconds": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "request_timeout_ms": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "block_period_seconds",
+          "max_request_timeout_seconds",
+          "request_timeout_ms"
+        ],
+        "type": "object"
+      },
+      "ScenarioTimingEffect": {
+        "additionalProperties": false,
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioNodeTimingEffect"
+            },
+            "type": "array"
+          },
+          "precedence": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "nodes",
+          "precedence",
+          "scope",
+          "source"
+        ],
+        "type": "object"
+      },
+      "ScenarioTimingValues": {
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "block_period_seconds": {
+            "pattern": "^[1-9][0-9]*$",
+            "type": "string"
+          },
+          "max_request_timeout_seconds": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "request_timeout_seconds": {
+            "pattern": "^[1-9][0-9]*$",
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "ScenarioTransportHeaderCheckpoint": {

@@ -22,7 +22,7 @@ const maxChangeNodes = 256
 // used only by cut_outgoing; link changes use explicit edges. Indices refer to fitted
 // recorded validators, never private keys or sorted simulated addresses.
 type NetworkChange struct {
-	Kind           string             `json:"kind" enum:"cut_outgoing,partition,set_link_delay,scale_link_delay,node_lifecycle"`
+	Kind           string             `json:"kind" enum:"cut_outgoing,partition,set_link_delay,scale_link_delay,node_lifecycle,set_timing"`
 	Node           *int               `json:"node,omitempty" nullable:"false"`
 	FromNS         int64              `json:"from_ns"`
 	ToNS           int64              `json:"to_ns"`
@@ -31,6 +31,7 @@ type NetworkChange struct {
 	Scale          *DelayScale        `json:"scale,omitempty" nullable:"false"`
 	Lifecycle      []LifecycleCommand `json:"lifecycle,omitempty"`
 	SchedulePolicy string             `json:"schedule_policy,omitempty" enum:"merge,replace_window"`
+	Timing         *TimingChange      `json:"timing,omitempty" nullable:"false"`
 }
 type DirectedEdge struct {
 	From *int `json:"from" nullable:"false"`
@@ -65,6 +66,8 @@ func (c *NetworkChange) UnmarshalJSON(raw []byte) error {
 	case "node_lifecycle":
 		allowed["lifecycle"] = true
 		allowed["schedule_policy"] = true
+	case "set_timing":
+		allowed["timing"] = true
 	default:
 		return errNetworkChange
 	}
@@ -107,7 +110,12 @@ func (c NetworkChange) Normalized() (NetworkChange, error) {
 	if c.Kind != "node_lifecycle" && (c.Lifecycle != nil || c.SchedulePolicy != "") {
 		return NetworkChange{}, errNetworkChange
 	}
+	if c.Kind != "set_timing" && c.Timing != nil {
+		return NetworkChange{}, errNetworkChange
+	}
 	switch c.Kind {
+	case "set_timing":
+		return normalizeTimingChange(c)
 	case "node_lifecycle":
 		return normalizeLifecycle(c)
 	case "cut_outgoing":
@@ -171,7 +179,7 @@ func (c NetworkChange) ValidateFor(nodes int, duration time.Duration) error {
 	if err != nil || nodes < 2 || nodes > maxChangeNodes || duration <= 0 || time.Duration(c.ToNS) > duration {
 		return errNetworkChange
 	}
-	if normalized.IsLinkDelay() && (normalized.FromNS != 0 || time.Duration(normalized.ToNS) != duration) {
+	if (normalized.IsLinkDelay() || normalized.Kind == "set_timing") && (normalized.FromNS != 0 || time.Duration(normalized.ToNS) != duration) {
 		return errNetworkChange
 	}
 	if normalized.Node != nil && *normalized.Node >= nodes {
@@ -185,6 +193,13 @@ func (c NetworkChange) ValidateFor(nodes int, duration time.Duration) error {
 	for _, command := range normalized.Lifecycle {
 		if *command.Node >= nodes {
 			return errNetworkChange
+		}
+	}
+	if normalized.Timing != nil {
+		for _, node := range normalized.Timing.Nodes {
+			if *node.Node >= nodes {
+				return errNetworkChange
+			}
 		}
 	}
 	return nil
@@ -205,6 +220,9 @@ func ApplyNetworkChange(sc sim.Scenario, change NetworkChange) (sim.Scenario, st
 	}
 	if normalized.Kind == "node_lifecycle" {
 		return applyNodeLifecycle(sc, normalized)
+	}
+	if normalized.Kind == "set_timing" {
+		return applyTimingChange(sc, normalized)
 	}
 	cut := [][2]types.Address{}
 	if normalized.Kind == "cut_outgoing" {

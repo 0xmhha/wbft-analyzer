@@ -11,6 +11,7 @@ import (
 const ExperimentVersion = "wbft-network-experiment/2"
 
 type Experiment struct {
+	Timing          *TimingEffect         `json:"timing_effect,omitempty"`
 	Lifecycle       *LifecycleEffect      `json:"lifecycle_effect,omitempty"`
 	WallOrigin      string                `json:"wall_origin,omitempty"`
 	ExecutionSHA256 string                `json:"execution_sha256"`
@@ -82,6 +83,11 @@ func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provena
 		out.Status = "failed"
 		return out, err
 	}
+	out.Timing, err = TimingChangeEvidence(sc, change)
+	if err != nil {
+		out.Status = "failed"
+		return out, err
+	}
 	out.ExecutionSHA256, err = ExecutionHash(sc)
 	if err != nil {
 		out.Status = "failed"
@@ -106,7 +112,8 @@ func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provena
 		}
 	}
 	run := func(mode string, s sim.Scenario, target *[]SeedResult) error {
-		return runSeeds(ctx, s, fixed.Seeds, from, to, mode == "counterfactual" && change.Kind == "node_lifecycle", func(r SeedResult) error {
+		counter := mode == "counterfactual"
+		return runSeedsWithEvidence(ctx, s, fixed.Seeds, from, to, counter && (change.Kind == "node_lifecycle" || change.Kind == "set_timing"), counter && change.Kind == "set_timing", func(r SeedResult) error {
 			if err := emit(SeedRecord{Mode: mode, Result: r}); err != nil {
 				return err
 			}

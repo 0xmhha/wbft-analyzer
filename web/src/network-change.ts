@@ -1,11 +1,16 @@
 import type { Schemas } from "./api/client";
+import {timingChange,type TimingFields} from "./timing-change";
 type Change=Schemas["ScenarioNetworkChange"];
 export type ChangeKind=Change["kind"];
-export type DelayFields={nanoseconds?:string;numerator?:string;denominator?:string;lifecycle?:string;schedulePolicy?:string};
+export type DelayFields={nanoseconds?:string;numerator?:string;denominator?:string;lifecycle?:string;schedulePolicy?:string;timing?:TimingFields};
 /** Recorded node indices keep their direction; no reverse edges are inferred. */
 export function networkChange(kind:ChangeKind,node:number,text:string,from:string,to:string,nodes:number,duration:number,delay:DelayFields={}):Change{
  const a=Number(from),b=Number(to);
  if(!/^(0|[1-9][0-9]*)$/.test(from)||!/^[1-9][0-9]*$/.test(to)||!Number.isSafeInteger(a)||!Number.isSafeInteger(b)||a<0||b<=a||b>duration||nodes<2||nodes>256)throw new Error("Choose a cut interval inside the registered duration.");
+ if(kind==="set_timing"){
+  if(a!==0||b!==duration)throw new Error("Consensus timing changes apply to the whole registered run.");
+  return timingChange(delay.timing??{timeout:"",period:"",cap:"",nodes:""},nodes,duration);
+ }
  if(kind==="cut_outgoing"){
   if(!Number.isInteger(node)||node<0||node>=nodes)throw new Error("Choose a recorded node.");
   return {kind,node,from_ns:a,to_ns:b};

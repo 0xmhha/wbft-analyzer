@@ -2669,6 +2669,7 @@ export interface components {
             recorded_sha256: string;
             source_sha256: string;
             status: string;
+            timing_effect?: components["schemas"]["ScenarioTimingEffect"] | null;
             to: string;
             version: string;
             wall_origin?: string;
@@ -2806,6 +2807,25 @@ export interface components {
             schedule_policy: "merge" | "replace_window";
             /** Format: int64 */
             to_ns: number;
+        } | {
+            /** Format: int64 */
+            from_ns: number;
+            /** @enum {string} */
+            kind: "set_timing";
+            timing: components["schemas"]["ScenarioTimingChange"];
+            /** Format: int64 */
+            to_ns: number;
+        };
+        ScenarioNodeTimingChange: {
+            /** Format: int64 */
+            node: number;
+            values: components["schemas"]["ScenarioTimingValues"];
+        };
+        ScenarioNodeTimingEffect: {
+            after: components["schemas"]["ScenarioTimingConfiguration"];
+            before: components["schemas"]["ScenarioTimingConfiguration"];
+            /** Format: int64 */
+            node: number;
         };
         ScenarioPermutation: {
             exact: boolean;
@@ -2967,7 +2987,18 @@ export interface components {
             configured_stop_height: string;
             lifecycle_observations?: components["schemas"]["ScenarioSeedLifecycleObservations"] | null;
             nodes: components["schemas"]["ScenarioSeedNode"][];
+            timing_observations?: components["schemas"]["ScenarioSeedTimingObservations"] | null;
             violations: components["schemas"]["ScenarioSeedViolation"][];
+        };
+        ScenarioSeedJournalConfiguration: {
+            chain_config_sha256: string;
+            engine_run: string;
+            /** Format: int64 */
+            journal_segments: number;
+            /** Format: int64 */
+            node: number;
+            parameters: components["schemas"]["ScenarioTimingConfiguration"];
+            run: string;
         };
         ScenarioSeedLifecycleObservations: {
             node_starts: components["schemas"]["ScenarioSeedNodeStart"][];
@@ -3006,6 +3037,33 @@ export interface components {
             /** Format: int64 */
             violations: number;
         };
+        ScenarioSeedTimerArm: {
+            at_ns: string;
+            deadline_ns?: string;
+            duration_ms: string;
+            engine_run: string;
+            generation: string;
+            height: string;
+            /** Format: int64 */
+            node: number;
+            rearmed: boolean;
+            round: string;
+            run: string;
+        };
+        ScenarioSeedTimerCoverage: {
+            /** Format: int64 */
+            node: number;
+            /** Format: int64 */
+            retained_round_timer_arms: number;
+            total_round_timer_arms: string;
+        };
+        ScenarioSeedTimingObservations: {
+            journal_configurations: components["schemas"]["ScenarioSeedJournalConfiguration"][];
+            round_timer_arms: components["schemas"]["ScenarioSeedTimerArm"][];
+            source: string;
+            timer_coverage: components["schemas"]["ScenarioSeedTimerCoverage"][];
+            timer_sampling: string;
+        };
         ScenarioSeedViolation: {
             detail: string;
             kind: string;
@@ -3014,6 +3072,26 @@ export interface components {
         ScenarioSources: {
             enabled: boolean;
             sources: components["schemas"]["ScenariojobSourceInfo"][];
+        };
+        ScenarioTimingChange: {
+            global?: components["schemas"]["ScenarioTimingValues"];
+            nodes?: components["schemas"]["ScenarioNodeTimingChange"][];
+        };
+        ScenarioTimingConfiguration: {
+            block_period_seconds: string;
+            max_request_timeout_seconds: string;
+            request_timeout_ms: string;
+        };
+        ScenarioTimingEffect: {
+            nodes: components["schemas"]["ScenarioNodeTimingEffect"][];
+            precedence: string;
+            scope: string;
+            source: string;
+        };
+        ScenarioTimingValues: {
+            block_period_seconds?: string;
+            max_request_timeout_seconds?: string;
+            request_timeout_seconds?: string;
         };
         ScenarioTransportHeaderCheckpoint: {
             /** Format: date-time */

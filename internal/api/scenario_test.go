@@ -250,6 +250,7 @@ func TestNetworkChangeRequestJSONContract(t *testing.T) {
 		`{"source_id":"synthetic","change":{"kind":"set_link_delay","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}],"delay_ns":0}}`,
 		`{"source_id":"synthetic","change":{"kind":"scale_link_delay","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}],"scale":{"numerator":"9007199254740993","denominator":"1"}}}`,
 		`{"source_id":"synthetic","change":{"kind":"node_lifecycle","from_ns":0,"to_ns":1,"schedule_policy":"replace_window","lifecycle":[{"node":0,"at_ns":0,"action":"stop"}]}}`,
+		`{"source_id":"synthetic","change":{"kind":"set_timing","from_ns":0,"to_ns":1,"timing":{"global":{"max_request_timeout_seconds":"0"},"nodes":[{"node":1,"values":{"request_timeout_seconds":"7"}}]}}}`,
 	} {
 		var v any
 		if err := json.Unmarshal([]byte(raw), &v); err != nil {
@@ -275,6 +276,15 @@ func TestNetworkChangeRequestJSONContract(t *testing.T) {
 		`{"source_id":"synthetic","change":{"kind":"node_lifecycle","from_ns":0,"to_ns":1,"lifecycle":[{"node":0,"at_ns":0,"action":"stop"}]}}`,
 		`{"source_id":"synthetic","change":{"kind":"node_lifecycle","from_ns":0,"to_ns":1,"schedule_policy":"merge","lifecycle":[{"node":0,"at_ns":null,"action":"stop"}]}}`,
 		`{"source_id":"synthetic","change":{"kind":"node_lifecycle","from_ns":0,"to_ns":1,"schedule_policy":"merge","lifecycle":[{"node":0,"at_ns":0,"action":"crash"}]}}`,
+		`{"source_id":"synthetic","change":{"kind":"set_timing","from_ns":0,"to_ns":1}}`,
+		`{"source_id":"synthetic","change":{"kind":"set_timing","from_ns":0,"to_ns":1,"timing":{"global":{}}}}`,
+		`{"source_id":"synthetic","change":{"kind":"set_timing","from_ns":0,"to_ns":1,"timing":{"global":{"request_timeout_seconds":"0"}}}}`,
+		`{"source_id":"synthetic","change":{"kind":"set_timing","from_ns":0,"to_ns":1,"timing":{"global":{"block_period_seconds":"1.5"}}}}`,
+		`{"source_id":"synthetic","change":{"kind":"set_timing","from_ns":0,"to_ns":1,"timing":{"nodes":[{"node":1,"values":{}}]}}}`,
+		`{"source_id":"synthetic","change":{"kind":"set_timing","from_ns":0,"to_ns":1,"timing":{"global":{"block_period_seconds":"2"},"nodes":[]}}}`,
+		`{"source_id":"synthetic","change":{"kind":"set_timing","from_ns":0,"to_ns":1,"timing":{"global":{"request_timeout_seconds":7}}}}`,
+		`{"source_id":"synthetic","change":{"kind":"set_timing","from_ns":0,"to_ns":1,"timing":{"global":{"max_request_timeout_seconds":null}}}}`,
+		`{"source_id":"synthetic","change":{"kind":"partition","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}],"timing":{"global":{"request_timeout_seconds":"7"}}}}`,
 	} {
 		var v any
 		decoder := json.NewDecoder(strings.NewReader(raw))
