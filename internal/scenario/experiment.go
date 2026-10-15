@@ -11,6 +11,7 @@ import (
 const ExperimentVersion = "wbft-network-experiment/2"
 
 type Experiment struct {
+	Lifecycle       *LifecycleEffect      `json:"lifecycle_effect,omitempty"`
 	WallOrigin      string                `json:"wall_origin,omitempty"`
 	ExecutionSHA256 string                `json:"execution_sha256"`
 	From            uint64                `json:"from,string"`
@@ -76,6 +77,11 @@ func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provena
 		return out, err
 	}
 	out.ChangeSHA256 = changeHash
+	out.Lifecycle, err = NodeLifecycleEvidence(sc, change)
+	if err != nil {
+		out.Status = "failed"
+		return out, err
+	}
 	out.ExecutionSHA256, err = ExecutionHash(sc)
 	if err != nil {
 		out.Status = "failed"
@@ -100,7 +106,7 @@ func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provena
 		}
 	}
 	run := func(mode string, s sim.Scenario, target *[]SeedResult) error {
-		return RunSeeds(ctx, s, fixed.Seeds, from, to, func(r SeedResult) error {
+		return runSeeds(ctx, s, fixed.Seeds, from, to, mode == "counterfactual" && change.Kind == "node_lifecycle", func(r SeedResult) error {
 			if err := emit(SeedRecord{Mode: mode, Result: r}); err != nil {
 				return err
 			}

@@ -29,3 +29,19 @@ it("bounds the rendered edge evidence for the whole 256-node graph",()=>{
  const html=renderToStaticMarkup(<NetworkChangeEvidence change={change}/>);
  expect(html).toContain("Directed links (65280)");expect(html).toContain("Showing 1–100 of 65280 directions.");expect((html.match(/<tr>/g)??[]).length).toBe(101);expect(html).not.toContain('<td>255</td><td>254</td>');expect(html).toContain("Last directed links");
 });
+
+it("canonicalizes bounded full-node requests and explains explicit replacement",()=>{
+ const c=networkChange("node_lifecycle",0,"","0","20",4,20,{lifecycle:"1 stop 10\n0 stop 5\n0 restart 15",schedulePolicy:"replace_window"});
+ expect(c).toEqual({kind:"node_lifecycle",from_ns:0,to_ns:20,schedule_policy:"replace_window",lifecycle:[{node:0,at_ns:5,action:"stop"},{node:1,at_ns:10,action:"stop"},{node:0,at_ns:15,action:"restart"}]});
+ const html=renderToStaticMarkup(<NetworkChangeEvidence change={c} effect={{removed_recorded_commands:[{node:0,at_ns:8,action:"engine_start"}],retained_recorded_commands:2,equal_time_order:"recorded_first_then_intervention",initial_starts_preserved:true}}/>);
+ expect(html).toContain("inclusive window 0–20 ns");expect(html).toContain("request time is not physical completion time");expect(html).toContain("same simulated node storage");expect(html).toContain("1 explicitly replaced");expect(html).toContain("engine_start");expect(html).not.toContain("Reverse links");
+ for(const lifecycle of ["","0 crash 1","0 engine_stop 1","4 stop 1","0 stop 21","0 stop 1\n0 restart 1","0 stop 9007199254740993"]){expect(()=>networkChange("node_lifecycle",0,"","0","20",4,20,{lifecycle,schedulePolicy:"merge"})).toThrow()}
+ expect(()=>networkChange("node_lifecycle",0,"","0","20",4,20,{lifecycle:"0 stop 1",schedulePolicy:"unknown"})).toThrow();
+});
+it("bounds node-command and replaced-source evidence at the full request limit",()=>{
+ const lifecycle=Array.from({length:4096},(_,i)=>`0 ${i%2===0?"stop":"restart"} ${i}`).join("\n");
+ const c=networkChange("node_lifecycle",0,"","0","4096",4,4096,{lifecycle,schedulePolicy:"replace_window"});
+ if(c.kind!=="node_lifecycle")throw new Error("wrong change");expect(c.lifecycle).toHaveLength(4096);
+ const html=renderToStaticMarkup(<NetworkChangeEvidence change={c} effect={{removed_recorded_commands:c.lifecycle,retained_recorded_commands:0,equal_time_order:"recorded_first_then_intervention",initial_starts_preserved:true}}/>);
+ expect((html.match(/<tr>/g)??[]).length).toBe(202);expect(html).toContain("Showing 1–100 of 4096 commands.");expect(html).toContain("Last node commands");expect(html).toContain("Last removed recorded commands");expect(html).not.toContain("<td>4095</td>");
+});

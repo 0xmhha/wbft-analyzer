@@ -2661,6 +2661,7 @@ export interface components {
             change_sha256: string;
             execution_sha256: string;
             from: string;
+            lifecycle_effect?: components["schemas"]["ScenarioLifecycleEffect"] | null;
             model: components["schemas"]["ScenarioAssessment"];
             provenance: components["schemas"]["ScenarioProvenance"];
             recorded_counts: components["schemas"]["ScenarioRoundCount"][];
@@ -2737,6 +2738,28 @@ export interface components {
         ScenarioJobs: {
             jobs: components["schemas"]["StoreScenarioJob"][];
         };
+        ScenarioLifecycleCommand: {
+            /** @enum {string} */
+            action: "stop" | "restart";
+            /** Format: int64 */
+            at_ns: number;
+            /** Format: int64 */
+            node: number;
+        };
+        ScenarioLifecycleEffect: {
+            equal_time_order: string;
+            initial_starts_preserved: boolean;
+            removed_recorded_commands: components["schemas"]["ScenarioLifecycleRecord"][];
+            /** Format: int64 */
+            retained_recorded_commands: number;
+        };
+        ScenarioLifecycleRecord: {
+            action: string;
+            /** Format: int64 */
+            at_ns: number;
+            /** Format: int64 */
+            node: number;
+        };
         ScenarioNetworkChange: {
             /** Format: int64 */
             from_ns: number;
@@ -2771,6 +2794,16 @@ export interface components {
             /** @enum {string} */
             kind: "scale_link_delay";
             scale: components["schemas"]["ScenarioDelayScale"];
+            /** Format: int64 */
+            to_ns: number;
+        } | {
+            /** Format: int64 */
+            from_ns: number;
+            /** @enum {string} */
+            kind: "node_lifecycle";
+            lifecycle: components["schemas"]["ScenarioLifecycleCommand"][];
+            /** @enum {string} */
+            schedule_policy: "merge" | "replace_window";
             /** Format: int64 */
             to_ns: number;
         };
@@ -2932,14 +2965,30 @@ export interface components {
         ScenarioSeedExecution: {
             configured_duration_ns: string;
             configured_stop_height: string;
+            lifecycle_observations?: components["schemas"]["ScenarioSeedLifecycleObservations"] | null;
             nodes: components["schemas"]["ScenarioSeedNode"][];
             violations: components["schemas"]["ScenarioSeedViolation"][];
+        };
+        ScenarioSeedLifecycleObservations: {
+            node_starts: components["schemas"]["ScenarioSeedNodeStart"][];
+            source: string;
         };
         ScenarioSeedNode: {
             head: string;
             /** Format: int64 */
             index: number;
             simulated_address: string;
+        };
+        ScenarioSeedNodeStart: {
+            /** Format: int64 */
+            at_ns: number;
+            /** Format: int64 */
+            node: number;
+            run: string;
+            /** @enum {string} */
+            status: "started" | "refused";
+            /** Format: int64 */
+            wal_records?: number;
         };
         ScenarioSeedPage: {
             /** Format: int64 */

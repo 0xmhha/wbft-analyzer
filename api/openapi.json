@@ -5685,6 +5685,16 @@
             "pattern": "^[0-9]+$",
             "type": "string"
           },
+          "lifecycle_effect": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioLifecycleEffect"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "model": {
             "$ref": "#/components/schemas/ScenarioAssessment"
           },
@@ -6011,6 +6021,82 @@
         ],
         "type": "object"
       },
+      "ScenarioLifecycleCommand": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "stop",
+              "restart"
+            ],
+            "type": "string"
+          },
+          "at_ns": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "action",
+          "at_ns",
+          "node"
+        ],
+        "type": "object"
+      },
+      "ScenarioLifecycleEffect": {
+        "additionalProperties": false,
+        "properties": {
+          "equal_time_order": {
+            "type": "string"
+          },
+          "initial_starts_preserved": {
+            "type": "boolean"
+          },
+          "removed_recorded_commands": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioLifecycleRecord"
+            },
+            "type": "array"
+          },
+          "retained_recorded_commands": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "equal_time_order",
+          "initial_starts_preserved",
+          "removed_recorded_commands",
+          "retained_recorded_commands"
+        ],
+        "type": "object"
+      },
+      "ScenarioLifecycleRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "at_ns": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "action",
+          "at_ns",
+          "node"
+        ],
+        "type": "object"
+      },
       "ScenarioNetworkChange": {
         "anyOf": [
           {
@@ -6144,6 +6230,46 @@
               "from_ns",
               "kind",
               "scale",
+              "to_ns"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "from_ns": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "kind": {
+                "enum": [
+                  "node_lifecycle"
+                ],
+                "type": "string"
+              },
+              "lifecycle": {
+                "items": {
+                  "$ref": "#/components/schemas/ScenarioLifecycleCommand"
+                },
+                "type": "array"
+              },
+              "schedule_policy": {
+                "enum": [
+                  "merge",
+                  "replace_window"
+                ],
+                "type": "string"
+              },
+              "to_ns": {
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "from_ns",
+              "kind",
+              "lifecycle",
+              "schedule_policy",
               "to_ns"
             ],
             "type": "object"
@@ -6811,6 +6937,16 @@
             "pattern": "^[0-9]+$",
             "type": "string"
           },
+          "lifecycle_observations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSeedLifecycleObservations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "nodes": {
             "items": {
               "$ref": "#/components/schemas/ScenarioSeedNode"
@@ -6829,6 +6965,25 @@
           "configured_stop_height",
           "nodes",
           "violations"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedLifecycleObservations": {
+        "additionalProperties": false,
+        "properties": {
+          "node_starts": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedNodeStart"
+            },
+            "type": "array"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "node_starts",
+          "source"
         ],
         "type": "object"
       },
@@ -6851,6 +7006,40 @@
           "head",
           "index",
           "simulated_address"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedNodeStart": {
+        "additionalProperties": false,
+        "properties": {
+          "at_ns": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "run": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "started",
+              "refused"
+            ],
+            "type": "string"
+          },
+          "wal_records": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "at_ns",
+          "node",
+          "run",
+          "status"
         ],
         "type": "object"
       },

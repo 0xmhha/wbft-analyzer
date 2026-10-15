@@ -1,7 +1,7 @@
 import type { Schemas } from "./api/client";
 type Change=Schemas["ScenarioNetworkChange"];
 export type ChangeKind=Change["kind"];
-export type DelayFields={nanoseconds?:string;numerator?:string;denominator?:string};
+export type DelayFields={nanoseconds?:string;numerator?:string;denominator?:string;lifecycle?:string;schedulePolicy?:string};
 /** Recorded node indices keep their direction; no reverse edges are inferred. */
 export function networkChange(kind:ChangeKind,node:number,text:string,from:string,to:string,nodes:number,duration:number,delay:DelayFields={}):Change{
  const a=Number(from),b=Number(to);
@@ -9,6 +9,22 @@ export function networkChange(kind:ChangeKind,node:number,text:string,from:strin
  if(kind==="cut_outgoing"){
   if(!Number.isInteger(node)||node<0||node>=nodes)throw new Error("Choose a recorded node.");
   return {kind,node,from_ns:a,to_ns:b};
+ }
+ if(kind==="node_lifecycle"){
+  const schedule_policy=delay.schedulePolicy;
+  if(schedule_policy!=="merge"&&schedule_policy!=="replace_window")throw new Error("Choose how to combine recorded node commands.");
+  const lifecycle:{node:number;at_ns:number;action:"stop"|"restart"}[]=[],seen=new Set<string>();
+  for(const line of (delay.lifecycle??"").split(/\r?\n/).filter(line=>line.trim()!=="")){
+   const m=/^\s*(0|[1-9][0-9]*)\s+(stop|restart)\s+(0|[1-9][0-9]*)\s*$/.exec(line);
+   if(!m)throw new Error("Enter node index, stop or restart, and nanoseconds per line.");
+   const node=Number(m[1]),at_ns=Number(m[3]);
+   if(!Number.isSafeInteger(node)||node>=nodes||!Number.isSafeInteger(at_ns)||at_ns<a||at_ns>b)throw new Error("Each node command must lie inside the model and inclusive command window.");
+   const key=`${node}:${at_ns}`;if(seen.has(key))throw new Error("Use only one command per node at each nanosecond.");seen.add(key);
+   lifecycle.push({node,at_ns,action:m[2] as "stop"|"restart"});if(lifecycle.length>4096)throw new Error("Use at most 4096 node commands.");
+  }
+  if(lifecycle.length===0)throw new Error("Choose at least one node command.");
+  lifecycle.sort((x,y)=>x.at_ns-y.at_ns||x.node-y.node);
+  return {kind,from_ns:a,to_ns:b,lifecycle,schedule_policy};
  }
  if(kind!=="partition"&&kind!=="set_link_delay"&&kind!=="scale_link_delay")throw new Error("Unsupported network change.");
  if(kind!=="partition"&&(a!==0||b!==duration))throw new Error("Link delay changes apply to the whole registered run.");
