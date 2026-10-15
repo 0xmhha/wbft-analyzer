@@ -1350,6 +1350,16 @@ screen shows windows, sessions, assumptions and exact source coordinates.
 Completing this transport model does not establish baseline round or time
 credibility, executor equivalence or a validated counterfactual.
 
+Fitting version 17 distinguishes the verified common header prefix from
+controller-reported node tips. Every retained header through `through_height`
+must match the canonical chain independently at every node. Reported tips may
+be ahead of that prefix; a tip behind it or a mismatching retained header is
+refused. The API and source screen preserve the checkpoint time, node and full
+integer tip without claiming that later headers were verified. An explicitly
+earlier checkpoint must match its retained controller phase and precede the
+capture cutoff. Changed fitting requires a new source identity; stored
+historical experiments remain unchanged.
+
 
 ### Scenario wall-clock origin
 

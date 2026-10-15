@@ -6809,6 +6809,43 @@
         ],
         "type": "object"
       },
+      "ScenarioTransportHeaderCheckpoint": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "heads": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioTransportReportedHead"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "at",
+          "heads"
+        ],
+        "type": "object"
+      },
+      "ScenarioTransportReportedHead": {
+        "additionalProperties": false,
+        "properties": {
+          "node": {
+            "type": "string"
+          },
+          "reported_head": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "node",
+          "reported_head"
+        ],
+        "type": "object"
+      },
       "ScenarioTransportScope": {
         "additionalProperties": false,
         "properties": {
@@ -6824,6 +6861,16 @@
           "cutoff": {
             "format": "date-time",
             "type": "string"
+          },
+          "header_checkpoint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioTransportHeaderCheckpoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "physical_delivery_proven": {
             "type": "boolean"

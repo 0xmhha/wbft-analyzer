@@ -2928,11 +2928,21 @@ export interface components {
             enabled: boolean;
             sources: components["schemas"]["ScenariojobSourceInfo"][];
         };
+        ScenarioTransportHeaderCheckpoint: {
+            /** Format: date-time */
+            at: string;
+            heads: components["schemas"]["ScenarioTransportReportedHead"][];
+        };
+        ScenarioTransportReportedHead: {
+            node: string;
+            reported_head: string;
+        };
         ScenarioTransportScope: {
             assumptions: string[];
             controller: components["schemas"]["ScenarioInput"];
             /** Format: date-time */
             cutoff: string;
+            header_checkpoint?: components["schemas"]["ScenarioTransportHeaderCheckpoint"] | null;
             physical_delivery_proven: boolean;
             sessions: components["schemas"]["ScenarioTransportSession"][];
             sources: components["schemas"]["ScenarioInput"][];

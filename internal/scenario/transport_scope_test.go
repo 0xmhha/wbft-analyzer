@@ -176,6 +176,71 @@ func TestClosedTransportScopeBindsRawStreamsAndIndependentCutoff(t *testing.T) {
 	}
 }
 
+func TestTransportHeaderPrefixKeepsAsynchronousTipsAndCheckpointTime(t *testing.T) {
+	e, in, blocks, nodes, origin := transportFixture(t)
+	var ctl map[string]any
+	if err := json.Unmarshal(e.Controller.Bytes, &ctl); err != nil {
+		t.Fatal(err)
+	}
+	heads := []uint64{2, 3, 4, ^uint64(0)}
+	at := origin.Add(2500 * time.Millisecond)
+	ctl["phases"] = []any{map[string]any{"name": "capture_checkpoint", "at": at, "heads": heads}, map[string]any{"name": "captured", "at": origin.Add(3 * time.Second), "heads": heads, "verified_header_checkpoint_only": true}}
+	e.Controller = transportDocument(t, "controller", "transport-controller", "network", ctl)
+	scope, coverage, err := BindTransportScope(e, in, nil, blocks, nodes, origin, 10*time.Second)
+	if err != nil || len(coverage) != 4 || scope.ThroughHeight != 2 || scope.HeaderCheckpoint == nil || !scope.HeaderCheckpoint.At.Equal(at) || len(scope.HeaderCheckpoint.Heads) != 4 || scope.HeaderCheckpoint.Heads[3].Head != ^uint64(0) || scope.HeaderCheckpoint.Heads[3].Node != nodes[3] {
+		t.Fatal("verified prefix replaced by a reported tip or cutoff", scope, err)
+	}
+	if scope.PhysicalDeliveryProven {
+		t.Fatal("tip metadata licensed physical delivery")
+	}
+	raw, err := json.Marshal(scope.HeaderCheckpoint)
+	if err != nil || !strings.Contains(string(raw), `"reported_head":"18446744073709551615"`) {
+		t.Fatal("reported tip rounded or encoded as a JSON number", string(raw), err)
+	}
+}
+
+func TestTransportHeaderPrefixRejectsInsufficientHeadsAndInvalidCheckpoint(t *testing.T) {
+	for _, kind := range []string{"head_below_prefix", "changed_prefix_hash", "missing_checkpoint", "checkpoint_after_cutoff", "checkpoint_before_origin", "checkpoint_heads_disagree", "duplicate_checkpoint"} {
+		t.Run(kind, func(t *testing.T) {
+			e, in, blocks, nodes, origin := transportFixture(t)
+			var ctl map[string]any
+			if err := json.Unmarshal(e.Controller.Bytes, &ctl); err != nil {
+				t.Fatal(err)
+			}
+			heads := []uint64{2, 2, 2, 3}
+			checkpoint := map[string]any{"name": "capture_checkpoint", "at": origin.Add(2500 * time.Millisecond), "heads": heads}
+			captured := map[string]any{"name": "captured", "at": origin.Add(3 * time.Second), "heads": heads, "verified_header_checkpoint_only": true}
+			phases := []any{checkpoint, captured}
+			switch kind {
+			case "head_below_prefix":
+				heads[0] = 1
+			case "changed_prefix_hash":
+				var rows []map[string]any
+				if err := json.Unmarshal(e.Headers[0].Bytes, &rows); err != nil {
+					t.Fatal(err)
+				}
+				rows[1]["hash"] = "0x" + strings.Repeat("0", 64)
+				e.Headers[0] = transportDocument(t, e.Headers[0].Source.ID, "transport-headers", nodes[0], rows)
+			case "missing_checkpoint":
+				phases = []any{captured}
+			case "checkpoint_after_cutoff":
+				checkpoint["at"] = origin.Add(4 * time.Second)
+			case "checkpoint_before_origin":
+				checkpoint["at"] = origin.Add(-time.Second)
+			case "checkpoint_heads_disagree":
+				checkpoint["heads"] = []uint64{2, 2, 2, 2}
+			case "duplicate_checkpoint":
+				phases = append(phases, checkpoint)
+			}
+			ctl["phases"] = phases
+			e.Controller = transportDocument(t, "controller", "transport-controller", "network", ctl)
+			if _, _, err := BindTransportScope(e, in, nil, blocks, nodes, origin, 10*time.Second); err == nil {
+				t.Fatal("unproved header prefix accepted", kind)
+			}
+		})
+	}
+}
+
 func TestClosedTransportScopeRejectsContradictoryEvidence(t *testing.T) {
 	for _, name := range []string{"failed_exit", "missing_exit", "future_cutoff", "physical_claim", "unclosed_stream", "dropped_records", "missing_counter", "changed_header", "wrong_frame_hash", "source_tamper", "sequence_gap", "missing_native_lifecycle", "duplicate_writer", "unknown_field", "duplicate_json_key"} {
 		t.Run(name, func(t *testing.T) {

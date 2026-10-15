@@ -15,6 +15,7 @@ export function TransportScopeEvidence({scope}:{scope?:Schemas["ScenarioTranspor
   <h3>Recorded transport availability</h3>
   <p>{scope.status} · through height {scope.through_height}. Controller cutoff: {scope.cutoff}.</p>
   <p>Closed recording windows do not prove physical network delivery. Process exits and cutoff are controller attestations; hashes preserve source identity.</p>
+  {scope.header_checkpoint&&<details><summary>Verified header prefix and reported tips</summary><p>Header checkpoint: <time>{scope.header_checkpoint.at}</time>. The retained header copies verify every node through height {scope.through_height}. Later reported tip heights remain controller attestations.</p><table><thead><tr><th>Recorded node</th><th>Controller-reported tip</th><th>Verified through</th></tr></thead><tbody>{scope.header_checkpoint.heads.map(h=><tr key={h.node}><td>{h.node}</td><td>{h.reported_head}</td><td>{scope.through_height}</td></tr>)}</tbody></table></details>}
   <details><summary>Transport assumptions ({scope.assumptions.length})</summary><ul>{scope.assumptions.map(a=><li key={a}>{a.replaceAll("_"," ")}</li>)}</ul></details>
   <details><summary>Receiver windows ({scope.windows.length})</summary>{scope.windows.map(w=><div className="transport-window" key={`${w.input}:${w.run}`}>
    <strong>{w.input} · {w.run}</strong><p className="mono">{w.node}</p>
