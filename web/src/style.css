@@ -161,3 +161,10 @@ article pre { overflow: auto; max-height: 24rem; }
 .transport-window { padding: .75rem 0; border-top: 1px solid #cbd5e1; }
 .transport-window .mono { overflow-wrap: anywhere; }
 .transport-window time { display: inline-block; white-space: nowrap; }
+
+.scenario-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.scenario-panel { min-width: 0; padding: .75rem; border: 1px solid #cbd5e1; }
+.scenario-panel figure { margin: 1rem 0; }
+.scenario-panel .scenario-chart text { font-size: 18px; }
+.scenario-counterfactual { background: repeating-linear-gradient(135deg, transparent 0, transparent 12px, #b4530910 12px, #b4530910 14px); }
+@media (max-width: 800px) { .scenario-panels { grid-template-columns: minmax(0, 1fr); } .scenario-panel .scenario-chart text { font-size: 30px; } }

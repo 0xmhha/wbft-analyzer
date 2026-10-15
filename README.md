@@ -1350,6 +1350,13 @@ screen shows windows, sessions, assumptions and exact source coordinates.
 Completing this transport model does not establish baseline round or time
 credibility, executor equivalence or a validated counterfactual.
 
+The network comparison screen places recorded and baseline distributions beside
+counterfactual distributions. Both panels share the same round, interval, height
+and elapsed-time axes. Counterfactual results always retain a label and hatched
+background, including when the baseline is reproduced. Incomplete distributions
+remain unavailable rather than appearing as empty successful curves. Exact
+integer values remain accessible, and chart transitions respect reduced motion.
+
 Fitting version 17 distinguishes the verified common header prefix from
 controller-reported node tips. Every retained header through `through_height`
 must match the canonical chain independently at every node. Reported tips may
