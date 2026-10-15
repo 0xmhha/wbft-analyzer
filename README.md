@@ -24,11 +24,11 @@ The analyzer is built in stages; the A0 foundation is complete:
 | A0 | command skeleton, inspector report loader with the public-build checks, PostgreSQL store, observation trends and alerts, API and front-end skeleton | complete |
 | A1 | header analysis: participation, proposers, epochs | implemented and validated on real testnet/G7 inputs |
 | A2 | node logs and chainbench runs | run ingestion, metadata timelines, round causes, inspector source overlay and phase latency implemented; visual replay and independent-run baseline comparison implemented |
-| A3 | wbft event streams and mixed networks | not started |
+| A3 | wbft event streams and mixed networks | message matching, clock models, latency views and follow implemented; full acceptance in progress |
 | A4 | governance history | not started |
+| A5 | private builds and comparisons | private overlay admission and dataset export implemented; comparisons pending |
 
-Every command is listed by `wbft-analyzer help`; a command that is not built
-yet says so and exits with code 69.
+`wbft-analyzer help` lists the commands and their available options.
 
 Built so far:
 
@@ -158,7 +158,7 @@ An optional input `sha256` checks the canonical, sorted file manifest hash.
 
 To retain original inputs for subsequent replay, pass `--inputs-dir DIR`.
 The directory must be private (mode 0700); a missing directory is created.
-Files are copied as `DIR/<sha256>` with mode 0600 and verified against the
+Files are copied as `DIR/datasets/TOKEN/<sha256>` with mode 0600 and verified against the
 manifest fingerprint. Objects are published without overwriting existing
 files; existing objects must verify too. Each file is bounded to 256 MiB
 and a retention request to 16 GiB. Keep this directory outside the checkout.
