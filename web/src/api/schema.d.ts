@@ -2145,6 +2145,7 @@ export interface components {
             height: string;
             input: string;
             input_peer?: string;
+            input_via?: string;
             issues: string[];
             message_digest?: string;
             message_height?: string;
@@ -2510,6 +2511,7 @@ export interface components {
         };
         ScenarioAssessment: {
             issues: components["schemas"]["ScenarioIssue"][];
+            processing_model?: components["schemas"]["ScenarioProcessingModel"] | null;
             status: string;
             version: string;
         };
@@ -2741,6 +2743,45 @@ export interface components {
             seed: string;
             /** Format: int64 */
             splits: number;
+        };
+        ScenarioProcessingExcluded: {
+            kind: string;
+            point: components["schemas"]["ScenarioProcessingPoint"];
+            reason: string;
+        };
+        ScenarioProcessingModel: {
+            assumptions: string[];
+            /** Format: int64 */
+            declared_receive_workers: number;
+            policy: string;
+            timings: components["schemas"]["ScenarioProcessingTimings"][];
+        };
+        ScenarioProcessingPoint: {
+            engine_run: string;
+            file: string;
+            height: string;
+            /** Format: int64 */
+            ordinal: number;
+            step: string;
+            writer_run: string;
+        };
+        ScenarioProcessingSample: {
+            code: string;
+            complete_mono_ns: string;
+            entry_mono_ns: string;
+            kind: string;
+            nanoseconds: string;
+            point: components["schemas"]["ScenarioProcessingPoint"];
+        };
+        ScenarioProcessingTimings: {
+            assumptions: string[];
+            excluded: components["schemas"]["ScenarioProcessingExcluded"][];
+            from: string;
+            samples: components["schemas"]["ScenarioProcessingSample"][];
+            scope: string;
+            source: components["schemas"]["ScenarioInput"];
+            status: string;
+            to: string;
         };
         ScenarioProvenance: {
             assumptions?: string[];

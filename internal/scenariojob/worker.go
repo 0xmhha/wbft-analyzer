@@ -22,6 +22,8 @@ var ErrSource = errors.New("network scenario source unavailable")
 var ErrChange = errors.New("network change outside registered model")
 
 type SourceSpec struct {
+	ProcessingPolicy  string              `json:"processing_policy,omitempty"`
+	ProcessingWorkers int                 `json:"processing_workers,omitempty"`
 	TransportManifest string              `json:"transport_manifest,omitempty"`
 	Model             string              `json:"model,omitempty"`
 	RuntimeManifest   string              `json:"runtime_manifest,omitempty"`
@@ -121,7 +123,7 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 	}
 	w := NewEmpty(s)
 	for _, spec := range specs {
-		if !scenario.ValidModel(spec.Model) || !logs.Identifier(spec.ID) || spec.Dataset < 1 || spec.From < 1 || spec.To < spec.From || spec.To-spec.From >= 10000 || spec.Seeds < 2 || spec.Seeds > 128 || spec.SkewMS < 0 || spec.SkewMS > 3600000 || spec.Clock != "shared-host" && spec.Clock != "ntp" && spec.Clock != "unknown" {
+		if !scenario.ValidModel(spec.Model) || !scenario.ValidProcessing(spec.ProcessingPolicy, spec.ProcessingWorkers) || spec.ProcessingPolicy != "" && spec.Model != scenario.EmpiricalCoreModel || !logs.Identifier(spec.ID) || spec.Dataset < 1 || spec.From < 1 || spec.To < spec.From || spec.To-spec.From >= 10000 || spec.Seeds < 2 || spec.Seeds > 128 || spec.SkewMS < 0 || spec.SkewMS > 3600000 || spec.Clock != "shared-host" && spec.Clock != "ntp" && spec.Clock != "unknown" {
 			return nil, ErrSource
 		}
 		if _, ok := w.sources[spec.ID]; ok {
@@ -148,7 +150,7 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 		if spec.TransportManifest != "" && !filepath.IsAbs(spec.TransportManifest) {
 			spec.TransportManifest = filepath.Join(filepath.Dir(path), spec.TransportManifest)
 		}
-		request := FitRequest{TransportManifest: spec.TransportManifest, RuntimeManifest: spec.RuntimeManifest, ChainPath: spec.Chain, EventManifest: spec.Events, Options: scenario.FitOptions{Model: spec.Model, WireMetric: spec.WireMetric, TransportInputs: spec.TransportInputs, Dataset: spec.Dataset, From: spec.From, To: spec.To, Origin: origin, Until: duration, Clock: pairs.Clock{Model: spec.Clock, SkewMS: spec.SkewMS}, Seeds: seeds, Runtime: spec.Runtime, Coverage: spec.Coverage}}
+		request := FitRequest{TransportManifest: spec.TransportManifest, RuntimeManifest: spec.RuntimeManifest, ChainPath: spec.Chain, EventManifest: spec.Events, Options: scenario.FitOptions{ProcessingPolicy: spec.ProcessingPolicy, ProcessingWorkers: spec.ProcessingWorkers, Model: spec.Model, WireMetric: spec.WireMetric, TransportInputs: spec.TransportInputs, Dataset: spec.Dataset, From: spec.From, To: spec.To, Origin: origin, Until: duration, Clock: pairs.Clock{Model: spec.Clock, SkewMS: spec.SkewMS}, Seeds: seeds, Runtime: spec.Runtime, Coverage: spec.Coverage}}
 		raw, err := json.Marshal(spec)
 		if err != nil {
 			return nil, ErrSource

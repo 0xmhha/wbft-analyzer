@@ -225,6 +225,19 @@ func PrepareDataset(ctx context.Context, s *store.Store, r FitRequest) (scenario
 			return out, snapshot, err
 		}
 	}
+	if r.Options.ProcessingPolicy != "" {
+		if !scenario.ValidProcessing(r.Options.ProcessingPolicy, r.Options.ProcessingWorkers) || r.Options.Model != scenario.EmpiricalCoreModel {
+			return out, snapshot, errors.New("invalid explicit processing configuration")
+		}
+		r.Options.ProcessingTimings = []scenario.ProcessingTimings{}
+		for _, input := range r.Options.Journals {
+			timing, err := inspectProcessingTimings(ctx, input, filepath.Join(tmp, "chain.rlp"), network.ChainID, network.GenesisHash, r.Options.From, r.Options.To, r.Options.Until)
+			if err != nil {
+				return out, snapshot, err
+			}
+			r.Options.ProcessingTimings = append(r.Options.ProcessingTimings, timing)
+		}
+	}
 	fitted, err := scenario.Fit(ctx, r.Options)
 	return fitted, snapshot, err
 }

@@ -175,6 +175,12 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		}
 		n := new(big.Int).Add(b.HeadNumber.Big(), big.NewInt(1)).String()
 		step := Step{Ordinal: ordinal, File: fmt.Sprintf("%020d.wal", pos.Segment), Run: run, Engine: strconv.FormatUint(b.EngineRun, 10), Number: strconv.FormatUint(b.Step, 10), Height: n, Input: safeInput(b.InputKind), Recorded: strings.ToLower(b.OutDigest.Hex()), Class: "not_comparable", Completeness: "complete", Issues: []string{}}
+		switch b.Via {
+		case "internal", "app", "timer", "peer", "wal", "engine":
+			step.InputVia = b.Via
+		default:
+			step.InputVia = "unknown"
+		}
 
 		if b.Entry != nil {
 			value := strconv.FormatInt(int64(b.Entry.Mono), 10)

@@ -20,6 +20,9 @@ import (
 // FitOptions contains already snapshotted local readers. None of their paths
 // are retained in the fitted report or persisted experiment provenance.
 type FitOptions struct {
+	ProcessingPolicy    string
+	ProcessingWorkers   int
+	ProcessingTimings   []ProcessingTimings
 	TransportEvidence   *TransportEvidence
 	Model               string
 	RuntimeObservations []RuntimeObservation
@@ -71,6 +74,9 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 	}
 	if o.Model == "" {
 		o.Model = DeclaredRuntimeModel
+	}
+	if !ValidProcessing(o.ProcessingPolicy, o.ProcessingWorkers) || o.ProcessingPolicy != "" && o.Model != EmpiricalCoreModel {
+		return Fitted{}, errors.New("invalid explicit processing policy")
 	}
 	if o.WireMetric == "" {
 		o.WireMetric = "link"
@@ -326,7 +332,28 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		}
 		buildRuntimes, buildApp = projection.Runtimes, projection.Application
 	}
+	processing, processingIssues, err := fitProcessingModel(o, sources, buildNodes)
+	if err != nil {
+		return out, err
+	}
+	assessment.Processing = processing
+	assessment.Issues = append(assessment.Issues, processingIssues...)
+	if len(processingIssues) > 0 {
+		assessment.Status = "partial"
+	}
+	orderIssues(assessment.Issues)
+	out.Model = assessment
+	if processing != nil && out.Empirical != nil {
+		assumptions := []string{}
+		for _, assumption := range out.Empirical.Assumptions {
+			if assumption != "receive_checks_and_core_steps_consume_no_simulated_time" {
+				assumptions = append(assumptions, assumption)
+			}
+		}
+		out.Empirical.Assumptions = append(assumptions, processing.Assumptions...)
+	}
 	modelRaw, err := json.Marshal(struct {
+		Processing         *ProcessingModel
 		HeaderTimeBaseline string
 		TransportScope     *TransportScope
 		Mode               string
@@ -347,7 +374,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		GenesisCount       int
 		Epochs             []RecordedEpoch
 		ObservedRuntime    []RuntimeBinding
-	}{HeaderTimeBaselineMethod, out.TransportScope, o.Model, out.Empirical, o.WireMetric, out.TransportInputs, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs, out.RuntimeObservations})
+	}{processing, HeaderTimeBaselineMethod, out.TransportScope, o.Model, out.Empirical, o.WireMetric, out.TransportInputs, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs, out.RuntimeObservations})
 	if err != nil {
 		return out, err
 	}
@@ -397,6 +424,10 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		if err != nil {
 			return out, err
 		}
+	}
+	sc, err = applyProcessing(sc, buildNodes, out.Model.Processing)
+	if err != nil {
+		return out, err
 	}
 	out.Scenario = &sc
 	return out, nil

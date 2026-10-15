@@ -28,6 +28,7 @@ func ExecutionHash(sc sim.Scenario) (string, error) {
 		addresses = append(addresses, v.Address())
 	}
 	type node struct {
+		Processing              *sim.ProcessingProfile `json:"Processing,omitempty"`
 		StartAfter              int64
 		BuildDelay, ImportDelay []int64
 		Improvements            uint64
@@ -40,7 +41,7 @@ func ExecutionHash(sc sim.Scenario) (string, error) {
 	}
 	nodes := []node{}
 	for _, n := range sc.Nodes {
-		x := node{StartAfter: int64(n.StartAfter), Improvements: uint64(n.Options.Improvements), BacklogLimit: n.Options.BacklogLimit, Profile: n.Profile, ReplayWAL: n.ReplayWAL, ClockSkew: int64(n.ClockSkew), TakeoverGuard: n.TakeoverGuard, WALSegmentBytes: n.WALSegmentBytes, BuildDelay: []int64{}, ImportDelay: []int64{}}
+		x := node{Processing: n.Processing, StartAfter: int64(n.StartAfter), Improvements: uint64(n.Options.Improvements), BacklogLimit: n.Options.BacklogLimit, Profile: n.Profile, ReplayWAL: n.ReplayWAL, ClockSkew: int64(n.ClockSkew), TakeoverGuard: n.TakeoverGuard, WALSegmentBytes: n.WALSegmentBytes, BuildDelay: []int64{}, ImportDelay: []int64{}}
 		for _, d := range n.BuildDelay {
 			x.BuildDelay = append(x.BuildDelay, int64(d))
 		}
