@@ -67,6 +67,9 @@ func TestStoredNetworkExperimentPreservesCancelledSeedPrefix(t *testing.T) {
 		t.Fatal(err)
 	}
 	o := Options{Scenario: sim.Scenario{Validators: keys, Until: sim.Stop{Height: 3, Duration: time.Minute}}, Provenance: scenario.Provenance{ModelSHA256: strings.Repeat("e", 64), Dataset: d.ID, Version: scenario.FitVersion, Inputs: []scenario.Input{{ID: "synthetic", Kind: "journal", Node: "a", SHA256: strings.Repeat("a", 64)}}, ChainSHA256: strings.Repeat("b", 64), CoreCommit: strings.Repeat("c", 40), Seeds: []int64{1, 2}}, Model: scenario.Assessment{Version: scenario.FitVersion, Status: "partial", Issues: []scenario.Issue{{Code: "synthetic"}}}, Recorded: []scenario.RoundCount{{Total: 100}}, Change: scenario.NetworkChange{Kind: "cut_outgoing", Node: new(int), ToNS: int64(time.Minute)}, From: 1, To: 3}
+	future := uint64(3)
+	o.Scenario.Params.RuleActivations = map[types.RuleName]string{types.RejectNumberJump: "18446744073709551616"}
+	o.Scenario.Params.AllowedFutureBlockTime = &future
 	running, cancel := context.WithCancel(ctx)
 	o.OnSeedStored = func(scenario.SeedRecord) error { cancel(); return nil }
 	result, err := run(running, s, o)
@@ -77,6 +80,9 @@ func TestStoredNetworkExperimentPreservesCancelledSeedPrefix(t *testing.T) {
 	if err != nil || len(rows) != 1 || rows[0].Result.Seed != 1 {
 		t.Fatal("saved seed prefix lost", err)
 	}
+	if rows[0].Result.Execution == nil || rows[0].Result.Execution.StaticConfiguration == nil || len(rows[0].Result.Execution.StaticConfiguration.Configurations) != 4 {
+		t.Fatal("saved partial prefix lost actual chain settings", rows[0].Result)
+	}
 	other, err := s.ScenarioSeeds(ctx, d.ID, result.ID, "counterfactual", 0, 10)
 	if err != nil || len(other) != 0 {
 		t.Fatal("invented counterfactual suffix", err)
@@ -85,6 +91,10 @@ func TestStoredNetworkExperimentPreservesCancelledSeedPrefix(t *testing.T) {
 	result, err = run(ctx, s, o)
 	if err != nil || result.Summary.Status != "completed" || result.Summary.Credibility() != "model_incomplete" {
 		t.Fatalf("complete %+v %v", result, err)
+	}
+	stored, err := s.ScenarioRun(ctx, d.ID, result.ID)
+	if err != nil || stored.StaticConfiguration == nil || stored.StaticConfiguration.RuleActivations[string(types.RejectNumberJump)] != "18446744073709551616" || stored.StaticConfiguration.AllowedFutureBlockTime != future {
+		t.Fatal("stored experiment lost modeled settings", stored, err)
 	}
 }
 

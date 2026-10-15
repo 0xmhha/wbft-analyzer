@@ -15,6 +15,7 @@ import (
 	pairs "github.com/0xmhha/wbft-analyzer/internal/derive/messages"
 	"github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/0xmhha/wbft/conformance/sim"
+	"github.com/0xmhha/wbft/types"
 )
 
 func empiricalFitFixture(t *testing.T) FitOptions {
@@ -23,6 +24,10 @@ func empiricalFitFixture(t *testing.T) FitOptions {
 }
 
 func empiricalFitFixtureAt(t *testing.T, origin time.Time) FitOptions {
+	return empiricalFitFixtureWithSettings(t, origin, nil, nil)
+}
+
+func empiricalFitFixtureWithSettings(t *testing.T, origin time.Time, rules map[types.RuleName]string, future *uint64) FitOptions {
 	t.Helper()
 	nodes, links := completeFixture()
 	d := []time.Duration{time.Millisecond}
@@ -31,6 +36,8 @@ func empiricalFitFixtureAt(t *testing.T, origin time.Time) FitOptions {
 		t.Fatal(err)
 	}
 	sc.WallOrigin = origin
+	sc.Params.RuleActivations = rules
+	sc.Params.AllowedFutureBlockTime = future
 	journalDir := t.TempDir()
 	result, err := sim.Run(context.Background(), sc, sim.Output{JournalDir: journalDir})
 	if err != nil {

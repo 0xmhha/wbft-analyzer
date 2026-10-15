@@ -67,27 +67,28 @@ func publicEpochs(epochs []scenario.RecordedEpoch) []EpochInfo {
 }
 
 type SourceInfo struct {
-	WallOrigin          string                        `json:"wall_origin"`
-	TransportScope      *scenario.TransportScope      `json:"transport_scope,omitempty"`
-	Mode                string                        `json:"mode"`
-	DeclaredModel       scenario.Assessment           `json:"declared_runtime_model"`
-	Empirical           *scenario.EmpiricalProjection `json:"empirical,omitempty"`
-	ApplicationPolicies []scenario.ApplicationPolicy  `json:"application_policies"`
-	RuntimeObservations []scenario.RuntimeBinding     `json:"runtime_observations"`
-	WireMetric          string                        `json:"wire_metric"`
-	TransportInputs     []scenario.Input              `json:"transport_inputs"`
-	Epochs              []EpochInfo                   `json:"epochs"`
-	Scope               scenario.ScopeCounts          `json:"scope"`
-	Nodes               []string                      `json:"nodes"`
-	DurationNS          int64                         `json:"duration_ns"`
-	ID                  string                        `json:"id"`
-	Dataset             int64                         `json:"dataset_id"`
-	From                string                        `json:"from"`
-	To                  string                        `json:"to"`
-	SourceSHA           string                        `json:"source_sha256"`
-	ExecutionSHA        string                        `json:"execution_sha256"`
-	Status              string                        `json:"status"`
-	Model               scenario.Assessment           `json:"model"`
+	StaticConfiguration *scenario.StaticChainConfiguration `json:"static_configuration,omitempty"`
+	WallOrigin          string                             `json:"wall_origin"`
+	TransportScope      *scenario.TransportScope           `json:"transport_scope,omitempty"`
+	Mode                string                             `json:"mode"`
+	DeclaredModel       scenario.Assessment                `json:"declared_runtime_model"`
+	Empirical           *scenario.EmpiricalProjection      `json:"empirical,omitempty"`
+	ApplicationPolicies []scenario.ApplicationPolicy       `json:"application_policies"`
+	RuntimeObservations []scenario.RuntimeBinding          `json:"runtime_observations"`
+	WireMetric          string                             `json:"wire_metric"`
+	TransportInputs     []scenario.Input                   `json:"transport_inputs"`
+	Epochs              []EpochInfo                        `json:"epochs"`
+	Scope               scenario.ScopeCounts               `json:"scope"`
+	Nodes               []string                           `json:"nodes"`
+	DurationNS          int64                              `json:"duration_ns"`
+	ID                  string                             `json:"id"`
+	Dataset             int64                              `json:"dataset_id"`
+	From                string                             `json:"from"`
+	To                  string                             `json:"to"`
+	SourceSHA           string                             `json:"source_sha256"`
+	ExecutionSHA        string                             `json:"execution_sha256"`
+	Status              string                             `json:"status"`
+	Model               scenario.Assessment                `json:"model"`
 }
 
 type registered struct {
@@ -181,6 +182,7 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 		for _, node := range fitted.NodeOptions {
 			public.Nodes = append(public.Nodes, node.Address.Hex())
 		}
+		public.StaticConfiguration = fitted.StaticConfiguration
 		var delayBounds map[[2]int]time.Duration
 		var lifecycleBounds scenario.LifecycleScope
 		var membershipBounds scenario.MembershipScope

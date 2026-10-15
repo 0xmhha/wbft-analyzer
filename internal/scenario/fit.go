@@ -44,25 +44,26 @@ type FitOptions struct {
 }
 
 type Fitted struct {
-	WallOrigin          string               `json:"wall_origin"`
-	TransportScope      *TransportScope      `json:"transport_scope,omitempty"`
-	Mode                string               `json:"mode"`
-	DeclaredModel       Assessment           `json:"declared_runtime_model"`
-	Empirical           *EmpiricalProjection `json:"empirical,omitempty"`
-	RuntimeObservations []RuntimeBinding     `json:"runtime_observations"`
-	WireMetric          string               `json:"wire_metric"`
-	TransportInputs     []Input              `json:"transport_inputs"`
-	Epochs              []RecordedEpoch      `json:"epochs"`
-	Scope               ScopeCounts          `json:"scope"`
-	NodeOptions         []Node               `json:"node_options"`
-	Provenance          Provenance           `json:"provenance"`
-	SourceSHA256        string               `json:"source_sha256"`
-	Model               Assessment           `json:"model"`
-	Links               []Link               `json:"links"`
-	Runtimes            []Runtime            `json:"runtimes"`
-	App                 AppTiming            `json:"application"`
-	Recorded            []Height             `json:"recorded"`
-	Scenario            *sim.Scenario        `json:"-"`
+	StaticConfiguration *StaticChainConfiguration `json:"static_configuration,omitempty"`
+	WallOrigin          string                    `json:"wall_origin"`
+	TransportScope      *TransportScope           `json:"transport_scope,omitempty"`
+	Mode                string                    `json:"mode"`
+	DeclaredModel       Assessment                `json:"declared_runtime_model"`
+	Empirical           *EmpiricalProjection      `json:"empirical,omitempty"`
+	RuntimeObservations []RuntimeBinding          `json:"runtime_observations"`
+	WireMetric          string                    `json:"wire_metric"`
+	TransportInputs     []Input                   `json:"transport_inputs"`
+	Epochs              []RecordedEpoch           `json:"epochs"`
+	Scope               ScopeCounts               `json:"scope"`
+	NodeOptions         []Node                    `json:"node_options"`
+	Provenance          Provenance                `json:"provenance"`
+	SourceSHA256        string                    `json:"source_sha256"`
+	Model               Assessment                `json:"model"`
+	Links               []Link                    `json:"links"`
+	Runtimes            []Runtime                 `json:"runtimes"`
+	App                 AppTiming                 `json:"application"`
+	Recorded            []Height                  `json:"recorded"`
+	Scenario            *sim.Scenario             `json:"-"`
 }
 
 // Fit derives one prepared network experiment from exact chain and journal
@@ -153,6 +154,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		return out, err
 	}
 	out.Recorded = facts.Heights
+	out.StaticConfiguration = facts.StaticConfiguration
 	out.Epochs = facts.Epochs
 	out.Model.Issues = append(out.Model.Issues, facts.Issues...)
 	ordered := []Node{}

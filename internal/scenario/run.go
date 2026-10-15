@@ -28,14 +28,15 @@ type SeedResult struct {
 // SeedExecution retains the official simulator's outcomes without inferring
 // violation kinds from counts or assigning recorded identities to test keys.
 type SeedExecution struct {
-	Membership *SeedMembershipObservations `json:"membership_observations,omitempty"`
-	Messages   *SeedMessageObservations    `json:"message_observations,omitempty"`
-	Timing     *SeedTimingObservations     `json:"timing_observations,omitempty"`
-	Lifecycle  *SeedLifecycleObservations  `json:"lifecycle_observations,omitempty"`
-	StopHeight uint64                      `json:"configured_stop_height,string"`
-	DurationNS int64                       `json:"configured_duration_ns,string"`
-	Nodes      []SeedNode                  `json:"nodes"`
-	Violations []SeedViolation             `json:"violations"`
+	StaticConfiguration *SeedStaticConfigurationObservations `json:"static_configuration_observations,omitempty"`
+	Membership          *SeedMembershipObservations          `json:"membership_observations,omitempty"`
+	Messages            *SeedMessageObservations             `json:"message_observations,omitempty"`
+	Timing              *SeedTimingObservations              `json:"timing_observations,omitempty"`
+	Lifecycle           *SeedLifecycleObservations           `json:"lifecycle_observations,omitempty"`
+	StopHeight          uint64                               `json:"configured_stop_height,string"`
+	DurationNS          int64                                `json:"configured_duration_ns,string"`
+	Nodes               []SeedNode                           `json:"nodes"`
+	Violations          []SeedViolation                      `json:"violations"`
 }
 
 type SeedNode struct {
@@ -98,8 +99,11 @@ func runSeedsWithMembership(ctx context.Context, sc sim.Scenario, seeds []int64,
 		var result *sim.Result
 		var timing *SeedTimingObservations
 		var messages *SeedMessageObservations
+		var configuration *SeedStaticConfigurationObservations
 		var err error
-		if len(sc.MessageChanges) > 0 {
+		if modeledStaticConfiguration(sc) != nil {
+			result, timing, messages, configuration, err = simulateConfiguredSeed(ctx, sc, retainTiming)
+		} else if len(sc.MessageChanges) > 0 {
 			result, messages, err = simulateMessageSeed(ctx, sc)
 		} else {
 			result, timing, err = simulateTimingSeed(ctx, sc, retainTiming)
@@ -111,6 +115,7 @@ func runSeedsWithMembership(ctx context.Context, sc sim.Scenario, seeds []int64,
 		out := SeedResult{Execution: seedExecution(sc, result), Seed: seed, Status: "complete", Heights: []Height{}, Violations: len(result.Violations), SimulationNS: int64(result.SimTime)}
 		out.Execution.Timing = timing
 		out.Execution.Messages = messages
+		out.Execution.StaticConfiguration = configuration
 		if membership != nil {
 			out.Execution.Membership, err = observedMembership(sc, result, membership.Epochs)
 			if err != nil {

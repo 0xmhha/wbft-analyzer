@@ -1144,6 +1144,21 @@ preserved, and scope counts are part of the immutable model identity.
 A fitting interpretation change requires a new registered source ID; existing
 source bindings and stored experiment results are never silently rewritten.
 
+Network fitting preserves recorded chain-rule activation heights and the
+allowed future block time in the official simulator, including warm-up and
+node restarts. These chain settings apply to every node and survive per-node
+timing overrides. Activation heights remain exact decimal strings. Unsupported
+parameter transitions still require explicit fitting.
+
+The experiments screen separates recorded settings, modeled settings and
+configurations read from each generated seed journal. Source rules digests
+and generated configuration digests remain separate: simulator parameters can
+make them differ. Seed evidence retains writer and engine identities, segment
+counts and nodes without configuration observations. Historical records without
+this evidence remain readable without inferring disabled rules. Default
+settings preserve historical JSON and execution identities. Register a new
+source ID when adopting nondefault settings; existing experiments stay intact.
+
 Network fitting retains candidate membership at each recorded epoch and
 verifies the epoch header against canonical proposer and seal inputs. It maps
 new candidate identities to deterministic test keys, preserving the original
