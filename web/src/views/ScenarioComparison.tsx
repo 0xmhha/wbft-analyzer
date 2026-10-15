@@ -8,9 +8,10 @@ export function ScenarioComparison({plot}:{plot:Plot}){
  const groups=[{name:"Recorded",css:"scenario-recorded",data:plot.recorded},{name:"Baseline seeds",css:"scenario-baseline",data:plot.baseline},{name:"Counterfactual seeds",css:"scenario-changed",data:plot.counterfactual}];
  const complete=groups.filter(g=>g.data.status==="complete");
  const heights=complete[0]?.data.elapsed_seconds.map(b=>b.height)??[];
- return <section className={`scenario-comparison ${plot.credibility==="reproduced"?"":"scenario-unproved"}`} aria-label="Network distribution comparison">
+ return <section className={`scenario-comparison ${plot.credibility==="baseline_reproduced"?"":"scenario-unproved"}`} aria-label="Network distribution comparison">
  <h3>Recorded and simulated network outcomes</h3><p>Heights {plot.from}–{plot.to}. Header timestamps have integer-second resolution. Each recorded height is one observation; simulated nodes are not counted as independent samples.</p>
- {plot.credibility!=="reproduced"&&<p className="error"><strong>Baseline not established:</strong> {plot.credibility}. Counterfactual curves are model outputs and cannot establish a real network prediction.</p>}
+ {plot.credibility!=="baseline_reproduced"&&<p className="error"><strong>Baseline not established:</strong> {plot.credibility}. Counterfactual curves are model outputs and cannot establish a real network prediction.</p>}
+ <p>Counterfactual curves describe the fitted model under its recorded assumptions. Baseline non-rejection does not establish physical equivalence or a real network prediction.</p>
  <ul className="scenario-legend">{groups.map(g=><li key={g.name} className={g.css}>{g.name}: {g.data.saved_runs}/{g.data.expected_runs} runs saved · {g.data.complete_runs} complete · {g.data.samples} plotted height samples{g.data.status!=="complete"&&<> · unavailable: {g.data.issue}</>}</li>)}</ul>
  {complete.length>0&&<><ECDF title="Decision round ECDF" groups={complete.map(g=>({...g,points:g.data.rounds}))}/><ECDF title="Per-height header interval ECDF (seconds)" groups={complete.map(g=>({...g,points:g.data.period_seconds}))}/><Bands groups={complete}/></>}
  <p>Seed bands show the observed minimum, lower median and maximum across all expected complete seeds. They are descriptive ranges, not confidence intervals or a time acceptance threshold.</p>

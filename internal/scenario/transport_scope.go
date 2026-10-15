@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,15 +36,24 @@ type TransportEvidence struct {
 }
 
 type TransportScope struct {
-	ThroughHeight          uint64             `json:"through_height,string"`
-	Status                 string             `json:"status"`
-	Controller             Input              `json:"controller"`
-	Sources                []Input            `json:"sources"`
-	Cutoff                 time.Time          `json:"cutoff"`
-	PhysicalDeliveryProven bool               `json:"physical_delivery_proven"`
-	Assumptions            []string           `json:"assumptions"`
-	Windows                []TransportWindow  `json:"windows"`
-	Sessions               []TransportSession `json:"sessions"`
+	HeaderCheckpoint       *TransportHeaderCheckpoint `json:"header_checkpoint,omitempty"`
+	ThroughHeight          uint64                     `json:"through_height,string"`
+	Status                 string                     `json:"status"`
+	Controller             Input                      `json:"controller"`
+	Sources                []Input                    `json:"sources"`
+	Cutoff                 time.Time                  `json:"cutoff"`
+	PhysicalDeliveryProven bool                       `json:"physical_delivery_proven"`
+	Assumptions            []string                   `json:"assumptions"`
+	Windows                []TransportWindow          `json:"windows"`
+	Sessions               []TransportSession         `json:"sessions"`
+}
+type TransportHeaderCheckpoint struct {
+	At    time.Time               `json:"at"`
+	Heads []TransportReportedHead `json:"heads"`
+}
+type TransportReportedHead struct {
+	Node string `json:"node"`
+	Head uint64 `json:"reported_head,string"`
 }
 type TransportWindow struct {
 	Input          string    `json:"input"`
@@ -82,9 +92,10 @@ type transportController struct {
 		} `json:"instrumentation_env"`
 	} `json:"launches"`
 	Phases []struct {
-		Name  string    `json:"name"`
-		At    time.Time `json:"at"`
-		Heads []uint64  `json:"heads"`
+		Name                 string    `json:"name"`
+		At                   time.Time `json:"at"`
+		Heads                []uint64  `json:"heads"`
+		HeaderCheckpointOnly bool      `json:"verified_header_checkpoint_only"`
 	} `json:"phases"`
 	Verified struct {
 		First *uint64 `json:"first"`
@@ -162,10 +173,33 @@ func BindTransportScope(e TransportEvidence, inputs []MessageInput, events []Eve
 			if !out.Cutoff.IsZero() || len(phase.Heads) != len(nodes) || phase.At.Before(origin) || phase.At.After(origin.Add(24*time.Hour)) {
 				return out, nil, errTransportScope
 			}
+			// Tips are controller attestations. Only the retained per-node
+			// header copies establish hashes through the verified prefix.
 			for _, h := range phase.Heads {
-				if h != *ctl.Verified.Last {
+				if h < *ctl.Verified.Last {
 					return out, nil, errTransportScope
 				}
+			}
+			checkpointAt := phase.At
+			if phase.HeaderCheckpointOnly {
+				found := false
+				for _, checkpoint := range ctl.Phases {
+					if checkpoint.Name != "capture_checkpoint" {
+						continue
+					}
+					if found || checkpoint.At.Before(origin) || checkpoint.At.After(phase.At) || !slices.Equal(checkpoint.Heads, phase.Heads) {
+						return out, nil, errTransportScope
+					}
+					found = true
+					checkpointAt = checkpoint.At
+				}
+				if !found {
+					return out, nil, errTransportScope
+				}
+			}
+			out.HeaderCheckpoint = &TransportHeaderCheckpoint{At: checkpointAt, Heads: []TransportReportedHead{}}
+			for i, h := range phase.Heads {
+				out.HeaderCheckpoint.Heads = append(out.HeaderCheckpoint.Heads, TransportReportedHead{Node: ctl.Addresses[i], Head: h})
 			}
 			out.Cutoff = phase.At
 		}

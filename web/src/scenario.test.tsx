@@ -14,6 +14,10 @@ describe("network scenario comparison",()=>{
   const scope:Schemas["ScenarioTransportScope"]={status:"closed_observer_scope",controller:{...certificate,id:"controller",kind:"transport-controller",node:"network"},sources:[certificate],cutoff:"2026-01-01T00:00:03Z",through_height:"9007199254740993",physical_delivery_proven:false,assumptions:["peer_info_lists_all_other_live_nodes"],windows:[{input:"wire-a",certificate,node:"node-a",run:"writer",from:"2026-01-01T00:00:00Z",to:"2026-01-01T00:00:04Z",settled_through:"2026-01-01T00:00:03Z",frame_sha256:"b".repeat(64)}],sessions:[{input:"wire-a",node:"node-a",peer:"node-b",run:"writer",from:"2026-01-01T00:00:00Z",to:"2026-01-01T00:00:04Z",from_line:1,to_line:40}]};
   const html=renderToStaticMarkup(<TransportScopeEvidence scope={scope}/>);
   expect(html).toContain("9007199254740993");expect(html).toContain("Receiver windows (1)");expect(html).toContain("Local peer sessions (1)");expect(html).toContain("lines 1–40");expect(html).toContain("do not prove physical network delivery");expect(html).toContain("controller attestations");expect(html).toContain("Baseline round and time validation remain separate");expect(html).toContain("peer info lists all other live nodes");expect(html).not.toContain("/private/");
+  expect(html).not.toContain("Verified header prefix and reported tips");
+  scope.header_checkpoint={at:"2026-01-01T00:00:02Z",heads:[{node:"node-a",reported_head:"18446744073709551615"},{node:"node-b",reported_head:"9007199254740993"}]};
+  const checkpoint=renderToStaticMarkup(<TransportScopeEvidence scope={scope}/>);
+  for(const text of ["Verified header prefix and reported tips","2026-01-01T00:00:02Z","18446744073709551615","Controller-reported tip","Verified through","Later reported tip heights remain controller attestations"])expect(checkpoint).toContain(text);
  });
  it("distinguishes engine pauses, node shutdown and unavailable lifecycle evidence",()=>{
   const runtime:Schemas["ScenarioRuntime"]={node:"native",input:"events",starts:1,start_ns:0,sign_floor_state:"none",sign_floor:null,engine_stop_observed:true,wal_replay:true,events:[],wal_policies:[{run:"writer",engine_run:"9007199254740993",line:2,enabled:true,available:true,replayed:false,status:"complete"}],engine_history:{status:"partial",actions:[],issues:[{code:"engine_history_not_closed",run:"writer",line:12}],instances:[{run:"writer",engine_run:"1",start_ns:0,stop_ns:1,start_line:2,stop_line:4,initial:true,node_shutdown:false},{run:"writer",engine_run:"2",start_ns:2,stop_ns:3,start_line:5,stop_line:8,initial:false,node_shutdown:true},{run:"writer",engine_run:"9007199254740993",start_ns:4,stop_ns:null,start_line:9,stop_line:0,initial:false,node_shutdown:false}]}};
@@ -34,6 +38,15 @@ describe("network scenario comparison",()=>{
   expect(ecdfPath([{value:"9007199254740993",cumulative:.5,count:1}],domain)).toContain("H350V95");
   const bands=group().elapsed_seconds,before=JSON.stringify(bands);
   expect(bandPath(bands,["1","2"],["0","4"])).toContain("700,0");expect(JSON.stringify(bands)).toBe(before);
+ });
+ it("uses the API baseline credibility without promoting unknown states",()=>{
+  const plot:Schemas["ScenarioComparisonPlot"]={from:"1",to:"2",credibility:"baseline_reproduced",recorded_sha256:"a".repeat(64),recorded:group(),baseline:group(),counterfactual:group()};
+  const html=renderToStaticMarkup(<ScenarioComparison plot={plot}/>);
+  expect(html).not.toContain("Baseline not established");expect(html).not.toContain("scenario-unproved");expect(html).toContain("does not establish physical equivalence");
+  for(const credibility of ["reproduced","execution_incomplete","baseline_rounds_failed","baseline_time_unproved","unknown"]){
+   const other=renderToStaticMarkup(<ScenarioComparison plot={{...plot,credibility}}/>);
+   expect(other).toContain("Baseline not established");expect(other).toContain("scenario-unproved");
+  }
  });
  it("labels failed credibility and preserves exact ECDF values",()=>{
   const incomplete={...group(),status:"incomplete",samples:0,rounds:[],period_seconds:[],elapsed_seconds:[],saved_runs:1,complete_runs:1,issue:"seed_executions_incomplete"};
