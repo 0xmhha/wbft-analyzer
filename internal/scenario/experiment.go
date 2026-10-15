@@ -11,6 +11,7 @@ import (
 const ExperimentVersion = "wbft-network-experiment/2"
 
 type Experiment struct {
+	Messages        *MessageEffect        `json:"message_effect,omitempty"`
 	Timing          *TimingEffect         `json:"timing_effect,omitempty"`
 	Lifecycle       *LifecycleEffect      `json:"lifecycle_effect,omitempty"`
 	WallOrigin      string                `json:"wall_origin,omitempty"`
@@ -51,6 +52,10 @@ func ExecuteExperimentWithBegin(ctx context.Context, sc sim.Scenario, provenance
 }
 
 func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provenance Provenance, model Assessment, recorded []RoundCount, heights []Height, change NetworkChange, from, to uint64, begin func(Experiment) error, emit func(SeedRecord) error) (Experiment, error) {
+	return ExecuteExperimentWithMessages(ctx, sc, provenance, model, recorded, heights, change, nil, from, to, begin, emit)
+}
+
+func ExecuteExperimentWithMessages(ctx context.Context, sc sim.Scenario, provenance Provenance, model Assessment, recorded []RoundCount, heights []Height, change NetworkChange, bindings []RecordedMessageBinding, from, to uint64, begin func(Experiment) error, emit func(SeedRecord) error) (Experiment, error) {
 
 	normalized, changeErr := change.Normalized()
 	if changeErr != nil {
@@ -72,7 +77,15 @@ func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provena
 	}
 	out.Provenance = fixed
 	out.SourceSHA256 = sourceHash
-	changed, changeHash, err := ApplyNetworkChange(sc, change)
+	var changed sim.Scenario
+	var changeHash string
+	if change.IsMessageChange() {
+		changed, out.Messages, changeHash, err = ApplyMessageChange(sc, change, bindings)
+	} else if len(bindings) > 0 {
+		err = errNetworkChange
+	} else {
+		changed, changeHash, err = ApplyNetworkChange(sc, change)
+	}
 	if err != nil {
 		out.Status = "failed"
 		return out, err
@@ -93,7 +106,7 @@ func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provena
 		out.Status = "failed"
 		return out, err
 	}
-	if len(sc.Adversaries) > 0 || len(sc.Faults) > 0 || len(sc.Disk) > 0 || len(sc.App.BadProposals) > 0 || len(sc.App.FailedImports) > 0 {
+	if len(sc.Adversaries) > 0 || len(sc.Faults) > 0 || len(sc.Disk) > 0 || len(sc.App.BadProposals) > 0 || len(sc.App.FailedImports) > 0 || len(sc.MessageChanges) > 0 {
 		out.Status = "failed"
 		return out, errors.New("unsupported network experiment behavior")
 	}

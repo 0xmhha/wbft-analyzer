@@ -5695,6 +5695,16 @@
               }
             ]
           },
+          "message_effect": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioMessageEffect"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "model": {
             "$ref": "#/components/schemas/ScenarioAssessment"
           },
@@ -6107,6 +6117,104 @@
         ],
         "type": "object"
       },
+      "ScenarioMessageEffect": {
+        "additionalProperties": false,
+        "properties": {
+          "execution_sha256": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "selections": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRecordedMessageBinding"
+            },
+            "type": "array"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "execution_sha256",
+          "scope",
+          "selections",
+          "source"
+        ],
+        "type": "object"
+      },
+      "ScenarioMessagePage": {
+        "additionalProperties": false,
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRecordedMessageEvidence"
+            },
+            "type": "array"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "verification": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "messages",
+          "next",
+          "source_sha256",
+          "verification"
+        ],
+        "type": "object"
+      },
+      "ScenarioModelMessageSelector": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "occurrence": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "peer_node": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "receiver_node": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "round": {
+            "type": "string"
+          },
+          "signer_node": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "height",
+          "occurrence",
+          "peer_node",
+          "receiver_node",
+          "round",
+          "signer_node"
+        ],
+        "type": "object"
+      },
       "ScenarioNetworkChange": {
         "anyOf": [
           {
@@ -6309,6 +6417,74 @@
               "from_ns",
               "kind",
               "timing",
+              "to_ns"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "from_ns": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "kind": {
+                "enum": [
+                  "drop_message"
+                ],
+                "type": "string"
+              },
+              "messages": {
+                "items": {
+                  "$ref": "#/components/schemas/ScenarioRecordedMessageSelection"
+                },
+                "maxItems": 1,
+                "minItems": 1,
+                "type": "array"
+              },
+              "to_ns": {
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "from_ns",
+              "kind",
+              "messages",
+              "to_ns"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "from_ns": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "kind": {
+                "enum": [
+                  "swap_messages"
+                ],
+                "type": "string"
+              },
+              "messages": {
+                "items": {
+                  "$ref": "#/components/schemas/ScenarioRecordedMessageSelection"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "type": "array"
+              },
+              "to_ns": {
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "from_ns",
+              "kind",
+              "messages",
               "to_ns"
             ],
             "type": "object"
@@ -6614,6 +6790,109 @@
           "inputs",
           "model_sha256",
           "seeds"
+        ],
+        "type": "object"
+      },
+      "ScenarioRecordedMessageBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "effective_selector": {
+            "$ref": "#/components/schemas/ScenarioModelMessageSelector"
+          },
+          "recorded_message": {
+            "$ref": "#/components/schemas/ScenarioRecordedMessageEvidence"
+          },
+          "selection": {
+            "$ref": "#/components/schemas/ScenarioRecordedMessageSelection"
+          }
+        },
+        "required": [
+          "effective_selector",
+          "recorded_message",
+          "selection"
+        ],
+        "type": "object"
+      },
+      "ScenarioRecordedMessageEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "input_sha256": {
+            "type": "string"
+          },
+          "ordinal": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "payload_sha256": {
+            "type": "string"
+          },
+          "peer": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "receiver": {
+            "type": "string"
+          },
+          "receiver_run": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "signer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "height",
+          "input",
+          "input_sha256",
+          "ordinal",
+          "payload_sha256",
+          "peer",
+          "phase",
+          "receiver",
+          "receiver_run",
+          "round",
+          "signer"
+        ],
+        "type": "object"
+      },
+      "ScenarioRecordedMessageSelection": {
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "model_occurrence": {
+            "pattern": "^[1-9][0-9]*$",
+            "type": "string"
+          },
+          "ordinal": {
+            "pattern": "^[1-9][0-9]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "input",
+          "model_occurrence",
+          "ordinal"
         ],
         "type": "object"
       },
@@ -7024,6 +7303,16 @@
               }
             ]
           },
+          "message_observations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSeedMessageObservations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "nodes": {
             "items": {
               "$ref": "#/components/schemas/ScenarioSeedNode"
@@ -7105,6 +7394,163 @@
         },
         "required": [
           "node_starts",
+          "source"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedMessageChange": {
+        "additionalProperties": false,
+        "properties": {
+          "first": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSeedMessageDelivery"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_matches": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "second": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSeedMessageDelivery"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "second_matches": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "first_matches",
+          "kind",
+          "second_matches",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedMessageCoreInput": {
+        "additionalProperties": false,
+        "properties": {
+          "engine_run": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "entry_ns": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "journal_sequence": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "recorded_step_mono_ns": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "step": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "engine_run",
+          "journal_sequence",
+          "recorded_step_mono_ns",
+          "step"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedMessageDelivery": {
+        "additionalProperties": false,
+        "properties": {
+          "arrival_order": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "capture_id": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "eligible_ns": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "offer": {
+            "type": "string"
+          },
+          "peer_run": {
+            "type": "string"
+          },
+          "receiver_run": {
+            "type": "string"
+          },
+          "recorded_core_inputs": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedMessageCoreInput"
+            },
+            "type": "array"
+          },
+          "release_order": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "released_ns": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "sent_ns": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "simulated_payload_sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "arrival_order",
+          "capture_id",
+          "eligible_ns",
+          "offer",
+          "peer_run",
+          "receiver_run",
+          "recorded_core_inputs",
+          "release_order",
+          "sent_ns",
+          "simulated_payload_sha256"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedMessageObservations": {
+        "additionalProperties": false,
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedMessageChange"
+            },
+            "type": "array"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "changes",
           "source"
         ],
         "type": "object"
@@ -12610,13 +13056,12 @@
             }
           },
           {
-            "description": "positive original source ordinal",
+            "description": "positive full decimal original source ordinal",
             "in": "query",
             "name": "ordinal",
             "required": true,
             "schema": {
-              "format": "int64",
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
@@ -14949,6 +15394,111 @@
           }
         },
         "summary": "One scoped network experiment job with explicit interruption and failure status."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/scenario-messages": {
+      "get": {
+        "operationId": "listScenarioMessages",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "registered source ID",
+            "in": "query",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "selected transport input ID",
+            "in": "query",
+            "name": "input",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "full decimal height",
+            "in": "query",
+            "name": "height",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "full decimal round",
+            "in": "query",
+            "name": "round",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "opaque cursor scoped to this source and filters",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioMessagePage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "At most 100 scanned frames from a registered transport input, projected into exact recorded message coordinates; queueing performs full validation."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/scenario-runs": {

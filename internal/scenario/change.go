@@ -22,16 +22,17 @@ const maxChangeNodes = 256
 // used only by cut_outgoing; link changes use explicit edges. Indices refer to fitted
 // recorded validators, never private keys or sorted simulated addresses.
 type NetworkChange struct {
-	Kind           string             `json:"kind" enum:"cut_outgoing,partition,set_link_delay,scale_link_delay,node_lifecycle,set_timing"`
-	Node           *int               `json:"node,omitempty" nullable:"false"`
-	FromNS         int64              `json:"from_ns"`
-	ToNS           int64              `json:"to_ns"`
-	Edges          []DirectedEdge     `json:"edges,omitempty"`
-	DelayNS        *int64             `json:"delay_ns,omitempty" nullable:"false"`
-	Scale          *DelayScale        `json:"scale,omitempty" nullable:"false"`
-	Lifecycle      []LifecycleCommand `json:"lifecycle,omitempty"`
-	SchedulePolicy string             `json:"schedule_policy,omitempty" enum:"merge,replace_window"`
-	Timing         *TimingChange      `json:"timing,omitempty" nullable:"false"`
+	Kind           string                     `json:"kind" enum:"cut_outgoing,partition,set_link_delay,scale_link_delay,node_lifecycle,set_timing,drop_message,swap_messages"`
+	Node           *int                       `json:"node,omitempty" nullable:"false"`
+	FromNS         int64                      `json:"from_ns"`
+	ToNS           int64                      `json:"to_ns"`
+	Edges          []DirectedEdge             `json:"edges,omitempty"`
+	DelayNS        *int64                     `json:"delay_ns,omitempty" nullable:"false"`
+	Scale          *DelayScale                `json:"scale,omitempty" nullable:"false"`
+	Lifecycle      []LifecycleCommand         `json:"lifecycle,omitempty"`
+	SchedulePolicy string                     `json:"schedule_policy,omitempty" enum:"merge,replace_window"`
+	Timing         *TimingChange              `json:"timing,omitempty" nullable:"false"`
+	Messages       []RecordedMessageSelection `json:"messages,omitempty"`
 }
 type DirectedEdge struct {
 	From *int `json:"from" nullable:"false"`
@@ -68,6 +69,8 @@ func (c *NetworkChange) UnmarshalJSON(raw []byte) error {
 		allowed["schedule_policy"] = true
 	case "set_timing":
 		allowed["timing"] = true
+	case "drop_message", "swap_messages":
+		allowed["messages"] = true
 	default:
 		return errNetworkChange
 	}
@@ -113,7 +116,12 @@ func (c NetworkChange) Normalized() (NetworkChange, error) {
 	if c.Kind != "set_timing" && c.Timing != nil {
 		return NetworkChange{}, errNetworkChange
 	}
+	if !c.IsMessageChange() && c.Messages != nil {
+		return NetworkChange{}, errNetworkChange
+	}
 	switch c.Kind {
+	case "drop_message", "swap_messages":
+		return normalizeMessageChange(c)
 	case "set_timing":
 		return normalizeTimingChange(c)
 	case "node_lifecycle":
@@ -179,7 +187,7 @@ func (c NetworkChange) ValidateFor(nodes int, duration time.Duration) error {
 	if err != nil || nodes < 2 || nodes > maxChangeNodes || duration <= 0 || time.Duration(c.ToNS) > duration {
 		return errNetworkChange
 	}
-	if (normalized.IsLinkDelay() || normalized.Kind == "set_timing") && (normalized.FromNS != 0 || time.Duration(normalized.ToNS) != duration) {
+	if (normalized.IsLinkDelay() || normalized.Kind == "set_timing" || normalized.IsMessageChange()) && (normalized.FromNS != 0 || time.Duration(normalized.ToNS) != duration) {
 		return errNetworkChange
 	}
 	if normalized.Node != nil && *normalized.Node >= nodes {
@@ -214,6 +222,9 @@ func ApplyNetworkChange(sc sim.Scenario, change NetworkChange) (sim.Scenario, st
 	normalized, err := change.Normalized()
 	if err != nil {
 		return sc, "", err
+	}
+	if normalized.IsMessageChange() {
+		return sc, "", errNetworkChange
 	}
 	if normalized.IsLinkDelay() {
 		return applyLinkDelay(sc, normalized)

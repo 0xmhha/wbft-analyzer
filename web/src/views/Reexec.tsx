@@ -40,7 +40,7 @@ function RunDetails({net,dataset,run,refresh,onAuth}:{net:number;dataset:number;
 function OriginalSource({net,dataset,input,step,onAuth}:{net:number;dataset:number;input:string;step:SourcePointer;onAuth:()=>void}) {
  const panel=useRef<HTMLElement>(null);
  useEffect(()=>{panel.current?.focus()},[step.ordinal]);
- const load=useLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/messages/source",{path:{net,dataset},query:{input,file:step.file,ordinal:step.ordinal}}),[net,dataset,input,step.file,step.ordinal]);
+ const load=useLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/messages/source",{path:{net,dataset},query:{input,file:step.file,ordinal:String(step.ordinal)}}),[net,dataset,input,step.file,step.ordinal]);
  return <aside ref={panel} tabIndex={-1} aria-label={`Original journal source ${step.ordinal}`}><h3>Original journal source {step.ordinal}</h3><Pending load={load} onAuth={onAuth}/>{load.state==="done"&&<><TimerEvidence operation={load.data.timer_operation}/><pre>{JSON.stringify(load.data,null,2)}</pre></>}</aside>;
 }
 

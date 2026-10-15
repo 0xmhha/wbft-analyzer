@@ -230,6 +230,9 @@ func (w *Worker) Enqueue(ctx context.Context, network, dataset int64, id string,
 	if err := change.ValidateLifecycleBounds(s.lifecycle); err != nil {
 		return store.ScenarioJob{}, ErrChange
 	}
+	if _, err := w.bindMessages(ctx, s, change); err != nil {
+		return store.ScenarioJob{}, err
+	}
 	return w.store.EnqueueScenario(ctx, store.ScenarioJob{Dataset: dataset, Source: id, SourceSHA: s.info.SourceSHA, ExecutionSHA: s.info.ExecutionSHA, Change: change})
 }
 
@@ -252,16 +255,21 @@ func (w *Worker) ExecuteNext(ctx context.Context, owner string) (bool, error) {
 		if fitErr == nil && fitted.Scenario != nil && fitted.SourceSHA256 == j.SourceSHA {
 			execution, err := scenario.ExecutionHash(*fitted.Scenario)
 			if err == nil && execution == j.ExecutionSHA {
-				counts := scenario.RoundCount{Total: int64(len(fitted.Recorded))}
-				for _, h := range fitted.Recorded {
-					if h.Round > 0 {
-						counts.Late++
+				bindings, bindErr := w.bindMessages(ctx, source, j.Change)
+				if bindErr != nil {
+					issue = "message_selection_unavailable"
+				} else {
+					counts := scenario.RoundCount{Total: int64(len(fitted.Recorded))}
+					for _, h := range fitted.Recorded {
+						if h.Round > 0 {
+							counts.Late++
+						}
 					}
-				}
-				result, runErr := Run(ctx, w.store, Options{JobID: j.ID, JobOwner: owner, Scenario: *fitted.Scenario, Provenance: fitted.Provenance, Model: fitted.Model, Recorded: []scenario.RoundCount{counts}, RecordedHeights: fitted.Recorded, Change: j.Change, From: source.request.Options.From, To: source.request.Options.To})
-				issue = "experiment_incomplete"
-				if runErr == nil && result.Summary.Status == "completed" {
-					status, issue = "succeeded", ""
+					result, runErr := Run(ctx, w.store, Options{MessageBindings: bindings, JobID: j.ID, JobOwner: owner, Scenario: *fitted.Scenario, Provenance: fitted.Provenance, Model: fitted.Model, Recorded: []scenario.RoundCount{counts}, RecordedHeights: fitted.Recorded, Change: j.Change, From: source.request.Options.From, To: source.request.Options.To})
+					issue = "experiment_incomplete"
+					if runErr == nil && result.Summary.Status == "completed" {
+						status, issue = "succeeded", ""
+					}
 				}
 			}
 		}

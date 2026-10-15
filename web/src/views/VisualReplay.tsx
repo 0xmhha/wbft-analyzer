@@ -18,7 +18,7 @@ function ReplayLoader({net,dataset,times,node,focus,onAuth,onPoint}:{net:number;
  const [evidence,setEvidence]=useState(dataset);
  const [measurement,setMeasurement]=useState("recorded");
  const [original,setOriginal]=useState<Schemas["MessagesSource"]|null>(null);
- const originalRecord=useLoad(async()=>!original?null:original.kind==="message"?get("/v1/networks/{net}/datasets/{dataset}/messages/source",{path:{net,dataset:original.dataset_id||evidence},query:{input:original.input,file:original.file||"",ordinal:original.ordinal}}):get("/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}",{path:{net,dataset:original.dataset_id||evidence,input:original.input,line:original.ordinal}}),[net,evidence,JSON.stringify(original)]);
+ const originalRecord=useLoad(async()=>!original?null:original.kind==="message"?get("/v1/networks/{net}/datasets/{dataset}/messages/source",{path:{net,dataset:original.dataset_id||evidence},query:{input:original.input,file:original.file||"",ordinal:String(original.ordinal)}}):get("/v1/networks/{net}/datasets/{dataset}/events/{input}/{line}",{path:{net,dataset:original.dataset_id||evidence,input:original.input,line:original.ordinal}}),[net,evidence,JSON.stringify(original)]);
  const [source,setSource]=useState({input:"",line:""}),[endpoint,setEndpoint]=useState<Record|null>(focus || null),[error,setError]=useState("");
  useEffect(()=>{if(focus)setEndpoint(focus)},[focus?.input,focus?.line]);
  const flowEnd=endpoint?.t_wall || times.to_t;

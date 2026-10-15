@@ -28,6 +28,7 @@ type SeedResult struct {
 // SeedExecution retains the official simulator's outcomes without inferring
 // violation kinds from counts or assigning recorded identities to test keys.
 type SeedExecution struct {
+	Messages   *SeedMessageObservations   `json:"message_observations,omitempty"`
 	Timing     *SeedTimingObservations    `json:"timing_observations,omitempty"`
 	Lifecycle  *SeedLifecycleObservations `json:"lifecycle_observations,omitempty"`
 	StopHeight uint64                     `json:"configured_stop_height,string"`
@@ -89,12 +90,22 @@ func runSeedsWithEvidence(ctx context.Context, sc sim.Scenario, seeds []int64, f
 			return err
 		}
 		sc.Seed = seed
-		result, timing, err := simulateTimingSeed(ctx, sc, retainTiming)
-		if err != nil {
+		var result *sim.Result
+		var timing *SeedTimingObservations
+		var messages *SeedMessageObservations
+		var err error
+		if len(sc.MessageChanges) > 0 {
+			result, messages, err = simulateMessageSeed(ctx, sc)
+		} else {
+			result, timing, err = simulateTimingSeed(ctx, sc, retainTiming)
+		}
+		selectionFailed := errors.Is(err, sim.ErrMessageSelection)
+		if err != nil && !selectionFailed {
 			return err
 		}
 		out := SeedResult{Execution: seedExecution(sc, result), Seed: seed, Status: "complete", Heights: []Height{}, Violations: len(result.Violations), SimulationNS: int64(result.SimTime)}
 		out.Execution.Timing = timing
+		out.Execution.Messages = messages
 		if retainLifecycle {
 			out.Execution.Lifecycle, err = observedNodeStarts(sc, result)
 			if err != nil {
@@ -130,6 +141,9 @@ func runSeedsWithEvidence(ctx context.Context, sc sim.Scenario, seeds []int64, f
 		}
 		if out.Violations > 0 {
 			out.Status = "violations"
+		}
+		if selectionFailed {
+			out.Status = "partial"
 		}
 		if err := emit(out); err != nil {
 			return err
