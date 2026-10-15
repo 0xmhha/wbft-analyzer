@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"errors"
+	"sort"
 	"time"
 
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
@@ -9,6 +10,7 @@ import (
 )
 
 type Runtime struct {
+	EngineHistory  *EngineHistory `json:"engine_history,omitempty"`
 	EngineStopped  bool           `json:"engine_stop_observed"`
 	ReplayWAL      *bool          `json:"wal_replay"`
 	WALPolicies    []WALPolicy    `json:"wal_policies"`
@@ -32,6 +34,7 @@ type WALPolicy struct {
 }
 
 type RuntimeEvent struct {
+	Engine string `json:"engine_run,omitempty"`
 	Action string `json:"action"`
 	AtNS   int64  `json:"at_ns"`
 	Run    string `json:"run"`
@@ -132,11 +135,23 @@ func FitRuntime(node, input string, xs []logs.Event, origin time.Time) (Runtime,
 	if first {
 		return out, errors.New("node start evidence unavailable")
 	}
-	known := len(out.WALPolicies) == out.Starts
+	history := inspectEngineHistory(xs, origin)
+	out.EngineHistory = &history
+	completeHistory := history.Status == "complete"
+	if completeHistory {
+		out.Events = append(out.Events, history.Actions...)
+		sort.SliceStable(out.Events, func(i, j int) bool {
+			if out.Events[i].AtNS != out.Events[j].AtNS {
+				return out.Events[i].AtNS < out.Events[j].AtNS
+			}
+			return out.Events[i].Line < out.Events[j].Line
+		})
+	}
+	known := len(out.WALPolicies) == out.Starts || completeHistory && len(out.WALPolicies) == len(history.Instances)
 	policyRuns := map[string]int{}
 	for _, policy := range out.WALPolicies {
 		policyRuns[policy.Run]++
-		if startRuns[policy.Run] != 1 || policyRuns[policy.Run] != 1 {
+		if startRuns[policy.Run] != 1 || !completeHistory && policyRuns[policy.Run] != 1 {
 			known = false
 		}
 		if policy.Enabled == nil || policy.Available == nil || !*policy.Available || policy.Engine == "" || policy.Line < 1 || policy.Status != "complete" {
@@ -148,6 +163,11 @@ func FitRuntime(node, input string, xs []logs.Event, origin time.Time) (Runtime,
 		}
 		value := *policy.Enabled
 		out.ReplayWAL = &value
+	}
+	for run := range startRuns {
+		if policyRuns[run] == 0 {
+			known = false
+		}
 	}
 	if !known {
 		out.ReplayWAL = nil

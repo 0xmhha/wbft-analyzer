@@ -10,7 +10,7 @@ import (
 	pairs "github.com/0xmhha/wbft-analyzer/internal/derive/messages"
 )
 
-const FitVersion = "wbft-network-scenario-fit/11"
+const FitVersion = "wbft-network-scenario-fit/12"
 
 func ValidWireMetric(metric string) bool {
 	return metric == "link" || metric == pairs.WriteStartToReadComplete

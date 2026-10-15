@@ -2603,6 +2603,32 @@ export interface components {
                 [key: string]: number;
             };
         };
+        ScenarioEngineHistory: {
+            actions: components["schemas"]["ScenarioRuntimeEvent"][];
+            instances: components["schemas"]["ScenarioEngineInstance"][];
+            issues: components["schemas"]["ScenarioEngineHistoryIssue"][];
+            status: string;
+        };
+        ScenarioEngineHistoryIssue: {
+            code: string;
+            /** Format: int64 */
+            line: number;
+            run: string;
+        };
+        ScenarioEngineInstance: {
+            engine_run: string;
+            initial: boolean;
+            node_shutdown: boolean;
+            run: string;
+            /** Format: int64 */
+            start_line: number;
+            /** Format: int64 */
+            start_ns: number;
+            /** Format: int64 */
+            stop_line: number;
+            /** Format: int64 */
+            stop_ns: number | null;
+        };
         ScenarioExperiment: {
             baseline_rounds: components["schemas"]["ScenarioRoundComparison"] | null;
             baseline_time_check: string;
@@ -2699,6 +2725,7 @@ export interface components {
             runs: components["schemas"]["StoreScenarioRunInfo"][];
         };
         ScenarioRuntime: {
+            engine_history?: components["schemas"]["ScenarioEngineHistory"] | null;
             engine_stop_observed: boolean;
             events: components["schemas"]["ScenarioRuntimeEvent"][];
             input: string;
@@ -2742,6 +2769,7 @@ export interface components {
             action: string;
             /** Format: int64 */
             at_ns: number;
+            engine_run?: string;
             /** Format: int64 */
             line: number;
             run: string;

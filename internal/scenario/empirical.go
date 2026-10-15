@@ -63,6 +63,7 @@ func fitEmpiricalProjection(o FitOptions, fitted Fitted, sources []Input) (Empir
 			"equal_time_lifecycle_events_keep_source_order",
 			"transactions_and_source_executor_internals_are_not_executed",
 			"system_contract_execution_replaced_by_recorded_epoch_candidates",
+			"recorded_mid_run_engine_events_drive_core_controls",
 		},
 		Nodes: []EmpiricalNode{}, Timings: []EmpiricalTimings{},
 		Application:    AppTiming{Build: append([]AppSample{}, fitted.App.Build...), Import: append([]AppSample{}, fitted.App.Import...), Unproved: fitted.App.Unproved, Policies: []ApplicationPolicy{}, Outcomes: []AppOutcome{}},
@@ -99,7 +100,7 @@ func fitEmpiricalProjection(o FitOptions, fitted Fitted, sources []Input) (Empir
 				case "recorded":
 					node.SigningState = "recorded_floor_unsupported"
 				}
-				if runtime.EngineStopped || runtime.SignFloorState != "none" || runtime.SignFloor != nil {
+				if runtime.EngineStopped && (runtime.EngineHistory == nil || runtime.EngineHistory.Status != "complete") || runtime.SignFloorState != "none" || runtime.SignFloor != nil {
 					issues = append(issues, Issue{Node: addr, Code: "native_runtime_model_unavailable"})
 				}
 				out.Runtimes = append(out.Runtimes, scopeEmpiricalRuntime(runtime, o.Until))
