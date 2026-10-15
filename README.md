@@ -1421,6 +1421,42 @@ evidence renders at most 100 rows per page, with first/previous/next/last contro
 for the complete bounded edge set. These interventions do not establish physical
 network predictions; the existing baseline round and time checks remain required.
 
+### Node stop and restart interventions
+
+`node_lifecycle` requests clean full-node stops and persistent restarts using
+recorded node indices and exact integer nanoseconds. It supports multiple nodes
+and up to 4096 commands. Commands are canonicalized by time and node; two commands
+for the same node at the same instant are rejected. Initial startup times, node
+options, links, and baseline inputs remain unchanged. The command window is
+inclusive, unlike the half-open interval used by partitions.
+
+```json
+{"source_id":"registered-model","change":{"kind":"node_lifecycle","from_ns":30000000000,"to_ns":120000000000,"lifecycle":[{"node":3,"at_ns":30000000000,"action":"stop"}],"schedule_policy":"replace_window"}}
+```
+
+`merge` retains every recorded command, including later restarts. `replace_window`
+explicitly replaces only recorded commands for nodes named in the request inside
+the inclusive window. Other nodes and commands outside it stay unchanged. The
+retained experiment includes every removed recorded command and the retained
+count. At equal times retained recorded commands execute first in source order,
+followed by canonical intervention order; this is a model policy, not a measured
+physical order. Startup and state checks run before queuing and again at execution.
+
+A clean stop can wait for pending processing or sealing. Its request time is not
+its physical completion time. Restart uses the same simulated node filesystem,
+WAL, signer state and existing replay settings; it does not reset the chain or
+import recorded private keys. These actions differ from an engine-only stop,
+where application and transport remain available. The form and retained evidence
+show this scope, exact commands and explicit replacements, with bounded tables.
+Baseline validation and counterfactual labels remain required.
+
+The simulator may reach its stop height before a later command. Such a request
+does not establish that a restart occurred. New lifecycle counterfactual seeds
+retain actual `NODE_START` events, their simulated times, run identities and WAL
+recovery counts. No start receipt is invented from the requested schedule.
+Historical seeds without those observations remain explicitly unavailable, and
+baseline seed records retain their existing shape.
+
 ### Scenario wall-clock origin
 
 Recorded network fitting binds the declared `origin` to simulated time zero,

@@ -28,10 +28,11 @@ type SeedResult struct {
 // SeedExecution retains the official simulator's outcomes without inferring
 // violation kinds from counts or assigning recorded identities to test keys.
 type SeedExecution struct {
-	StopHeight uint64          `json:"configured_stop_height,string"`
-	DurationNS int64           `json:"configured_duration_ns,string"`
-	Nodes      []SeedNode      `json:"nodes"`
-	Violations []SeedViolation `json:"violations"`
+	Lifecycle  *SeedLifecycleObservations `json:"lifecycle_observations,omitempty"`
+	StopHeight uint64                     `json:"configured_stop_height,string"`
+	DurationNS int64                      `json:"configured_duration_ns,string"`
+	Nodes      []SeedNode                 `json:"nodes"`
+	Violations []SeedViolation            `json:"violations"`
 }
 
 type SeedNode struct {
@@ -64,6 +65,10 @@ func seedExecution(sc sim.Scenario, result *sim.Result) *SeedExecution {
 // RunSeeds uses the official simulator with one independent run per seed.
 // It never aggregates multiple node claims as independent height samples.
 func RunSeeds(ctx context.Context, sc sim.Scenario, seeds []int64, from, to uint64, emit func(SeedResult) error) error {
+	return runSeeds(ctx, sc, seeds, from, to, false, emit)
+}
+
+func runSeeds(ctx context.Context, sc sim.Scenario, seeds []int64, from, to uint64, retainLifecycle bool, emit func(SeedResult) error) error {
 	if from < 1 || to < from || to-from >= 10000 || len(seeds) == 0 || len(seeds) > 128 {
 		return errors.New("invalid bounded simulation run")
 	}
@@ -84,6 +89,12 @@ func RunSeeds(ctx context.Context, sc sim.Scenario, seeds []int64, from, to uint
 			return err
 		}
 		out := SeedResult{Execution: seedExecution(sc, result), Seed: seed, Status: "complete", Heights: []Height{}, Violations: len(result.Violations), SimulationNS: int64(result.SimTime)}
+		if retainLifecycle {
+			out.Execution.Lifecycle, err = observedNodeStarts(sc, result)
+			if err != nil {
+				return err
+			}
+		}
 		for _, b := range result.Chain {
 			n := b.Header.Number
 			if !n.IsUint64() {

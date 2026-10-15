@@ -91,12 +91,13 @@ type SourceInfo struct {
 }
 
 type registered struct {
-	request  FitRequest
-	info     SourceInfo
-	network  int64
-	nodes    int
-	duration time.Duration
-	delays   map[[2]int]time.Duration
+	request   FitRequest
+	info      SourceInfo
+	network   int64
+	nodes     int
+	duration  time.Duration
+	delays    map[[2]int]time.Duration
+	lifecycle scenario.LifecycleScope
 }
 type Worker struct {
 	store   *store.Store
@@ -180,7 +181,12 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 			public.Nodes = append(public.Nodes, node.Address.Hex())
 		}
 		var delayBounds map[[2]int]time.Duration
+		var lifecycleBounds scenario.LifecycleScope
 		if fitted.Scenario != nil {
+			lifecycleBounds, err = scenario.NodeLifecycleBounds(*fitted.Scenario)
+			if err != nil {
+				return nil, ErrSource
+			}
 			delayBounds, err = scenario.LinkDelayBounds(*fitted.Scenario)
 			if err != nil {
 				return nil, ErrSource
@@ -194,7 +200,7 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 			return nil, err
 		}
 		request.Snapshot = &snapshot
-		w.sources[spec.ID] = registered{delays: delayBounds, request: request, info: public, network: dataset.NetworkID, nodes: len(fitted.NodeOptions), duration: duration}
+		w.sources[spec.ID] = registered{lifecycle: lifecycleBounds, delays: delayBounds, request: request, info: public, network: dataset.NetworkID, nodes: len(fitted.NodeOptions), duration: duration}
 		w.order = append(w.order, spec.ID)
 	}
 	return w, nil
@@ -219,6 +225,9 @@ func (w *Worker) Enqueue(ctx context.Context, network, dataset int64, id string,
 		return store.ScenarioJob{}, ErrChange
 	}
 	if err := change.ValidateDelayBounds(s.delays); err != nil {
+		return store.ScenarioJob{}, ErrChange
+	}
+	if err := change.ValidateLifecycleBounds(s.lifecycle); err != nil {
 		return store.ScenarioJob{}, ErrChange
 	}
 	return w.store.EnqueueScenario(ctx, store.ScenarioJob{Dataset: dataset, Source: id, SourceSHA: s.info.SourceSHA, ExecutionSHA: s.info.ExecutionSHA, Change: change})

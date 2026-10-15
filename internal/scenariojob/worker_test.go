@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/0xmhha/wbft-analyzer/internal/scenario"
+	"github.com/0xmhha/wbft/conformance/sim"
 	"github.com/0xmhha/wbft/types"
 )
 
@@ -93,5 +94,27 @@ func TestScenarioRegistryRejectsDelayOverflowBeforeQueuing(t *testing.T) {
 	change := scenario.NetworkChange{Kind: "scale_link_delay", ToNS: int64(time.Second), Edges: []scenario.DirectedEdge{{From: new(int), To: &one}}, Scale: &scenario.DelayScale{Numerator: 2, Denominator: 1}}
 	if _, err := w.Enqueue(context.Background(), 1, 2, "complete", change); !errors.Is(err, ErrChange) {
 		t.Fatal("unrepresentable source delay reached storage", err)
+	}
+}
+
+func TestScenarioRegistryRejectsLifecycleOutsideStartupOrInvalidStateBeforeQueuing(t *testing.T) {
+	keys, err := scenario.TestValidators([]types.Address{{19: 1}, {19: 2}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	scope, err := scenario.NodeLifecycleBounds(sim.Scenario{Validators: keys, Nodes: []sim.NodeSpec{{StartAfter: time.Second}, {}}, Until: sim.Stop{Duration: 10 * time.Second}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := &Worker{sources: map[string]registered{"complete": {network: 1, nodes: 2, duration: 10 * time.Second, lifecycle: scope, info: SourceInfo{ID: "complete", Dataset: 2, Status: "complete", ExecutionSHA: "synthetic"}}}}
+	for _, input := range []struct {
+		at     int64
+		action string
+	}{{0, "stop"}, {int64(2 * time.Second), "restart"}} {
+		at := input.at
+		change := scenario.NetworkChange{Kind: "node_lifecycle", ToNS: int64(10 * time.Second), SchedulePolicy: "merge", Lifecycle: []scenario.LifecycleCommand{{Node: new(int), AtNS: &at, Action: input.action}}}
+		if _, err := w.Enqueue(context.Background(), 1, 2, "complete", change); !errors.Is(err, ErrChange) {
+			t.Fatal("invalid lifecycle reached nil storage", err)
+		}
 	}
 }

@@ -18,17 +18,19 @@ import (
 const MaxChangeRequestBytes = 2 << 20
 const maxChangeNodes = 256
 
-// NetworkChange is a bounded directed network intervention. Node is used only
-// by cut_outgoing; other kinds use explicit edges. Indices refer to fitted
+// NetworkChange is a bounded network or node lifecycle intervention. Node is
+// used only by cut_outgoing; link changes use explicit edges. Indices refer to fitted
 // recorded validators, never private keys or sorted simulated addresses.
 type NetworkChange struct {
-	Kind    string         `json:"kind" enum:"cut_outgoing,partition,set_link_delay,scale_link_delay"`
-	Node    *int           `json:"node,omitempty" nullable:"false"`
-	FromNS  int64          `json:"from_ns"`
-	ToNS    int64          `json:"to_ns"`
-	Edges   []DirectedEdge `json:"edges,omitempty"`
-	DelayNS *int64         `json:"delay_ns,omitempty" nullable:"false"`
-	Scale   *DelayScale    `json:"scale,omitempty" nullable:"false"`
+	Kind           string             `json:"kind" enum:"cut_outgoing,partition,set_link_delay,scale_link_delay,node_lifecycle"`
+	Node           *int               `json:"node,omitempty" nullable:"false"`
+	FromNS         int64              `json:"from_ns"`
+	ToNS           int64              `json:"to_ns"`
+	Edges          []DirectedEdge     `json:"edges,omitempty"`
+	DelayNS        *int64             `json:"delay_ns,omitempty" nullable:"false"`
+	Scale          *DelayScale        `json:"scale,omitempty" nullable:"false"`
+	Lifecycle      []LifecycleCommand `json:"lifecycle,omitempty"`
+	SchedulePolicy string             `json:"schedule_policy,omitempty" enum:"merge,replace_window"`
 }
 type DirectedEdge struct {
 	From *int `json:"from" nullable:"false"`
@@ -60,6 +62,9 @@ func (c *NetworkChange) UnmarshalJSON(raw []byte) error {
 	case "scale_link_delay":
 		allowed["edges"] = true
 		allowed["scale"] = true
+	case "node_lifecycle":
+		allowed["lifecycle"] = true
+		allowed["schedule_policy"] = true
 	default:
 		return errNetworkChange
 	}
@@ -99,7 +104,12 @@ func (c NetworkChange) Normalized() (NetworkChange, error) {
 	if c.FromNS < 0 || c.ToNS <= c.FromNS || c.ToNS > int64(24*time.Hour) {
 		return NetworkChange{}, errNetworkChange
 	}
+	if c.Kind != "node_lifecycle" && (c.Lifecycle != nil || c.SchedulePolicy != "") {
+		return NetworkChange{}, errNetworkChange
+	}
 	switch c.Kind {
+	case "node_lifecycle":
+		return normalizeLifecycle(c)
 	case "cut_outgoing":
 		if c.Node == nil || *c.Node < 0 || *c.Node >= maxChangeNodes || c.Edges != nil || c.DelayNS != nil || c.Scale != nil {
 			return NetworkChange{}, errNetworkChange
@@ -172,6 +182,11 @@ func (c NetworkChange) ValidateFor(nodes int, duration time.Duration) error {
 			return errNetworkChange
 		}
 	}
+	for _, command := range normalized.Lifecycle {
+		if *command.Node >= nodes {
+			return errNetworkChange
+		}
+	}
 	return nil
 }
 
@@ -187,6 +202,9 @@ func ApplyNetworkChange(sc sim.Scenario, change NetworkChange) (sim.Scenario, st
 	}
 	if normalized.IsLinkDelay() {
 		return applyLinkDelay(sc, normalized)
+	}
+	if normalized.Kind == "node_lifecycle" {
+		return applyNodeLifecycle(sc, normalized)
 	}
 	cut := [][2]types.Address{}
 	if normalized.Kind == "cut_outgoing" {

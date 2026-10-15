@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -139,13 +140,13 @@ func TestScenarioAPIScopedRunsAndSavedSeedPages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	one := 1
-	change := scenario.NetworkChange{Kind: "scale_link_delay", ToNS: 1000000000, Edges: []scenario.DirectedEdge{{From: new(int), To: &one}}, Scale: &scenario.DelayScale{Numerator: 2, Denominator: 1}}
+	change := scenario.NetworkChange{Kind: "node_lifecycle", ToNS: 1000000000, SchedulePolicy: "replace_window", Lifecycle: []scenario.LifecycleCommand{{Node: new(int), AtNS: new(int64), Action: "stop"}}}
 	_, ch, err := change.Canonical()
 	if err != nil {
 		t.Fatal(err)
 	}
 	e := scenario.Experiment{ExecutionSHA256: strings.Repeat("f", 64), From: 1, To: 2, Version: scenario.ExperimentVersion, Provenance: p, SourceSHA256: hash, Change: change, ChangeSHA256: ch, Model: scenario.Assessment{Version: scenario.FitVersion, Status: "partial", Issues: []scenario.Issue{{Code: "synthetic"}}}, RecordedCounts: []scenario.RoundCount{{Total: 100}}}
+	e.Lifecycle = &scenario.LifecycleEffect{InitialStartsPreserved: true, Retained: 1, Order: "recorded_first_then_intervention", Removed: []scenario.LifecycleRecord{{Node: 0, AtNS: 1, Action: "engine_start"}}}
 	job, err := s.EnqueueScenario(ctx, store.ScenarioJob{Dataset: d.ID, Source: "synthetic", SourceSHA: hash, ExecutionSHA: e.ExecutionSHA256, Change: change})
 	if err != nil {
 		t.Fatal(err)
@@ -189,6 +190,9 @@ func TestScenarioAPIScopedRunsAndSavedSeedPages(t *testing.T) {
 	var run store.ScenarioRunInfo
 	if c.do("GET", path, nil, &run) != 200 || run.Summary.From != 1 {
 		t.Fatal(run)
+	}
+	if run.Summary.Lifecycle == nil || !reflect.DeepEqual(run.Summary.Lifecycle, e.Lifecycle) || run.Summary.Change.Kind != "node_lifecycle" {
+		t.Fatal("lifecycle replacement evidence lost", run.Summary.Lifecycle)
 	}
 	var page ScenarioSeedPage
 	if c.do("GET", path+"/seeds?limit=1", nil, &page) != 200 || len(page.Seeds) != 1 || page.Next == nil || *page.Next != 1 || page.Seeds[0].Result.Heights[0].Round != math.MaxUint64 {
@@ -245,6 +249,7 @@ func TestNetworkChangeRequestJSONContract(t *testing.T) {
 		`{"source_id":"synthetic","change":{"kind":"partition","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}]}}`,
 		`{"source_id":"synthetic","change":{"kind":"set_link_delay","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}],"delay_ns":0}}`,
 		`{"source_id":"synthetic","change":{"kind":"scale_link_delay","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}],"scale":{"numerator":"9007199254740993","denominator":"1"}}}`,
+		`{"source_id":"synthetic","change":{"kind":"node_lifecycle","from_ns":0,"to_ns":1,"schedule_policy":"replace_window","lifecycle":[{"node":0,"at_ns":0,"action":"stop"}]}}`,
 	} {
 		var v any
 		if err := json.Unmarshal([]byte(raw), &v); err != nil {
@@ -267,6 +272,9 @@ func TestNetworkChangeRequestJSONContract(t *testing.T) {
 		`{"source_id":"synthetic","change":{"kind":"scale_link_delay","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}],"scale":{"numerator":2,"denominator":"1"}}}`,
 
 		`{"source_id":"synthetic","change":{"kind":"partition","from_ns":0,"to_ns":1,"edges":[{"from":null,"to":1}]}}`,
+		`{"source_id":"synthetic","change":{"kind":"node_lifecycle","from_ns":0,"to_ns":1,"lifecycle":[{"node":0,"at_ns":0,"action":"stop"}]}}`,
+		`{"source_id":"synthetic","change":{"kind":"node_lifecycle","from_ns":0,"to_ns":1,"schedule_policy":"merge","lifecycle":[{"node":0,"at_ns":null,"action":"stop"}]}}`,
+		`{"source_id":"synthetic","change":{"kind":"node_lifecycle","from_ns":0,"to_ns":1,"schedule_policy":"merge","lifecycle":[{"node":0,"at_ns":0,"action":"crash"}]}}`,
 	} {
 		var v any
 		decoder := json.NewDecoder(strings.NewReader(raw))
