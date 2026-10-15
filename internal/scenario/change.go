@@ -19,14 +19,16 @@ const MaxChangeRequestBytes = 2 << 20
 const maxChangeNodes = 256
 
 // NetworkChange is a bounded directed network intervention. Node is used only
-// by cut_outgoing; partition uses explicit edges. Indices refer to fitted
+// by cut_outgoing; other kinds use explicit edges. Indices refer to fitted
 // recorded validators, never private keys or sorted simulated addresses.
 type NetworkChange struct {
-	Kind   string         `json:"kind" enum:"cut_outgoing,partition"`
-	Node   *int           `json:"node,omitempty" nullable:"false"`
-	FromNS int64          `json:"from_ns"`
-	ToNS   int64          `json:"to_ns"`
-	Edges  []DirectedEdge `json:"edges,omitempty"`
+	Kind    string         `json:"kind" enum:"cut_outgoing,partition,set_link_delay,scale_link_delay"`
+	Node    *int           `json:"node,omitempty" nullable:"false"`
+	FromNS  int64          `json:"from_ns"`
+	ToNS    int64          `json:"to_ns"`
+	Edges   []DirectedEdge `json:"edges,omitempty"`
+	DelayNS *int64         `json:"delay_ns,omitempty" nullable:"false"`
+	Scale   *DelayScale    `json:"scale,omitempty" nullable:"false"`
 }
 type DirectedEdge struct {
 	From *int `json:"from" nullable:"false"`
@@ -46,10 +48,23 @@ func (c *NetworkChange) UnmarshalJSON(raw []byte) error {
 	if err := json.Unmarshal(raw, &fields); err != nil {
 		return err
 	}
+	allowed := map[string]bool{"kind": true, "from_ns": true, "to_ns": true}
+	switch decoded.Kind {
+	case "cut_outgoing":
+		allowed["node"] = true
+	case "partition":
+		allowed["edges"] = true
+	case "set_link_delay":
+		allowed["edges"] = true
+		allowed["delay_ns"] = true
+	case "scale_link_delay":
+		allowed["edges"] = true
+		allowed["scale"] = true
+	default:
+		return errNetworkChange
+	}
 	for key := range fields {
-		switch key {
-		case "kind", "node", "from_ns", "to_ns", "edges":
-		default:
+		if !allowed[key] {
 			return errNetworkChange
 		}
 	}
@@ -59,12 +74,7 @@ func (c *NetworkChange) UnmarshalJSON(raw []byte) error {
 			return errNetworkChange
 		}
 	}
-	if _, ok := fields["edges"]; decoded.Kind == "cut_outgoing" && ok {
-		return errNetworkChange
-	}
-	if _, ok := fields["node"]; decoded.Kind == "partition" && ok {
-		return errNetworkChange
-	}
+
 	normalized, err := NetworkChange(decoded).Normalized()
 	if err != nil {
 		return err
@@ -91,11 +101,11 @@ func (c NetworkChange) Normalized() (NetworkChange, error) {
 	}
 	switch c.Kind {
 	case "cut_outgoing":
-		if c.Node == nil || *c.Node < 0 || *c.Node >= maxChangeNodes || c.Edges != nil {
+		if c.Node == nil || *c.Node < 0 || *c.Node >= maxChangeNodes || c.Edges != nil || c.DelayNS != nil || c.Scale != nil {
 			return NetworkChange{}, errNetworkChange
 		}
 		c.Node = copyNode(c.Node)
-	case "partition":
+	case "partition", "set_link_delay", "scale_link_delay":
 		if c.Node != nil || len(c.Edges) == 0 || len(c.Edges) > maxChangeNodes*(maxChangeNodes-1) {
 			return NetworkChange{}, errNetworkChange
 		}
@@ -118,6 +128,28 @@ func (c NetworkChange) Normalized() (NetworkChange, error) {
 			}
 		}
 		c.Edges = edges
+		switch c.Kind {
+		case "partition":
+			if c.DelayNS != nil || c.Scale != nil {
+				return NetworkChange{}, errNetworkChange
+			}
+		case "set_link_delay":
+			if c.DelayNS == nil || *c.DelayNS < 0 || time.Duration(*c.DelayNS) > maxLinkDelay || c.Scale != nil {
+				return NetworkChange{}, errNetworkChange
+			}
+			delay := *c.DelayNS
+			c.DelayNS = &delay
+		case "scale_link_delay":
+			if c.Scale == nil || c.Scale.Denominator == 0 || c.DelayNS != nil {
+				return NetworkChange{}, errNetworkChange
+			}
+			ratio := *c.Scale
+			divisor := gcd(ratio.Numerator, ratio.Denominator)
+			ratio.Numerator /= divisor
+			ratio.Denominator /= divisor
+			c.Scale = &ratio
+		}
+
 	default:
 		return NetworkChange{}, errNetworkChange
 	}
@@ -127,6 +159,9 @@ func (c NetworkChange) Normalized() (NetworkChange, error) {
 func (c NetworkChange) ValidateFor(nodes int, duration time.Duration) error {
 	normalized, err := c.Normalized()
 	if err != nil || nodes < 2 || nodes > maxChangeNodes || duration <= 0 || time.Duration(c.ToNS) > duration {
+		return errNetworkChange
+	}
+	if normalized.IsLinkDelay() && (normalized.FromNS != 0 || time.Duration(normalized.ToNS) != duration) {
 		return errNetworkChange
 	}
 	if normalized.Node != nil && *normalized.Node >= nodes {
@@ -140,7 +175,7 @@ func (c NetworkChange) ValidateFor(nodes int, duration time.Duration) error {
 	return nil
 }
 
-// ApplyNetworkChange uses the official simulator's directed partition policy.
+// ApplyNetworkChange uses official directed partitions or full-run link delays.
 // It leaves reverse edges and the caller's baseline scenario unchanged.
 func ApplyNetworkChange(sc sim.Scenario, change NetworkChange) (sim.Scenario, string, error) {
 	if err := change.ValidateFor(len(sc.Validators), sc.Until.Duration); err != nil {
@@ -149,6 +184,9 @@ func ApplyNetworkChange(sc sim.Scenario, change NetworkChange) (sim.Scenario, st
 	normalized, err := change.Normalized()
 	if err != nil {
 		return sc, "", err
+	}
+	if normalized.IsLinkDelay() {
+		return applyLinkDelay(sc, normalized)
 	}
 	cut := [][2]types.Address{}
 	if normalized.Kind == "cut_outgoing" {

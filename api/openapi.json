@@ -5242,6 +5242,24 @@
         ],
         "type": "object"
       },
+      "ScenarioDelayScale": {
+        "additionalProperties": false,
+        "properties": {
+          "denominator": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "numerator": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "denominator",
+          "numerator"
+        ],
+        "type": "object"
+      },
       "ScenarioDirectedEdge": {
         "additionalProperties": false,
         "properties": {
@@ -6053,6 +6071,79 @@
               "edges",
               "from_ns",
               "kind",
+              "to_ns"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "delay_ns": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "edges": {
+                "items": {
+                  "$ref": "#/components/schemas/ScenarioDirectedEdge"
+                },
+                "type": "array"
+              },
+              "from_ns": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "kind": {
+                "enum": [
+                  "set_link_delay"
+                ],
+                "type": "string"
+              },
+              "to_ns": {
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "delay_ns",
+              "edges",
+              "from_ns",
+              "kind",
+              "to_ns"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "edges": {
+                "items": {
+                  "$ref": "#/components/schemas/ScenarioDirectedEdge"
+                },
+                "type": "array"
+              },
+              "from_ns": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "kind": {
+                "enum": [
+                  "scale_link_delay"
+                ],
+                "type": "string"
+              },
+              "scale": {
+                "$ref": "#/components/schemas/ScenarioDelayScale"
+              },
+              "to_ns": {
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "edges",
+              "from_ns",
+              "kind",
+              "scale",
               "to_ns"
             ],
             "type": "object"
@@ -14276,7 +14367,7 @@
             "description": "the request failed"
           }
         },
-        "summary": "Queue a bounded baseline and directed outgoing-link or explicit partition change on a complete registered model."
+        "summary": "Queue a bounded baseline and directed network change on a complete registered model."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/scenario-jobs/{job}": {
