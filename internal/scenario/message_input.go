@@ -3,6 +3,7 @@ package scenario
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 
 	pairs "github.com/0xmhha/wbft-analyzer/internal/derive/messages"
@@ -13,6 +14,43 @@ type MessageInput struct {
 	Source  Input             `json:"source"`
 	Stats   messages.Stats    `json:"stats"`
 	Records []messages.Record `json:"-"`
+}
+
+// selectTransportInputs makes alternate observations an explicit model choice.
+// The empty selection preserves the full candidate scope, including records
+// without measured clocks. Explicit selection allows one source per node;
+// unselected snapshots still belong to fitting provenance and configuration.
+func selectTransportInputs(inputs []MessageInput, ids []string, nodes []string) ([]MessageInput, error) {
+	if len(ids) > 256 {
+		return nil, errors.New("transport selection exceeds bound")
+	}
+	byID := map[string]MessageInput{}
+	for _, input := range inputs {
+		if _, exists := byID[input.Source.ID]; exists || input.Source.ID == "" {
+			return nil, errors.New("duplicate message source identity")
+		}
+		byID[input.Source.ID] = input
+	}
+	out := append([]MessageInput(nil), inputs...)
+	if len(ids) > 0 {
+		out = []MessageInput{}
+		seenIDs, seenNodes := map[string]bool{}, map[string]bool{}
+		knownNodes := map[string]bool{}
+		for _, node := range nodes {
+			knownNodes[strings.ToLower(node)] = true
+		}
+		for _, id := range ids {
+			input, exists := byID[id]
+			node := strings.ToLower(input.Source.Node)
+			if !exists || seenIDs[id] || seenNodes[node] || !knownNodes[node] || input.Source.Kind != "journal" && input.Source.Kind != "frames" {
+				return nil, errors.New("invalid transport source selection")
+			}
+			seenIDs[id], seenNodes[node] = true, true
+			out = append(out, input)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Source.ID < out[j].Source.ID })
+	return out, nil
 }
 
 // InspectMessageSnapshot reads a reconstructed immutable snapshot, retaining

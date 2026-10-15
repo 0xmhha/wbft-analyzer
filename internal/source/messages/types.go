@@ -6,7 +6,7 @@ package messages
 import "github.com/0xmhha/wbft-analyzer/internal/source/logs"
 
 const Format = "wbft-analyzer-messages/1"
-const Normalizer = "wbft-message-normalization/8"
+const Normalizer = "wbft-message-normalization/9"
 
 type Clock struct {
 	Model  string `json:"model"`
@@ -92,6 +92,7 @@ type Record struct {
 	Size          *string         `json:"size,omitempty"`
 	Key           string          `json:"dedup_key,omitempty"`
 	PayloadSHA256 string          `json:"payload_sha256,omitempty"`
+	PayloadSource string          `json:"payload_source,omitempty"`
 	Decode        string          `json:"decode,omitempty"`
 	Height        string          `json:"height,omitempty"`
 	Round         string          `json:"round,omitempty"`

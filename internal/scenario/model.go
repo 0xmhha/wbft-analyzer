@@ -17,16 +17,17 @@ type Input struct {
 }
 
 type Provenance struct {
-	Mode          string             `json:"mode,omitempty"`
-	Assumptions   []string           `json:"assumptions,omitempty"`
-	Substitutions []CoreSubstitution `json:"substitutions,omitempty"`
-	ModelSHA256   string             `json:"model_sha256"`
-	Dataset       int64              `json:"dataset"`
-	Version       string             `json:"fit_version"`
-	Inputs        []Input            `json:"inputs"`
-	ChainSHA256   string             `json:"chain_sha256"`
-	CoreCommit    string             `json:"core_commit"`
-	Seeds         []int64            `json:"seeds"`
+	Mode            string             `json:"mode,omitempty"`
+	Assumptions     []string           `json:"assumptions,omitempty"`
+	Substitutions   []CoreSubstitution `json:"substitutions,omitempty"`
+	TransportInputs []string           `json:"transport_inputs,omitempty"`
+	ModelSHA256     string             `json:"model_sha256"`
+	Dataset         int64              `json:"dataset"`
+	Version         string             `json:"fit_version"`
+	Inputs          []Input            `json:"inputs"`
+	ChainSHA256     string             `json:"chain_sha256"`
+	CoreCommit      string             `json:"core_commit"`
+	Seeds           []int64            `json:"seeds"`
 }
 
 type CoreSubstitution struct {
@@ -52,6 +53,7 @@ func SealProvenance(p Provenance) (Provenance, string, error) {
 	p.Seeds = append([]int64(nil), p.Seeds...)
 	p.Assumptions = append([]string(nil), p.Assumptions...)
 	p.Substitutions = append([]CoreSubstitution(nil), p.Substitutions...)
+	p.TransportInputs = append([]string(nil), p.TransportInputs...)
 	assumptions := map[string]bool{}
 	for _, a := range p.Assumptions {
 		if a == "" || len(a) > 128 || assumptions[a] {
@@ -73,6 +75,20 @@ func SealProvenance(p Provenance) (Provenance, string, error) {
 		}
 		seen[i.ID] = true
 	}
+	if len(p.TransportInputs) > 256 {
+		return p, "", errors.New("transport selection exceeds bound")
+	}
+	selected := map[string]bool{}
+	for _, id := range p.TransportInputs {
+		found := false
+		for _, input := range p.Inputs {
+			found = found || input.ID == id && (input.Kind == "journal" || input.Kind == "frames")
+		}
+		if !found || selected[id] {
+			return p, "", errors.New("transport selection outside provenance")
+		}
+		selected[id] = true
+	}
 	for _, s := range p.Substitutions {
 		found := false
 		for _, i := range p.Inputs {
@@ -91,6 +107,7 @@ func SealProvenance(p Provenance) (Provenance, string, error) {
 	}
 	sort.Slice(p.Inputs, func(i, j int) bool { return p.Inputs[i].ID < p.Inputs[j].ID })
 	sort.Strings(p.Assumptions)
+	sort.Strings(p.TransportInputs)
 	sort.Slice(p.Substitutions, func(i, j int) bool { return p.Substitutions[i].Node < p.Substitutions[j].Node })
 	// Seed order is execution order and remains part of the identity.
 	raw, err := json.Marshal(p)

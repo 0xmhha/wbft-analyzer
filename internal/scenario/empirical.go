@@ -44,6 +44,7 @@ type EmpiricalNode struct {
 	RuntimeEvidence   string `json:"runtime_evidence"`
 	SigningState      string `json:"signing_state"`
 	ApplicationPolicy string `json:"application_policy"`
+	ParameterEvidence string `json:"parameter_evidence"`
 }
 
 // fitEmpiricalProjection never changes the recorded node options, runtime
@@ -61,6 +62,7 @@ func fitEmpiricalProjection(o FitOptions, fitted Fitted, sources []Input) (Empir
 			"source_engine_intervals_bound_substitute_core_lifetime_only",
 			"equal_time_lifecycle_events_keep_source_order",
 			"transactions_and_source_executor_internals_are_not_executed",
+			"system_contract_execution_replaced_by_recorded_epoch_candidates",
 		},
 		Nodes: []EmpiricalNode{}, Timings: []EmpiricalTimings{},
 		Application:    AppTiming{Build: append([]AppSample{}, fitted.App.Build...), Import: append([]AppSample{}, fitted.App.Import...), Unproved: fitted.App.Unproved, Policies: []ApplicationPolicy{}, Outcomes: []AppOutcome{}},
@@ -74,14 +76,14 @@ func fitEmpiricalProjection(o FitOptions, fitted Fitted, sources []Input) (Empir
 	}
 	for _, observed := range fitted.NodeOptions {
 		addr := strings.ToLower(observed.Address.Hex())
-		node := EmpiricalNode{Node: addr, Options: observed, ApplicationPolicy: "independent_request_sampled_empty_body"}
+		node := EmpiricalNode{Node: addr, Options: observed, ApplicationPolicy: "independent_request_sampled_empty_body", ParameterEvidence: "unavailable", SigningState: "unavailable"}
 		if observed.ProfileEvidence != "" {
 			for _, input := range sources {
 				if input.Kind == "journal" && strings.EqualFold(input.Node, addr) {
 					node.Source = input
 				}
 			}
-			node.SigningState = "recorded"
+			node.ParameterEvidence = "journal_scope_parameters_verified"
 			if observed.RuntimeEvidence != "verified" || observed.SignFloor != nil {
 				issues = append(issues, Issue{Node: addr, Code: "native_runtime_policy_unavailable"})
 			}
@@ -91,6 +93,12 @@ func fitEmpiricalProjection(o FitOptions, fitted Fitted, sources []Input) (Empir
 					continue
 				}
 				found = true
+				switch runtime.SignFloorState {
+				case "none":
+					node.SigningState = "recorded_none"
+				case "recorded":
+					node.SigningState = "recorded_floor_unsupported"
+				}
 				if runtime.EngineStopped || runtime.SignFloorState != "none" || runtime.SignFloor != nil {
 					issues = append(issues, Issue{Node: addr, Code: "native_runtime_model_unavailable"})
 				}
@@ -126,8 +134,9 @@ func fitEmpiricalProjection(o FitOptions, fitted Fitted, sources []Input) (Empir
 				found = true
 				bound := false
 				for _, binding := range fitted.RuntimeObservations {
-					if binding.Source == input.Source && binding.Configuration == "startup_scalars_verified" && binding.CaptureComplete && len(binding.Unavailable) == 0 {
+					if binding.Source == input.Source && empiricalParametersVerified(binding) {
 						bound = true
+						node.ParameterEvidence = "static_wbft_parameters_verified"
 					}
 				}
 				if !bound {

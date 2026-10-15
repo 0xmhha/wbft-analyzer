@@ -17,7 +17,7 @@ import (
 )
 
 func TestScenarioEpochEvidenceJSONContract(t *testing.T) {
-	v := ScenarioSources{Sources: []scenariojob.SourceInfo{{DeclaredModel: scenario.Assessment{Issues: []scenario.Issue{}}, ApplicationPolicies: []scenario.ApplicationPolicy{}, RuntimeObservations: []scenario.RuntimeBinding{}, Epochs: []scenariojob.EpochInfo{{Block: "18446744073709551615", Candidates: []string{"0x0000000000000000000000000000000000000001"}, Validators: []string{"0x0000000000000000000000000000000000000001"}, HeaderInputsVerified: true}}, Nodes: []string{}, Model: scenario.Assessment{Issues: []scenario.Issue{}}}}}
+	v := ScenarioSources{Sources: []scenariojob.SourceInfo{{TransportInputs: []scenario.Input{}, DeclaredModel: scenario.Assessment{Issues: []scenario.Issue{}}, ApplicationPolicies: []scenario.ApplicationPolicy{}, RuntimeObservations: []scenario.RuntimeBinding{}, Epochs: []scenariojob.EpochInfo{{Block: "18446744073709551615", Candidates: []string{"0x0000000000000000000000000000000000000001"}, Validators: []string{"0x0000000000000000000000000000000000000001"}, HeaderInputsVerified: true}}, Nodes: []string{}, Model: scenario.Assessment{Issues: []scenario.Issue{}}}}}
 	raw, err := json.Marshal(v)
 	if err != nil {
 		t.Fatal(err)
@@ -42,8 +42,8 @@ func TestScenarioEmpiricalEvidenceJSONContract(t *testing.T) {
 	source := scenario.Input{ID: "synthetic-runtime", Kind: "runtime", Node: "0x1111111111111111111111111111111111111111", SHA256: strings.Repeat("a", 64)}
 	timing := scenario.EmpiricalTimings{Source: source, Build: []scenario.AppSample{}, Import: []scenario.AppSample{}, Excluded: []scenario.EmpiricalExcluded{{Kind: "build", ID: "18446744073709551615", Reason: "height_outside_scope", FromLine: 1, ToLine: 2}}, TaskStates: map[string]int{"observed_cancellation": 1}, ImportResults: map[string]int{}}
 	app := scenario.AppTiming{Policies: []scenario.ApplicationPolicy{}, Outcomes: []scenario.AppOutcome{}, Build: []scenario.AppSample{}, Import: []scenario.AppSample{}}
-	projection := scenario.EmpiricalProjection{Assumptions: []string{"fake_application"}, Nodes: []scenario.EmpiricalNode{{Node: source.Node, Substituted: true, Source: source, Improvements: "18446744073709551615"}}, Timings: []scenario.EmpiricalTimings{timing}, Application: app, NativeExcluded: []scenario.AppOutcome{}, Runtimes: []scenario.Runtime{}}
-	v := ScenarioSources{Sources: []scenariojob.SourceInfo{{Mode: scenario.EmpiricalCoreModel, Empirical: &projection, DeclaredModel: scenario.Assessment{Issues: []scenario.Issue{{Code: "observed_runtime_execution_model_unavailable"}}}, Model: scenario.Assessment{Issues: []scenario.Issue{}}, ApplicationPolicies: []scenario.ApplicationPolicy{}, RuntimeObservations: []scenario.RuntimeBinding{}, Epochs: []scenariojob.EpochInfo{}, Nodes: []string{source.Node}}}}
+	projection := scenario.EmpiricalProjection{Assumptions: []string{"fake_application"}, Nodes: []scenario.EmpiricalNode{{Node: source.Node, Substituted: true, Source: source, Improvements: "18446744073709551615", ParameterEvidence: "static_wbft_parameters_verified"}}, Timings: []scenario.EmpiricalTimings{timing}, Application: app, NativeExcluded: []scenario.AppOutcome{}, Runtimes: []scenario.Runtime{}}
+	v := ScenarioSources{Sources: []scenariojob.SourceInfo{{TransportInputs: []scenario.Input{{ID: "synthetic-wire", Kind: "frames", Node: source.Node, SHA256: strings.Repeat("b", 64)}}, Mode: scenario.EmpiricalCoreModel, Empirical: &projection, DeclaredModel: scenario.Assessment{Issues: []scenario.Issue{{Code: "observed_runtime_execution_model_unavailable"}}}, Model: scenario.Assessment{Issues: []scenario.Issue{}}, ApplicationPolicies: []scenario.ApplicationPolicy{}, RuntimeObservations: []scenario.RuntimeBinding{}, Epochs: []scenariojob.EpochInfo{}, Nodes: []string{source.Node}}}}
 	raw, err := json.Marshal(v)
 	if err != nil {
 		t.Fatal(err)

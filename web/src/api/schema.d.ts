@@ -1694,6 +1694,7 @@ export interface components {
             out_digest?: string;
             outcome?: string;
             payload_sha256?: string;
+            payload_source?: string;
             peer?: string;
             peer_recent_hit?: boolean | null;
             peer_status?: string;
@@ -2574,6 +2575,7 @@ export interface components {
             improvements: string;
             node: string;
             option_evidence: string;
+            parameter_evidence: string;
             profile: string;
             runtime_evidence: string;
             signing_state: string;
@@ -2668,6 +2670,7 @@ export interface components {
             model_sha256: string;
             seeds: number[];
             substitutions?: components["schemas"]["ScenarioCoreSubstitution"][];
+            transport_inputs?: string[];
         };
         ScenarioRequest: {
             change: components["schemas"]["ScenarioCutOutgoing"];
@@ -2816,6 +2819,7 @@ export interface components {
             source_sha256: string;
             status: string;
             to: string;
+            transport_inputs: components["schemas"]["ScenarioInput"][];
             wire_metric: string;
         };
         StoreBuildLifecycle: {
