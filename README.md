@@ -1361,8 +1361,8 @@ version 14 changes this execution scope, so an earlier registered source must
 be retained and a changed fitting registered under a new source ID. Historical
 experiments without this field remain readable with unavailable clock metadata.
 
-The empirical model explicitly records that receive checks and core steps
-consume no simulated time. Clock alignment does not establish baseline
+Without an explicit processing policy, the empirical model records that receive
+checks and core steps consume no simulated time. Clock alignment does not establish baseline
 reproducibility. Round and time
 checks remain independent; an unconfigured time criterion stays unproved.
 
@@ -1402,3 +1402,35 @@ baseline retains counterfactual outputs. Statistical non-rejection is
 conditional on the stated sampling assumptions and does not prove physical
 equivalence. The UI shows homogeneity and comparison methods, numerical bounds,
 complete histograms, and assumptions separately from execution completion.
+
+### Recorded processing service policy
+
+Fitting version 16 optionally accepts `--processing-policy native-pre-dispatch/1`
+and an explicit `--processing-workers` count from 1 through 256 for the empirical
+core model. Registered source configuration uses `processing_policy` and
+`processing_workers`. Existing source identities remain immutable; register a
+new ID when enabling this policy. Experiment version 2 keeps its header interval
+criterion across fitting versions, including previously stored version 15 runs.
+
+The verified native journal decoder extracts whole-step monotonic entry and
+completion intervals in the recorded `head + 1` height range. Source fingerprints
+are checked before and after inspection. The model retains each original file,
+ordinal, writer, engine generation, step, exact integer timestamps, interval and
+excluded source position. Measured zero remains a sample; a missing entry stamp
+is unavailable. Lifecycle and WAL replay steps are excluded. Missing native
+evidence or incomplete in-scope measurements prevent a complete fitted model.
+
+Native nodes sample the retained durations by input kind and protocol code,
+preserving sample order and multiplicity. A core input occupies its serialized
+service slot before the existing operation dispatches atomically. This is a
+declared pre-dispatch approximation: it does not reconstruct internal CPU, WAL,
+signing or output milestones. Receive-check costs, frame-only substitutes and
+unlisted work classes remain unmeasured and have zero modeled cost. The receive
+worker count is declared, not measured; samples do not condition on host load or
+internal execution branches. Lifecycle and replay remain synchronous.
+
+Processing evidence and assumptions belong to the model hash; workers and
+execution cost samples also belong to the execution hash. Source and stored
+experiment screens show measured ranges, paginated samples and exclusions, and
+links to original timing records. Enabling the policy does not establish round
+or time baseline credibility; those checks retain their independent criteria.

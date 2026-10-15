@@ -26,6 +26,7 @@ type recordedAnswer struct {
 }
 
 type Step struct {
+	InputVia         string  `json:"input_via,omitempty"`
 	EntryMono        *string `json:"entry_t_mono_ns,omitempty"`
 	EntryWall        string  `json:"entry_t_wall,omitempty"`
 	scheduleAffected bool

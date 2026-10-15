@@ -3657,6 +3657,9 @@
           "input_peer": {
             "type": "string"
           },
+          "input_via": {
+            "type": "string"
+          },
           "issues": {
             "items": {
               "type": "string"
@@ -5085,6 +5088,16 @@
             },
             "type": "array"
           },
+          "processing_model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioProcessingModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "status": {
             "type": "string"
           },
@@ -6013,6 +6026,175 @@
           "p",
           "seed",
           "splits"
+        ],
+        "type": "object"
+      },
+      "ScenarioProcessingExcluded": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "point": {
+            "$ref": "#/components/schemas/ScenarioProcessingPoint"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "point",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "ScenarioProcessingModel": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "declared_receive_workers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "timings": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioProcessingTimings"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "assumptions",
+          "declared_receive_workers",
+          "policy",
+          "timings"
+        ],
+        "type": "object"
+      },
+      "ScenarioProcessingPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "engine_run": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "step": {
+            "type": "string"
+          },
+          "writer_run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "engine_run",
+          "file",
+          "height",
+          "ordinal",
+          "step",
+          "writer_run"
+        ],
+        "type": "object"
+      },
+      "ScenarioProcessingSample": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "complete_mono_ns": {
+            "type": "string"
+          },
+          "entry_mono_ns": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "nanoseconds": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "point": {
+            "$ref": "#/components/schemas/ScenarioProcessingPoint"
+          }
+        },
+        "required": [
+          "code",
+          "complete_mono_ns",
+          "entry_mono_ns",
+          "kind",
+          "nanoseconds",
+          "point"
+        ],
+        "type": "object"
+      },
+      "ScenarioProcessingTimings": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "excluded": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioProcessingExcluded"
+            },
+            "type": "array"
+          },
+          "from": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioProcessingSample"
+            },
+            "type": "array"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ScenarioInput"
+          },
+          "status": {
+            "type": "string"
+          },
+          "to": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assumptions",
+          "excluded",
+          "from",
+          "samples",
+          "scope",
+          "source",
+          "status",
+          "to"
         ],
         "type": "object"
       },

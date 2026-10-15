@@ -13,9 +13,10 @@ type Issue struct {
 }
 
 type Assessment struct {
-	Version string  `json:"version"`
-	Status  string  `json:"status"`
-	Issues  []Issue `json:"issues"`
+	Processing *ProcessingModel `json:"processing_model,omitempty"`
+	Version    string           `json:"version"`
+	Status     string           `json:"status"`
+	Issues     []Issue          `json:"issues"`
 }
 
 // Assess keeps model coverage separate from a successful simulator run.

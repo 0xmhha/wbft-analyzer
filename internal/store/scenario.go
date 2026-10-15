@@ -189,7 +189,9 @@ func (s *Store) FinishScenario(ctx context.Context, id int64, final scenario.Exp
 		final.TimeCheck = "threshold_unconfigured"
 		final.Baseline = nil
 		final.BaselineTime = nil
-		currentTimeMethod := original.Version == scenario.ExperimentVersion && original.Model.Version == scenario.FitVersion
+		// The time criterion belongs to the experiment version, independently
+		// of subsequent fitting model versions such as processing policies.
+		currentTimeMethod := original.Version == scenario.ExperimentVersion
 		if currentTimeMethod {
 			final.TimeCheck = "unproved"
 		}

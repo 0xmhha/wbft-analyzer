@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"reflect"
 	"strings"
@@ -9,6 +11,83 @@ import (
 
 	"github.com/0xmhha/wbft-analyzer/internal/scenario"
 )
+
+func TestExperimentV2KeepsTimeCriterionAcrossFittingVersions(t *testing.T) {
+	s, _ := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	dataset := jobDataset(t, s)
+	e, _ := scenarioFixture(dataset)
+	heights := []scenario.Height{{Number: 1, Time: 1, PeriodSeconds: 1}, {Number: 2, Time: 2, PeriodSeconds: 1}}
+	e.RecordedHeights, e.RecordedCounts = heights, []scenario.RoundCount{{Total: 2}}
+	e.Model.Status, e.Model.Issues = "complete", []scenario.Issue{}
+	id, err := s.BeginScenario(ctx, e)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, err := s.ScenarioRun(ctx, dataset, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old.Model.Version, old.Provenance.Version = "wbft-network-scenario-fit/15", "wbft-network-scenario-fit/15"
+	provenance, err := json.Marshal(old.Provenance)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(provenance)
+	old.SourceSHA256 = hex.EncodeToString(sum[:])
+	raw, err := json.Marshal(old)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.pool.Exec(ctx, `UPDATE scenario_runs SET provenance=$2,source_sha256=$3,summary=$4 WHERE id=$1`, id, provenance, old.SourceSHA256, raw); err != nil {
+		t.Fatal(err)
+	}
+	for _, mode := range []string{"baseline", "counterfactual"} {
+		for _, seed := range old.Provenance.Seeds {
+			if err := s.PutScenarioSeed(ctx, id, scenario.SeedRecord{Mode: mode, Result: scenario.SeedResult{Seed: seed, Status: "complete", Heights: heights}}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	old.Status, old.TimeCheck = "completed", "failed"
+	if err := s.FinishScenario(ctx, id, old); err != nil {
+		t.Fatal(err)
+	}
+	final, err := s.ScenarioRun(ctx, dataset, id)
+	if err != nil || final.Model.Version != old.Model.Version || final.TimeCheck != "passed" || final.BaselineTime == nil || final.BaselineTime.Method != scenario.HeaderTimeBaselineMethod || final.Credibility() != "baseline_reproduced" {
+		t.Fatal("criterion changed with fitting implementation", final, err)
+	}
+}
+
+func TestScenarioProcessingModelCannotChangeDuringFinalization(t *testing.T) {
+	s, _ := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	e, _ := scenarioFixture(jobDataset(t, s))
+	e.Model.Processing = &scenario.ProcessingModel{Policy: scenario.NativeProcessingPolicy, Workers: 1, Timings: []scenario.ProcessingTimings{}, Assumptions: []string{"receive_worker_count_is_declared_not_measured"}}
+	id, err := s.BeginScenario(ctx, e)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored, err := s.ScenarioRun(ctx, e.Provenance.Dataset, id)
+	if err != nil || !reflect.DeepEqual(stored.Model.Processing, e.Model.Processing) {
+		t.Fatal("processing model not retained", stored, err)
+	}
+	stored.Status = "partial"
+	stored.Model.Processing.Workers++
+	if err := s.FinishScenario(ctx, id, stored); err != ErrScenarioState {
+		t.Fatal("changed processing model accepted", err)
+	}
+	stored.Model.Processing.Workers--
+	if err := s.FinishScenario(ctx, id, stored); err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestScenarioTimeProofIsRecomputedFromRetainedRows(t *testing.T) {
 	for _, different := range []bool{false, true} {
