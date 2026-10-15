@@ -28,6 +28,7 @@ type SeedResult struct {
 // SeedExecution retains the official simulator's outcomes without inferring
 // violation kinds from counts or assigning recorded identities to test keys.
 type SeedExecution struct {
+	Timing     *SeedTimingObservations    `json:"timing_observations,omitempty"`
 	Lifecycle  *SeedLifecycleObservations `json:"lifecycle_observations,omitempty"`
 	StopHeight uint64                     `json:"configured_stop_height,string"`
 	DurationNS int64                      `json:"configured_duration_ns,string"`
@@ -69,6 +70,10 @@ func RunSeeds(ctx context.Context, sc sim.Scenario, seeds []int64, from, to uint
 }
 
 func runSeeds(ctx context.Context, sc sim.Scenario, seeds []int64, from, to uint64, retainLifecycle bool, emit func(SeedResult) error) error {
+	return runSeedsWithEvidence(ctx, sc, seeds, from, to, retainLifecycle, false, emit)
+}
+
+func runSeedsWithEvidence(ctx context.Context, sc sim.Scenario, seeds []int64, from, to uint64, retainLifecycle, retainTiming bool, emit func(SeedResult) error) error {
 	if from < 1 || to < from || to-from >= 10000 || len(seeds) == 0 || len(seeds) > 128 {
 		return errors.New("invalid bounded simulation run")
 	}
@@ -84,11 +89,12 @@ func runSeeds(ctx context.Context, sc sim.Scenario, seeds []int64, from, to uint
 			return err
 		}
 		sc.Seed = seed
-		result, err := sim.Run(ctx, sc, sim.Output{})
+		result, timing, err := simulateTimingSeed(ctx, sc, retainTiming)
 		if err != nil {
 			return err
 		}
 		out := SeedResult{Execution: seedExecution(sc, result), Seed: seed, Status: "complete", Heights: []Height{}, Violations: len(result.Violations), SimulationNS: int64(result.SimTime)}
+		out.Execution.Timing = timing
 		if retainLifecycle {
 			out.Execution.Lifecycle, err = observedNodeStarts(sc, result)
 			if err != nil {

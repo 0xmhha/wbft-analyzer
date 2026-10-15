@@ -1,5 +1,6 @@
 import type {Schemas} from "../api/client";
 import {useState} from "react";
+import {SeedTimingEvidence} from "./SeedTimingEvidence";
 type Seed=Schemas["ScenarioSeedResult"];
 
 function NodeStarts({observations}:{observations:Schemas["ScenarioSeedLifecycleObservations"]}){
@@ -14,6 +15,7 @@ export function SeedDiagnostics({mode,rows,expected}:{mode:string;rows:Seed[];ex
    <p>Configured stop height: {r.execution.configured_stop_height==="0"?"unspecified":r.execution.configured_stop_height} · configured duration ns: {r.execution.configured_duration_ns==="0"?"unspecified":r.execution.configured_duration_ns}</p>
    <table><thead><tr><th>Node index</th><th>Simulated address</th><th>Last head</th></tr></thead><tbody>{r.execution.nodes.map(n=><tr key={n.index}><td>{n.index}</td><td>{n.simulated_address||"unavailable"}</td><td>{n.head}</td></tr>)}</tbody></table>
    {r.execution.lifecycle_observations?<NodeStarts observations={r.execution.lifecycle_observations}/>:<p>Node-start observations were not retained for this seed.</p>}
+   {r.execution.timing_observations?<SeedTimingEvidence observations={r.execution.timing_observations}/>:<p>Timing observations were not retained for this seed.</p>}
    {r.execution.violations.length!==r.violations&&<p role="alert">Stored violation count and details disagree.</p>}
    {r.execution.violations.length===0?<p>{r.violations===0?"No simulator violations reported in this execution record.":"Violation details are unavailable or inconsistent."}</p>:<ul>{r.execution.violations.map((v,i)=><li key={i}><strong>{v.kind}</strong> · simulated node {v.simulated_node}<p>{v.detail}</p></li>)}</ul>}
   </>:<p>Execution details were not retained for this historical seed. Violation kinds and final node heads are unavailable; counts do not establish a cause.</p>}</details></td></tr>)}</tbody></table>}

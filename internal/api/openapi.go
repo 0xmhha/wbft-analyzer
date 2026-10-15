@@ -174,8 +174,15 @@ func (g *schemas) component(t reflect.Type) string {
 			tag = f.Name
 		}
 		s := g.of(f.Type)
+		if f.Tag.Get("nullable") == "false" && f.Type.Kind() == reflect.Pointer {
+			s = g.of(f.Type.Elem())
+		}
 		if strings.Contains(f.Tag.Get("json"), ",string") {
-			switch f.Type.Kind() {
+			valueType := f.Type
+			if valueType.Kind() == reflect.Pointer {
+				valueType = valueType.Elem()
+			}
+			switch valueType.Kind() {
 			case reflect.Uint64, reflect.Uint, reflect.Uint32:
 				s = map[string]any{"type": "string", "pattern": "^[0-9]+$"}
 			case reflect.Int64, reflect.Int, reflect.Int32:
@@ -183,9 +190,9 @@ func (g *schemas) component(t reflect.Type) string {
 			default:
 				panic(fmt.Sprintf("api: unsupported string encoding %s", f.Type))
 			}
-		}
-		if f.Tag.Get("nullable") == "false" && f.Type.Kind() == reflect.Pointer {
-			s = g.of(f.Type.Elem())
+			if f.Type.Kind() == reflect.Pointer && f.Tag.Get("nullable") != "false" {
+				s = nullable(s)
+			}
 		}
 		if f.Tag.Get("nullable") == "true" {
 			s = nullable(s)
@@ -203,6 +210,17 @@ func (g *schemas) component(t reflect.Type) string {
 	if len(required) > 0 {
 		sch["required"] = required
 	}
+	if t == reflect.TypeOf(scenario.TimingValues{}) {
+		sch["minProperties"] = 1
+		for _, field := range []string{"request_timeout_seconds", "block_period_seconds"} {
+			props[field].(map[string]any)["pattern"] = "^[1-9][0-9]*$"
+		}
+	}
+	if t == reflect.TypeOf(scenario.TimingChange{}) {
+		sch["minProperties"] = 1
+		props["nodes"].(map[string]any)["minItems"] = 1
+		props["nodes"].(map[string]any)["maxItems"] = 256
+	}
 	if t == reflect.TypeOf(scenario.NetworkChange{}) {
 		variant := func(kind string, fields ...string) map[string]any {
 			properties := map[string]any{"kind": map[string]any{"type": "string", "enum": []string{kind}}}
@@ -214,7 +232,7 @@ func (g *schemas) component(t reflect.Type) string {
 			sort.Strings(required)
 			return map[string]any{"type": "object", "properties": properties, "required": required, "additionalProperties": false}
 		}
-		sch = map[string]any{"anyOf": []any{variant("cut_outgoing", "node", "from_ns", "to_ns"), variant("partition", "from_ns", "to_ns", "edges"), variant("set_link_delay", "from_ns", "to_ns", "edges", "delay_ns"), variant("scale_link_delay", "from_ns", "to_ns", "edges", "scale"), variant("node_lifecycle", "from_ns", "to_ns", "lifecycle", "schedule_policy")}, "discriminator": map[string]any{"propertyName": "kind"}}
+		sch = map[string]any{"anyOf": []any{variant("cut_outgoing", "node", "from_ns", "to_ns"), variant("partition", "from_ns", "to_ns", "edges"), variant("set_link_delay", "from_ns", "to_ns", "edges", "delay_ns"), variant("scale_link_delay", "from_ns", "to_ns", "edges", "scale"), variant("node_lifecycle", "from_ns", "to_ns", "lifecycle", "schedule_policy"), variant("set_timing", "from_ns", "to_ns", "timing")}, "discriminator": map[string]any{"propertyName": "kind"}}
 	}
 	g.components[name] = sch
 	return name

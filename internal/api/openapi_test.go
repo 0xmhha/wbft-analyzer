@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http/httptest"
 	"os"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -173,6 +174,9 @@ func (s *spec) check(v any, sch map[string]any, at string) error {
 	}
 	switch v := v.(type) {
 	case map[string]any:
+		if minimum, ok := sch["minProperties"].(float64); ok && len(v) < int(minimum) {
+			return fmt.Errorf("%s: too few object properties", at)
+		}
 		props, _ := sch["properties"].(map[string]any)
 		required, _ := sch["required"].([]any)
 		for _, r := range required {
@@ -199,9 +203,22 @@ func (s *spec) check(v any, sch map[string]any, at string) error {
 			}
 		}
 	case []any:
+		if minimum, ok := sch["minItems"].(float64); ok && len(v) < int(minimum) {
+			return fmt.Errorf("%s: too few array items", at)
+		}
+		if maximum, ok := sch["maxItems"].(float64); ok && len(v) > int(maximum) {
+			return fmt.Errorf("%s: too many array items", at)
+		}
 		for i, x := range v {
 			if err := s.check(x, sch["items"].(map[string]any), fmt.Sprintf("%s[%d]", at, i)); err != nil {
 				return err
+			}
+		}
+	case string:
+		if pattern, ok := sch["pattern"].(string); ok {
+			matched, err := regexp.MatchString(pattern, v)
+			if err != nil || !matched {
+				return fmt.Errorf("%s: string does not match %q", at, pattern)
 			}
 		}
 	}

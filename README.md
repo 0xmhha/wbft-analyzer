@@ -1457,6 +1457,44 @@ recovery counts. No start receipt is invented from the requested schedule.
 Historical seeds without those observations remain explicitly unavailable, and
 baseline seed records retain their existing shape.
 
+### Consensus timing interventions
+
+`set_timing` changes request timeout, minimum block period or round-timeout cap
+for the whole registered run, including later node incarnations. `from_ns`
+must be zero and `to_ns` must equal the registered duration. Optional `global`
+fields apply to every node; explicit per-node fields then take precedence.
+Unspecified fields preserve their existing settings, including other fields of
+an existing node override. Node indices refer to the recorded validator order.
+At most 256 unique nodes may be specified; an empty change is rejected.
+
+```json
+{"source_id":"registered-model","change":{"kind":"set_timing","from_ns":0,"to_ns":120000000000,"timing":{"global":{"request_timeout_seconds":"3","block_period_seconds":"2","max_request_timeout_seconds":"0"},"nodes":[{"node":1,"values":{"request_timeout_seconds":"7"}},{"node":3,"values":{"max_request_timeout_seconds":"17"}}]}}}
+```
+
+Values are decimal-string integer seconds. Missing fields inherit; an explicit
+maximum of `"0"` removes the cap. Timeout and block period must be positive.
+Explicit values must fit the simulator's duration domain with the registered
+horizon. Unknown fields, null values, duplicate node indices, irrelevant fields
+and out-of-scope indices are rejected before queuing. Existing round-timeout
+arithmetic is unchanged. Different block periods can cause header rejection;
+such violations and incomplete executions remain visible.
+
+The form accepts blank global fields and `-` for inherited node fields. The
+experiment summary separates requested values from the resolved before/after
+configuration of each node. New timing counterfactual seeds retain actual
+journal configuration hashes and parameters for each writer/engine run, plus
+round timer arms with exact duration and optional monotonic deadline strings.
+WAL-rearmed timers may lack a deadline. Timer evidence retains the first 16 and
+last 16 arms per node in time/node/run/engine/generation order, with total and
+retained counts. It does not claim to be a complete trace. No observation is
+invented from a request, and baseline or historical seed records are not
+backfilled. Tables page in groups of 100 rows.
+
+A core revision changes source provenance even when default execution results
+remain equal. Register a new source ID for a changed pin; preserve previous
+sources and experiments. Resolved settings and simulator observations do not
+establish physical network predictions or baseline reproducibility.
+
 ### Scenario wall-clock origin
 
 Recorded network fitting binds the declared `origin` to simulated time zero,
