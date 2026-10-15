@@ -20,6 +20,7 @@ import (
 // FitOptions contains already snapshotted local readers. None of their paths
 // are retained in the fitted report or persisted experiment provenance.
 type FitOptions struct {
+	TransportEvidence   *TransportEvidence
 	Model               string
 	RuntimeObservations []RuntimeObservation
 	WireMetric          string
@@ -40,6 +41,7 @@ type FitOptions struct {
 }
 
 type Fitted struct {
+	TransportScope      *TransportScope      `json:"transport_scope,omitempty"`
 	Mode                string               `json:"mode"`
 	DeclaredModel       Assessment           `json:"declared_runtime_model"`
 	Empirical           *EmpiricalProjection `json:"empirical,omitempty"`
@@ -174,6 +176,21 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		out.TransportInputs = append(out.TransportInputs, input.Source)
 		transportIDs = append(transportIDs, input.Source.ID)
 	}
+	if o.TransportEvidence != nil {
+		if o.Model != EmpiricalCoreModel || o.Clock.Model != "shared-host" || o.Clock.SkewMS != 0 || len(o.Coverage) != 0 {
+			return out, errors.New("closed observer scope requires empirical shared-host inputs without separate coverage overrides")
+		}
+		scope, coverage, e := BindTransportScope(*o.TransportEvidence, transport, o.Events, blocks, addresses, o.Origin, o.Until)
+		if e != nil {
+			return out, e
+		}
+		if scope.ThroughHeight <= o.To {
+			return out, errors.New("closed observer cutoff does not cover the fitting child height")
+		}
+		out.TransportScope = &scope
+		o.Coverage = coverage
+		sources = append(sources, scope.Sources...)
+	}
 	endpoints, err := PairMessageInputsMetric(transport, o.Clock, o.WireMetric)
 	if err != nil {
 		return out, err
@@ -287,6 +304,9 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		if e != nil {
 			return out, e
 		}
+		if out.TransportScope != nil {
+			projection.Assumptions = append(projection.Assumptions, out.TransportScope.Assumptions...)
+		}
 		out.Empirical = &projection
 		assessment = assessEmpirical(projection, out.Links, o.Until)
 		assessment.Issues = append(assessment.Issues, facts.Issues...)
@@ -306,6 +326,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		buildRuntimes, buildApp = projection.Runtimes, projection.Application
 	}
 	modelRaw, err := json.Marshal(struct {
+		TransportScope  *TransportScope
 		Mode            string
 		Empirical       *EmpiricalProjection
 		WireMetric      string
@@ -324,7 +345,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		GenesisCount    int
 		Epochs          []RecordedEpoch
 		ObservedRuntime []RuntimeBinding
-	}{o.Model, out.Empirical, o.WireMetric, out.TransportInputs, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs, out.RuntimeObservations})
+	}{out.TransportScope, o.Model, out.Empirical, o.WireMetric, out.TransportInputs, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs, out.RuntimeObservations})
 	if err != nil {
 		return out, err
 	}
@@ -353,6 +374,12 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 	sc, err = ApplyRuntime(sc, buildNodes, buildRuntimes)
 	if err != nil {
 		return out, err
+	}
+	if out.TransportScope != nil {
+		sc, err = ApplyTransportSessions(sc, buildNodes, *out.TransportScope, o.Origin)
+		if err != nil {
+			return out, err
+		}
 	}
 	sc, err = ApplyEpochs(sc, facts.Validators, facts.GenesisCount, facts.Epochs)
 	if err != nil {

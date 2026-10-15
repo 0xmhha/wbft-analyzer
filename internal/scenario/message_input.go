@@ -14,6 +14,7 @@ type MessageInput struct {
 	Source  Input             `json:"source"`
 	Stats   messages.Stats    `json:"stats"`
 	Records []messages.Record `json:"-"`
+	Files   []messages.File   `json:"-"`
 }
 
 // selectTransportInputs makes alternate observations an explicit model choice.
@@ -56,7 +57,7 @@ func selectTransportInputs(inputs []MessageInput, ids []string, nodes []string) 
 // InspectMessageSnapshot reads a reconstructed immutable snapshot, retaining
 // source coordinates for each projection. The caller holds the dataset lease.
 func InspectMessageSnapshot(ctx context.Context, p messages.Prepared, chain, genesis string) (MessageInput, error) {
-	out := MessageInput{Source: Input{ID: p.Summary.ID, Kind: p.Summary.Kind, Node: p.Summary.Node, SHA256: p.Summary.SHA256}, Records: []messages.Record{}}
+	out := MessageInput{Source: Input{ID: p.Summary.ID, Kind: p.Summary.Kind, Node: p.Summary.Node, SHA256: p.Summary.SHA256}, Records: []messages.Record{}, Files: append([]messages.File(nil), p.Summary.Files...)}
 	if p.Input.ID != p.Summary.ID || p.Input.Kind != p.Summary.Kind || !strings.EqualFold(p.Input.Node, p.Summary.Node) || !hexLength(p.Summary.SHA256, 64) {
 		return out, errors.New("scenario message identity mismatch")
 	}

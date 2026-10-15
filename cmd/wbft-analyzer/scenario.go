@@ -34,6 +34,7 @@ func runScenario(args []string, stdout, stderr io.Writer) int {
 	to := fs.Uint64("to", 0, "last compared height, with a retained child")
 	until := fs.Duration("duration", time.Minute, "simulation duration, at most 24h")
 	count := fs.Int("seeds", 32, "independent seeds, at most 128")
+	transportManifest := fs.String("transport-manifest", "", "private retained closed-observer transport evidence manifest")
 	model := fs.String("model", scenario.DeclaredRuntimeModel, "declared-runtime or empirical-core (explicit fake application and core substitution)")
 	wireMetric := fs.String("wire-metric", "link", "link (callback) or write_start_to_read_complete")
 	transportInputs := []string{}
@@ -75,7 +76,7 @@ func runScenario(args []string, stdout, stderr io.Writer) int {
 		seeds[i] = int64(i + 1)
 	}
 	// Inspection reads existing retained inputs; it does not migrate the database.
-	fitted, err := scenariojob.FitDataset(ctx, s, scenariojob.FitRequest{RuntimeManifest: *runtimeManifest, ChainPath: *chain, EventManifest: *events, Options: scenario.FitOptions{Model: *model, WireMetric: *wireMetric, TransportInputs: transportInputs, Dataset: *dataset, Origin: origin, From: *from, To: *to, Until: *until, Seeds: seeds, Clock: pairs.Clock{Model: *clock, SkewMS: *skew}}})
+	fitted, err := scenariojob.FitDataset(ctx, s, scenariojob.FitRequest{TransportManifest: *transportManifest, RuntimeManifest: *runtimeManifest, ChainPath: *chain, EventManifest: *events, Options: scenario.FitOptions{Model: *model, WireMetric: *wireMetric, TransportInputs: transportInputs, Dataset: *dataset, Origin: origin, From: *from, To: *to, Until: *until, Seeds: seeds, Clock: pairs.Clock{Model: *clock, SkewMS: *skew}}})
 	if err != nil {
 		fmt.Fprintln(stderr, "scenario fitting unavailable for this source scope")
 		return exitDataErr
