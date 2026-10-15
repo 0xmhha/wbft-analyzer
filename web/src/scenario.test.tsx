@@ -48,6 +48,22 @@ describe("network scenario comparison",()=>{
    expect(other).toContain("Baseline not established");expect(other).toContain("scenario-unproved");
   }
  });
+ it("keeps the counterfactual separate and uses the same visible chart axes",()=>{
+  const recorded={...group(),rounds:[{value:"0",count:4,cumulative:1}],period_seconds:[{value:"1",count:4,cumulative:1}],elapsed_seconds:[{height:"1",minimum:"0",median:"0",maximum:"0",seeds:2},{height:"2",minimum:"1",median:"1",maximum:"1",seeds:2}]};
+  const changed={...group(),rounds:[{value:"9007199254740993",count:4,cumulative:1}]};
+  const plot:Schemas["ScenarioComparisonPlot"]={from:"1",to:"2",credibility:"baseline_reproduced",recorded_sha256:"a".repeat(64),recorded,baseline:recorded,counterfactual:changed};
+  const html=renderToStaticMarkup(<ScenarioComparison plot={plot}/>);
+  expect(html).toContain('aria-label="Recorded and baseline distributions"');expect(html).toContain('aria-label="Counterfactual distributions"');expect(html).toContain('scenario-counterfactual');expect(html).not.toContain('scenario-unproved');
+  const rounds=[...html.matchAll(/<svg[^>]+aria-label="Decision round ECDF"[^>]*>(.*?)<\/svg>/g)].map(m=>m[1]!);
+  expect(rounds).toHaveLength(2);for(const chart of rounds)expect(chart).toContain('text-anchor="end">9007199254740993</text>');expect(rounds[1]).toContain('d="M0,190H700V0H700"');
+  const periods=[...html.matchAll(/<svg[^>]+aria-label="Per-height header interval ECDF \(seconds\)"[^>]*>(.*?)<\/svg>/g)].map(m=>m[1]!);
+  expect(periods).toHaveLength(2);for(const chart of periods)expect(chart).toContain('text-anchor="end">4</text>');
+  const elapsed=[...html.matchAll(/<svg[^>]+aria-label="Elapsed header-time seed bands"[^>]*>(.*?)<\/svg>/g)].map(m=>m[1]!);
+  expect(elapsed).toHaveLength(2);for(const chart of elapsed)expect(chart).toContain('<text x="0" y="25">4</text>');expect(elapsed[0]).toContain('d="M0,190L700,142.5"');
+  const unavailable={...changed,status:"incomplete",issue:"seed_executions_incomplete",rounds:[],period_seconds:[],elapsed_seconds:[]};
+  const partial=renderToStaticMarkup(<ScenarioComparison plot={{...plot,counterfactual:unavailable}}/>);
+  expect(partial).toContain('Counterfactual seeds distribution unavailable: seed_executions_incomplete');expect(partial).toContain('scenario-counterfactual');expect([...partial.matchAll(/aria-label="Decision round ECDF"/g)]).toHaveLength(1);
+ });
  it("labels failed credibility and preserves exact ECDF values",()=>{
   const incomplete={...group(),status:"incomplete",samples:0,rounds:[],period_seconds:[],elapsed_seconds:[],saved_runs:1,complete_runs:1,issue:"seed_executions_incomplete"};
   const plot:Schemas["ScenarioComparisonPlot"]={from:"1",to:"2",credibility:"time_unproved",recorded_sha256:"a".repeat(64),recorded:group(),baseline:group(),counterfactual:incomplete};
