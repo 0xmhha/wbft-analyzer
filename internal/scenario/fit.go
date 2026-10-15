@@ -23,6 +23,7 @@ type FitOptions struct {
 	Model               string
 	RuntimeObservations []RuntimeObservation
 	WireMetric          string
+	TransportInputs     []string
 	Dataset             int64
 	Chain               []byte
 	Frames              []messages.Prepared
@@ -44,6 +45,7 @@ type Fitted struct {
 	Empirical           *EmpiricalProjection `json:"empirical,omitempty"`
 	RuntimeObservations []RuntimeBinding     `json:"runtime_observations"`
 	WireMetric          string               `json:"wire_metric"`
+	TransportInputs     []Input              `json:"transport_inputs"`
 	Epochs              []RecordedEpoch      `json:"epochs"`
 	Scope               ScopeCounts          `json:"scope"`
 	NodeOptions         []Node               `json:"node_options"`
@@ -162,7 +164,17 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 			out.Model.Issues = append(out.Model.Issues, Issue{Node: addr, Code: "node_options_unavailable"})
 		}
 	}
-	endpoints, err := PairMessageInputsMetric(inputs, o.Clock, o.WireMetric)
+	transport, err := selectTransportInputs(inputs, o.TransportInputs, addresses)
+	if err != nil {
+		return out, err
+	}
+	out.TransportInputs = []Input{}
+	transportIDs := []string{}
+	for _, input := range transport {
+		out.TransportInputs = append(out.TransportInputs, input.Source)
+		transportIDs = append(transportIDs, input.Source.ID)
+	}
+	endpoints, err := PairMessageInputsMetric(transport, o.Clock, o.WireMetric)
 	if err != nil {
 		return out, err
 	}
@@ -297,6 +309,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		Mode            string
 		Empirical       *EmpiricalProjection
 		WireMetric      string
+		TransportInputs []Input
 		From, To        uint64
 		Origin          string
 		UntilNS         int64
@@ -311,13 +324,13 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		GenesisCount    int
 		Epochs          []RecordedEpoch
 		ObservedRuntime []RuntimeBinding
-	}{o.Model, out.Empirical, o.WireMetric, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs, out.RuntimeObservations})
+	}{o.Model, out.Empirical, o.WireMetric, out.TransportInputs, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs, out.RuntimeObservations})
 	if err != nil {
 		return out, err
 	}
 	modelHash := sha256.Sum256(modelRaw)
 	sum := sha256.Sum256(o.Chain)
-	provenance := Provenance{Mode: o.Model, ModelSHA256: hex.EncodeToString(modelHash[:]), Dataset: o.Dataset, Version: FitVersion, Inputs: sources, ChainSHA256: hex.EncodeToString(sum[:]), CoreCommit: o.CoreCommit, Seeds: o.Seeds}
+	provenance := Provenance{Mode: o.Model, TransportInputs: transportIDs, ModelSHA256: hex.EncodeToString(modelHash[:]), Dataset: o.Dataset, Version: FitVersion, Inputs: sources, ChainSHA256: hex.EncodeToString(sum[:]), CoreCommit: o.CoreCommit, Seeds: o.Seeds}
 	if out.Empirical != nil {
 		provenance.Assumptions = out.Empirical.Assumptions
 		for _, node := range out.Empirical.Nodes {

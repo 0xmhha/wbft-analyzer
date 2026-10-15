@@ -1264,3 +1264,34 @@ partial. Measured successful durations never supply a queue or executor policy.
 Known unsupported failures and cancellations remain separate from successful
 timing samples. Physical executors, other application queues, input handling
 and receiver coverage still require their own evidence and execution models.
+
+
+### Scoped transport inputs and empirical parameter evidence
+
+Network fitting version 11 accepts repeated `scenario fit --transport-input ID`
+flags, or `transport_inputs` on a registered source. Select at most one message
+input for each node when the same traffic has both journal and frame observations.
+Unknown IDs, duplicate choices, aliases from the same node and nodes outside the
+fitted validator scope are refused. Missing nodes still leave the model partial.
+Without a selection, all candidates remain; absent timing never removes a copy.
+Selected input IDs, nodes and exact hashes are exposed by the source screen and
+bound into model and execution provenance. All other snapshots remain retained,
+validated and included in source provenance for configuration and inspection.
+
+Message normalization version 9 retains the optional closed `payload_source`
+field. `consumed` identifies observed reader bytes; `provided_reader_snapshot`
+is accepted only for a failed outbound write with payload evidence. Such a
+snapshot retains the attempted message identity and the write failure. It does
+not establish byte consumption, a successful write, receiver coverage or loss.
+Older captures retain unknown payload origin; use a fresh dataset to normalize
+new metadata. Arbitrary source fields remain excluded from persisted records.
+
+The empirical core model distinguishes static WBFT parameters from contract
+execution. Every observed configuration must match the chain scalars and all
+other snapshots, declare zero WBFT transitions and retain complete capture
+evidence. System contract upgrades are counted separately because this model
+uses recorded epoch candidate inputs with a fake application. The source screen
+labels the parameter evidence and this substitution explicitly. Nonzero WBFT
+transitions, scalar changes, ambiguous snapshots and recording gaps remain
+unproved. The independent declared-runtime assessment and its unavailable
+evidence remain unchanged.

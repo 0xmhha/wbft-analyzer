@@ -92,6 +92,16 @@ func TestFitPreservesPartialSourceWithoutDefaultingMissingNodes(t *testing.T) {
 	if !foundFrame || withFrames.SourceSHA256 == got.SourceSHA256 || withFrames.Model.Status != "partial" || withFrames.Scenario != nil {
 		t.Fatal("frame source omitted or missing runtime/options inferred")
 	}
+	o.TransportInputs = []string{"b", "a"}
+	selected, err := Fit(context.Background(), o)
+	if err != nil || len(selected.TransportInputs) != 2 || selected.TransportInputs[0].ID != "a" || len(selected.Provenance.Inputs) != 3 || selected.SourceSHA256 == withFrames.SourceSHA256 || selected.Provenance.ModelSHA256 == withFrames.Provenance.ModelSHA256 || selected.Scenario != nil {
+		t.Fatal("transport choice lost source evidence or model identity", selected, err)
+	}
+	o.TransportInputs = []string{"absent"}
+	if _, err := Fit(context.Background(), o); err == nil {
+		t.Fatal("unknown transport source accepted")
+	}
+	o.TransportInputs = nil
 	o.Frames = nil
 	o.Runtime = []Node{{Address: sc.Validators[0].Address(), RuntimeEvidence: "verified", ReplayWAL: true}}
 	if _, err := Fit(context.Background(), o); err == nil {

@@ -36,6 +36,14 @@ func runScenario(args []string, stdout, stderr io.Writer) int {
 	count := fs.Int("seeds", 32, "independent seeds, at most 128")
 	model := fs.String("model", scenario.DeclaredRuntimeModel, "declared-runtime or empirical-core (explicit fake application and core substitution)")
 	wireMetric := fs.String("wire-metric", "link", "link (callback) or write_start_to_read_complete")
+	transportInputs := []string{}
+	fs.Func("transport-input", "message input ID used for transport (repeat once per node; default includes all)", func(id string) error {
+		if id == "" || len(transportInputs) >= 256 {
+			return fmt.Errorf("invalid transport input selection")
+		}
+		transportInputs = append(transportInputs, id)
+		return nil
+	})
 	clock := fs.String("clock", "unknown", "declared shared-host, ntp or unknown clock model")
 	skew := fs.Int64("skew-ms", 0, "declared clock uncertainty in ms")
 	timeout := fs.Duration("timeout", 5*time.Minute, "fitting deadline, at most 30m")
@@ -67,7 +75,7 @@ func runScenario(args []string, stdout, stderr io.Writer) int {
 		seeds[i] = int64(i + 1)
 	}
 	// Inspection reads existing retained inputs; it does not migrate the database.
-	fitted, err := scenariojob.FitDataset(ctx, s, scenariojob.FitRequest{RuntimeManifest: *runtimeManifest, ChainPath: *chain, EventManifest: *events, Options: scenario.FitOptions{Model: *model, WireMetric: *wireMetric, Dataset: *dataset, Origin: origin, From: *from, To: *to, Until: *until, Seeds: seeds, Clock: pairs.Clock{Model: *clock, SkewMS: *skew}}})
+	fitted, err := scenariojob.FitDataset(ctx, s, scenariojob.FitRequest{RuntimeManifest: *runtimeManifest, ChainPath: *chain, EventManifest: *events, Options: scenario.FitOptions{Model: *model, WireMetric: *wireMetric, TransportInputs: transportInputs, Dataset: *dataset, Origin: origin, From: *from, To: *to, Until: *until, Seeds: seeds, Clock: pairs.Clock{Model: *clock, SkewMS: *skew}}})
 	if err != nil {
 		fmt.Fprintln(stderr, "scenario fitting unavailable for this source scope")
 		return exitDataErr

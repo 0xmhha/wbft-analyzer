@@ -16,33 +16,34 @@ import (
 )
 
 type frameRecord struct {
-	V           int             `json:"v"`
-	Type        string          `json:"type"`
-	Node        string          `json:"node"`
-	Run         string          `json:"run"`
-	Seq         *uint64         `json:"seq"`
-	Wall        string          `json:"t_wall"`
-	Mono        *int64          `json:"t_mono_ns"`
-	Dir         string          `json:"dir"`
-	Peer        *string         `json:"peer"`
-	Code        string          `json:"code"`
-	WireCode    *uint64         `json:"wire_code"`
-	Size        *uint64         `json:"size"`
-	Payload     string          `json:"payload_sha256"`
-	Key         string          `json:"dedup_key"`
-	Outcome     string          `json:"outcome"`
-	WriteError  string          `json:"write_error"`
-	WriteResult json.RawMessage `json:"write_result"`
-	IO          json.RawMessage `json:"io"`
-	Cause       string          `json:"cause"`
-	RelayOf     *uint64         `json:"relay_of"`
-	Of          *uint64         `json:"of"`
-	Engine      string          `json:"engine"`
-	Check       string          `json:"check"`
-	Via         string          `json:"via"`
-	Event       string          `json:"event"`
-	Count       *uint64         `json:"count"`
-	Dedup       *struct {
+	V             int             `json:"v"`
+	Type          string          `json:"type"`
+	Node          string          `json:"node"`
+	Run           string          `json:"run"`
+	Seq           *uint64         `json:"seq"`
+	Wall          string          `json:"t_wall"`
+	Mono          *int64          `json:"t_mono_ns"`
+	Dir           string          `json:"dir"`
+	Peer          *string         `json:"peer"`
+	Code          string          `json:"code"`
+	WireCode      *uint64         `json:"wire_code"`
+	Size          *uint64         `json:"size"`
+	Payload       string          `json:"payload_sha256"`
+	PayloadSource json.RawMessage `json:"payload_source"`
+	Key           string          `json:"dedup_key"`
+	Outcome       string          `json:"outcome"`
+	WriteError    string          `json:"write_error"`
+	WriteResult   json.RawMessage `json:"write_result"`
+	IO            json.RawMessage `json:"io"`
+	Cause         string          `json:"cause"`
+	RelayOf       *uint64         `json:"relay_of"`
+	Of            *uint64         `json:"of"`
+	Engine        string          `json:"engine"`
+	Check         string          `json:"check"`
+	Via           string          `json:"via"`
+	Event         string          `json:"event"`
+	Count         *uint64         `json:"count"`
+	Dedup         *struct {
 		Known      *bool `json:"known_hit"`
 		PeerRecent *bool `json:"peer_recent_hit"`
 	} `json:"dedup"`
@@ -91,6 +92,10 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Sta
 				if e != nil {
 					return e
 				}
+				payloadSource, e := framePayloadSource(x, write)
+				if e != nil {
+					return e
+				}
 				span, e := frameIOInterval(x, write)
 				if e != nil {
 					return e
@@ -124,6 +129,7 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Sta
 				r.Cause = choice(x.Cause, "broadcast", "gossip", "relay", "retry", "reconnect", "replay", "direct")
 				switch x.Type {
 				case "frame":
+					r.PayloadSource = payloadSource
 					r.IO = span
 					r.ClockSource = "recorded"
 					if x.Dir != "in" && x.Dir != "out" || x.Size == nil {
@@ -280,4 +286,25 @@ func frameWriteResult(x frameRecord) (string, error) {
 		return "not_attached", nil
 	}
 	return "error", nil
+}
+
+// framePayloadSource describes which bytes were observed. A snapshot of the
+// provided reader on a failed write proves neither consumption nor delivery.
+func framePayloadSource(x frameRecord, write string) (string, error) {
+	if len(x.PayloadSource) == 0 {
+		return "", nil
+	}
+	var source string
+	if json.Unmarshal(x.PayloadSource, &source) != nil || x.Type != "frame" || !shaPattern.MatchString(x.Payload) || x.Size == nil {
+		return "", errors.New("invalid frame payload source")
+	}
+	switch source {
+	case "consumed":
+		return source, nil
+	case "provided_reader_snapshot":
+		if x.Dir == "out" && write == "error" {
+			return source, nil
+		}
+	}
+	return "", errors.New("invalid frame payload source")
 }

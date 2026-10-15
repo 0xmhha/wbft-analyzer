@@ -75,7 +75,7 @@ func TestEmpiricalModeIsExplicitAndKeepsDeclaredAssessment(t *testing.T) {
 		t.Fatalf("%+v; declared %+v", got.Model, got.DeclaredModel)
 	}
 	for _, n := range got.Empirical.Nodes {
-		if n.Substituted || n.ApplicationPolicy != "independent_request_sampled_empty_body" {
+		if n.Substituted || n.ApplicationPolicy != "independent_request_sampled_empty_body" || n.ParameterEvidence != "journal_scope_parameters_verified" || n.SigningState != "recorded_none" {
 			t.Fatal(n)
 		}
 	}
@@ -92,6 +92,19 @@ func TestEmpiricalModeIsExplicitAndKeepsDeclaredAssessment(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	for i := len(o.Journals) - 1; i >= 0; i-- {
+		o.TransportInputs = append(o.TransportInputs, o.Journals[i].Summary.ID)
+	}
+	selected, err := Fit(context.Background(), o)
+	if err != nil || selected.Model.Status != "complete" || selected.Scenario == nil || selected.SourceSHA256 != got.SourceSHA256 {
+		t.Fatal("equivalent explicit transport selection changed the executable model", selected.Model, err)
+	}
+	o.TransportInputs = o.TransportInputs[:len(o.TransportInputs)-1]
+	incomplete, err := Fit(context.Background(), o)
+	if err != nil || incomplete.Model.Status != "partial" || incomplete.Scenario != nil || len(incomplete.Provenance.Inputs) != len(got.Provenance.Inputs) {
+		t.Fatal("missing transport node inferred or evidence dropped", incomplete.Model, err)
+	}
+	o.TransportInputs = nil
 	o.Model = ""
 	strict, err := Fit(context.Background(), o)
 	if err != nil || strict.Mode != DeclaredRuntimeModel || strict.Empirical != nil || strict.Model.Status != "partial" || strict.Scenario != nil || strict.SourceSHA256 == got.SourceSHA256 || strict.Provenance.ModelSHA256 == got.Provenance.ModelSHA256 {

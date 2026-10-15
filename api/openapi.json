@@ -1945,6 +1945,9 @@
           "payload_sha256": {
             "type": "string"
           },
+          "payload_source": {
+            "type": "string"
+          },
           "peer": {
             "type": "string"
           },
@@ -5314,6 +5317,9 @@
           "option_evidence": {
             "type": "string"
           },
+          "parameter_evidence": {
+            "type": "string"
+          },
           "profile": {
             "type": "string"
           },
@@ -5339,6 +5345,7 @@
           "improvements",
           "node",
           "option_evidence",
+          "parameter_evidence",
           "profile",
           "runtime_evidence",
           "signing_state",
@@ -5718,6 +5725,12 @@
           "substitutions": {
             "items": {
               "$ref": "#/components/schemas/ScenarioCoreSubstitution"
+            },
+            "type": "array"
+          },
+          "transport_inputs": {
+            "items": {
+              "type": "string"
             },
             "type": "array"
           }
@@ -6333,6 +6346,12 @@
           "to": {
             "type": "string"
           },
+          "transport_inputs": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioInput"
+            },
+            "type": "array"
+          },
           "wire_metric": {
             "type": "string"
           }
@@ -6354,6 +6373,7 @@
           "source_sha256",
           "status",
           "to",
+          "transport_inputs",
           "wire_metric"
         ],
         "type": "object"

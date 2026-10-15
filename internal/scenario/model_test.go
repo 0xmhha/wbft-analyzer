@@ -14,6 +14,23 @@ func TestScenarioProvenancePinsInputsAndSeeds(t *testing.T) {
 	if fixed.Inputs[0].ID != "a" || p.Inputs[0].ID != "b" {
 		t.Fatal("canonicalization mutated caller")
 	}
+	selected := p
+	selected.TransportInputs = []string{"b", "a"}
+	sealed, selectedHash, err := SealProvenance(selected)
+	if err != nil || selectedHash == hash || sealed.TransportInputs[0] != "a" || selected.TransportInputs[0] != "b" {
+		t.Fatal("transport choice omitted or caller mutated", sealed, err)
+	}
+	selected.TransportInputs = []string{"a", "b"}
+	_, sameSelection, err := SealProvenance(selected)
+	if err != nil || sameSelection != selectedHash {
+		t.Fatal("transport order changed identity", err)
+	}
+	for _, ids := range [][]string{{"missing"}, {"a", "a"}, make([]string, 257)} {
+		selected.TransportInputs = ids
+		if _, _, err := SealProvenance(selected); err == nil {
+			t.Fatal("unbound or duplicate transport source accepted")
+		}
+	}
 	p.Inputs[0], p.Inputs[1] = p.Inputs[1], p.Inputs[0]
 	_, same, err := SealProvenance(p)
 	if err != nil || same != hash {
