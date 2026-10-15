@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/0xmhha/wbft/conformance/sim"
 	"github.com/0xmhha/wbft/types"
@@ -49,6 +50,7 @@ func ExecutionHash(sc sim.Scenario) (string, error) {
 		nodes = append(nodes, x)
 	}
 	raw, err := json.Marshal(struct {
+		WallOrigin  string
 		Validators  []types.Address
 		Genesis     int
 		Nodes       []node
@@ -61,10 +63,20 @@ func ExecutionHash(sc sim.Scenario) (string, error) {
 		Epochs      []sim.EpochChange
 		Until       sim.Stop
 		NoProgress  bool
-	}{addresses, sc.Genesis, nodes, sc.Params, sc.DefaultLink, sc.Links, sc.Partitions, sc.Schedule, sc.App, sc.Epochs, sc.Until, sc.NoProgress})
+	}{scenarioWallOrigin(sc).Format(time.RFC3339Nano), addresses, sc.Genesis, nodes, sc.Params, sc.DefaultLink, sc.Links, sc.Partitions, sc.Schedule, sc.App, sc.Epochs, sc.Until, sc.NoProgress})
 	if err != nil {
 		return "", err
 	}
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:]), nil
+}
+
+// Resolve a default once before execution rather than reading mutable global
+// clock state from each node. Explicit recorded origins never use that state.
+func scenarioWallOrigin(sc sim.Scenario) time.Time {
+	origin := sc.WallOrigin
+	if origin.IsZero() {
+		origin = sim.Epoch
+	}
+	return origin.UTC().Round(0)
 }

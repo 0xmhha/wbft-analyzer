@@ -5618,6 +5618,9 @@
           },
           "version": {
             "type": "string"
+          },
+          "wall_origin": {
+            "type": "string"
           }
         },
         "required": [
@@ -6621,6 +6624,9 @@
               }
             ]
           },
+          "wall_origin": {
+            "type": "string"
+          },
           "wire_metric": {
             "type": "string"
           }
@@ -6643,6 +6649,7 @@
           "status",
           "to",
           "transport_inputs",
+          "wall_origin",
           "wire_metric"
         ],
         "type": "object"

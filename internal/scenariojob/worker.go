@@ -65,6 +65,7 @@ func publicEpochs(epochs []scenario.RecordedEpoch) []EpochInfo {
 }
 
 type SourceInfo struct {
+	WallOrigin          string                        `json:"wall_origin"`
 	TransportScope      *scenario.TransportScope      `json:"transport_scope,omitempty"`
 	Mode                string                        `json:"mode"`
 	DeclaredModel       scenario.Assessment           `json:"declared_runtime_model"`
@@ -171,7 +172,7 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 		if err != nil {
 			return nil, err
 		}
-		public := SourceInfo{TransportScope: fitted.TransportScope, Mode: fitted.Mode, DeclaredModel: fitted.DeclaredModel, Empirical: fitted.Empirical, ApplicationPolicies: fitted.App.Policies, RuntimeObservations: fitted.RuntimeObservations, WireMetric: fitted.WireMetric, TransportInputs: fitted.TransportInputs, Epochs: publicEpochs(fitted.Epochs), Scope: fitted.Scope, Nodes: []string{}, DurationNS: int64(duration), ID: spec.ID, Dataset: spec.Dataset, From: strconv.FormatUint(spec.From, 10), To: strconv.FormatUint(spec.To, 10), SourceSHA: fitted.SourceSHA256, Status: fitted.Model.Status, Model: fitted.Model}
+		public := SourceInfo{WallOrigin: fitted.WallOrigin, TransportScope: fitted.TransportScope, Mode: fitted.Mode, DeclaredModel: fitted.DeclaredModel, Empirical: fitted.Empirical, ApplicationPolicies: fitted.App.Policies, RuntimeObservations: fitted.RuntimeObservations, WireMetric: fitted.WireMetric, TransportInputs: fitted.TransportInputs, Epochs: publicEpochs(fitted.Epochs), Scope: fitted.Scope, Nodes: []string{}, DurationNS: int64(duration), ID: spec.ID, Dataset: spec.Dataset, From: strconv.FormatUint(spec.From, 10), To: strconv.FormatUint(spec.To, 10), SourceSHA: fitted.SourceSHA256, Status: fitted.Model.Status, Model: fitted.Model}
 		for _, node := range fitted.NodeOptions {
 			public.Nodes = append(public.Nodes, node.Address.Hex())
 		}

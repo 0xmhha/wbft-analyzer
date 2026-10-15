@@ -41,6 +41,7 @@ type FitOptions struct {
 }
 
 type Fitted struct {
+	WallOrigin          string               `json:"wall_origin"`
 	TransportScope      *TransportScope      `json:"transport_scope,omitempty"`
 	Mode                string               `json:"mode"`
 	DeclaredModel       Assessment           `json:"declared_runtime_model"`
@@ -77,7 +78,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 	if !ValidWireMetric(o.WireMetric) {
 		return Fitted{}, errors.New("unsupported wire measurement")
 	}
-	out := Fitted{App: AppTiming{Policies: []ApplicationPolicy{}}, Links: []Link{}, Runtimes: []Runtime{}, Recorded: []Height{}, Model: Assessment{Version: FitVersion, Status: "partial", Issues: []Issue{}}}
+	out := Fitted{WallOrigin: o.Origin.UTC().Format(time.RFC3339Nano), App: AppTiming{Policies: []ApplicationPolicy{}}, Links: []Link{}, Runtimes: []Runtime{}, Recorded: []Height{}, Model: Assessment{Version: FitVersion, Status: "partial", Issues: []Issue{}}}
 	out.WireMetric = o.WireMetric
 	out.Mode = o.Model
 	if len(o.Runtime) > 0 {
@@ -371,6 +372,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 	if err != nil {
 		return out, err
 	}
+	sc.WallOrigin = o.Origin.UTC().Round(0)
 	sc, err = ApplyRuntime(sc, buildNodes, buildRuntimes)
 	if err != nil {
 		return out, err
