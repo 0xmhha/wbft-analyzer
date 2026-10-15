@@ -13,9 +13,6 @@
 //	wbft-analyzer export  --dataset NAME --out DIR
 //	wbft-analyzer version
 //
-// The commands are being built in stages (see README.md); a command that is
-// not built yet says so and exits with code 69.
-//
 // Exit codes: 0 success, 64 usage error, 65 input data refused or invalid,
 // 69 not available, 70 internal error.
 package main
@@ -53,7 +50,7 @@ Commands:
 Run "wbft-analyzer <command> -h" for the flags of a command.
 `
 
-// commands are the commands and whether they are built.
+// commands dispatches the supported command handlers.
 var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
 	"serve":         runServe,
 	"dataset":       runDataset,
@@ -64,7 +61,7 @@ var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
 	"whatif":        runWhatif,
 	"scenario":      runScenario,
 	"reexec-helper": runReexecHelper,
-	"export":        notYet("export"),
+	"export":        runExport,
 }
 
 func main() {
@@ -89,12 +86,4 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stderr, "unknown command %q\n\n%s", args[0], usage)
 	return exitUsage
-}
-
-// notYet is a command that is not built yet.
-func notYet(name string) func([]string, io.Writer, io.Writer) int {
-	return func(_ []string, _, stderr io.Writer) int {
-		fmt.Fprintf(stderr, "wbft-analyzer %s: not available yet in this version\n", name)
-		return exitUnavailable
-	}
 }

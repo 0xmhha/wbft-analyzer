@@ -156,32 +156,30 @@ func Parse(raw []byte) (*Report, error) {
 	return &r, nil
 }
 
-// Admit applies the public-build checks in order: the report's build is
-// public; every requirement of its results and observations is a public
-// requirement; its catalog hash is that of a public inspector build. A
-// report failing one is refused as a whole; leaving out the unknown rows
-// would tell where the withheld requirements are.
+// Admit checks an exact inspector build, its complete requirement set and its
+// complete catalog hash. Extensions cannot change the public profile. Failure
+// refuses the whole report without naming unknown identifiers.
 func Admit(r *Report) error {
 	if err := privacy.Check(); err != nil {
 		return err
 	}
-	if r.Run.Inspector.Build != "public" {
-		return fmt.Errorf("%w: the report was written by the inspector build %q, not public", ErrRefused, r.Run.Inspector.Build)
+	if !privacy.TrustedBuild(r.Run.Inspector.Build) {
+		return fmt.Errorf("%w: inspector build is not public or registered", ErrRefused)
 	}
 	for _, x := range r.Results {
-		if !privacy.PublicRequirement(x.Requirement) {
-			return fmt.Errorf("%w: a result names a requirement outside the public specification", ErrRefused)
+		if !privacy.TrustedRequirement(r.Run.Inspector.Build, x.Requirement) {
+			return fmt.Errorf("%w: a result names a requirement outside the trusted specification", ErrRefused)
 		}
 	}
 	for _, o := range r.Observations {
 		for _, id := range o.Requirements {
-			if !privacy.PublicRequirement(id) {
-				return fmt.Errorf("%w: an observation names a requirement outside the public specification", ErrRefused)
+			if !privacy.TrustedRequirement(r.Run.Inspector.Build, id) {
+				return fmt.Errorf("%w: an observation names a requirement outside the trusted specification", ErrRefused)
 			}
 		}
 	}
-	if _, ok := privacy.PublicCatalog(r.Run.Inspector.CatalogSHA256); !ok {
-		return fmt.Errorf("%w: the catalog hash is not that of a public inspector build", ErrRefused)
+	if !privacy.TrustedCatalog(r.Run.Inspector.Build, r.Run.Inspector.CatalogSHA256) {
+		return fmt.Errorf("%w: the catalog hash is not trusted for this inspector build", ErrRefused)
 	}
 	return nil
 }
