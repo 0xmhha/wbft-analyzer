@@ -5455,6 +5455,107 @@
         ],
         "type": "object"
       },
+      "ScenarioEngineHistory": {
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRuntimeEvent"
+            },
+            "type": "array"
+          },
+          "instances": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioEngineInstance"
+            },
+            "type": "array"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioEngineHistoryIssue"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "actions",
+          "instances",
+          "issues",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ScenarioEngineHistoryIssue": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "line",
+          "run"
+        ],
+        "type": "object"
+      },
+      "ScenarioEngineInstance": {
+        "additionalProperties": false,
+        "properties": {
+          "engine_run": {
+            "type": "string"
+          },
+          "initial": {
+            "type": "boolean"
+          },
+          "node_shutdown": {
+            "type": "boolean"
+          },
+          "run": {
+            "type": "string"
+          },
+          "start_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "start_ns": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stop_line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "stop_ns": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "engine_run",
+          "initial",
+          "node_shutdown",
+          "run",
+          "start_line",
+          "start_ns",
+          "stop_line",
+          "stop_ns"
+        ],
+        "type": "object"
+      },
       "ScenarioExperiment": {
         "additionalProperties": false,
         "properties": {
@@ -5860,6 +5961,16 @@
       "ScenarioRuntime": {
         "additionalProperties": false,
         "properties": {
+          "engine_history": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioEngineHistory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "engine_stop_observed": {
             "type": "boolean"
           },
@@ -6041,6 +6152,9 @@
           "at_ns": {
             "format": "int64",
             "type": "integer"
+          },
+          "engine_run": {
+            "type": "string"
           },
           "line": {
             "format": "int64",

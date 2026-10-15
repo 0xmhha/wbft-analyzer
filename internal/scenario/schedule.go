@@ -32,7 +32,8 @@ func ApplyRuntime(sc sim.Scenario, nodes []Node, runtimes []Runtime) (sim.Scenar
 
 		sc.Nodes[i].StartAfter = time.Duration(r.StartNS)
 		for _, e := range r.Events {
-			if e.AtNS < r.StartNS || time.Duration(e.AtNS) > sc.Until.Duration || e.Line <= 0 || e.Run == "" || e.Action != "stop" && e.Action != "restart" {
+			engine := e.Action == sim.ActionEngineStart || e.Action == sim.ActionEngineStop
+			if e.AtNS < r.StartNS || time.Duration(e.AtNS) > sc.Until.Duration || e.Line <= 0 || e.Run == "" || e.Action != "stop" && e.Action != "restart" && !engine || engine && !verifiedEngineAction(r, e) {
 				return sc, errors.New("invalid recorded lifecycle event")
 			}
 			schedule = append(schedule, sim.NodeEvent{At: time.Duration(e.AtNS), Node: sc.Validators[i].Address(), Action: e.Action})

@@ -1295,3 +1295,21 @@ labels the parameter evidence and this substitution explicitly. Nonzero WBFT
 transitions, scalar changes, ambiguous snapshots and recording gaps remain
 unproved. The independent declared-runtime assessment and its unavailable
 evidence remain unchanged.
+
+### Recorded consensus engine lifecycles
+
+Fitting version 12 distinguishes process starts from consensus engine instances.
+Native event history binds each generation to its original writer, source line
+and recorded wall time. A complete closed history can drive `engine_stop` and
+`engine_start` on the same simulator runner; application imports, transport,
+signer and WAL remain alive across a pause. Node shutdown teardown never becomes
+a second engine pause or a fabricated node restart. Every generation must carry
+its own compatible replay policy.
+
+Missing stops, repeated or skipped generations, unrelated writers, unclosed
+history and reversed clocks remain partial. No ambiguous candidate becomes a
+preferred first value. The source screen displays all retained engine instances,
+shutdown scope, missing evidence and replay policy coordinates. These observed
+controls remain part of the empirical fake-application model and its immutable
+identity. A complete lifecycle does not establish peer availability, physical
+executor equivalence, or baseline round and time credibility.

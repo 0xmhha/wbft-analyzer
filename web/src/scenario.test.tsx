@@ -2,13 +2,19 @@ import { describe,expect,it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { Schemas } from "./api/client";
 import { ScenarioComparison } from "./views/ScenarioComparison";
-import { EmpiricalModel } from "./views/Scenarios";
+import { EmpiricalModel,EngineHistories } from "./views/Scenarios";
 import { pixel,extent,ecdfPath,bandPath } from "./scenario-chart";
 import { parseRoute } from "./App";
 function group():Schemas["ScenarioDistribution"]{
  return {status:"complete",saved_runs:2,expected_runs:2,complete_runs:2,samples:4,issue:"",rounds:[{value:"0",cumulative:.75,count:3},{value:"9007199254740993",cumulative:1,count:1}],period_seconds:[{value:"1",cumulative:.5,count:2},{value:"4",cumulative:1,count:2}],elapsed_seconds:[{height:"1",minimum:"0",median:"0",maximum:"0",seeds:2},{height:"2",minimum:"1",median:"1",maximum:"4",seeds:2}]};
 }
 describe("network scenario comparison",()=>{
+ it("distinguishes engine pauses, node shutdown and unavailable lifecycle evidence",()=>{
+  const runtime:Schemas["ScenarioRuntime"]={node:"native",input:"events",starts:1,start_ns:0,sign_floor_state:"none",sign_floor:null,engine_stop_observed:true,wal_replay:true,events:[],wal_policies:[{run:"writer",engine_run:"9007199254740993",line:2,enabled:true,available:true,replayed:false,status:"complete"}],engine_history:{status:"partial",actions:[],issues:[{code:"engine_history_not_closed",run:"writer",line:12}],instances:[{run:"writer",engine_run:"1",start_ns:0,stop_ns:1,start_line:2,stop_line:4,initial:true,node_shutdown:false},{run:"writer",engine_run:"2",start_ns:2,stop_ns:3,start_line:5,stop_line:8,initial:false,node_shutdown:true},{run:"writer",engine_run:"9007199254740993",start_ns:4,stop_ns:null,start_line:9,stop_line:0,initial:false,node_shutdown:false}]}};
+  const html=renderToStaticMarkup(<EngineHistories runtimes={[runtime]}/>);
+  expect(html).toContain("1 node starts");expect(html).toContain("3 engine instances");expect(html).toContain("partial");expect(html).toContain("engine pause");expect(html).toContain("node shutdown");expect(html).toContain("unclosed");expect(html).toContain("engine_history_not_closed");expect(html).toContain("line 12");expect(html).toContain("9007199254740993");expect(html).toContain("enabled true");expect(html).toContain("Closed observations do not establish baseline credibility");
+  expect(renderToStaticMarkup(<EngineHistories runtimes={[{...runtime,engine_history:null}]}/>)).not.toContain("3 engine instances");
+ });
  it("labels substitute assumptions and keeps excluded measurements visible",()=>{
   const source={id:"wire",kind:"frames",node:"synthetic-node",sha256:"a".repeat(64)};
   const model:Schemas["ScenarioEmpiricalProjection"]={assumptions:["fresh_test_keys_genesis_no_replay"],nodes:[{node:"synthetic-node",substituted:true,source,improvements:"0",backlog_limit:0,profile:"compat",wal_replay:false,option_evidence:"modeled_core_substitution",runtime_evidence:"modeled_core_substitution",signing_state:"fresh_test_keys_genesis_no_replay",parameter_evidence:"static_wbft_parameters_verified",application_policy:"independent_request_sampled_empty_body"}],runtime_timings:[{source:{...source,id:"runtime",kind:"runtime"},build:[],import:[],excluded:[{kind:"import",id:"9007199254740993",reason:"not_single_block",from_line:1,to_line:2}],task_states:{observed_cancellation:3},import_results:{ok:1}}],application:{policies:[],outcomes:[],unsupported:0,unproved:0,build:[],import:[]},native_excluded:[],runtimes:[]};
