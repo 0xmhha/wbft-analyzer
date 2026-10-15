@@ -2645,6 +2645,7 @@ export interface components {
             status: string;
             to: string;
             version: string;
+            wall_origin?: string;
         };
         ScenarioHeight: {
             number: string;
@@ -2888,6 +2889,7 @@ export interface components {
             to: string;
             transport_inputs: components["schemas"]["ScenarioInput"][];
             transport_scope?: components["schemas"]["ScenarioTransportScope"] | null;
+            wall_origin: string;
             wire_metric: string;
         };
         StoreBuildLifecycle: {

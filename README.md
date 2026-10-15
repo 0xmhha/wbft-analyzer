@@ -1349,3 +1349,19 @@ Dataset adoption, deletion and dump/restore include these objects. The source
 screen shows windows, sessions, assumptions and exact source coordinates.
 Completing this transport model does not establish baseline round or time
 credibility, executor equivalence or a validated counterfactual.
+
+
+### Scenario wall-clock origin
+
+Recorded network fitting binds the declared `origin` to simulated time zero,
+including fractional seconds. Every node incarnation retains this per-run UTC
+origin and its declared skew. The source response and stored experiment show
+`wall_origin`; the execution hash includes its canonical instant. Fitting
+version 14 changes this execution scope, so an earlier registered source must
+be retained and a changed fitting registered under a new source ID. Historical
+experiments without this field remain readable with unavailable clock metadata.
+
+The empirical model explicitly records that receive checks and core steps
+consume no simulated time. Clock alignment does not establish baseline
+reproducibility. Round and time
+checks remain independent; an unconfigured time criterion stays unproved.

@@ -54,6 +54,8 @@ func fitEmpiricalProjection(o FitOptions, fitted Fitted, sources []Input) (Empir
 	out := EmpiricalProjection{
 		Assumptions: []string{
 			"manual_clock_and_fake_transport",
+			"wall_clock_starts_at_recorded_origin",
+			"receive_checks_and_core_steps_consume_no_simulated_time",
 			"independent_request_fake_application_with_per_node_empirical_delays",
 			"native_successful_builds_and_imports_condition_the_delay_distribution",
 			"runtime_assembly_includes_cancelled_seals_but_not_sealing_or_delivery_time",

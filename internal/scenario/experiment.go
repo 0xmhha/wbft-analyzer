@@ -3,6 +3,7 @@ package scenario
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/0xmhha/wbft/conformance/sim"
 )
@@ -10,6 +11,7 @@ import (
 const ExperimentVersion = "wbft-network-experiment/1"
 
 type Experiment struct {
+	WallOrigin      string           `json:"wall_origin,omitempty"`
 	ExecutionSHA256 string           `json:"execution_sha256"`
 	From            uint64           `json:"from,string"`
 	To              uint64           `json:"to,string"`
@@ -47,7 +49,8 @@ func ExecuteExperimentWithBegin(ctx context.Context, sc sim.Scenario, provenance
 
 func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provenance Provenance, model Assessment, recorded []RoundCount, heights []Height, change CutOutgoing, from, to uint64, begin func(Experiment) error, emit func(SeedRecord) error) (Experiment, error) {
 
-	out := Experiment{From: from, To: to, RecordedCounts: append([]RoundCount(nil), recorded...), RecordedHeights: append([]Height{}, heights...), Version: ExperimentVersion, Status: "running", Model: model, Change: change, TimeCheck: "threshold_unconfigured", BaselineSeeds: []SeedResult{}, ChangedSeeds: []SeedResult{}}
+	sc.WallOrigin = scenarioWallOrigin(sc)
+	out := Experiment{WallOrigin: sc.WallOrigin.Format(time.RFC3339Nano), From: from, To: to, RecordedCounts: append([]RoundCount(nil), recorded...), RecordedHeights: append([]Height{}, heights...), Version: ExperimentVersion, Status: "running", Model: model, Change: change, TimeCheck: "threshold_unconfigured", BaselineSeeds: []SeedResult{}, ChangedSeeds: []SeedResult{}}
 	if err := ValidateRecorded(out.RecordedHeights, recorded, from, to); err != nil {
 		out.Status = "failed"
 		return out, err

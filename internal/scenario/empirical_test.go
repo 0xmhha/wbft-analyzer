@@ -19,12 +19,18 @@ import (
 
 func empiricalFitFixture(t *testing.T) FitOptions {
 	t.Helper()
+	return empiricalFitFixtureAt(t, sim.Epoch)
+}
+
+func empiricalFitFixtureAt(t *testing.T, origin time.Time) FitOptions {
+	t.Helper()
 	nodes, links := completeFixture()
 	d := []time.Duration{time.Millisecond}
 	sc, err := Build(nodes, links, sim.Params{RequestTimeoutSeconds: 2, BlockPeriodSeconds: 1, EpochLength: 100}, d, d, sim.Stop{Height: 6, Duration: time.Minute})
 	if err != nil {
 		t.Fatal(err)
 	}
+	sc.WallOrigin = origin
 	journalDir := t.TempDir()
 	result, err := sim.Run(context.Background(), sc, sim.Output{JournalDir: journalDir})
 	if err != nil {
@@ -34,7 +40,7 @@ func empiricalFitFixture(t *testing.T) FitOptions {
 	if err != nil {
 		t.Fatal(err)
 	}
-	out := FitOptions{Model: EmpiricalCoreModel, Dataset: 1, Chain: chain, Origin: sim.Epoch, Clock: pairs.Clock{Model: "shared-host"}, From: 2, To: 4, Until: time.Minute, CoreCommit: strings.Repeat("b", 40), Seeds: []int64{1, 2}}
+	out := FitOptions{Model: EmpiricalCoreModel, Dataset: 1, Chain: chain, Origin: origin, Clock: pairs.Clock{Model: "shared-host"}, From: 2, To: 4, Until: time.Minute, CoreCommit: strings.Repeat("b", 40), Seeds: []int64{1, 2}}
 	for i, key := range sc.Validators {
 		node := strings.ToLower(key.Address().Hex())
 		input := messages.Input{ID: string(rune('a' + i)), Kind: "journal", Node: node, Path: filepath.Join(journalDir, hex.EncodeToString(key.Address().Bytes()))}
@@ -43,7 +49,7 @@ func empiricalFitFixture(t *testing.T) FitOptions {
 			t.Fatal(err)
 		}
 		out.Journals = append(out.Journals, messages.Prepared{Input: input, Summary: summary})
-		out.Coverage = append(out.Coverage, Coverage{Node: node, From: sim.Epoch, To: sim.Epoch.Add(time.Minute), SettledThrough: sim.Epoch.Add(time.Minute), Complete: true})
+		out.Coverage = append(out.Coverage, Coverage{Node: node, From: origin, To: origin.Add(time.Minute), SettledThrough: origin.Add(time.Minute), Complete: true})
 	}
 	for _, raw := range result.Events {
 		var first struct {
@@ -190,5 +196,39 @@ func TestEmpiricalCoreSubstitutionRequiresExplicitModeAndAllFlagsOff(t *testing.
 	nodes[0].ReplayWAL = true
 	if _, err := buildScenario(nodes, links, params, delay, delay, stop, EmpiricalCoreModel); err == nil {
 		t.Fatal("substitution silently enabled replay")
+	}
+}
+
+func TestFittingPreservesRecordedFractionalWallOrigin(t *testing.T) {
+	origin := time.Unix(1800000000, 605685000).UTC()
+	options := empiricalFitFixtureAt(t, origin)
+	fitted, err := Fit(context.Background(), options)
+	if err != nil || fitted.Scenario == nil || fitted.Model.Status != "complete" {
+		t.Fatal("recorded origin could not be fitted", fitted.Model, err)
+	}
+	if fitted.WallOrigin != origin.Format(time.RFC3339Nano) || !fitted.Scenario.WallOrigin.Equal(origin) {
+		t.Fatal("recorded clock phase was discarded", fitted.WallOrigin, fitted.Scenario.WallOrigin)
+	}
+	result, err := sim.Run(context.Background(), *fitted.Scenario, sim.Output{})
+	if err != nil || len(result.Violations) > 0 {
+		t.Fatal("fitted run failed", err)
+	}
+	if result.Chain[0].Header.Time != uint64(origin.Unix())-1 {
+		t.Fatal("fitted genesis used the default clock")
+	}
+	for _, raw := range result.Events {
+		for _, line := range bytes.Split(bytes.TrimSpace(raw), []byte("\n")) {
+			var event struct {
+				Wall string `json:"t_wall"`
+				Mono int64  `json:"t_mono_ns"`
+			}
+			if err := json.Unmarshal(line, &event); err != nil {
+				t.Fatal(err)
+			}
+			wall, err := time.Parse(time.RFC3339Nano, event.Wall)
+			if err != nil || !wall.Equal(origin.Add(time.Duration(event.Mono))) {
+				t.Fatal("fitted node lost recorded clock phase", event, err)
+			}
+		}
 	}
 }
