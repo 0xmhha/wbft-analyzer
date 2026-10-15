@@ -1,10 +1,12 @@
+import {MembershipEvidence} from "./MembershipEvidence";
 import { useState } from "react";
 import type { Schemas } from "../api/client";
 import { NodeLifecycleEvidence } from "./NodeLifecycleEvidence";
 import {TimingChangeEvidence} from "./TimingChangeEvidence";
 import {RecordedMessageEffect} from "./RecordedMessageEffect";
-export function NetworkChangeEvidence({change,effect,timing,messages,net,dataset,onAuth}:{change:Schemas["ScenarioNetworkChange"];effect?:Schemas["ScenarioLifecycleEffect"]|null;timing?:Schemas["ScenarioTimingEffect"]|null;messages?:Schemas["ScenarioMessageEffect"]|null;net?:number;dataset?:number;onAuth?:()=>void}){
+export function NetworkChangeEvidence({change,effect,timing,messages,membership,net,dataset,onAuth}:{change:Schemas["ScenarioNetworkChange"];effect?:Schemas["ScenarioLifecycleEffect"]|null;timing?:Schemas["ScenarioTimingEffect"]|null;messages?:Schemas["ScenarioMessageEffect"]|null;membership?:Schemas["ScenarioMembershipEffect"]|null;net?:number;dataset?:number;onAuth?:()=>void}){
  const [page,setPage]=useState(0),size=100;
+ if(change.kind==="synthetic_membership")return <MembershipEvidence change={change} effect={membership}/>;
  if(change.kind==="node_lifecycle")return <NodeLifecycleEvidence change={change} effect={effect}/>;
  if(change.kind==="set_timing")return <TimingChangeEvidence change={change} effect={timing}/>;
  if(change.kind==="drop_message"||change.kind==="swap_messages")return <RecordedMessageEffect change={change} effect={messages} net={net} dataset={dataset} onAuth={onAuth}/>;

@@ -121,6 +121,17 @@ func TestScenarioAvailabilityTracksSharedWorkerLifecycle(t *testing.T) {
 	}
 	t.Cleanup(stop)
 	check(true)
+	// A configured worker with an unknown source must reach source lookup,
+	// proving the HTTP request cap and common strict decoder agree. The
+	// source absence returns 422; a decoder regression would return 400.
+	for _, raw := range []string{
+		`{"source_id":"unregistered","change":{"kind":"cut_outgoing","node":0,"from_ns":0,"to_ns":1}}`,
+		`{"source_id":"unregistered","change":{"kind":"synthetic_membership","from_ns":0,"to_ns":1,"membership":{"policy":"merge","nodes":[],"links":[],"epochs":[{"block":"4","candidates":[0,1]}]}}}`,
+	} {
+		if status := c.do("POST", fmt.Sprintf("/v1/networks/%d/datasets/%d/scenario-jobs", d.NetworkID, d.ID), json.RawMessage(raw), nil); status != 422 {
+			t.Fatal("valid scenario request did not reach source lookup", status)
+		}
+	}
 	stop()
 	check(false)
 }

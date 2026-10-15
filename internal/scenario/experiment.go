@@ -11,6 +11,7 @@ import (
 const ExperimentVersion = "wbft-network-experiment/2"
 
 type Experiment struct {
+	Membership      *MembershipEffect     `json:"membership_effect,omitempty"`
 	Messages        *MessageEffect        `json:"message_effect,omitempty"`
 	Timing          *TimingEffect         `json:"timing_effect,omitempty"`
 	Lifecycle       *LifecycleEffect      `json:"lifecycle_effect,omitempty"`
@@ -83,6 +84,8 @@ func ExecuteExperimentWithMessages(ctx context.Context, sc sim.Scenario, provena
 		changed, out.Messages, changeHash, err = ApplyMessageChange(sc, change, bindings)
 	} else if len(bindings) > 0 {
 		err = errNetworkChange
+	} else if change.Kind == "synthetic_membership" {
+		changed, out.Membership, changeHash, err = ApplyMembershipChange(sc, change)
 	} else {
 		changed, changeHash, err = ApplyNetworkChange(sc, change)
 	}
@@ -126,7 +129,11 @@ func ExecuteExperimentWithMessages(ctx context.Context, sc sim.Scenario, provena
 	}
 	run := func(mode string, s sim.Scenario, target *[]SeedResult) error {
 		counter := mode == "counterfactual"
-		return runSeedsWithEvidence(ctx, s, fixed.Seeds, from, to, counter && (change.Kind == "node_lifecycle" || change.Kind == "set_timing"), counter && change.Kind == "set_timing", func(r SeedResult) error {
+		var membership *MembershipChange
+		if counter {
+			membership = change.Membership
+		}
+		return runSeedsWithMembership(ctx, s, fixed.Seeds, from, to, counter && (change.Kind == "node_lifecycle" || change.Kind == "set_timing" || membership != nil), counter && change.Kind == "set_timing", membership, func(r SeedResult) error {
 			if err := emit(SeedRecord{Mode: mode, Result: r}); err != nil {
 				return err
 			}

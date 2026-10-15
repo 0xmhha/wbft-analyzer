@@ -121,7 +121,7 @@ func DecodeJSON(raw []byte, destination any) error {
 // DecodeJSONSize retains the same strict boundary with an explicit bounded
 // request size for complete directed edge sets.
 func DecodeJSONSize(raw []byte, destination any, limit int) error {
-	if limit < 1 || limit > 2<<20 || len(raw) > limit || rejectDuplicateKeys(json.NewDecoder(bytes.NewReader(raw)), 0) != nil {
+	if limit < 1 || limit > 16<<20 || len(raw) > limit || rejectDuplicateKeys(json.NewDecoder(bytes.NewReader(raw)), 0) != nil {
 		return ErrEvidence
 	}
 	decoder := json.NewDecoder(bytes.NewReader(raw))

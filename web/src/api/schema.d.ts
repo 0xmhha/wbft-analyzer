@@ -2679,6 +2679,7 @@ export interface components {
             execution_sha256: string;
             from: string;
             lifecycle_effect?: components["schemas"]["ScenarioLifecycleEffect"] | null;
+            membership_effect?: components["schemas"]["ScenarioMembershipEffect"] | null;
             message_effect?: components["schemas"]["ScenarioMessageEffect"] | null;
             model: components["schemas"]["ScenarioAssessment"];
             provenance: components["schemas"]["ScenarioProvenance"];
@@ -2779,6 +2780,57 @@ export interface components {
             /** Format: int64 */
             node: number;
         };
+        ScenarioMembershipChange: {
+            epochs: components["schemas"]["ScenarioMembershipEpoch"][];
+            links: components["schemas"]["ScenarioMembershipLink"][];
+            nodes: components["schemas"]["ScenarioMembershipNode"][];
+            /** @enum {string} */
+            policy: "merge" | "replace_from_first_epoch";
+        };
+        ScenarioMembershipDuration: {
+            ns: string;
+        };
+        ScenarioMembershipEffect: {
+            assumptions: string[];
+            baseline_execution_sha256: string;
+            counterfactual_execution_sha256: string;
+            effective_epochs: components["schemas"]["ScenarioMembershipEpoch"][];
+            /** Format: int64 */
+            genesis_validators: number;
+            original_epochs: components["schemas"]["ScenarioMembershipEpoch"][];
+            /** Format: int64 */
+            original_nodes: number;
+            removed_epochs: components["schemas"]["ScenarioMembershipEpoch"][];
+            retained_epochs: components["schemas"]["ScenarioMembershipEpoch"][];
+            source: string;
+            synthetic_nodes: components["schemas"]["ScenarioSyntheticNodeIdentity"][];
+        };
+        ScenarioMembershipEpoch: {
+            block: string;
+            candidates: number[];
+        };
+        ScenarioMembershipLink: {
+            delays: components["schemas"]["ScenarioMembershipDuration"][];
+            /** Format: int64 */
+            from: number;
+            loss_ppm: string;
+            /** Format: int64 */
+            to: number;
+        };
+        ScenarioMembershipNode: {
+            alias: string;
+            build_delay: components["schemas"]["ScenarioMembershipDuration"][];
+            import_delay: components["schemas"]["ScenarioMembershipDuration"][];
+            /** @enum {string} */
+            model: "unmeasured_compat";
+            start_ns: string;
+            timing: components["schemas"]["ScenarioMembershipTiming"];
+        };
+        ScenarioMembershipTiming: {
+            block_period_seconds: string;
+            max_request_timeout_seconds: string;
+            request_timeout_seconds: string;
+        };
         ScenarioMessageEffect: {
             execution_sha256: string;
             scope: string;
@@ -2871,6 +2923,14 @@ export interface components {
             /** @enum {string} */
             kind: "swap_messages";
             messages: components["schemas"]["ScenarioRecordedMessageSelection"][];
+            /** Format: int64 */
+            to_ns: number;
+        } | {
+            /** Format: int64 */
+            from_ns: number;
+            /** @enum {string} */
+            kind: "synthetic_membership";
+            membership: components["schemas"]["ScenarioMembershipChange"];
             /** Format: int64 */
             to_ns: number;
         };
@@ -3069,6 +3129,7 @@ export interface components {
             configured_duration_ns: string;
             configured_stop_height: string;
             lifecycle_observations?: components["schemas"]["ScenarioSeedLifecycleObservations"] | null;
+            membership_observations?: components["schemas"]["ScenarioSeedMembershipObservations"] | null;
             message_observations?: components["schemas"]["ScenarioSeedMessageObservations"] | null;
             nodes: components["schemas"]["ScenarioSeedNode"][];
             timing_observations?: components["schemas"]["ScenarioSeedTimingObservations"] | null;
@@ -3087,6 +3148,32 @@ export interface components {
         ScenarioSeedLifecycleObservations: {
             node_starts: components["schemas"]["ScenarioSeedNodeStart"][];
             source: string;
+        };
+        ScenarioSeedMembershipCandidate: {
+            diligence: string;
+            /** Format: int64 */
+            node: number;
+            simulated_address: string;
+        };
+        ScenarioSeedMembershipEpoch: {
+            block: string;
+            block_hash: string;
+            candidates: components["schemas"]["ScenarioSeedMembershipCandidate"][];
+            governs_from: string;
+            next_block_observed: boolean;
+            validators: components["schemas"]["ScenarioSeedMembershipValidator"][];
+        };
+        ScenarioSeedMembershipObservations: {
+            epochs: components["schemas"]["ScenarioSeedMembershipEpoch"][];
+            scope: string;
+            source: string;
+            unobserved_requests: components["schemas"]["ScenarioMembershipEpoch"][];
+        };
+        ScenarioSeedMembershipValidator: {
+            candidate_index: number;
+            /** Format: int64 */
+            node: number;
+            simulated_address: string;
         };
         ScenarioSeedMessageChange: {
             first?: components["schemas"]["ScenarioSeedMessageDelivery"] | null;
@@ -3188,6 +3275,12 @@ export interface components {
         ScenarioSources: {
             enabled: boolean;
             sources: components["schemas"]["ScenariojobSourceInfo"][];
+        };
+        ScenarioSyntheticNodeIdentity: {
+            alias: string;
+            /** Format: int64 */
+            index: number;
+            simulated_address: string;
         };
         ScenarioTimingChange: {
             global?: components["schemas"]["ScenarioTimingValues"];

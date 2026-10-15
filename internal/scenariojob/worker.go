@@ -91,13 +91,14 @@ type SourceInfo struct {
 }
 
 type registered struct {
-	request   FitRequest
-	info      SourceInfo
-	network   int64
-	nodes     int
-	duration  time.Duration
-	delays    map[[2]int]time.Duration
-	lifecycle scenario.LifecycleScope
+	request    FitRequest
+	info       SourceInfo
+	network    int64
+	nodes      int
+	duration   time.Duration
+	delays     map[[2]int]time.Duration
+	lifecycle  scenario.LifecycleScope
+	membership scenario.MembershipScope
 }
 type Worker struct {
 	store   *store.Store
@@ -182,7 +183,9 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 		}
 		var delayBounds map[[2]int]time.Duration
 		var lifecycleBounds scenario.LifecycleScope
+		var membershipBounds scenario.MembershipScope
 		if fitted.Scenario != nil {
+			membershipBounds = scenario.MembershipBounds(*fitted.Scenario)
 			lifecycleBounds, err = scenario.NodeLifecycleBounds(*fitted.Scenario)
 			if err != nil {
 				return nil, ErrSource
@@ -200,7 +203,7 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 			return nil, err
 		}
 		request.Snapshot = &snapshot
-		w.sources[spec.ID] = registered{lifecycle: lifecycleBounds, delays: delayBounds, request: request, info: public, network: dataset.NetworkID, nodes: len(fitted.NodeOptions), duration: duration}
+		w.sources[spec.ID] = registered{membership: membershipBounds, lifecycle: lifecycleBounds, delays: delayBounds, request: request, info: public, network: dataset.NetworkID, nodes: len(fitted.NodeOptions), duration: duration}
 		w.order = append(w.order, spec.ID)
 	}
 	return w, nil
@@ -228,6 +231,9 @@ func (w *Worker) Enqueue(ctx context.Context, network, dataset int64, id string,
 		return store.ScenarioJob{}, ErrChange
 	}
 	if err := change.ValidateLifecycleBounds(s.lifecycle); err != nil {
+		return store.ScenarioJob{}, ErrChange
+	}
+	if err := change.ValidateMembershipBounds(s.membership); err != nil {
 		return store.ScenarioJob{}, ErrChange
 	}
 	if _, err := w.bindMessages(ctx, s, change); err != nil {

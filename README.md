@@ -1383,7 +1383,7 @@ node order and bounds every selected node and the simulation interval.
 Edge order is normalized before hashing and storage. Empty sets, duplicate edges,
 self-links, missing endpoints, unrelated fields, unsupported behaviors and nodes
 or intervals outside the registered model are refused. The request limit is
-2 MiB so the full directed edge set of a bounded 256-node model is representable;
+16 MiB to bound explicit link samples in a model of at most 256 nodes;
 other operator requests retain their existing limits. Existing outgoing-cut JSON
 and change hashes remain unchanged. Fitting source and baseline identities are
 independent of this additional intervention type.
@@ -1594,3 +1594,51 @@ status. Their violation kinds and final node heads stay unavailable. No cause is
 inferred from a violation count. New results with inconsistent detail counts are
 refused by storage. This output metadata does not change fitting or execution
 identity, and existing experiments are not rewritten.
+
+### Synthetic epoch membership
+
+`synthetic_membership` changes the official simulator's epoch candidate schedule.
+It applies over the complete registered run. Existing node indices, test keys,
+links, startup schedule, recorded inputs and baseline execution remain unchanged.
+Requested candidate order is preserved. The WBFT core computes actual diligence
+and selected validators; candidates are never forced into a fabricated result.
+
+The required `membership` object contains `policy`, `nodes`, `links` and `epochs`.
+Use empty node and link arrays for removal-only experiments. Each epoch has a
+quoted `block` and an ordered `candidates` array of node indices. Blocks must be
+registered epoch boundaries at or before the configured stop height. `merge`
+replaces requested blocks while retaining other recorded epoch changes, including
+later changes that can reverse an addition. `replace_from_first_epoch` removes
+the recorded schedule from the first requested block onward. Original, retained,
+removed and effective schedules are stored separately.
+
+New nodes append after all recorded nodes and never join genesis implicitly.
+Each requires a unique `alias`, `model: "unmeasured_compat"`, quoted `start_ns`,
+complete `timing` (`request_timeout_seconds`, `block_period_seconds`, and
+`max_request_timeout_seconds`, all quoted integers), and nonempty `build_delay`
+and `import_delay` sample arrays of objects such as `{"ns":"1000000"}`. An
+explicit zero maximum removes the timeout cap. Every new node must appear in at
+least one requested candidate list. Startup is inside the registered duration;
+requests after the actual simulation stops do not create startup observations.
+
+The unmeasured compat model means fresh deterministic test signing keys and
+state, optional restart-safety rules off, no WAL replay or takeover floor, zero
+processing cost, independent fake application jobs, and a shared manual clock
+without skew. Node timing and app samples are declared assumptions, without
+recorded measurement provenance. It does not represent production execution.
+
+Every ordered link touching a new node is required exactly once. Each link has
+`from`, `to`, `delays` (nonempty `{"ns":"..."}` samples), and quoted `loss_ppm`
+from 0 through 999999. Recorded-to-recorded links cannot be replaced by this
+change. The model admits at most 256 total nodes, 10000 epoch changes, and 256
+samples per app or link distribution, within the 16 MiB request envelope. No
+missing node, direction, sample or runtime value receives a measured default.
+
+Stored effects retain baseline and counterfactual execution hashes, synthetic
+test identities and assumptions. Counterfactual seeds additionally retain actual
+node startup events and the candidate indices, diligence, validator order and
+hashes decoded from generated epoch headers. These observations describe the
+simulator's longest result chain, not every node's imported chain or universal
+agreement. Per-node heads and actual violations remain separate. Requested
+epochs without an observed header remain explicit and make the result partial.
+Historical experiment and seed JSON omit all new optional evidence fields.

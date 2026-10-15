@@ -226,6 +226,26 @@ func (g *schemas) component(t reflect.Type) string {
 		props["nodes"].(map[string]any)["minItems"] = 1
 		props["nodes"].(map[string]any)["maxItems"] = 256
 	}
+	if t == reflect.TypeOf(scenario.MembershipNode{}) {
+		for _, field := range []string{"build_delay", "import_delay"} {
+			props[field].(map[string]any)["minItems"] = 1
+			props[field].(map[string]any)["maxItems"] = 256
+		}
+	}
+	if t == reflect.TypeOf(scenario.MembershipChange{}) {
+		props["nodes"].(map[string]any)["maxItems"] = 254
+		props["links"].(map[string]any)["maxItems"] = 65280
+		props["epochs"].(map[string]any)["minItems"] = 1
+		props["epochs"].(map[string]any)["maxItems"] = 10000
+	}
+	if t == reflect.TypeOf(scenario.MembershipLink{}) {
+		props["delays"].(map[string]any)["minItems"] = 1
+		props["delays"].(map[string]any)["maxItems"] = 256
+	}
+	if t == reflect.TypeOf(scenario.MembershipEpoch{}) {
+		props["candidates"].(map[string]any)["minItems"] = 1
+		props["candidates"].(map[string]any)["maxItems"] = 256
+	}
 	if t == reflect.TypeOf(scenario.NetworkChange{}) {
 		variant := func(kind string, fields ...string) map[string]any {
 			properties := map[string]any{"kind": map[string]any{"type": "string", "enum": []string{kind}}}
@@ -249,7 +269,7 @@ func (g *schemas) component(t reflect.Type) string {
 			fields["messages"] = array
 			return v
 		}
-		sch = map[string]any{"anyOf": []any{variant("cut_outgoing", "node", "from_ns", "to_ns"), variant("partition", "from_ns", "to_ns", "edges"), variant("set_link_delay", "from_ns", "to_ns", "edges", "delay_ns"), variant("scale_link_delay", "from_ns", "to_ns", "edges", "scale"), variant("node_lifecycle", "from_ns", "to_ns", "lifecycle", "schedule_policy"), variant("set_timing", "from_ns", "to_ns", "timing"), messageVariant("drop_message", 1), messageVariant("swap_messages", 2)}, "discriminator": map[string]any{"propertyName": "kind"}}
+		sch = map[string]any{"anyOf": []any{variant("cut_outgoing", "node", "from_ns", "to_ns"), variant("partition", "from_ns", "to_ns", "edges"), variant("set_link_delay", "from_ns", "to_ns", "edges", "delay_ns"), variant("scale_link_delay", "from_ns", "to_ns", "edges", "scale"), variant("node_lifecycle", "from_ns", "to_ns", "lifecycle", "schedule_policy"), variant("set_timing", "from_ns", "to_ns", "timing"), messageVariant("drop_message", 1), messageVariant("swap_messages", 2), variant("synthetic_membership", "from_ns", "to_ns", "membership")}, "discriminator": map[string]any{"propertyName": "kind"}}
 	}
 	g.components[name] = sch
 	return name
