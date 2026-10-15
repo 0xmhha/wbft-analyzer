@@ -8,27 +8,28 @@ import (
 	"github.com/0xmhha/wbft/conformance/sim"
 )
 
-const ExperimentVersion = "wbft-network-experiment/1"
+const ExperimentVersion = "wbft-network-experiment/2"
 
 type Experiment struct {
-	WallOrigin      string           `json:"wall_origin,omitempty"`
-	ExecutionSHA256 string           `json:"execution_sha256"`
-	From            uint64           `json:"from,string"`
-	To              uint64           `json:"to,string"`
-	RecordedHeights []Height         `json:"recorded_heights"`
-	RecordedSHA256  string           `json:"recorded_sha256"`
-	RecordedCounts  []RoundCount     `json:"recorded_counts"`
-	Version         string           `json:"version"`
-	Status          string           `json:"status"`
-	Provenance      Provenance       `json:"provenance"`
-	SourceSHA256    string           `json:"source_sha256"`
-	Change          CutOutgoing      `json:"change"`
-	ChangeSHA256    string           `json:"change_sha256"`
-	Model           Assessment       `json:"model"`
-	Baseline        *RoundComparison `json:"baseline_rounds"`
-	TimeCheck       string           `json:"baseline_time_check"`
-	BaselineSeeds   []SeedResult     `json:"-"`
-	ChangedSeeds    []SeedResult     `json:"-"`
+	WallOrigin      string                `json:"wall_origin,omitempty"`
+	ExecutionSHA256 string                `json:"execution_sha256"`
+	From            uint64                `json:"from,string"`
+	To              uint64                `json:"to,string"`
+	RecordedHeights []Height              `json:"recorded_heights"`
+	RecordedSHA256  string                `json:"recorded_sha256"`
+	RecordedCounts  []RoundCount          `json:"recorded_counts"`
+	Version         string                `json:"version"`
+	Status          string                `json:"status"`
+	Provenance      Provenance            `json:"provenance"`
+	SourceSHA256    string                `json:"source_sha256"`
+	Change          CutOutgoing           `json:"change"`
+	ChangeSHA256    string                `json:"change_sha256"`
+	Model           Assessment            `json:"model"`
+	Baseline        *RoundComparison      `json:"baseline_rounds"`
+	BaselineTime    *HeaderTimeComparison `json:"baseline_time,omitempty"`
+	TimeCheck       string                `json:"baseline_time_check"`
+	BaselineSeeds   []SeedResult          `json:"-"`
+	ChangedSeeds    []SeedResult          `json:"-"`
 }
 
 type SeedRecord struct {
@@ -50,7 +51,7 @@ func ExecuteExperimentWithBegin(ctx context.Context, sc sim.Scenario, provenance
 func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provenance Provenance, model Assessment, recorded []RoundCount, heights []Height, change CutOutgoing, from, to uint64, begin func(Experiment) error, emit func(SeedRecord) error) (Experiment, error) {
 
 	sc.WallOrigin = scenarioWallOrigin(sc)
-	out := Experiment{WallOrigin: sc.WallOrigin.Format(time.RFC3339Nano), From: from, To: to, RecordedCounts: append([]RoundCount(nil), recorded...), RecordedHeights: append([]Height{}, heights...), Version: ExperimentVersion, Status: "running", Model: model, Change: change, TimeCheck: "threshold_unconfigured", BaselineSeeds: []SeedResult{}, ChangedSeeds: []SeedResult{}}
+	out := Experiment{WallOrigin: sc.WallOrigin.Format(time.RFC3339Nano), From: from, To: to, RecordedCounts: append([]RoundCount(nil), recorded...), RecordedHeights: append([]Height{}, heights...), Version: ExperimentVersion, Status: "running", Model: model, Change: change, TimeCheck: "pending", BaselineSeeds: []SeedResult{}, ChangedSeeds: []SeedResult{}}
 	if err := ValidateRecorded(out.RecordedHeights, recorded, from, to); err != nil {
 		out.Status = "failed"
 		return out, err
@@ -125,6 +126,13 @@ func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provena
 		return out, err
 	}
 	out.Baseline = &comparison
+	timing, err := EvaluateBaselineTime(out.RecordedHeights, out.BaselineSeeds)
+	if err != nil {
+		out.Status = "partial"
+		return out, err
+	}
+	out.BaselineTime = &timing
+	out.TimeCheck = timing.Check()
 	// Even a failed baseline is retained with the counterfactual outputs.
 	if err := run("counterfactual", changed, &out.ChangedSeeds); err != nil {
 		out.Status = "partial"
@@ -150,7 +158,10 @@ func (e Experiment) Credibility() string {
 	if e.Baseline == nil || e.Baseline.Status != "not_distinguishable" {
 		return "baseline_rounds_unproved"
 	}
-	if e.TimeCheck != "passed" {
+	if e.TimeCheck == "failed" && e.BaselineTime != nil && e.BaselineTime.Status == "distinguishable" {
+		return "baseline_time_failed"
+	}
+	if e.TimeCheck != "passed" || e.BaselineTime == nil || e.BaselineTime.Status != "not_distinguishable" {
 		return "baseline_time_unproved"
 	}
 	return "baseline_reproduced"

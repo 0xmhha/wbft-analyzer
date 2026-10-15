@@ -44,7 +44,8 @@ func beginScenario(ctx context.Context, q scenarioBeginner, e scenario.Experimen
 	e.Provenance = p
 	e.Status = "running"
 	e.Baseline = nil
-	e.TimeCheck = "threshold_unconfigured"
+	e.BaselineTime = nil
+	e.TimeCheck = "pending"
 	if _, err := scenario.RunHomogeneity(e.RecordedCounts); err != nil {
 		return 0, err
 	}
@@ -184,13 +185,26 @@ func (s *Store) FinishScenario(ctx context.Context, id int64, final scenario.Exp
 		final.RecordedHeights = original.RecordedHeights
 		final.RecordedSHA256 = original.RecordedSHA256
 		final.Change = original.Change
-		final.Version = scenario.ExperimentVersion
+		final.Version = original.Version
 		final.TimeCheck = "threshold_unconfigured"
 		final.Baseline = nil
+		final.BaselineTime = nil
+		currentTimeMethod := original.Version == scenario.ExperimentVersion && original.Model.Version == scenario.FitVersion
+		if currentTimeMethod {
+			final.TimeCheck = "unproved"
+		}
 		if baselineComplete {
 			comparison, err := scenario.CompareRounds(original.RecordedCounts, counts, 1)
 			if err == nil {
 				final.Baseline = &comparison
+			}
+			if currentTimeMethod {
+				timing, err := scenario.EvaluateBaselineTime(original.RecordedHeights, baseline)
+				if err != nil {
+					return err
+				}
+				final.BaselineTime = &timing
+				final.TimeCheck = timing.Check()
 			}
 		}
 		raw, err = json.Marshal(final)

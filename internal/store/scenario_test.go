@@ -2,12 +2,119 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/0xmhha/wbft-analyzer/internal/scenario"
 )
+
+func TestScenarioTimeProofIsRecomputedFromRetainedRows(t *testing.T) {
+	for _, different := range []bool{false, true} {
+		t.Run(map[bool]string{false: "matching", true: "different"}[different], func(t *testing.T) {
+			s, _ := testStore(t)
+			ctx := context.Background()
+			if _, err := s.Migrate(ctx); err != nil {
+				t.Fatal(err)
+			}
+			dataset := jobDataset(t, s)
+			e, _ := scenarioFixture(dataset)
+			e.To = 64
+			e.Model.Status, e.Model.Issues = "complete", []scenario.Issue{}
+			e.RecordedCounts = []scenario.RoundCount{{Total: 64}}
+			e.RecordedHeights = make([]scenario.Height, 64)
+			baseline := make([]scenario.Height, 64)
+			period := uint64(1)
+			if different {
+				period = 3
+			}
+			for i := range baseline {
+				n := uint64(i + 1)
+				baseline[i] = scenario.Height{Number: n, Time: 1700000000 + n, PeriodSeconds: 1}
+				e.RecordedHeights[i] = scenario.Height{Number: n, Time: 1700000000 + n*period, PeriodSeconds: period}
+			}
+			e.TimeCheck = "passed"
+			e.BaselineTime = &scenario.HeaderTimeComparison{Status: "not_distinguishable"}
+			id, err := s.BeginScenario(ctx, e)
+			if err != nil {
+				t.Fatal(err)
+			}
+			initial, err := s.ScenarioRun(ctx, dataset, id)
+			if err != nil || initial.TimeCheck != "pending" || initial.BaselineTime != nil {
+				t.Fatal("producer's premature acceptance retained", initial, err)
+			}
+			for _, mode := range []string{"baseline", "counterfactual"} {
+				for _, seed := range e.Provenance.Seeds {
+					if err := s.PutScenarioSeed(ctx, id, scenario.SeedRecord{Mode: mode, Result: scenario.SeedResult{Seed: seed, Status: "complete", Heights: baseline}}); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			e.Status = "completed"
+			if !different {
+				e.TimeCheck, e.BaselineTime.Status = "failed", "distinguishable"
+			}
+			if err := s.FinishScenario(ctx, id, e); err != nil {
+				t.Fatal(err)
+			}
+			final, err := s.ScenarioRun(ctx, dataset, id)
+			check, credibility := "passed", "baseline_reproduced"
+			if different {
+				check, credibility = "failed", "baseline_time_failed"
+			}
+			if err != nil || final.TimeCheck != check || final.Credibility() != credibility || final.BaselineTime == nil || final.BaselineTime.Method != scenario.HeaderTimeBaselineMethod || len(final.BaselineTime.Simulated) != 2 || final.RecordedSHA256 != scenario.RecordedHash(e.RecordedHeights) {
+				t.Fatalf("unverified time proof retained: %+v %v", final, err)
+			}
+		})
+	}
+}
+
+func TestHistoricalScenarioTimeCriteriaAreNotReinterpreted(t *testing.T) {
+	s, _ := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	dataset := jobDataset(t, s)
+	e, _ := scenarioFixture(dataset)
+	id, err := s.BeginScenario(ctx, e)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, err := s.ScenarioRun(ctx, dataset, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old.Version = "wbft-network-experiment/1"
+	old.Model.Version = "wbft-network-scenario-fit/14"
+	old.TimeCheck = "threshold_unconfigured"
+	raw, _ := json.Marshal(old)
+	if _, err := s.pool.Exec(ctx, `UPDATE scenario_runs SET summary=$2 WHERE id=$1`, id, raw); err != nil {
+		t.Fatal(err)
+	}
+	saved, err := s.ScenarioRun(ctx, dataset, id)
+	if err != nil || !reflect.DeepEqual(old, saved) {
+		t.Fatal("historical summary changed on read", saved, err)
+	}
+	for _, mode := range []string{"baseline", "counterfactual"} {
+		for _, seed := range old.Provenance.Seeds {
+			heights := []scenario.Height{{Number: 1, Time: 1, PeriodSeconds: 1}, {Number: 2, Time: 2, PeriodSeconds: 1}}
+			if err := s.PutScenarioSeed(ctx, id, scenario.SeedRecord{Mode: mode, Result: scenario.SeedResult{Seed: seed, Status: "complete", Heights: heights}}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	saved.Status, saved.TimeCheck = "completed", "passed"
+	saved.BaselineTime = &scenario.HeaderTimeComparison{Status: "not_distinguishable"}
+	if err := s.FinishScenario(ctx, id, saved); err != nil {
+		t.Fatal(err)
+	}
+	final, err := s.ScenarioRun(ctx, dataset, id)
+	if err != nil || final.Version != old.Version || final.TimeCheck != old.TimeCheck || final.BaselineTime != nil {
+		t.Fatal("historical criteria silently upgraded", final, err)
+	}
+}
 
 func TestScenarioEmpiricalProvenanceSurvivesPersistenceAndKeepsOriginalAssumptions(t *testing.T) {
 	s, _ := testStore(t)
@@ -91,12 +198,13 @@ func TestScenarioSeedTransactionsAndCompletionProof(t *testing.T) {
 		}
 	}
 	e.TimeCheck = "passed"
+	e.BaselineTime = &scenario.HeaderTimeComparison{Status: "not_distinguishable"}
 	e.Baseline = &scenario.RoundComparison{Status: "distinguishable"}
 	if err := s.FinishScenario(ctx, id, e); err != nil {
 		t.Fatal(err)
 	}
 	final, err := s.ScenarioRun(ctx, dataset, id)
-	if err != nil || final.TimeCheck != "threshold_unconfigured" || final.Baseline.Status != "not_distinguishable" || final.Credibility() != "model_incomplete" {
+	if err != nil || final.TimeCheck != "unproved" || final.BaselineTime == nil || final.BaselineTime.Issue != "recorded_header_times_unavailable" || final.Baseline.Status != "not_distinguishable" || final.Credibility() != "model_incomplete" {
 		t.Fatalf("false proof retained %+v %v", final, err)
 	}
 	if err := s.PutScenarioSeed(ctx, id, scenario.SeedRecord{Mode: "baseline", Result: seed}); err == nil {

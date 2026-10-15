@@ -5137,6 +5137,74 @@
         ],
         "type": "object"
       },
+      "ScenarioConditionalProbability": {
+        "additionalProperties": false,
+        "properties": {
+          "error_probability": {
+            "format": "double",
+            "type": "number"
+          },
+          "exact": {
+            "type": "boolean"
+          },
+          "issue": {
+            "type": "string"
+          },
+          "log_mass_tolerance": {
+            "format": "double",
+            "type": "number"
+          },
+          "log_p": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "lower": {
+            "format": "double",
+            "type": "number"
+          },
+          "method": {
+            "type": "string"
+          },
+          "p": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "samples": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "seed": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "underflow": {
+            "type": "boolean"
+          },
+          "upper": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "error_probability",
+          "exact",
+          "log_mass_tolerance",
+          "lower",
+          "method",
+          "p",
+          "samples",
+          "seed",
+          "underflow",
+          "upper"
+        ],
+        "type": "object"
+      },
       "ScenarioCoreSubstitution": {
         "additionalProperties": false,
         "properties": {
@@ -5569,6 +5637,16 @@
               }
             ]
           },
+          "baseline_time": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioHeaderTimeComparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "baseline_time_check": {
             "type": "string"
           },
@@ -5639,6 +5717,114 @@
           "status",
           "to",
           "version"
+        ],
+        "type": "object"
+      },
+      "ScenarioHeaderTimeComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "alpha": {
+            "format": "double",
+            "type": "number"
+          },
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioConditionalProbability"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "from": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "issue": {
+            "type": "string"
+          },
+          "maximum_cdf_difference": {
+            "format": "double",
+            "type": "number"
+          },
+          "method": {
+            "type": "string"
+          },
+          "numerical_error_probability": {
+            "format": "double",
+            "type": "number"
+          },
+          "recorded": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioIntervalHistogram"
+            },
+            "type": "array"
+          },
+          "recorded_homogeneity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioConditionalProbability"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recorded_runs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "simulated": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioIntervalHistogram"
+            },
+            "type": "array"
+          },
+          "simulated_homogeneity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioConditionalProbability"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "simulated_runs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "to": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "alpha",
+          "assumptions",
+          "comparison",
+          "from",
+          "maximum_cdf_difference",
+          "method",
+          "numerical_error_probability",
+          "recorded",
+          "recorded_homogeneity",
+          "recorded_runs",
+          "simulated",
+          "simulated_homogeneity",
+          "simulated_runs",
+          "status",
+          "to"
         ],
         "type": "object"
       },
@@ -5722,6 +5908,51 @@
           "kind",
           "node",
           "sha256"
+        ],
+        "type": "object"
+      },
+      "ScenarioIntervalCount": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "seconds": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "seconds"
+        ],
+        "type": "object"
+      },
+      "ScenarioIntervalHistogram": {
+        "additionalProperties": false,
+        "properties": {
+          "counts": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioIntervalCount"
+            },
+            "type": "array"
+          },
+          "run": {
+            "type": "string"
+          },
+          "samples": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "seed": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "counts",
+          "run",
+          "samples"
         ],
         "type": "object"
       },
