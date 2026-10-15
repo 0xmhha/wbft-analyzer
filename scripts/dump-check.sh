@@ -85,6 +85,15 @@ capture() {
  get "/networks/$build_net/datasets/$build_dataset/events/build/2/build" build-start-source
  get "/networks/$build_net/datasets/$build_dataset/events/build/3/build" build-finish-source
 
+ local sealing_net sealing_dataset
+ sealing_net=$(jq -r '.networks[]|select(.name=="synthetic-sealing")|.id' "$dir/networks.json")
+ get "/networks/$sealing_net/datasets" sealing-datasets
+ sealing_dataset=$(jq -r '.datasets[]|select(.name=="synthetic-sealing-policy")|.id' "$dir/sealing-datasets.json")
+ get "/networks/$sealing_net/datasets/$sealing_dataset/inputs" sealing-inputs
+ get "/networks/$sealing_net/datasets/$sealing_dataset/events?from_t=2026-01-01T00:00:00Z&to_t=2026-01-01T00:00:01Z&limit=1000" sealing-events
+ jq -e '.. | objects | select(has("application_call_return_delay_ns")) | .application_call_return_delay_ns == ["0","9007199254740993","0"]' "$dir/sealing-events.json" >/dev/null
+ jq -e '.. | objects | select(has("work_id")) | .work_id == "work-18446744073709551615" and .request_height == "18446744073709551617" and .request_round == "18446744073709551616"' "$dir/sealing-events.json" >/dev/null
+
  observation_net=$(jq -r '.networks[]|select(.chain_id=="8" and .genesis_hash=="0x1111111111111111111111111111111111111111111111111111111111111111")|.id' "$dir/networks.json")
  get "/networks/$observation_net/datasets" observation-datasets
  observation_id=$(jq -r '.datasets[]|select(.kind=="observations")|.id' "$dir/observation-datasets.json")
@@ -213,6 +222,20 @@ manifest=dict(format='wbft-analyzer-run/1',name='synthetic-build-lifecycle',run=
 (work/'build.json').write_text(json.dumps(manifest)+'\n')
 PYBUILD
 "$bin" ingest run --db "$src" --manifest "$work/build.json" >"$out/build-ingest.log"
+# Closed sealing declarations and actor IDs retain exact strings after restore.
+python3 - "$work" <<'PYSEAL'
+import hashlib,json,sys
+from pathlib import Path
+work=Path(sys.argv[1]);node='0x'+'1'*40
+model=dict(build_queue='unbuffered-seal',assembly_return='sampled_empty_body',running_gate='at_selection',selection='actors_to_idle_then_deadline_callbacks_seeded',commit_capacity=1,result_capacity=10,head_capacity=10,pending_age=7,call_return_delay_ns=['0','9007199254740993','0'],post_delay_ns=['2'],assembly_delay_ns=['7','2','7'],import_delay_ns=['3'])
+common=dict(v=1,node=node,run='synthetic-sealing',t_wall='2026-01-01T00:00:00Z')
+rows=[dict(kind='NODE_START',impl='wbft',mode='standalone',wal_recovery=dict(records=0,torn_bytes=0,corrupted=0),sign_floor=None,application_model=model),dict(kind='SIM_SEALING_STAGE',src='app',actor='seal',stage='result_selected',work_id='work-18446744073709551615',commit_id='commit-9007199254740993',request_height='18446744073709551617',request_round='18446744073709551616',cancelled=True)]
+raw=''.join(json.dumps(dict(common,seq=i,t_mono_ns=i,**row))+'\n' for i,row in enumerate(rows)).encode()
+(work/'sealing.jsonl').write_bytes(raw)
+manifest=dict(format='wbft-analyzer-run/1',name='synthetic-sealing-policy',run='synthetic-sealing',network=dict(chain_id='12',genesis_hash='0x'+'7'*64,name='synthetic-sealing'),clock='shared-host',inputs=[dict(id='sealing',node=node,kind='events',path='sealing.jsonl',sha256=hashlib.sha256(raw).hexdigest())])
+(work/'sealing.json').write_text(json.dumps(manifest)+'\n')
+PYSEAL
+"$bin" ingest run --db "$src" --manifest "$work/sealing.json" >"$out/sealing-ingest.log"
 "$bin" ingest runtime --db "$src" --file "$root/internal/source/runtimeobs/testdata/config-history-synthetic.jsonl" --name synthetic-runtime --chain-id 10 --genesis "0x5555555555555555555555555555555555555555555555555555555555555555" >"$out/runtime-ingest.json"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/g7/manifest.json" >"$out/run.log"
 run_dataset_id=$(sed -n 's/^dataset=\([0-9][0-9]*\).*/\1/p' "$out/run.log")

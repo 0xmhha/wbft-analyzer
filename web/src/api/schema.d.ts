@@ -1315,6 +1315,21 @@ export interface components {
             round: string;
             seq: string;
         };
+        EventsSealingDeclaration: {
+            assembly_delay_ns: string[];
+            call_return_delay_ns: string[];
+            /** Format: int64 */
+            commit_capacity: number;
+            /** Format: int64 */
+            head_capacity: number;
+            import_delay_ns: string[];
+            /** Format: int64 */
+            pending_age: number;
+            post_delay_ns: string[];
+            /** Format: int64 */
+            result_capacity: number;
+            running_gate: string;
+        };
         HeaderList: {
             headers: components["schemas"]["HeadersRow"][];
         };
@@ -2452,6 +2467,7 @@ export interface components {
             line: number;
             node: string;
             run: string;
+            sealing?: components["schemas"]["EventsSealingDeclaration"] | null;
             selection: string;
             status: string;
         };
