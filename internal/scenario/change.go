@@ -14,15 +14,16 @@ import (
 	"github.com/0xmhha/wbft/types"
 )
 
-// MaxChangeRequestBytes permits every directed edge in a 256-node model.
-const MaxChangeRequestBytes = 2 << 20
+// MaxChangeRequestBytes permits explicit synthetic link samples in a bounded
+// 256-node model; per-link sample counts are also bounded.
+const MaxChangeRequestBytes = 16 << 20
 const maxChangeNodes = 256
 
 // NetworkChange is a bounded network or node lifecycle intervention. Node is
 // used only by cut_outgoing; link changes use explicit edges. Indices refer to fitted
 // recorded validators, never private keys or sorted simulated addresses.
 type NetworkChange struct {
-	Kind           string                     `json:"kind" enum:"cut_outgoing,partition,set_link_delay,scale_link_delay,node_lifecycle,set_timing,drop_message,swap_messages"`
+	Kind           string                     `json:"kind" enum:"cut_outgoing,partition,set_link_delay,scale_link_delay,node_lifecycle,set_timing,drop_message,swap_messages,synthetic_membership"`
 	Node           *int                       `json:"node,omitempty" nullable:"false"`
 	FromNS         int64                      `json:"from_ns"`
 	ToNS           int64                      `json:"to_ns"`
@@ -33,6 +34,7 @@ type NetworkChange struct {
 	SchedulePolicy string                     `json:"schedule_policy,omitempty" enum:"merge,replace_window"`
 	Timing         *TimingChange              `json:"timing,omitempty" nullable:"false"`
 	Messages       []RecordedMessageSelection `json:"messages,omitempty"`
+	Membership     *MembershipChange          `json:"membership,omitempty" nullable:"false"`
 }
 type DirectedEdge struct {
 	From *int `json:"from" nullable:"false"`
@@ -71,6 +73,8 @@ func (c *NetworkChange) UnmarshalJSON(raw []byte) error {
 		allowed["timing"] = true
 	case "drop_message", "swap_messages":
 		allowed["messages"] = true
+	case "synthetic_membership":
+		allowed["membership"] = true
 	default:
 		return errNetworkChange
 	}
@@ -119,7 +123,12 @@ func (c NetworkChange) Normalized() (NetworkChange, error) {
 	if !c.IsMessageChange() && c.Messages != nil {
 		return NetworkChange{}, errNetworkChange
 	}
+	if c.Kind != "synthetic_membership" && c.Membership != nil {
+		return NetworkChange{}, errNetworkChange
+	}
 	switch c.Kind {
+	case "synthetic_membership":
+		return normalizeMembership(c)
 	case "drop_message", "swap_messages":
 		return normalizeMessageChange(c)
 	case "set_timing":
@@ -187,7 +196,7 @@ func (c NetworkChange) ValidateFor(nodes int, duration time.Duration) error {
 	if err != nil || nodes < 2 || nodes > maxChangeNodes || duration <= 0 || time.Duration(c.ToNS) > duration {
 		return errNetworkChange
 	}
-	if (normalized.IsLinkDelay() || normalized.Kind == "set_timing" || normalized.IsMessageChange()) && (normalized.FromNS != 0 || time.Duration(normalized.ToNS) != duration) {
+	if (normalized.IsLinkDelay() || normalized.Kind == "set_timing" || normalized.IsMessageChange() || normalized.Kind == "synthetic_membership") && (normalized.FromNS != 0 || time.Duration(normalized.ToNS) != duration) {
 		return errNetworkChange
 	}
 	if normalized.Node != nil && *normalized.Node >= nodes {
@@ -209,6 +218,9 @@ func (c NetworkChange) ValidateFor(nodes int, duration time.Duration) error {
 				return errNetworkChange
 			}
 		}
+	}
+	if normalized.Membership != nil {
+		return validateMembershipNodes(normalized.Membership, nodes)
 	}
 	return nil
 }
@@ -234,6 +246,10 @@ func ApplyNetworkChange(sc sim.Scenario, change NetworkChange) (sim.Scenario, st
 	}
 	if normalized.Kind == "set_timing" {
 		return applyTimingChange(sc, normalized)
+	}
+	if normalized.Kind == "synthetic_membership" {
+		changed, _, hash, err := ApplyMembershipChange(sc, normalized)
+		return changed, hash, err
 	}
 	cut := [][2]types.Address{}
 	if normalized.Kind == "cut_outgoing" {

@@ -5695,6 +5695,16 @@
               }
             ]
           },
+          "membership_effect": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioMembershipEffect"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "message_effect": {
             "anyOf": [
               {
@@ -6117,6 +6127,256 @@
         ],
         "type": "object"
       },
+      "ScenarioMembershipChange": {
+        "additionalProperties": false,
+        "properties": {
+          "epochs": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioMembershipEpoch"
+            },
+            "maxItems": 10000,
+            "minItems": 1,
+            "type": "array"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioMembershipLink"
+            },
+            "maxItems": 65280,
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioMembershipNode"
+            },
+            "maxItems": 254,
+            "type": "array"
+          },
+          "policy": {
+            "enum": [
+              "merge",
+              "replace_from_first_epoch"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "epochs",
+          "links",
+          "nodes",
+          "policy"
+        ],
+        "type": "object"
+      },
+      "ScenarioMembershipDuration": {
+        "additionalProperties": false,
+        "properties": {
+          "ns": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ns"
+        ],
+        "type": "object"
+      },
+      "ScenarioMembershipEffect": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "baseline_execution_sha256": {
+            "type": "string"
+          },
+          "counterfactual_execution_sha256": {
+            "type": "string"
+          },
+          "effective_epochs": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioMembershipEpoch"
+            },
+            "type": "array"
+          },
+          "genesis_validators": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "original_epochs": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioMembershipEpoch"
+            },
+            "type": "array"
+          },
+          "original_nodes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "removed_epochs": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioMembershipEpoch"
+            },
+            "type": "array"
+          },
+          "retained_epochs": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioMembershipEpoch"
+            },
+            "type": "array"
+          },
+          "source": {
+            "type": "string"
+          },
+          "synthetic_nodes": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSyntheticNodeIdentity"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "assumptions",
+          "baseline_execution_sha256",
+          "counterfactual_execution_sha256",
+          "effective_epochs",
+          "genesis_validators",
+          "original_epochs",
+          "original_nodes",
+          "removed_epochs",
+          "retained_epochs",
+          "source",
+          "synthetic_nodes"
+        ],
+        "type": "object"
+      },
+      "ScenarioMembershipEpoch": {
+        "additionalProperties": false,
+        "properties": {
+          "block": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "candidates": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "maxItems": 256,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "block",
+          "candidates"
+        ],
+        "type": "object"
+      },
+      "ScenarioMembershipLink": {
+        "additionalProperties": false,
+        "properties": {
+          "delays": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioMembershipDuration"
+            },
+            "maxItems": 256,
+            "minItems": 1,
+            "type": "array"
+          },
+          "from": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "loss_ppm": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "to": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "delays",
+          "from",
+          "loss_ppm",
+          "to"
+        ],
+        "type": "object"
+      },
+      "ScenarioMembershipNode": {
+        "additionalProperties": false,
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "build_delay": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioMembershipDuration"
+            },
+            "maxItems": 256,
+            "minItems": 1,
+            "type": "array"
+          },
+          "import_delay": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioMembershipDuration"
+            },
+            "maxItems": 256,
+            "minItems": 1,
+            "type": "array"
+          },
+          "model": {
+            "enum": [
+              "unmeasured_compat"
+            ],
+            "type": "string"
+          },
+          "start_ns": {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          },
+          "timing": {
+            "$ref": "#/components/schemas/ScenarioMembershipTiming"
+          }
+        },
+        "required": [
+          "alias",
+          "build_delay",
+          "import_delay",
+          "model",
+          "start_ns",
+          "timing"
+        ],
+        "type": "object"
+      },
+      "ScenarioMembershipTiming": {
+        "additionalProperties": false,
+        "properties": {
+          "block_period_seconds": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "max_request_timeout_seconds": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "request_timeout_seconds": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "block_period_seconds",
+          "max_request_timeout_seconds",
+          "request_timeout_seconds"
+        ],
+        "type": "object"
+      },
       "ScenarioMessageEffect": {
         "additionalProperties": false,
         "properties": {
@@ -6485,6 +6745,35 @@
               "from_ns",
               "kind",
               "messages",
+              "to_ns"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "from_ns": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "kind": {
+                "enum": [
+                  "synthetic_membership"
+                ],
+                "type": "string"
+              },
+              "membership": {
+                "$ref": "#/components/schemas/ScenarioMembershipChange"
+              },
+              "to_ns": {
+                "format": "int64",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "from_ns",
+              "kind",
+              "membership",
               "to_ns"
             ],
             "type": "object"
@@ -7303,6 +7592,16 @@
               }
             ]
           },
+          "membership_observations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSeedMembershipObservations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "message_observations": {
             "anyOf": [
               {
@@ -7395,6 +7694,120 @@
         "required": [
           "node_starts",
           "source"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedMembershipCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "diligence": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "simulated_address": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "diligence",
+          "node",
+          "simulated_address"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedMembershipEpoch": {
+        "additionalProperties": false,
+        "properties": {
+          "block": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "block_hash": {
+            "type": "string"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedMembershipCandidate"
+            },
+            "type": "array"
+          },
+          "governs_from": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "next_block_observed": {
+            "type": "boolean"
+          },
+          "validators": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedMembershipValidator"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "block",
+          "block_hash",
+          "candidates",
+          "governs_from",
+          "next_block_observed",
+          "validators"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedMembershipObservations": {
+        "additionalProperties": false,
+        "properties": {
+          "epochs": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedMembershipEpoch"
+            },
+            "type": "array"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "unobserved_requests": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioMembershipEpoch"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "epochs",
+          "scope",
+          "source",
+          "unobserved_requests"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedMembershipValidator": {
+        "additionalProperties": false,
+        "properties": {
+          "candidate_index": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "node": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "simulated_address": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidate_index",
+          "node",
+          "simulated_address"
         ],
         "type": "object"
       },
@@ -7827,6 +8240,27 @@
         "required": [
           "enabled",
           "sources"
+        ],
+        "type": "object"
+      },
+      "ScenarioSyntheticNodeIdentity": {
+        "additionalProperties": false,
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "index": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "simulated_address": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "alias",
+          "index",
+          "simulated_address"
         ],
         "type": "object"
       },

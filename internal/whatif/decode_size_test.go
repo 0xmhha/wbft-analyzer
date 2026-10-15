@@ -21,7 +21,7 @@ func TestBoundedRequestDecoderKeepsStrictLimitsAndDuplicateRejection(t *testing.
 			t.Fatal("strict metadata boundary weakened", raw)
 		}
 	}
-	for _, limit := range []int{0, -1, 2<<20 + 1, 4096} {
+	for _, limit := range []int{0, -1, 16<<20 + 1, 4096} {
 		if DecodeJSONSize(raw, &value, limit) == nil {
 			t.Fatal("invalid or exceeded request bound accepted", limit)
 		}

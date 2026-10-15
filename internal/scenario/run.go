@@ -28,13 +28,14 @@ type SeedResult struct {
 // SeedExecution retains the official simulator's outcomes without inferring
 // violation kinds from counts or assigning recorded identities to test keys.
 type SeedExecution struct {
-	Messages   *SeedMessageObservations   `json:"message_observations,omitempty"`
-	Timing     *SeedTimingObservations    `json:"timing_observations,omitempty"`
-	Lifecycle  *SeedLifecycleObservations `json:"lifecycle_observations,omitempty"`
-	StopHeight uint64                     `json:"configured_stop_height,string"`
-	DurationNS int64                      `json:"configured_duration_ns,string"`
-	Nodes      []SeedNode                 `json:"nodes"`
-	Violations []SeedViolation            `json:"violations"`
+	Membership *SeedMembershipObservations `json:"membership_observations,omitempty"`
+	Messages   *SeedMessageObservations    `json:"message_observations,omitempty"`
+	Timing     *SeedTimingObservations     `json:"timing_observations,omitempty"`
+	Lifecycle  *SeedLifecycleObservations  `json:"lifecycle_observations,omitempty"`
+	StopHeight uint64                      `json:"configured_stop_height,string"`
+	DurationNS int64                       `json:"configured_duration_ns,string"`
+	Nodes      []SeedNode                  `json:"nodes"`
+	Violations []SeedViolation             `json:"violations"`
 }
 
 type SeedNode struct {
@@ -75,6 +76,10 @@ func runSeeds(ctx context.Context, sc sim.Scenario, seeds []int64, from, to uint
 }
 
 func runSeedsWithEvidence(ctx context.Context, sc sim.Scenario, seeds []int64, from, to uint64, retainLifecycle, retainTiming bool, emit func(SeedResult) error) error {
+	return runSeedsWithMembership(ctx, sc, seeds, from, to, retainLifecycle, retainTiming, nil, emit)
+}
+
+func runSeedsWithMembership(ctx context.Context, sc sim.Scenario, seeds []int64, from, to uint64, retainLifecycle, retainTiming bool, membership *MembershipChange, emit func(SeedResult) error) error {
 	if from < 1 || to < from || to-from >= 10000 || len(seeds) == 0 || len(seeds) > 128 {
 		return errors.New("invalid bounded simulation run")
 	}
@@ -106,6 +111,15 @@ func runSeedsWithEvidence(ctx context.Context, sc sim.Scenario, seeds []int64, f
 		out := SeedResult{Execution: seedExecution(sc, result), Seed: seed, Status: "complete", Heights: []Height{}, Violations: len(result.Violations), SimulationNS: int64(result.SimTime)}
 		out.Execution.Timing = timing
 		out.Execution.Messages = messages
+		if membership != nil {
+			out.Execution.Membership, err = observedMembership(sc, result, membership.Epochs)
+			if err != nil {
+				return err
+			}
+			if len(out.Execution.Membership.UnobservedRequests) > 0 {
+				out.Status = "partial"
+			}
+		}
 		if retainLifecycle {
 			out.Execution.Lifecycle, err = observedNodeStarts(sc, result)
 			if err != nil {
