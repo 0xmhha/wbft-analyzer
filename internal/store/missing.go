@@ -21,16 +21,17 @@ var ErrMissingIndex = errors.New("missing classification index is absent or stal
 var ErrMissingScope = errors.New("missing classification requires stored canonical headers and a bounded source/range")
 
 type MissingIndex struct {
-	Version        string           `json:"version"`
-	Snapshot       string           `json:"snapshot"`
-	From           string           `json:"from"`
-	To             string           `json:"to"`
-	DatasetID      int64            `json:"dataset_id"`
-	Messages       int64            `json:"messages,omitempty"`
-	EventRecords   int64            `json:"event_records"`
-	MessageRecords int64            `json:"message_records"`
-	Cells          int64            `json:"cells"`
-	Counts         map[string]int64 `json:"counts"`
+	CheckpointSnapshot string           `json:"checkpoint_snapshot,omitempty"`
+	Version            string           `json:"version"`
+	Snapshot           string           `json:"snapshot"`
+	From               string           `json:"from"`
+	To                 string           `json:"to"`
+	DatasetID          int64            `json:"dataset_id"`
+	Messages           int64            `json:"messages,omitempty"`
+	EventRecords       int64            `json:"event_records"`
+	MessageRecords     int64            `json:"message_records"`
+	Cells              int64            `json:"cells"`
+	Counts             map[string]int64 `json:"counts"`
 }
 type MissingFilter struct {
 	From, To                        uint64
@@ -282,15 +283,10 @@ func (s *Store) RebuildMissing(ctx context.Context, id, messageID int64, from, t
 		if e != nil {
 			return e
 		}
-		numbers := []string{}
-		seen := map[string]bool{}
-		for _, x := range events {
-			if x.Record.Kind == "NEW_HEAD" && x.Record.View != nil && !seen[x.Record.View.Seq] {
-				seen[x.Record.View.Seq] = true
-				numbers = append(numbers, x.Record.View.Seq)
-			}
+		numbers := missing.HeaderNumbers(events, records)
+		if messageID > 0 {
+			out.CheckpointSnapshot = missingHash(records)
 		}
-		sort.Strings(numbers)
 		facts, copies, headerHash, e := missingHeaders(ctx, tx, d.Network, from, to, numbers)
 		if e != nil {
 			return e
@@ -323,6 +319,9 @@ func (s *Store) RebuildMissing(ctx context.Context, id, messageID int64, from, t
 			}
 			for i := range c.Evidence {
 				c.Evidence[i].Source.DatasetID = id
+				if c.Evidence[i].Source.Kind == "message" {
+					c.Evidence[i].Source.DatasetID = messageID
+				}
 			}
 			selected = append(selected, c)
 			out.Counts[c.Class]++
@@ -415,6 +414,13 @@ func readMissingIndex(ctx context.Context, tx pgx.Tx, id int64) (MissingIndex, e
 		}
 		p, e := readPairIndex(ctx, tx, *message)
 		if e != nil || p.Snapshot != pairHash {
+			return out, ErrMissingIndex
+		}
+		records, err := missingRecords(ctx, tx, *message)
+		if err != nil {
+			return out, err
+		}
+		if out.CheckpointSnapshot == "" || missingHash(records) != out.CheckpointSnapshot {
 			return out, ErrMissingIndex
 		}
 	}

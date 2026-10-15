@@ -16,7 +16,7 @@ import (
 	"github.com/0xmhha/wbft/observe/event"
 )
 
-const Version = "wbft-missing/2"
+const Version = "wbft-missing/3"
 
 type Seal struct {
 	Validator string `json:"validator"`
@@ -128,8 +128,10 @@ func low(s string) string {
 }
 
 // Build receives one execution's complete event projection and validated header
-// facts. Decoded records supply byte identity only, never receiver coverage or
-// processing outcomes. Callers must validate any companion's execution scope.
+// facts. Decoded frames supply byte identity, never receiver coverage or
+// processing outcomes. Associated journal steps may supply a canonical lower
+// checkpoint for a complete native event capture. Callers must validate any
+// companion's execution scope.
 // Header/source adapters must bind validator identities before calling Build.
 func Build(heights []Height, events []logs.Event, records []source.Record, inputs []Input) ([]Cell, error) {
 	return build(heights, heights, events, records, inputs)
@@ -310,7 +312,7 @@ func build(heights, target []Height, events []logs.Event, records []source.Recor
 		}
 		return false
 	})
-	captures := senderCaptures(ordered, clean, heights, target)
+	captures := senderCaptures(ordered, records, clean, heights, target)
 	cells := make([]Cell, 0, count)
 	for _, h := range target {
 		for _, who := range h.Validators {
@@ -539,10 +541,11 @@ func validSeal(h Height, s Seal) bool {
 
 // A complete, active-validator run may import a range without its core entering
 // every view. It still records every local SEND. Two canonical imported heads
-// bracket that range; a terminal NODE_STOP and clean source diagnostics prove
+// bracket that range; an associated canonical journal checkpoint may replace
+// its lower bound. A terminal NODE_STOP and clean source diagnostics prove
 // the event capture's end. This is sender coverage only: imported headers never
 // establish receiver coverage, and opaque SEND identities block absence.
-func senderCaptures(events []logs.Event, clean map[string]bool, heights, target []Height) map[string]map[string][]Evidence {
+func senderCaptures(events []logs.Event, records []source.Record, clean map[string]bool, heights, target []Height) map[string]map[string][]Evidence {
 	out := map[string]map[string][]Evidence{}
 	hashes := map[string]string{}
 	for _, h := range heights {
@@ -550,6 +553,7 @@ func senderCaptures(events []logs.Event, clean map[string]bool, heights, target 
 			hashes[h.Number] = h.Hash
 		}
 	}
+	checkpoints := journalCheckpoints(events, records, hashes)
 	type key struct{ input, node, run string }
 	type head struct {
 		height string
@@ -630,7 +634,12 @@ func senderCaptures(events []logs.Event, clean map[string]bool, heights, target 
 				lo = &r.heads[pos-1]
 			}
 
-			if lo == nil || hi == nil || lo.source.Ordinal > hi.source.Ordinal {
+			if lo == nil && hi != nil {
+				if p := checkpointBefore(checkpoints[[2]string{k.node, k.run}], h.Number, r.start, hi.source, r.stop); p != nil {
+					lo = &head{p.height, p.source}
+				}
+			}
+			if lo == nil || hi == nil || lo.source.Kind != "message" && lo.source.Ordinal > hi.source.Ordinal {
 				continue
 			}
 			if out[k.node] == nil {

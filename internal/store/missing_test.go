@@ -249,3 +249,109 @@ func TestMissingVerifiedCompanionChangesAndDeletion(t *testing.T) {
 		t.Fatal("deleted companion accepted", e)
 	}
 }
+
+func TestMissingJournalCheckpointContextPointersAndInvalidation(t *testing.T) {
+	s, _ := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	d, _, facts := missingFixture(t, s)
+	node := facts[0].Validators[3]
+	wall := "2020-01-01T00:00:00Z"
+	if _, err := s.pool.Exec(ctx, `DELETE FROM log_events WHERE dataset_id=$1`, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	var rows []logs.Event
+	for i, kind := range []event.Kind{event.NodeStart, event.RoundEnter, event.MsgOutcome, event.NewHead, event.NodeStop} {
+		mono := []string{"1", "2", "20", "30", "40"}[i]
+		fields := map[string]any{"seq": fmt.Sprint(i), "validator": true}
+		var view *event.View
+		switch kind {
+		case event.RoundEnter:
+			view = &event.View{Seq: "1", Round: "0"}
+		case event.MsgOutcome:
+			view = &event.View{Seq: "1", Round: "0"}
+			fields["step"] = "2"
+			fields["dedup_key"] = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+			fields["code"] = "19"
+			fields["source"] = facts[0].Validators[0]
+			fields["outcome"] = "ACCEPT"
+		case event.NewHead:
+			view = &event.View{Seq: "3", Round: "0"}
+			fields["hash"] = facts[2].Hash
+		}
+		rows = append(rows, logs.Event{Input: "events", Node: node, Run: "r", Line: int64(i + 1), Wall: wall, Mono: &mono, Profile: logs.EventProfile, Record: event.Record{Src: "event", Kind: kind, View: view, Fields: fields}})
+	}
+	if err := s.PutLogEvents(ctx, d.ID, rows, 5); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.FinishRange(ctx, d.ID, 5, ""); err != nil {
+		t.Fatal(err)
+	}
+	m, release, err := s.BeginMessages(ctx, NetworkKey{ChainID: "8", GenesisHash: "0x" + strings.Repeat("0", 64)}, "checkpoint", json.RawMessage(`{"clock":{"model":"shared-host"}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	release()
+	if err = s.PutMessageInput(ctx, m.ID, source.Summary{ID: "journal", Node: node, Kind: "journal"}); err != nil {
+		t.Fatal(err)
+	}
+	a, b := "10", "20"
+	records := []source.Record{
+		{Input: "journal", File: "synthetic.wal", Ordinal: 1, Seq: "1", Node: node, Run: "r", Type: "segment"},
+		{Input: "journal", File: "synthetic.wal", Ordinal: 2, Seq: "2", Node: node, Run: "r", Type: "step", Step: "1", ClockSource: "recorded", Wall: wall, Mono: &a, HeadNumber: "1", HeadHash: facts[0].Hash},
+		{Input: "journal", File: "synthetic.wal", Ordinal: 3, Seq: "3", Node: node, Run: "r", Type: "outcome", Step: "2", Key: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Phase: "PREPARE", Outcome: "ACCEPT"},
+		{Input: "journal", File: "synthetic.wal", Ordinal: 4, Seq: "4", Node: node, Run: "r", Type: "step", Step: "2", ClockSource: "recorded", Wall: wall, Mono: &b},
+	}
+	if err = s.PutMessageRecords(ctx, m.ID, records, 4); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.FinishRange(ctx, m.ID, 4, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.RebuildMessagePairs(ctx, m.ID, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	first, err := s.RebuildMissing(ctx, d.ID, m.ID, 2, 2)
+	if err != nil || first.Counts["NOT_SENT"] != 2 || first.CheckpointSnapshot == "" {
+		t.Fatal("outside-range journal head lost", first, err)
+	}
+	_, cells, _, err := s.MissingData(ctx, d.ID, MissingFilter{From: 2, To: 2, Class: "NOT_SENT"}, 0, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	journal := 0
+	for _, c := range cells {
+		for _, p := range c.Evidence {
+			if p.Source.Kind == "message" {
+				journal++
+				if p.Source.DatasetID != m.ID || p.Source.Ordinal != 2 || p.Source.File != "synthetic.wal" {
+					t.Fatal("wrong journal pointer", p)
+				}
+			} else if p.Source.DatasetID != d.ID {
+				t.Fatal("wrong event pointer", p)
+			}
+		}
+	}
+	if journal != 2 {
+		t.Fatal("journal proof absent", journal)
+	}
+	if _, err = s.pool.Exec(ctx, `UPDATE message_records SET record=jsonb_set(record,'{head_hash}','"changed"') WHERE dataset_id=$1 AND ordinal=2`, m.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.MissingIndex(ctx, d.ID); !errors.Is(err, ErrMissingIndex) {
+		t.Fatal("checkpoint changed without staling index", err)
+	}
+	records[1].HeadHash = "changed"
+	if err = s.PutMessageRecords(ctx, m.ID, records, 4); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.RebuildMessagePairs(ctx, m.ID, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	next, err := s.RebuildMissing(ctx, d.ID, m.ID, 2, 2)
+	if err != nil || next.Counts["NOT_SENT"] != 0 || next.Counts["UNKNOWN"] != 2 {
+		t.Fatal("foreign checkpoint became absence", next, err)
+	}
+}

@@ -9504,6 +9504,9 @@
             "format": "int64",
             "type": "integer"
           },
+          "checkpoint_snapshot": {
+            "type": "string"
+          },
           "counts": {
             "additionalProperties": {
               "format": "int64",
