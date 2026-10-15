@@ -2,11 +2,50 @@ package store
 
 import (
 	"context"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/0xmhha/wbft-analyzer/internal/scenario"
 )
+
+func TestScenarioEmpiricalProvenanceSurvivesPersistenceAndKeepsOriginalAssumptions(t *testing.T) {
+	s, _ := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	dataset := jobDataset(t, s)
+	e, _ := scenarioFixture(dataset)
+	e.Provenance.Mode = scenario.EmpiricalCoreModel
+	e.Provenance.Assumptions = []string{"fake_application", "fresh_test_keys"}
+	input := scenario.Input{ID: "wire", Kind: "frames", Node: "substitute", SHA256: strings.Repeat("a", 64)}
+	e.Provenance.Inputs = append(e.Provenance.Inputs, input)
+	e.Provenance.Substitutions = []scenario.CoreSubstitution{{Node: input.Node, Source: input, Policy: "all_improvements_off", SigningState: "fresh_test_keys_genesis_no_replay"}}
+	var err error
+	e.Provenance, e.SourceSHA256, err = scenario.SealProvenance(e.Provenance)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := s.BeginScenario(ctx, e)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saved, err := s.ScenarioRun(ctx, dataset, id)
+	if err != nil || !reflect.DeepEqual(saved.Provenance, e.Provenance) {
+		t.Fatal(saved.Provenance, err)
+	}
+	changed := e
+	changed.Status = "partial"
+	changed.Provenance.Assumptions = []string{"different_application"}
+	if err := s.FinishScenario(ctx, id, changed); err != nil {
+		t.Fatal(err)
+	}
+	saved, err = s.ScenarioRun(ctx, dataset, id)
+	if err != nil || !reflect.DeepEqual(saved.Provenance, e.Provenance) || saved.Credibility() != "execution_incomplete" {
+		t.Fatal(saved, err)
+	}
+}
 
 func TestScenarioSeedTransactionsAndCompletionProof(t *testing.T) {
 	s, _ := testStore(t)

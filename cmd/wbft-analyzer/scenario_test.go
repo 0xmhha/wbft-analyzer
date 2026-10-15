@@ -18,3 +18,11 @@ func TestScenarioUsageRefusesUnsupportedOrUnboundedScopes(t *testing.T) {
 		}
 	}
 }
+
+func TestScenarioRejectsUnknownModelBeforeOpeningStorage(t *testing.T) {
+	var out, err bytes.Buffer
+	args := []string{"fit", "--db", "postgres://invalid/example", "--dataset", "1", "--chain", "synthetic.rlp", "--origin", "2026-01-01T00:00:00Z", "--from", "1", "--to", "2", "--model", "invented"}
+	if code := runScenario(args, &out, &err); code != exitUsage {
+		t.Fatal(code, err.String())
+	}
+}

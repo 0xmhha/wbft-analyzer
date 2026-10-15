@@ -1076,6 +1076,29 @@ Historical runs without this evidence are explicitly unavailable.
 
 ### Network fitting and independent seed experiments
 
+The default fitting model is `declared-runtime`. Use `scenario fit --model
+empirical-core`, or set `"model":"empirical-core"` in a registered source,
+to explicitly choose a fake application with per-node empirical delays. This
+mode keeps the declared runtime assessment separately. It does not claim that
+successful measurements prove a physical executor policy.
+
+Frame-only nodes require matching runtime configuration and exact core
+lifecycle evidence before substitution with WBFT cores with every improvement
+disabled. Substitutes use fresh test keys from genesis with no WAL replay; this
+is a model assumption, not an observed signing state. Native nodes retain their
+recorded options and verified replay/signing policy. The model records these
+choices and source hashes in immutable experiment provenance and labels
+substituted nodes on the experiment screen.
+
+Runtime assembly samples measure worker entry to task offer, including assemblies
+whose later seal was cancelled. They exclude sealing, delivery, and consensus
+acceptance. Import samples require a successful single-block call; batches are
+not divided into invented per-block durations. Known native non-success outcomes
+and excluded runtime intervals remain visible. Native delay distributions are
+conditioned on successful observations. Missing clock, continuous receiver
+coverage, settled horizons, configuration, or lifecycle evidence still prevents
+execution. A complete fit still requires independent baseline validation.
+
 `scenario fit --db DSN --dataset ID --chain chain.rlp --events-manifest events.json
 --origin 2026-01-01T00:00:00Z --from 1 --to 60 --duration 2m --seeds 32`
 inspects retained message inputs and canonical headers without migrating the

@@ -27,6 +27,10 @@ type Node struct {
 // Build requires every directed link model; missing links never use the
 // simulator's synthetic default latency or zero-loss assumption.
 func Build(nodes []Node, links []Link, params sim.Params, build, imports []time.Duration, until sim.Stop) (sim.Scenario, error) {
+	return buildScenario(nodes, links, params, build, imports, until, DeclaredRuntimeModel)
+}
+
+func buildScenario(nodes []Node, links []Link, params sim.Params, build, imports []time.Duration, until sim.Stop, model string) (sim.Scenario, error) {
 	out := sim.Scenario{Params: params, Until: until, Links: []sim.Link{}, Nodes: []sim.NodeSpec{}}
 	if params.RequestTimeoutSeconds == 0 || params.BlockPeriodSeconds == 0 || params.EpochLength == 0 || len(build) == 0 || len(imports) == 0 || until.Height == 0 || until.Height > 10000 || until.Duration <= 0 || until.Duration > 24*time.Hour {
 		return out, errors.New("incomplete bounded scenario configuration")
@@ -34,7 +38,8 @@ func Build(nodes []Node, links []Link, params sim.Params, build, imports []time.
 	addresses := make([]types.Address, len(nodes))
 	index := map[string]int{}
 	for i, n := range nodes {
-		if n.Profile != "compat" && n.Profile != "improved" || n.BacklogLimit < 0 || n.RuntimeEvidence != "verified" || n.SignFloor != nil {
+		modeled := model == EmpiricalCoreModel && n.RuntimeEvidence == "modeled_core_substitution" && n.ProfileEvidence == "modeled_core_substitution" && n.Profile == "compat" && n.Improvements == 0 && n.BacklogLimit == 0 && !n.ReplayWAL
+		if n.Profile != "compat" && n.Profile != "improved" || n.BacklogLimit < 0 || n.RuntimeEvidence != "verified" && !modeled || n.SignFloor != nil {
 			return out, errors.New("invalid node configuration")
 		}
 		addresses[i] = n.Address

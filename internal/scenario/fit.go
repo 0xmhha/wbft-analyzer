@@ -20,6 +20,7 @@ import (
 // FitOptions contains already snapshotted local readers. None of their paths
 // are retained in the fitted report or persisted experiment provenance.
 type FitOptions struct {
+	Model               string
 	RuntimeObservations []RuntimeObservation
 	WireMetric          string
 	Dataset             int64
@@ -38,25 +39,34 @@ type FitOptions struct {
 }
 
 type Fitted struct {
-	RuntimeObservations []RuntimeBinding `json:"runtime_observations"`
-	WireMetric          string           `json:"wire_metric"`
-	Epochs              []RecordedEpoch  `json:"epochs"`
-	Scope               ScopeCounts      `json:"scope"`
-	NodeOptions         []Node           `json:"node_options"`
-	Provenance          Provenance       `json:"provenance"`
-	SourceSHA256        string           `json:"source_sha256"`
-	Model               Assessment       `json:"model"`
-	Links               []Link           `json:"links"`
-	Runtimes            []Runtime        `json:"runtimes"`
-	App                 AppTiming        `json:"application"`
-	Recorded            []Height         `json:"recorded"`
-	Scenario            *sim.Scenario    `json:"-"`
+	Mode                string               `json:"mode"`
+	DeclaredModel       Assessment           `json:"declared_runtime_model"`
+	Empirical           *EmpiricalProjection `json:"empirical,omitempty"`
+	RuntimeObservations []RuntimeBinding     `json:"runtime_observations"`
+	WireMetric          string               `json:"wire_metric"`
+	Epochs              []RecordedEpoch      `json:"epochs"`
+	Scope               ScopeCounts          `json:"scope"`
+	NodeOptions         []Node               `json:"node_options"`
+	Provenance          Provenance           `json:"provenance"`
+	SourceSHA256        string               `json:"source_sha256"`
+	Model               Assessment           `json:"model"`
+	Links               []Link               `json:"links"`
+	Runtimes            []Runtime            `json:"runtimes"`
+	App                 AppTiming            `json:"application"`
+	Recorded            []Height             `json:"recorded"`
+	Scenario            *sim.Scenario        `json:"-"`
 }
 
 // Fit derives one prepared network experiment from exact chain and journal
 // snapshots plus verified event inputs. Unsupported source gaps remain a
 // structured partial fit rather than being filled by simulator defaults.
 func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
+	if !ValidModel(o.Model) {
+		return Fitted{}, errors.New("unsupported scenario model")
+	}
+	if o.Model == "" {
+		o.Model = DeclaredRuntimeModel
+	}
 	if o.WireMetric == "" {
 		o.WireMetric = "link"
 	}
@@ -65,6 +75,7 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 	}
 	out := Fitted{App: AppTiming{Policies: []ApplicationPolicy{}}, Links: []Link{}, Runtimes: []Runtime{}, Recorded: []Height{}, Model: Assessment{Version: FitVersion, Status: "partial", Issues: []Issue{}}}
 	out.WireMetric = o.WireMetric
+	out.Mode = o.Model
 	if len(o.Runtime) > 0 {
 		return out, errors.New("runtime policy must come from recorded engine starts")
 	}
@@ -257,7 +268,34 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		assessment.Status = "partial"
 	}
 	out.Model = assessment
+	out.DeclaredModel = assessment
+	buildNodes, buildRuntimes, buildApp := ordered, out.Runtimes, out.App
+	if o.Model == EmpiricalCoreModel {
+		projection, issues, e := fitEmpiricalProjection(o, out, sources)
+		if e != nil {
+			return out, e
+		}
+		out.Empirical = &projection
+		assessment = assessEmpirical(projection, out.Links, o.Until)
+		assessment.Issues = append(assessment.Issues, facts.Issues...)
+		assessment.Issues = append(assessment.Issues, issues...)
+		if out.Scope.LinksUnscoped > 0 || out.Scope.AppUnscoped > 0 {
+			assessment.Issues = append(assessment.Issues, Issue{Code: "fitting_height_scope_unavailable"})
+		}
+		if len(assessment.Issues) > 0 {
+			assessment.Status = "partial"
+		}
+		orderIssues(assessment.Issues)
+		out.Model = assessment
+		buildNodes = []Node{}
+		for _, node := range projection.Nodes {
+			buildNodes = append(buildNodes, node.Options)
+		}
+		buildRuntimes, buildApp = projection.Runtimes, projection.Application
+	}
 	modelRaw, err := json.Marshal(struct {
+		Mode            string
+		Empirical       *EmpiricalProjection
 		WireMetric      string
 		From, To        uint64
 		Origin          string
@@ -273,24 +311,33 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 		GenesisCount    int
 		Epochs          []RecordedEpoch
 		ObservedRuntime []RuntimeBinding
-	}{o.WireMetric, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs, out.RuntimeObservations})
+	}{o.Model, out.Empirical, o.WireMetric, o.From, o.To, o.Origin.UTC().Format(time.RFC3339Nano), int64(o.Until), o.Clock, o.Coverage, ordered, facts.Params, out.Links, out.Runtimes, out.App, out.Scope, facts.GenesisCount, facts.Epochs, out.RuntimeObservations})
 	if err != nil {
 		return out, err
 	}
 	modelHash := sha256.Sum256(modelRaw)
 	sum := sha256.Sum256(o.Chain)
-	out.Provenance, out.SourceSHA256, err = SealProvenance(Provenance{ModelSHA256: hex.EncodeToString(modelHash[:]), Dataset: o.Dataset, Version: FitVersion, Inputs: sources, ChainSHA256: hex.EncodeToString(sum[:]), CoreCommit: o.CoreCommit, Seeds: o.Seeds})
+	provenance := Provenance{Mode: o.Model, ModelSHA256: hex.EncodeToString(modelHash[:]), Dataset: o.Dataset, Version: FitVersion, Inputs: sources, ChainSHA256: hex.EncodeToString(sum[:]), CoreCommit: o.CoreCommit, Seeds: o.Seeds}
+	if out.Empirical != nil {
+		provenance.Assumptions = out.Empirical.Assumptions
+		for _, node := range out.Empirical.Nodes {
+			if node.Substituted && node.Source.ID != "" {
+				provenance.Substitutions = append(provenance.Substitutions, CoreSubstitution{Node: node.Node, Source: node.Source, Policy: "all_improvements_off", SigningState: node.SigningState})
+			}
+		}
+	}
+	out.Provenance, out.SourceSHA256, err = SealProvenance(provenance)
 	if err != nil {
 		return out, err
 	}
 	if assessment.Status != "complete" {
 		return out, nil
 	}
-	sc, err := Build(ordered, out.Links, facts.Params, []time.Duration{0}, []time.Duration{0}, sim.Stop{Height: o.To, Duration: o.Until})
+	sc, err := buildScenario(buildNodes, out.Links, facts.Params, []time.Duration{0}, []time.Duration{0}, sim.Stop{Height: o.To, Duration: o.Until}, o.Model)
 	if err != nil {
 		return out, err
 	}
-	sc, err = ApplyRuntime(sc, ordered, out.Runtimes)
+	sc, err = ApplyRuntime(sc, buildNodes, buildRuntimes)
 	if err != nil {
 		return out, err
 	}
@@ -298,13 +345,15 @@ func Fit(ctx context.Context, o FitOptions) (Fitted, error) {
 	if err != nil {
 		return out, err
 	}
-	sc, err = ApplyAppTiming(sc, ordered, out.App)
+	sc, err = ApplyAppTiming(sc, buildNodes, buildApp)
 	if err != nil {
 		return out, err
 	}
-	sc, err = ApplyApplicationPolicies(sc, ordered, out.App.Policies)
-	if err != nil {
-		return out, err
+	if o.Model == DeclaredRuntimeModel {
+		sc, err = ApplyApplicationPolicies(sc, ordered, out.App.Policies)
+		if err != nil {
+			return out, err
+		}
 	}
 	out.Scenario = &sc
 	return out, nil

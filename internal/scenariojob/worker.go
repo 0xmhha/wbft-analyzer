@@ -22,6 +22,7 @@ var ErrSource = errors.New("network scenario source unavailable")
 var ErrChange = errors.New("network change outside registered model")
 
 type SourceSpec struct {
+	Model           string              `json:"model,omitempty"`
 	RuntimeManifest string              `json:"runtime_manifest,omitempty"`
 	WireMetric      string              `json:"wire_metric,omitempty"`
 	ID              string              `json:"id"`
@@ -62,21 +63,24 @@ func publicEpochs(epochs []scenario.RecordedEpoch) []EpochInfo {
 }
 
 type SourceInfo struct {
-	ApplicationPolicies []scenario.ApplicationPolicy `json:"application_policies"`
-	RuntimeObservations []scenario.RuntimeBinding    `json:"runtime_observations"`
-	WireMetric          string                       `json:"wire_metric"`
-	Epochs              []EpochInfo                  `json:"epochs"`
-	Scope               scenario.ScopeCounts         `json:"scope"`
-	Nodes               []string                     `json:"nodes"`
-	DurationNS          int64                        `json:"duration_ns"`
-	ID                  string                       `json:"id"`
-	Dataset             int64                        `json:"dataset_id"`
-	From                string                       `json:"from"`
-	To                  string                       `json:"to"`
-	SourceSHA           string                       `json:"source_sha256"`
-	ExecutionSHA        string                       `json:"execution_sha256"`
-	Status              string                       `json:"status"`
-	Model               scenario.Assessment          `json:"model"`
+	Mode                string                        `json:"mode"`
+	DeclaredModel       scenario.Assessment           `json:"declared_runtime_model"`
+	Empirical           *scenario.EmpiricalProjection `json:"empirical,omitempty"`
+	ApplicationPolicies []scenario.ApplicationPolicy  `json:"application_policies"`
+	RuntimeObservations []scenario.RuntimeBinding     `json:"runtime_observations"`
+	WireMetric          string                        `json:"wire_metric"`
+	Epochs              []EpochInfo                   `json:"epochs"`
+	Scope               scenario.ScopeCounts          `json:"scope"`
+	Nodes               []string                      `json:"nodes"`
+	DurationNS          int64                         `json:"duration_ns"`
+	ID                  string                        `json:"id"`
+	Dataset             int64                         `json:"dataset_id"`
+	From                string                        `json:"from"`
+	To                  string                        `json:"to"`
+	SourceSHA           string                        `json:"source_sha256"`
+	ExecutionSHA        string                        `json:"execution_sha256"`
+	Status              string                        `json:"status"`
+	Model               scenario.Assessment           `json:"model"`
 }
 
 type registered struct {
@@ -112,7 +116,7 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 	}
 	w := NewEmpty(s)
 	for _, spec := range specs {
-		if !logs.Identifier(spec.ID) || spec.Dataset < 1 || spec.From < 1 || spec.To < spec.From || spec.To-spec.From >= 10000 || spec.Seeds < 2 || spec.Seeds > 128 || spec.SkewMS < 0 || spec.SkewMS > 3600000 || spec.Clock != "shared-host" && spec.Clock != "ntp" && spec.Clock != "unknown" {
+		if !scenario.ValidModel(spec.Model) || !logs.Identifier(spec.ID) || spec.Dataset < 1 || spec.From < 1 || spec.To < spec.From || spec.To-spec.From >= 10000 || spec.Seeds < 2 || spec.Seeds > 128 || spec.SkewMS < 0 || spec.SkewMS > 3600000 || spec.Clock != "shared-host" && spec.Clock != "ntp" && spec.Clock != "unknown" {
 			return nil, ErrSource
 		}
 		if _, ok := w.sources[spec.ID]; ok {
@@ -136,7 +140,7 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 		if spec.Events != "" && !filepath.IsAbs(spec.Events) {
 			spec.Events = filepath.Join(filepath.Dir(path), spec.Events)
 		}
-		request := FitRequest{RuntimeManifest: spec.RuntimeManifest, ChainPath: spec.Chain, EventManifest: spec.Events, Options: scenario.FitOptions{WireMetric: spec.WireMetric, Dataset: spec.Dataset, From: spec.From, To: spec.To, Origin: origin, Until: duration, Clock: pairs.Clock{Model: spec.Clock, SkewMS: spec.SkewMS}, Seeds: seeds, Runtime: spec.Runtime, Coverage: spec.Coverage}}
+		request := FitRequest{RuntimeManifest: spec.RuntimeManifest, ChainPath: spec.Chain, EventManifest: spec.Events, Options: scenario.FitOptions{Model: spec.Model, WireMetric: spec.WireMetric, Dataset: spec.Dataset, From: spec.From, To: spec.To, Origin: origin, Until: duration, Clock: pairs.Clock{Model: spec.Clock, SkewMS: spec.SkewMS}, Seeds: seeds, Runtime: spec.Runtime, Coverage: spec.Coverage}}
 		raw, err := json.Marshal(spec)
 		if err != nil {
 			return nil, ErrSource
@@ -160,7 +164,7 @@ func Load(ctx context.Context, s *store.Store, path string) (*Worker, error) {
 		if err != nil {
 			return nil, err
 		}
-		public := SourceInfo{ApplicationPolicies: fitted.App.Policies, RuntimeObservations: fitted.RuntimeObservations, WireMetric: fitted.WireMetric, Epochs: publicEpochs(fitted.Epochs), Scope: fitted.Scope, Nodes: []string{}, DurationNS: int64(duration), ID: spec.ID, Dataset: spec.Dataset, From: strconv.FormatUint(spec.From, 10), To: strconv.FormatUint(spec.To, 10), SourceSHA: fitted.SourceSHA256, Status: fitted.Model.Status, Model: fitted.Model}
+		public := SourceInfo{Mode: fitted.Mode, DeclaredModel: fitted.DeclaredModel, Empirical: fitted.Empirical, ApplicationPolicies: fitted.App.Policies, RuntimeObservations: fitted.RuntimeObservations, WireMetric: fitted.WireMetric, Epochs: publicEpochs(fitted.Epochs), Scope: fitted.Scope, Nodes: []string{}, DurationNS: int64(duration), ID: spec.ID, Dataset: spec.Dataset, From: strconv.FormatUint(spec.From, 10), To: strconv.FormatUint(spec.To, 10), SourceSHA: fitted.SourceSHA256, Status: fitted.Model.Status, Model: fitted.Model}
 		for _, node := range fitted.NodeOptions {
 			public.Nodes = append(public.Nodes, node.Address.Hex())
 		}

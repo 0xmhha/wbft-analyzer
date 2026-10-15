@@ -2458,6 +2458,42 @@ export interface components {
             start_line: number;
             state: string;
         };
+        ScenarioAppOutcome: {
+            build_id: string;
+            /** Format: int64 */
+            end_line: number;
+            /** Format: int64 */
+            handover_line: number;
+            input: string;
+            node: string;
+            run: string;
+            /** Format: int64 */
+            start_line?: number;
+            status: string;
+        };
+        ScenarioAppSample: {
+            build_id?: string;
+            definition?: string;
+            /** Format: int64 */
+            from_line: number;
+            input: string;
+            /** Format: int64 */
+            nanoseconds: number;
+            node: string;
+            run: string;
+            /** Format: int64 */
+            to_line: number;
+        };
+        ScenarioAppTiming: {
+            build: components["schemas"]["ScenarioAppSample"][];
+            import: components["schemas"]["ScenarioAppSample"][];
+            outcomes: components["schemas"]["ScenarioAppOutcome"][];
+            policies: components["schemas"]["ScenarioApplicationPolicy"][];
+            /** Format: int64 */
+            unproved: number;
+            /** Format: int64 */
+            unsupported: number;
+        };
         ScenarioApplicationPolicy: {
             assembly_return: string;
             build_queue: string;
@@ -2484,6 +2520,12 @@ export interface components {
             recorded: components["schemas"]["ScenarioDistribution"];
             recorded_sha256: string;
             to: string;
+        };
+        ScenarioCoreSubstitution: {
+            node: string;
+            policy: string;
+            signing_state: string;
+            source: components["schemas"]["ScenarioInput"];
         };
         ScenarioCutOutgoing: {
             /** Format: int64 */
@@ -2515,6 +2557,49 @@ export interface components {
             /** Format: double */
             cumulative: number;
             value: string;
+        };
+        ScenarioEmpiricalExcluded: {
+            /** Format: int64 */
+            from_line: number;
+            id: string;
+            kind: string;
+            reason: string;
+            /** Format: int64 */
+            to_line: number;
+        };
+        ScenarioEmpiricalNode: {
+            application_policy: string;
+            /** Format: int64 */
+            backlog_limit: number;
+            improvements: string;
+            node: string;
+            option_evidence: string;
+            profile: string;
+            runtime_evidence: string;
+            signing_state: string;
+            source: components["schemas"]["ScenarioInput"];
+            substituted: boolean;
+            wal_replay: boolean;
+        };
+        ScenarioEmpiricalProjection: {
+            application: components["schemas"]["ScenarioAppTiming"];
+            assumptions: string[];
+            native_excluded: components["schemas"]["ScenarioAppOutcome"][];
+            nodes: components["schemas"]["ScenarioEmpiricalNode"][];
+            runtime_timings: components["schemas"]["ScenarioEmpiricalTimings"][];
+            runtimes: components["schemas"]["ScenarioRuntime"][];
+        };
+        ScenarioEmpiricalTimings: {
+            build: components["schemas"]["ScenarioAppSample"][];
+            excluded: components["schemas"]["ScenarioEmpiricalExcluded"][];
+            import: components["schemas"]["ScenarioAppSample"][];
+            import_results: {
+                [key: string]: number;
+            };
+            source: components["schemas"]["ScenarioInput"];
+            task_states: {
+                [key: string]: number;
+            };
         };
         ScenarioExperiment: {
             baseline_rounds: components["schemas"]["ScenarioRoundComparison"] | null;
@@ -2572,14 +2657,17 @@ export interface components {
             splits: number;
         };
         ScenarioProvenance: {
+            assumptions?: string[];
             chain_sha256: string;
             core_commit: string;
             /** Format: int64 */
             dataset: number;
             fit_version: string;
             inputs: components["schemas"]["ScenarioInput"][];
+            mode?: string;
             model_sha256: string;
             seeds: number[];
+            substitutions?: components["schemas"]["ScenarioCoreSubstitution"][];
         };
         ScenarioRequest: {
             change: components["schemas"]["ScenarioCutOutgoing"];
@@ -2607,6 +2695,20 @@ export interface components {
         ScenarioRuns: {
             runs: components["schemas"]["StoreScenarioRunInfo"][];
         };
+        ScenarioRuntime: {
+            engine_stop_observed: boolean;
+            events: components["schemas"]["ScenarioRuntimeEvent"][];
+            input: string;
+            node: string;
+            sign_floor: string | null;
+            sign_floor_state: string;
+            /** Format: int64 */
+            start_ns: number;
+            /** Format: int64 */
+            starts: number;
+            wal_policies: components["schemas"]["ScenarioWALPolicy"][];
+            wal_replay: boolean | null;
+        };
         ScenarioRuntimeBinding: {
             /** Format: int64 */
             call_count: number;
@@ -2632,6 +2734,14 @@ export interface components {
             parent_id: string;
             point: components["schemas"]["RuntimeobsPoint"];
             state: string;
+        };
+        ScenarioRuntimeEvent: {
+            action: string;
+            /** Format: int64 */
+            at_ns: number;
+            /** Format: int64 */
+            line: number;
+            run: string;
         };
         ScenarioScopeCounts: {
             /** Format: int64 */
@@ -2670,6 +2780,16 @@ export interface components {
             enabled: boolean;
             sources: components["schemas"]["ScenariojobSourceInfo"][];
         };
+        ScenarioWALPolicy: {
+            available: boolean | null;
+            enabled: boolean | null;
+            engine_run: string;
+            /** Format: int64 */
+            line: number;
+            replayed: boolean | null;
+            run: string;
+            status: string;
+        };
         ScenariojobEpochInfo: {
             block: string;
             candidates: string[];
@@ -2680,12 +2800,15 @@ export interface components {
             application_policies: components["schemas"]["ScenarioApplicationPolicy"][];
             /** Format: int64 */
             dataset_id: number;
+            declared_runtime_model: components["schemas"]["ScenarioAssessment"];
             /** Format: int64 */
             duration_ns: number;
+            empirical?: components["schemas"]["ScenarioEmpiricalProjection"] | null;
             epochs: components["schemas"]["ScenariojobEpochInfo"][];
             execution_sha256: string;
             from: string;
             id: string;
+            mode: string;
             model: components["schemas"]["ScenarioAssessment"];
             nodes: string[];
             runtime_observations: components["schemas"]["ScenarioRuntimeBinding"][];
