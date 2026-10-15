@@ -60,7 +60,7 @@ func TestScenarioRegistryKeepsPartialModelsReadOnlyAndScoped(t *testing.T) {
 		network, dataset int64
 		id               string
 	}{{1, 2, "partial"}, {9, 2, "partial"}, {1, 9, "partial"}, {1, 2, "/private/path"}} {
-		if _, err := w.Enqueue(context.Background(), s.network, s.dataset, s.id, scenario.CutOutgoing{Kind: "cut_outgoing", Node: 0, ToNS: 1}); !errors.Is(err, ErrSource) {
+		if _, err := w.Enqueue(context.Background(), s.network, s.dataset, s.id, scenario.NetworkChange{Kind: "cut_outgoing", Node: new(int), ToNS: 1}); !errors.Is(err, ErrSource) {
 			t.Fatal("unproved or unregistered model reached storage", err)
 		}
 	}
@@ -78,9 +78,11 @@ func TestEmptyScenarioRegistryDoesNotClaimQueue(t *testing.T) {
 
 func TestScenarioRegistryRejectsChangeOutsideFittedScope(t *testing.T) {
 	w := &Worker{sources: map[string]registered{"complete": {network: 1, nodes: 4, duration: time.Second, info: SourceInfo{ID: "complete", Dataset: 2, Status: "complete", ExecutionSHA: "synthetic"}}}}
-	for _, change := range []scenario.CutOutgoing{{Kind: "cut_outgoing", Node: 4, ToNS: 1}, {Kind: "cut_outgoing", Node: 0, ToNS: int64(2 * time.Second)}, {Kind: "unknown", Node: 0, ToNS: 1}} {
+	for _, change := range []scenario.NetworkChange{{Kind: "cut_outgoing", Node: invalidRecordedNode(), ToNS: 1}, {Kind: "cut_outgoing", Node: new(int), ToNS: int64(2 * time.Second)}, {Kind: "unknown", Node: new(int), ToNS: 1}, {Kind: "partition", ToNS: 1, Edges: []scenario.DirectedEdge{{From: invalidRecordedNode(), To: new(int)}}}} {
 		if _, err := w.Enqueue(context.Background(), 1, 2, "complete", change); !errors.Is(err, ErrChange) {
 			t.Fatal("change exceeded registered model", err)
 		}
 	}
 }
+
+func invalidRecordedNode() *int { n := 4; return &n }

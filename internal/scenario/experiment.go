@@ -22,7 +22,7 @@ type Experiment struct {
 	Status          string                `json:"status"`
 	Provenance      Provenance            `json:"provenance"`
 	SourceSHA256    string                `json:"source_sha256"`
-	Change          CutOutgoing           `json:"change"`
+	Change          NetworkChange         `json:"change"`
 	ChangeSHA256    string                `json:"change_sha256"`
 	Model           Assessment            `json:"model"`
 	Baseline        *RoundComparison      `json:"baseline_rounds"`
@@ -39,16 +39,22 @@ type SeedRecord struct {
 
 // ExecuteExperiment preserves model and baseline failures as distinct facts.
 // A completed execution never by itself establishes baseline reproducibility.
-func ExecuteExperiment(ctx context.Context, sc sim.Scenario, provenance Provenance, model Assessment, recorded []RoundCount, change CutOutgoing, from, to uint64, emit func(SeedRecord) error) (Experiment, error) {
+func ExecuteExperiment(ctx context.Context, sc sim.Scenario, provenance Provenance, model Assessment, recorded []RoundCount, change NetworkChange, from, to uint64, emit func(SeedRecord) error) (Experiment, error) {
 	return ExecuteExperimentWithBegin(ctx, sc, provenance, model, recorded, change, from, to, nil, emit)
 }
 
-func ExecuteExperimentWithBegin(ctx context.Context, sc sim.Scenario, provenance Provenance, model Assessment, recorded []RoundCount, change CutOutgoing, from, to uint64, begin func(Experiment) error, emit func(SeedRecord) error) (Experiment, error) {
+func ExecuteExperimentWithBegin(ctx context.Context, sc sim.Scenario, provenance Provenance, model Assessment, recorded []RoundCount, change NetworkChange, from, to uint64, begin func(Experiment) error, emit func(SeedRecord) error) (Experiment, error) {
 
 	return ExecuteExperimentWithRecorded(ctx, sc, provenance, model, recorded, nil, change, from, to, begin, emit)
 }
 
-func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provenance Provenance, model Assessment, recorded []RoundCount, heights []Height, change CutOutgoing, from, to uint64, begin func(Experiment) error, emit func(SeedRecord) error) (Experiment, error) {
+func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provenance Provenance, model Assessment, recorded []RoundCount, heights []Height, change NetworkChange, from, to uint64, begin func(Experiment) error, emit func(SeedRecord) error) (Experiment, error) {
+
+	normalized, changeErr := change.Normalized()
+	if changeErr != nil {
+		return Experiment{Status: "failed"}, changeErr
+	}
+	change = normalized
 
 	sc.WallOrigin = scenarioWallOrigin(sc)
 	out := Experiment{WallOrigin: sc.WallOrigin.Format(time.RFC3339Nano), From: from, To: to, RecordedCounts: append([]RoundCount(nil), recorded...), RecordedHeights: append([]Height{}, heights...), Version: ExperimentVersion, Status: "running", Model: model, Change: change, TimeCheck: "pending", BaselineSeeds: []SeedResult{}, ChangedSeeds: []SeedResult{}}
@@ -64,7 +70,7 @@ func ExecuteExperimentWithRecorded(ctx context.Context, sc sim.Scenario, provena
 	}
 	out.Provenance = fixed
 	out.SourceSHA256 = sourceHash
-	changed, changeHash, err := ApplyCutOutgoing(sc, change)
+	changed, changeHash, err := ApplyNetworkChange(sc, change)
 	if err != nil {
 		out.Status = "failed"
 		return out, err

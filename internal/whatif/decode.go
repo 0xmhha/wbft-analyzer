@@ -115,7 +115,13 @@ func rejectDuplicateKeys(d *json.Decoder, depth int) error {
 
 // DecodeJSON applies the metadata boundary rules to operator requests too.
 func DecodeJSON(raw []byte, destination any) error {
-	if len(raw) > 4096 || rejectDuplicateKeys(json.NewDecoder(bytes.NewReader(raw)), 0) != nil {
+	return DecodeJSONSize(raw, destination, 4096)
+}
+
+// DecodeJSONSize retains the same strict boundary with an explicit bounded
+// request size for complete directed edge sets.
+func DecodeJSONSize(raw []byte, destination any, limit int) error {
+	if limit < 1 || limit > 2<<20 || len(raw) > limit || rejectDuplicateKeys(json.NewDecoder(bytes.NewReader(raw)), 0) != nil {
 		return ErrEvidence
 	}
 	decoder := json.NewDecoder(bytes.NewReader(raw))

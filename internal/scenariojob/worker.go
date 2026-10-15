@@ -204,12 +204,12 @@ func (w *Worker) Sources(network, dataset int64) []SourceInfo {
 	}
 	return out
 }
-func (w *Worker) Enqueue(ctx context.Context, network, dataset int64, id string, change scenario.CutOutgoing) (store.ScenarioJob, error) {
+func (w *Worker) Enqueue(ctx context.Context, network, dataset int64, id string, change scenario.NetworkChange) (store.ScenarioJob, error) {
 	s, ok := w.sources[id]
 	if !ok || s.network != network || s.info.Dataset != dataset || s.info.Status != "complete" || s.info.ExecutionSHA == "" {
 		return store.ScenarioJob{}, ErrSource
 	}
-	if _, _, err := change.Canonical(); err != nil || change.Node >= s.nodes || time.Duration(change.ToNS) > s.duration {
+	if err := change.ValidateFor(s.nodes, s.duration); err != nil {
 		return store.ScenarioJob{}, ErrChange
 	}
 	return w.store.EnqueueScenario(ctx, store.ScenarioJob{Dataset: dataset, Source: id, SourceSHA: s.info.SourceSHA, ExecutionSHA: s.info.ExecutionSHA, Change: change})

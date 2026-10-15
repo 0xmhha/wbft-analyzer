@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/0xmhha/wbft-analyzer/internal/scenario"
 )
 
 // openAPIPath is where the server answers the OpenAPI document.
@@ -182,6 +184,9 @@ func (g *schemas) component(t reflect.Type) string {
 				panic(fmt.Sprintf("api: unsupported string encoding %s", f.Type))
 			}
 		}
+		if f.Tag.Get("nullable") == "false" && f.Type.Kind() == reflect.Pointer {
+			s = g.of(f.Type.Elem())
+		}
 		if f.Tag.Get("nullable") == "true" {
 			s = nullable(s)
 		}
@@ -197,6 +202,19 @@ func (g *schemas) component(t reflect.Type) string {
 	sch := map[string]any{"type": "object", "properties": props, "additionalProperties": false}
 	if len(required) > 0 {
 		sch["required"] = required
+	}
+	if t == reflect.TypeOf(scenario.NetworkChange{}) {
+		variant := func(kind string, fields ...string) map[string]any {
+			properties := map[string]any{"kind": map[string]any{"type": "string", "enum": []string{kind}}}
+			required := []string{"kind"}
+			for _, field := range fields {
+				properties[field] = props[field]
+				required = append(required, field)
+			}
+			sort.Strings(required)
+			return map[string]any{"type": "object", "properties": properties, "required": required, "additionalProperties": false}
+		}
+		sch = map[string]any{"anyOf": []any{variant("cut_outgoing", "node", "from_ns", "to_ns"), variant("partition", "from_ns", "to_ns", "edges")}, "discriminator": map[string]any{"propertyName": "kind"}}
 	}
 	g.components[name] = sch
 	return name

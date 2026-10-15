@@ -139,7 +139,7 @@ func TestScenarioAPIScopedRunsAndSavedSeedPages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	change := scenario.CutOutgoing{Kind: "cut_outgoing", Node: 0, ToNS: 1000000000}
+	change := scenario.NetworkChange{Kind: "cut_outgoing", Node: new(int), ToNS: 1000000000}
 	_, ch, err := change.Canonical()
 	if err != nil {
 		t.Fatal(err)
@@ -231,6 +231,45 @@ func TestScenarioAPIScopedRunsAndSavedSeedPages(t *testing.T) {
 	for _, suffix := range []string{fmt.Sprintf("/scenario-jobs/%d", job.ID), fmt.Sprintf("/scenario-runs/%d", id), fmt.Sprintf("/scenario-runs/%d/seeds", id)} {
 		if c.do("GET", fmt.Sprintf("/v1/networks/%d/datasets/%d%s", other.NetworkID, other.ID, suffix), nil, nil) != 404 {
 			t.Fatal("cross-dataset result exposed", suffix)
+		}
+	}
+}
+
+func TestNetworkChangeRequestJSONContract(t *testing.T) {
+	s := loadSpec(t)
+	path := "/v1/networks/{net}/datasets/{dataset}/scenario-jobs"
+	body := s.Paths[path]["post"].RequestBody.Content["application/json"].Schema
+	for _, raw := range []string{
+		`{"source_id":"synthetic","change":{"kind":"cut_outgoing","node":0,"from_ns":0,"to_ns":1}}`,
+		`{"source_id":"synthetic","change":{"kind":"partition","from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}]}}`,
+	} {
+		var v any
+		if err := json.Unmarshal([]byte(raw), &v); err != nil {
+			t.Fatal(err)
+		}
+		decoder := json.NewDecoder(strings.NewReader(raw))
+		decoder.UseNumber()
+		if err := decoder.Decode(&v); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.check(v, body, "$"); err != nil {
+			t.Fatal(raw, err)
+		}
+	}
+	for _, raw := range []string{
+		`{"source_id":"synthetic","change":{"kind":"partition","node":0,"from_ns":0,"to_ns":1,"edges":[{"from":0,"to":1}]}}`,
+		`{"source_id":"synthetic","change":{"kind":"cut_outgoing","node":0,"from_ns":0,"to_ns":1,"edges":[]}}`,
+		`{"source_id":"synthetic","change":{"kind":"byzantine","node":0,"from_ns":0,"to_ns":1}}`,
+		`{"source_id":"synthetic","change":{"kind":"partition","from_ns":0,"to_ns":1,"edges":[{"from":null,"to":1}]}}`,
+	} {
+		var v any
+		decoder := json.NewDecoder(strings.NewReader(raw))
+		decoder.UseNumber()
+		if err := decoder.Decode(&v); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.check(v, body, "$"); err == nil {
+			t.Fatal("invalid network change admitted by contract", raw)
 		}
 	}
 }

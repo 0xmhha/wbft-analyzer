@@ -12,19 +12,19 @@ import (
 )
 
 type ScenarioJob struct {
-	ID           int64                `json:"id"`
-	Dataset      int64                `json:"dataset_id"`
-	Source       string               `json:"source_id"`
-	SourceSHA    string               `json:"source_sha256"`
-	ExecutionSHA string               `json:"execution_sha256"`
-	Change       scenario.CutOutgoing `json:"change"`
-	ChangeSHA    string               `json:"change_sha256"`
-	Status       string               `json:"status"`
-	Run          *int64               `json:"scenario_id"`
-	Issue        string               `json:"issue,omitempty"`
-	Created      time.Time            `json:"created_at"`
-	Started      *time.Time           `json:"started_at"`
-	Finished     *time.Time           `json:"finished_at"`
+	ID           int64                  `json:"id"`
+	Dataset      int64                  `json:"dataset_id"`
+	Source       string                 `json:"source_id"`
+	SourceSHA    string                 `json:"source_sha256"`
+	ExecutionSHA string                 `json:"execution_sha256"`
+	Change       scenario.NetworkChange `json:"change"`
+	ChangeSHA    string                 `json:"change_sha256"`
+	Status       string                 `json:"status"`
+	Run          *int64                 `json:"scenario_id"`
+	Issue        string                 `json:"issue,omitempty"`
+	Created      time.Time              `json:"created_at"`
+	Started      *time.Time             `json:"started_at"`
+	Finished     *time.Time             `json:"finished_at"`
 }
 
 const scenarioJobColumns = `id,dataset_id,source_id,source_sha256,execution_sha256,change,change_sha256,status,scenario_id,issue,created_at,started_at,finished_at`

@@ -271,7 +271,7 @@ func TestScenarioSeedTransactionsAndCompletionProof(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	change := scenario.CutOutgoing{Kind: "cut_outgoing", Node: 0, ToNS: 1000000000}
+	change := scenario.NetworkChange{Kind: "cut_outgoing", Node: new(int), ToNS: 1000000000}
 	_, changeHash, _ := change.Canonical()
 	e := scenario.Experiment{ExecutionSHA256: strings.Repeat("f", 64), From: 1, To: 2, Version: scenario.ExperimentVersion, Provenance: p, SourceSHA256: hash, Change: change, ChangeSHA256: changeHash, Model: scenario.Assessment{Version: scenario.FitVersion, Status: "partial", Issues: []scenario.Issue{{Code: "synthetic"}}}, RecordedCounts: []scenario.RoundCount{{Total: 100}}}
 	id, err := s.BeginScenario(ctx, e)

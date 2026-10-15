@@ -70,6 +70,12 @@ type spec struct {
 }
 
 type operation struct {
+	RequestBody struct {
+		Content map[string]struct {
+			Schema map[string]any `json:"schema"`
+		} `json:"content"`
+	} `json:"requestBody"`
+
 	Responses map[string]struct {
 		Content map[string]struct {
 			Schema map[string]any `json:"schema"`

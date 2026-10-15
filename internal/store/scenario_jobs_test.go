@@ -14,7 +14,7 @@ import (
 func scenarioFixture(dataset int64) (scenario.Experiment, ScenarioJob) {
 	p := scenario.Provenance{ModelSHA256: strings.Repeat("e", 64), Dataset: dataset, Version: scenario.FitVersion, Inputs: []scenario.Input{{ID: "journal", Kind: "journal", Node: "a", SHA256: strings.Repeat("a", 64)}}, ChainSHA256: strings.Repeat("b", 64), CoreCommit: strings.Repeat("c", 40), Seeds: []int64{7, 8}}
 	p, hash, _ := scenario.SealProvenance(p)
-	change := scenario.CutOutgoing{Kind: "cut_outgoing", Node: 0, ToNS: 1000000000}
+	change := scenario.NetworkChange{Kind: "cut_outgoing", Node: new(int), ToNS: 1000000000}
 	_, ch, _ := change.Canonical()
 	e := scenario.Experiment{ExecutionSHA256: strings.Repeat("f", 64), From: 1, To: 2, Version: scenario.ExperimentVersion, Provenance: p, SourceSHA256: hash, Change: change, ChangeSHA256: ch, Model: scenario.Assessment{Version: scenario.FitVersion, Status: "partial", Issues: []scenario.Issue{{Code: "synthetic"}}}, RecordedCounts: []scenario.RoundCount{{Total: 100}}}
 	return e, ScenarioJob{Dataset: dataset, Source: "source", SourceSHA: hash, ExecutionSHA: e.ExecutionSHA256, Change: change}

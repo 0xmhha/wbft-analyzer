@@ -66,7 +66,7 @@ func TestStoredNetworkExperimentPreservesCancelledSeedPrefix(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	o := Options{Scenario: sim.Scenario{Validators: keys, Until: sim.Stop{Height: 3, Duration: time.Minute}}, Provenance: scenario.Provenance{ModelSHA256: strings.Repeat("e", 64), Dataset: d.ID, Version: scenario.FitVersion, Inputs: []scenario.Input{{ID: "synthetic", Kind: "journal", Node: "a", SHA256: strings.Repeat("a", 64)}}, ChainSHA256: strings.Repeat("b", 64), CoreCommit: strings.Repeat("c", 40), Seeds: []int64{1, 2}}, Model: scenario.Assessment{Version: scenario.FitVersion, Status: "partial", Issues: []scenario.Issue{{Code: "synthetic"}}}, Recorded: []scenario.RoundCount{{Total: 100}}, Change: scenario.CutOutgoing{Kind: "cut_outgoing", Node: 0, ToNS: int64(time.Minute)}, From: 1, To: 3}
+	o := Options{Scenario: sim.Scenario{Validators: keys, Until: sim.Stop{Height: 3, Duration: time.Minute}}, Provenance: scenario.Provenance{ModelSHA256: strings.Repeat("e", 64), Dataset: d.ID, Version: scenario.FitVersion, Inputs: []scenario.Input{{ID: "synthetic", Kind: "journal", Node: "a", SHA256: strings.Repeat("a", 64)}}, ChainSHA256: strings.Repeat("b", 64), CoreCommit: strings.Repeat("c", 40), Seeds: []int64{1, 2}}, Model: scenario.Assessment{Version: scenario.FitVersion, Status: "partial", Issues: []scenario.Issue{{Code: "synthetic"}}}, Recorded: []scenario.RoundCount{{Total: 100}}, Change: scenario.NetworkChange{Kind: "cut_outgoing", Node: new(int), ToNS: int64(time.Minute)}, From: 1, To: 3}
 	running, cancel := context.WithCancel(ctx)
 	o.OnSeedStored = func(scenario.SeedRecord) error { cancel(); return nil }
 	result, err := run(running, s, o)

@@ -21,7 +21,7 @@ type Options struct {
 	Model           scenario.Assessment
 	RecordedHeights []scenario.Height
 	Recorded        []scenario.RoundCount
-	Change          scenario.CutOutgoing
+	Change          scenario.NetworkChange
 	From, To        uint64
 }
 
