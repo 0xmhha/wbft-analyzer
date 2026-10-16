@@ -40,7 +40,19 @@ func scanDataset(r pgx.CollectableRow) (Dataset, error) {
 const datasetColumns = `id,network_id,name,kind,status,progress,error,metadata,updated_at,coalesce((SELECT array_agg(DISTINCT hc.node ORDER BY hc.node) FROM (SELECT node FROM header_copies WHERE dataset_id=datasets.id UNION SELECT node FROM log_inputs WHERE dataset_id=datasets.id UNION SELECT node FROM message_inputs WHERE dataset_id=datasets.id UNION SELECT node FROM observation_captures WHERE dataset_id=datasets.id) hc), ARRAY[]::text[]),coalesce((SELECT array_agg(DISTINCT node ORDER BY node) FROM header_copies WHERE dataset_id=datasets.id),ARRAY[]::text[])`
 
 func (s *Store) Datasets(ctx context.Context, networkID int64) ([]Dataset, error) {
-	r, err := s.pool.Query(ctx, `SELECT `+datasetColumns+` FROM datasets WHERE network_id=$1 ORDER BY id`, networkID)
+	return s.DatasetsByKind(ctx, networkID, "")
+}
+
+// DatasetsByKind filters before computing per-dataset node metadata. An empty
+// kind preserves the complete listing used by dataset management.
+func (s *Store) DatasetsByKind(ctx context.Context, networkID int64, kind string) ([]Dataset, error) {
+	query := `SELECT ` + datasetColumns + ` FROM datasets WHERE network_id=$1`
+	args := []any{networkID}
+	if kind != "" {
+		query += ` AND kind=$2`
+		args = append(args, kind)
+	}
+	r, err := s.pool.Query(ctx, query+` ORDER BY id`, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -80,7 +80,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Datasets and their import status, progress and errors. */
+        /** Datasets and their import status, progress and errors; optionally restricted to one kind before node metadata is computed. */
         get: operations["listDatasets"];
         put?: never;
         post?: never;
@@ -4439,7 +4439,10 @@ export interface operations {
     };
     listDatasets: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description optional dataset kind: run, range, follow, reports, messages, observations or runtime */
+                kind?: string;
+            };
             header?: never;
             path: {
                 /** @description network ID */
