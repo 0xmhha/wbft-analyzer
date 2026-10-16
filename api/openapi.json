@@ -1029,6 +1029,34 @@
         ],
         "type": "object"
       },
+      "GovernanceSingleEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "collection": {
+            "enum": [
+              "operations",
+              "faults",
+              "states",
+              "proposals",
+              "changes",
+              "mirrors"
+            ],
+            "type": "string"
+          },
+          "entry": {
+            "$ref": "#/components/schemas/StoreGovernanceEntry"
+          },
+          "snapshot": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "collection",
+          "entry",
+          "snapshot"
+        ],
+        "type": "object"
+      },
       "GovernanceState": {
         "additionalProperties": false,
         "properties": {
@@ -10867,6 +10895,94 @@
         ],
         "type": "object"
       },
+      "StoreHeaderGovernanceClaim": {
+        "additionalProperties": false,
+        "properties": {
+          "call_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dataset_name": {
+            "type": "string"
+          },
+          "entry_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "epoch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreGovernanceEpochEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "node": {
+            "type": "string"
+          },
+          "normalized_pointer": {
+            "type": "string"
+          },
+          "snapshot": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "call_ordinal",
+          "dataset_id",
+          "dataset_name",
+          "entry_ordinal",
+          "epoch",
+          "node",
+          "normalized_pointer",
+          "snapshot"
+        ],
+        "type": "object"
+      },
+      "StoreHeaderGovernanceClaims": {
+        "additionalProperties": false,
+        "properties": {
+          "cause_status": {
+            "enum": [
+              "unestablished"
+            ],
+            "type": "string"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/StoreHeaderGovernanceClaim"
+            },
+            "type": "array"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cause_status",
+          "claims",
+          "hash",
+          "index",
+          "number",
+          "truncated"
+        ],
+        "type": "object"
+      },
       "StoreHeaderSummary": {
         "additionalProperties": false,
         "properties": {
@@ -14423,6 +14539,95 @@
           }
         },
         "summary": "Typed entries from one original request and collection, with normalized source pointers and immutable pagination; unavailable differs from empty."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries/{entry}": {
+      "get": {
+        "operationId": "getGovernanceEntry",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "positive original request ordinal",
+            "in": "path",
+            "name": "ordinal",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "positive original collection entry ordinal",
+            "in": "path",
+            "name": "entry",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "original request collection",
+            "in": "query",
+            "name": "collection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GovernanceSingleEntry"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "One original collection entry with immutable capture snapshot and source pointer; unavailable or absent rows are not substituted."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries/{entry}/header-context": {
@@ -19217,6 +19422,65 @@
           }
         },
         "summary": "Participation denominators, proposer totals and decision round distribution for at most 100000 heights."
+      }
+    },
+    "/v1/networks/{net}/headers/{index}/governance": {
+      "get": {
+        "operationId": "getHeaderGovernanceClaims",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "canonical decimal uint64 block index",
+            "in": "path",
+            "name": "index",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreHeaderGovernanceClaims"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "At most twenty completed governance source claims with this network's exact canonical index and block hash. Re-evaluated on each read; neither execution causes nor complete history are established."
       }
     },
     "/v1/networks/{net}/rounds/baseline": {

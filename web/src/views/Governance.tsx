@@ -1,3 +1,4 @@
+import type {GovernanceFocus} from "../governanceLink";
 import {useEffect,useRef,useState} from "react";
 import {get,type Schemas} from "../api/client";
 import {Pending,useLoad} from "../ui";
@@ -10,19 +11,23 @@ type SourceSelection={ordinal:number;pointer:string};
 const quantity=(value:string)=>/^0x[0-9a-f]+$/.test(value)?`${BigInt(value)} (${value})`:value;
 const count=(value:number|null)=>value===null?"unavailable":value.toLocaleString();
 
-export function Governance({net,onAuth}:{net:number;onAuth:()=>void}){
+export function Governance({net,onAuth,focus,sourceError}:{net:number;onAuth:()=>void;focus?:GovernanceFocus;sourceError?:string}){
  const datasets=useLoad(async()=>(await get("/v1/networks/{net}/datasets",{path:{net},query:{kind:"governance"}})).datasets,[net]);
  const [chosen,choose]=useState(0),[motion,setMotion]=useState(true);
- const id=chosen||(datasets.state==="done"?datasets.data.at(-1)?.id:0)||0;
- const capture=useLoad(async()=>id?get("/v1/networks/{net}/datasets/{dataset}/governance",{path:{net,dataset:id}}):null,[net,id]);
+ const linked=chosen?undefined:focus;
+ const id=chosen||linked?.dataset||(datasets.state==="done"?datasets.data.at(-1)?.id:0)||0;
+ const sourceMissing=!!linked&&datasets.state==="done"&&!datasets.data.some(d=>d.id===linked.dataset&&d.status==="complete");
+ const capture=useLoad(async()=>id&&!sourceError&&!sourceMissing&&(!linked||datasets.state==="done")?get("/v1/networks/{net}/datasets/{dataset}/governance",{path:{net,dataset:id}}):null,[net,id,sourceError,sourceMissing,datasets.state,linked]);
+ const stale=!!linked&&capture.state==="done"&&!!capture.data&&capture.data.snapshot!==linked.snapshot;
+ if(sourceError||sourceMissing||stale)return <section><h1>Governance history</h1><p role="alert">{sourceError||(sourceMissing?"The linked governance capture is unavailable in this network.":"The linked governance snapshot does not match the stored capture.")}</p></section>;
  return <section className="governance-history"><h1>Governance history</h1><p>Read-only governance claims, preserving each request's scope. Failed attempts remain visible. Mirror health, authority and verification labels describe the source; they do not verify canonical execution.</p>
   <Pending load={datasets} onAuth={onAuth}/>{datasets.state==="done"&&(datasets.data.length?<label>Governance capture <select value={id} onChange={e=>choose(Number(e.target.value))}>{datasets.data.map(d=><option key={d.id} value={d.id}>{d.name} · {d.status}</option>)}</select></label>:<p>No governance captures. Import a bounded RPC capture or archive with ingest governance.</p>)}
-  <Pending load={capture} onAuth={onAuth}/>{capture.state==="done"&&capture.data&&<GovernanceCapture key={`${id}:${capture.data.snapshot}`} net={net} capture={capture.data} onAuth={onAuth} motion={motion} onMotion={setMotion}/>}
+  <Pending load={capture} onAuth={onAuth}/>{capture.state==="done"&&capture.data&&<GovernanceCapture key={`${id}:${capture.data.snapshot}`} net={net} capture={capture.data} onAuth={onAuth} motion={motion} onMotion={setMotion} focus={linked}/>}
  </section>;
 }
 
-function GovernanceCapture({net,capture,onAuth,motion,onMotion}:{net:number;capture:Capture;onAuth:()=>void;motion:boolean;onMotion:(value:boolean)=>void}){
- const [chosen,setChosen]=useState(capture.calls.find(c=>c.request.method==="wbft_govOps")?.ordinal||1);
+function GovernanceCapture({net,capture,onAuth,motion,onMotion,focus}:{net:number;capture:Capture;onAuth:()=>void;motion:boolean;onMotion:(value:boolean)=>void;focus?:GovernanceFocus}){
+ const [chosen,setChosen]=useState(focus?.call||capture.calls.find(c=>c.request.method==="wbft_govOps")?.ordinal||1);
  const call=capture.calls.find(c=>c.ordinal===chosen);
  const gapRequest=capture.calls.find(c=>c.request.method==="wbft_mirrorFaults");
  return <>
@@ -32,7 +37,8 @@ function GovernanceCapture({net,capture,onAuth,motion,onMotion}:{net:number;capt
   <div className="gov-mirrors">{capture.calls.filter(c=>c.request.method==="wbft_mirror").map(c=><MirrorSnapshot key={c.ordinal} net={net} dataset={capture.dataset_id} call={c} onAuth={onAuth} onSelect={()=>setChosen(c.ordinal)}/>)}</div>
   <details><summary>Capture hashes and identity details</summary><p>Source {capture.source_kind} · envelope origin {capture.envelope_origin}. A reconstructed envelope digest does not identify original network packets.</p><p>Source digest {capture.source_sha256}</p><p>Normalized snapshot {capture.snapshot} · {capture.normalizer}</p><p>Before head hash {capture.before.head_hash}</p><p>After head hash {capture.after.head_hash}</p></details>
   <h2>Request history</h2><label>Original request <select value={chosen} onChange={e=>setChosen(Number(e.target.value))}>{capture.calls.map(c=><option key={c.ordinal} value={c.ordinal}>{c.ordinal} · {c.request.method} · {c.request.scope} · {c.status}</option>)}</select></label>
-  {call&&<RequestHistory key={`${capture.snapshot}:${chosen}`} net={net} dataset={capture.dataset_id} call={call} onAuth={onAuth} motion={motion} onMotion={onMotion}/>}
+  {!call&&<p role="alert">The linked original request is unavailable.</p>}
+  {call&&<RequestHistory key={`${capture.snapshot}:${chosen}`} net={net} dataset={capture.dataset_id} call={call} onAuth={onAuth} motion={motion} onMotion={onMotion} focus={chosen===focus?.call?focus:undefined} snapshot={capture.snapshot}/>}
  </>;
 }
 
@@ -53,17 +59,21 @@ function MirrorSnapshot({net,dataset,call,onAuth,onSelect}:{net:number;dataset:n
  return <article><h3>{call.request.scope}</h3><Pending load={load} onAuth={onAuth}/>{mirror?<><p>Authority: <strong>{mirror.authority}</strong> · source reports <strong>{mirror.healthy?"healthy":"unhealthy"}</strong></p><p>Mirror index {governanceIndex(mirror.number)}</p><p>{mirror.validators.length} reported validators · {Object.values(mirror.modes).filter(m=>m==="projection-only").length} projection-only instances</p></>:load.state==="done"?<p>{call.status==="available"?"Snapshot not available":"Request unavailable"}</p>:null}<button type="button" onClick={onSelect}>Inspect request {call.ordinal}</button></article>;
 }
 
-function RequestHistory({net,dataset,call,onAuth,motion,onMotion}:{net:number;dataset:number;call:Call;onAuth:()=>void;motion:boolean;onMotion:(value:boolean)=>void}){
+function RequestHistory({net,dataset,call,onAuth,motion,onMotion,focus,snapshot}:{net:number;dataset:number;call:Call;onAuth:()=>void;motion:boolean;onMotion:(value:boolean)=>void;focus?:GovernanceFocus;snapshot:string}){
  const choices=governanceCollections(call.request.method);
- const [collection,setCollection]=useState<Collection>(choices[0]||"operations"),[cursors,setCursors]=useState<string[]>([]),[selected,select]=useState<number|null>(null),[source,setSource]=useState<SourceSelection|null>(null);
+ const [collection,setCollection]=useState<Collection>(focus?.collection||choices[0]||"operations"),[cursors,setCursors]=useState<string[]>([]),[selected,select]=useState<number|null>(focus?.entry||null),[source,setSource]=useState<SourceSelection|null>(null);
  const page=useLoad(async()=>choices.length?get("/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries",{path:{net,dataset,ordinal:call.ordinal},query:{collection,limit:100,...(cursors.at(-1)?{cursor:cursors.at(-1)!}:{})}}):null,[net,dataset,call.ordinal,collection,cursors.at(-1)]);
  const clear=()=>{select(null);setSource(null)};
- const selectedEntry=page.state==="done"?page.data?.rows.find(r=>r.ordinal===selected):null;
+ const direct=useLoad(()=>focus?get("/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries/{entry}",{path:{net,dataset,ordinal:call.ordinal,entry:focus.entry},query:{collection:focus.collection}}):Promise.resolve(null),[net,dataset,call.ordinal,focus]);
+ const focused=!!focus&&collection===focus.collection&&selected===focus.entry;
+ const directMismatch=direct.state==="done"&&direct.data&&direct.data.snapshot!==snapshot;
+ const selectedEntry=focused?(direct.state==="done"&&!directMismatch?direct.data?.entry:null):(page.state==="done"?page.data?.rows.find(r=>r.ordinal===selected):null);
  return <section className={motion?"gov-request":"gov-request no-motion"}>
   <h3>Request {call.ordinal}: {call.request.method}</h3><p><strong>{call.request.scope}</strong> · {call.status}{call.error_code!=null?` · RPC code ${call.error_code}`:""}</p><p>Parameters: {call.request.params.join(" · ")||"none"}</p>
   <button type="button" onClick={()=>setSource({ordinal:call.ordinal,pointer:choices.length?"/request":"/data"})}>Open normalized request {call.ordinal}</button>
   {choices.length>1&&<div className="controls" aria-label="Request collections">{choices.map(kind=><button key={kind} type="button" aria-pressed={kind===collection} onClick={()=>{setCollection(kind);setCursors([]);clear()}}>{kind}</button>)}</div>}
   {call.request.scope==="proposal-full-history-current-state"&&<p>Full proposal history and current proposal state. Operations may lie outside the capture's bounded block range.</p>}
+  {focused&&<><Pending load={direct} onAuth={onAuth}/>{directMismatch&&<p role="alert">The source entry snapshot does not match this capture.</p>}{selectedEntry&&<p>Linked source row {selectedEntry.ordinal}. It may be outside the page below.</p>}</>}
   {choices.length>0&&<><Pending load={page} onAuth={onAuth}/>{page.state==="done"&&page.data&&<>
    {page.data.call.status!=="available"?<p className="gov-caution">Request unavailable. This does not establish zero {collection}.</p>:<p>{page.data.total.toLocaleString()} {page.data.total===1?collection.slice(0,-1):collection} reported by this request.</p>}
    {collection==="operations"&&page.data.rows.length>0&&<><label><input type="checkbox" checked={motion} onChange={e=>onMotion(e.target.checked)}/>Selection motion (respects reduced motion)</label><GovernanceTimeline rows={page.data.rows} selected={selected} onSelect={n=>{select(n);setSource(null)}}/></>}
