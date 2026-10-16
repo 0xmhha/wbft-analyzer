@@ -4440,7 +4440,7 @@ export interface operations {
     listDatasets: {
         parameters: {
             query?: {
-                /** @description optional dataset kind: run, range, follow, reports, messages, observations or runtime */
+                /** @description optional dataset kind: run, range, follow, reports, messages, observations, runtime or governance */
                 kind?: string;
             };
             header?: never;

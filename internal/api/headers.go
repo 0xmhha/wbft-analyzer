@@ -34,7 +34,7 @@ func (s *Server) datasets(w http.ResponseWriter, r *http.Request) {
 	kind := q.Get("kind")
 	if q.Has("kind") {
 		switch kind {
-		case "run", "range", "follow", "reports", "messages", "observations", "runtime":
+		case "run", "range", "follow", "reports", "messages", "observations", "runtime", "governance":
 		default:
 			writeError(w, 400, "invalid dataset kind")
 			return

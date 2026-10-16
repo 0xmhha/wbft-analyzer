@@ -1,0 +1,313 @@
+{
+  "format": "wbft-analyzer-governance/1",
+  "envelope_origin": "supplied",
+  "from": "0xfffffffffffffffe",
+  "to": "0xffffffffffffffff",
+  "instances": [
+    "0x1111111111111111111111111111111111111111"
+  ],
+  "proposals": [
+    {
+      "instance": "0x1111111111111111111111111111111111111111",
+      "id": "0xffffffffffffffff"
+    }
+  ],
+  "replies": [
+    {
+      "method": "wbft_nodeInfo",
+      "params": [],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "impl": "wbft",
+          "address": "0x1111111111111111111111111111111111111111",
+          "chainId": 9007199254740993,
+          "genesisHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "head": {
+            "number": "18446744073709551616",
+            "hash": "0x2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        }
+      }
+    },
+    {
+      "method": "wbft_mirror",
+      "params": [],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "number": "0xffffffffffffffff",
+          "hash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "healthy": false,
+          "authority": "contract",
+          "modes": {
+            "0x1111111111111111111111111111111111111111": "projection-only"
+          },
+          "validators": [
+            "0x1111111111111111111111111111111111111111"
+          ],
+          "blsPublicKeys": [],
+          "gasTip": null,
+          "blacklisted": [],
+          "authorized": []
+        }
+      }
+    },
+    {
+      "method": "wbft_govOps",
+      "params": [
+        "0xfffffffffffffffe",
+        "0xffffffffffffffff"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "result": [
+          {
+            "number": "0xffffffffffffffff",
+            "tx": 4294967295,
+            "txHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+            "path": [
+              0
+            ],
+            "from": "0x1111111111111111111111111111111111111111",
+            "instance": "0x1111111111111111111111111111111111111111",
+            "input": "0x73796e7468657469632d73656e7369746976652d64617461",
+            "effective": false,
+            "view": false,
+            "result": "InvalidProposal",
+            "logs": [
+              {
+                "address": "0x1111111111111111111111111111111111111111",
+                "topics": [
+                  "0x2222222222222222222222222222222222222222222222222222222222222222"
+                ],
+                "data": "0x73796e7468657469632d73656e7369746976652d64617461"
+              }
+            ],
+            "verified": false,
+            "executingProposalId": null,
+            "validatorChange": null
+          }
+        ]
+      }
+    },
+    {
+      "method": "wbft_mirrorFaults",
+      "params": [
+        "0xfffffffffffffffe",
+        "0xffffffffffffffff"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "result": [
+          {
+            "number": "0xfffffffffffffffe",
+            "kind": "gap",
+            "instance": "0x1111111111111111111111111111111111111111",
+            "what": "synthetic-sensitive-data",
+            "gapFrom": "0x0",
+            "gapTo": "0x0"
+          },
+          {
+            "number": "0xffffffffffffffff",
+            "kind": "gap",
+            "instance": "0x1111111111111111111111111111111111111111",
+            "what": "synthetic-sensitive-data"
+          }
+        ]
+      }
+    },
+    {
+      "method": "wbft_validatorChanges",
+      "params": [
+        "0xfffffffffffffffe",
+        "0xffffffffffffffff"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 5,
+        "result": [
+          {
+            "number": "0xffffffffffffffff",
+            "ops": [
+              {
+                "number": "0xffffffffffffffff",
+                "tx": 4294967295,
+                "txHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+                "path": [
+                  0
+                ],
+                "from": "0x1111111111111111111111111111111111111111",
+                "instance": "0x1111111111111111111111111111111111111111",
+                "input": "0x73796e7468657469632d73656e7369746976652d64617461",
+                "effective": false,
+                "view": false,
+                "result": "InvalidProposal",
+                "logs": [
+                  {
+                    "address": "0x1111111111111111111111111111111111111111",
+                    "topics": [
+                      "0x2222222222222222222222222222222222222222222222222222222222222222"
+                    ],
+                    "data": "0x73796e7468657469632d73656e7369746976652d64617461"
+                  }
+                ],
+                "verified": false,
+                "executingProposalId": null,
+                "validatorChange": null
+              }
+            ],
+            "epoch": {
+              "Candidates": [
+                "0x1111111111111111111111111111111111111111"
+              ],
+              "Validators": [
+                "0x1111111111111111111111111111111111111111"
+              ],
+              "Added": [],
+              "Removed": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "wbft_mirrorState",
+      "params": [
+        "0x1111111111111111111111111111111111111111",
+        "0xffffffffffffffff"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 6,
+        "result": {
+          "number": "0xffffffffffffffff",
+          "instance": "0x1111111111111111111111111111111111111111",
+          "mode": "projection-only",
+          "memberVersion": "0x1",
+          "members": [
+            "0x1111111111111111111111111111111111111111"
+          ],
+          "quorum": "0x1",
+          "proposalExpiry": "0x100",
+          "currentProposalId": "0xffffffffffffffff",
+          "maxActiveProposalsPerMember": "0x10",
+          "proposals": [
+            {
+              "id": "0xffffffffffffffff",
+              "actionType": "0x2222222222222222222222222222222222222222222222222222222222222222",
+              "proposer": "0x1111111111111111111111111111111111111111",
+              "status": 4,
+              "approved": 3,
+              "rejected": 1,
+              "requiredApprovals": 3,
+              "executionCount": "0x0",
+              "callData": "0x73796e7468657469632d73656e7369746976652d64617461"
+            }
+          ],
+          "inexact": true
+        }
+      }
+    },
+    {
+      "method": "wbft_govProposal",
+      "params": [
+        "0x1111111111111111111111111111111111111111",
+        "0xffffffffffffffff"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 7,
+        "result": {
+          "instance": "0x1111111111111111111111111111111111111111",
+          "id": "0xffffffffffffffff",
+          "proposal": {
+            "id": "0xffffffffffffffff",
+            "actionType": "0x2222222222222222222222222222222222222222222222222222222222222222",
+            "proposer": "0x1111111111111111111111111111111111111111",
+            "status": 4,
+            "approved": 3,
+            "rejected": 1,
+            "requiredApprovals": 3,
+            "executionCount": "0x0",
+            "callData": "0x73796e7468657469632d73656e7369746976652d64617461"
+          },
+          "ops": [
+            {
+              "number": "0x1",
+              "tx": 4294967295,
+              "txHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+              "path": [
+                0
+              ],
+              "from": "0x1111111111111111111111111111111111111111",
+              "instance": "0x1111111111111111111111111111111111111111",
+              "input": "0x73796e7468657469632d73656e7369746976652d64617461",
+              "effective": false,
+              "view": false,
+              "result": "InvalidProposal",
+              "logs": [
+                {
+                  "address": "0x1111111111111111111111111111111111111111",
+                  "topics": [
+                    "0x2222222222222222222222222222222222222222222222222222222222222222"
+                  ],
+                  "data": "0x73796e7468657469632d73656e7369746976652d64617461"
+                }
+              ],
+              "verified": false,
+              "executingProposalId": null,
+              "validatorChange": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "method": "wbft_mirror",
+      "params": [],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 8,
+        "result": {
+          "number": "0xffffffffffffffff",
+          "hash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "healthy": false,
+          "authority": "contract",
+          "modes": {
+            "0x1111111111111111111111111111111111111111": "projection-only"
+          },
+          "validators": [
+            "0x1111111111111111111111111111111111111111"
+          ],
+          "blsPublicKeys": [],
+          "gasTip": null,
+          "blacklisted": [],
+          "authorized": []
+        }
+      }
+    },
+    {
+      "method": "wbft_nodeInfo",
+      "params": [],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 9,
+        "result": {
+          "impl": "wbft",
+          "address": "0x1111111111111111111111111111111111111111",
+          "chainId": 9007199254740993,
+          "genesisHash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+          "head": {
+            "number": "18446744073709551616",
+            "hash": "0x2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        }
+      }
+    }
+  ]
+}
