@@ -24,14 +24,27 @@ export function Governance({net,onAuth}:{net:number;onAuth:()=>void}){
 function GovernanceCapture({net,capture,onAuth,motion,onMotion}:{net:number;capture:Capture;onAuth:()=>void;motion:boolean;onMotion:(value:boolean)=>void}){
  const [chosen,setChosen]=useState(capture.calls.find(c=>c.request.method==="wbft_govOps")?.ordinal||1);
  const call=capture.calls.find(c=>c.ordinal===chosen);
+ const gapRequest=capture.calls.find(c=>c.request.method==="wbft_mirrorFaults");
  return <>
   <h2>Capture provenance</h2><dl className="gov-facts"><dt>Source node</dt><dd>{capture.before.address}</dd><dt>Chain</dt><dd>{capture.before.chain_id}</dd><dt>Genesis</dt><dd>{capture.before.genesis_hash}</dd><dt>Identity bookend heads</dt><dd>{capture.before.head} → {capture.after.head}</dd><dt>Requested block indices</dt><dd>{governanceIndex(capture.from)} to {governanceIndex(capture.to)}</dd><dt>Bounded operation count</dt><dd>{count(capture.operations)}</dd><dt>Fault / gap records</dt><dd>{count(capture.faults)} / {count(capture.gaps)}</dd></dl>
   <p className="gov-caution">Collected independently; not an atomic snapshot. Canonical binding is not established by these RPC claims. Proposal history and current state have their own request scope.</p>
+  <GovernanceHistoryNotice gaps={capture.gaps} operations={capture.operations} onInspect={gapRequest?()=>setChosen(gapRequest.ordinal):undefined}/>
   <div className="gov-mirrors">{capture.calls.filter(c=>c.request.method==="wbft_mirror").map(c=><MirrorSnapshot key={c.ordinal} net={net} dataset={capture.dataset_id} call={c} onAuth={onAuth} onSelect={()=>setChosen(c.ordinal)}/>)}</div>
   <details><summary>Capture hashes and identity details</summary><p>Source {capture.source_kind} · envelope origin {capture.envelope_origin}. A reconstructed envelope digest does not identify original network packets.</p><p>Source digest {capture.source_sha256}</p><p>Normalized snapshot {capture.snapshot} · {capture.normalizer}</p><p>Before head hash {capture.before.head_hash}</p><p>After head hash {capture.after.head_hash}</p></details>
   <h2>Request history</h2><label>Original request <select value={chosen} onChange={e=>setChosen(Number(e.target.value))}>{capture.calls.map(c=><option key={c.ordinal} value={c.ordinal}>{c.ordinal} · {c.request.method} · {c.request.scope} · {c.status}</option>)}</select></label>
   {call&&<RequestHistory key={`${capture.snapshot}:${chosen}`} net={net} dataset={capture.dataset_id} call={call} onAuth={onAuth} motion={motion} onMotion={onMotion}/>}
  </>;
+}
+
+export function GovernanceHistoryNotice({gaps,operations,onInspect}:{gaps:number|null;operations:number|null;onInspect?:()=>void}){
+ if(gaps===0)return null;
+ return <aside role="note" aria-label="Governance history coverage" className="gov-caution gov-history-notice">
+  <h3>{gaps===null?"History coverage unavailable":"Unconfirmed governance history"}</h3>
+  <p>{gaps===null?"The gap request did not return data.":`${gaps.toLocaleString()} history ${gaps===1?"gap":"gaps"} reported.`} Earlier attempts may be absent from these results.</p>
+  {operations===0&&<p>Zero reported operations does not establish that no attempts occurred.</p>}
+  <p>Mirror health describes the current state and does not establish complete history.</p>
+  {onInspect&&<button type="button" onClick={onInspect}>Inspect gap request</button>}
+ </aside>;
 }
 
 function MirrorSnapshot({net,dataset,call,onAuth,onSelect}:{net:number;dataset:number;call:Call;onAuth:()=>void;onSelect:()=>void}){

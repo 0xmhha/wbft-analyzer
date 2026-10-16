@@ -229,3 +229,7 @@ article pre { overflow: auto; max-height: 24rem; }
 @keyframes governance-select { from { stroke-width: 5; opacity: .3; } to { stroke-width: 2; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .gov-mark circle.gov-selection, .gov-selected { animation: none; transition: none; } }
 @media (max-width: 600px) { .gov-facts { grid-template-columns: minmax(0,1fr); } .gov-facts dt { margin-top: .4rem; } }
+
+.gov-history-notice { margin: 1rem 0; padding: .8rem 1rem; background: #fff7df; }
+.gov-history-notice h3 { margin-top: 0; }
+.gov-history-notice p { margin: .5rem 0; }
