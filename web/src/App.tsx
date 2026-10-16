@@ -1,3 +1,4 @@
+import {governanceFocus,type GovernanceFocus} from "./governanceLink";
 import {Governance} from "./views/Governance";
 import {Runtime} from "./views/Runtime";
 import { eventFocus, type EventFocus } from "./sourceLink";
@@ -18,13 +19,13 @@ import { Overview } from "./views/Overview";
 import { Trends } from "./views/Trends";
 import { Verdicts } from "./views/Verdicts";
 
-type Route = { view: "overview" } | { view: "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency" | "missing" | "nodes" | "follow" | "reexec" | "whatif" | "scenarios" | "datasets" | "runtime" | "governance"; net: number; focus?: EventFocus; headerFocus?:{index:string;dataset:number;node:string}; sourceError?:string };
+type Route = { view: "overview" } | { view: "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency" | "missing" | "nodes" | "follow" | "reexec" | "whatif" | "scenarios" | "datasets" | "runtime" | "governance"; net: number; focus?: EventFocus; headerFocus?:{index:string;dataset:number;node:string}; sourceError?:string; governanceFocus?:GovernanceFocus };
 
 /** Reads the route from the hash: #/, #/networks/N/verdicts, #/networks/N/trends. */
 export function parseRoute(hash: string): Route {
   const [path, query] = hash.split("?");
   const m = /^#\/networks\/(\d+)\/(verdicts|trends|headers|events|messages|message-latency|missing|nodes|follow|reexec|whatif|scenarios|datasets|runtime|governance)$/.exec(path || "");
-  if (m && m[1] && m[2] && Number.isSafeInteger(Number(m[1])) && Number(m[1]) > 0) return { view: m[2] as "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency" | "missing" | "nodes" | "follow" | "reexec" | "whatif" | "scenarios" | "datasets" | "runtime" | "governance", net: Number(m[1]), ...(m[2] === "events" ? eventFocus(query || "") : m[2] === "headers" ? headerEvidenceFocus(query||"") : {}) };
+  if (m && m[1] && m[2] && Number.isSafeInteger(Number(m[1])) && Number(m[1]) > 0) return { view: m[2] as "verdicts" | "trends" | "headers" | "events" | "messages" | "message-latency" | "missing" | "nodes" | "follow" | "reexec" | "whatif" | "scenarios" | "datasets" | "runtime" | "governance", net: Number(m[1]), ...(m[2] === "events" ? eventFocus(query || "") : m[2] === "headers" ? headerEvidenceFocus(query||"") : m[2] === "governance" ? governanceFocus(query||"") : {}) };
   return { view: "overview" };
 }
 
@@ -61,7 +62,7 @@ export function App() {
         />
       )}
       <main key={epoch}>
-        {route.view === "governance" && <Governance key={route.net} net={route.net} onAuth={onAuth}/> }
+        {route.view === "governance" && <Governance key={`${route.net}:${JSON.stringify(route.governanceFocus)}:${route.sourceError}`} net={route.net} onAuth={onAuth} focus={route.governanceFocus} sourceError={route.sourceError}/> }
         {route.view === "runtime" && <Runtime key={route.net} net={route.net} onAuth={onAuth}/> }
         {route.view === "overview" && <Overview onAuth={onAuth} />}
         {route.view === "verdicts" && <Verdicts net={route.net} onAuth={onAuth} />}

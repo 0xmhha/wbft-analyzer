@@ -277,6 +277,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries/{entry}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One original collection entry with immutable capture snapshot and source pointer; unavailable or absent rows are not substituted. */
+        get: operations["getGovernanceEntry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries/{entry}/header-context": {
         parameters: {
             query?: never;
@@ -1164,6 +1181,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/headers/{index}/governance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** At most twenty completed governance source claims with this network's exact canonical index and block hash. Re-evaluated on each read; neither execution causes nor complete history are established. */
+        get: operations["getHeaderGovernanceClaims"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/rounds/baseline": {
         parameters: {
             query?: never;
@@ -1534,6 +1568,12 @@ export interface components {
             method: string;
             params: string[];
             scope: string;
+        };
+        GovernanceSingleEntry: {
+            /** @enum {string} */
+            collection: "operations" | "faults" | "states" | "proposals" | "changes" | "mirrors";
+            entry: components["schemas"]["StoreGovernanceEntry"];
+            snapshot: string;
         };
         GovernanceState: {
             authorized?: string[];
@@ -3940,6 +3980,28 @@ export interface components {
             from: string | null;
             to: string | null;
         };
+        StoreHeaderGovernanceClaim: {
+            /** Format: int64 */
+            call_ordinal: number;
+            /** Format: int64 */
+            dataset_id: number;
+            dataset_name: string;
+            /** Format: int64 */
+            entry_ordinal: number;
+            epoch: components["schemas"]["StoreGovernanceEpochEvidence"] | null;
+            node: string;
+            normalized_pointer: string;
+            snapshot: string;
+        };
+        StoreHeaderGovernanceClaims: {
+            /** @enum {string} */
+            cause_status: "unestablished";
+            claims: components["schemas"]["StoreHeaderGovernanceClaim"][];
+            hash: string;
+            index: string;
+            number: string;
+            truncated: boolean;
+        };
         StoreHeaderSummary: {
             /** Format: int64 */
             heights: number;
@@ -5297,6 +5359,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GovernancePage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getGovernanceEntry: {
+        parameters: {
+            query: {
+                /** @description original request collection */
+                collection: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description positive original request ordinal */
+                ordinal: number;
+                /** @description positive original collection entry ordinal */
+                entry: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernanceSingleEntry"];
                 };
             };
             /** @description the request failed */
@@ -8019,6 +8131,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreHeaderSummary"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getHeaderGovernanceClaims: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description canonical decimal uint64 block index */
+                index: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreHeaderGovernanceClaims"];
                 };
             };
             /** @description the request failed */
