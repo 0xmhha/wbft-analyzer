@@ -5,7 +5,7 @@ import { Pending, useLoad } from "../ui";
 export function Follow({net,onAuth}:{net:number;onAuth:()=>void}) {
  const [refresh,setRefresh]=useState(0),[auto,setAuto]=useState(true);
  useEffect(()=>{if(!auto)return;const timer=setInterval(()=>setRefresh(n=>n+1),5000);return()=>clearInterval(timer)},[auto]);
- const runs=useLoad(async()=>(await get("/v1/networks/{net}/datasets",{path:{net}})).datasets.filter(d=>d.kind==="follow"),[net,refresh]);
+ const runs=useLoad(async()=>(await get("/v1/networks/{net}/datasets",{path:{net},query:{kind:"follow"}})).datasets,[net,refresh]);
  return <section><h1>Native follow progress</h1><p>Each source retains its own next canonical index. A participation gap or unavailable RPC keeps that position for retry. Stored progress does not imply complete event or message capture.</p><div className="controls"><label><input type="checkbox" checked={auto} onChange={e=>setAuto(e.target.checked)}/>Refresh every 5 seconds</label><button type="button" onClick={()=>setRefresh(n=>n+1)}>Refresh progress</button></div><Pending load={runs} onAuth={onAuth}/>{runs.state==="done"&&(runs.data.length?runs.data.map(d=><FollowSource key={d.id} net={net} dataset={d.id} name={d.name} refresh={refresh} onAuth={onAuth}/>):<p>No follow source yet.</p>)}</section>;
 }
 function FollowSource({net,dataset,name,refresh,onAuth}:{net:number;dataset:number;name:string;refresh:number;onAuth:()=>void}) {

@@ -24,7 +24,23 @@ func (s *Server) datasets(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ds, err := s.Store.Datasets(r.Context(), n.ID)
+	q := r.URL.Query()
+	for key, values := range q {
+		if key != "kind" || len(values) != 1 {
+			writeError(w, 400, "one dataset kind filter is supported")
+			return
+		}
+	}
+	kind := q.Get("kind")
+	if q.Has("kind") {
+		switch kind {
+		case "run", "range", "follow", "reports", "messages", "observations", "runtime":
+		default:
+			writeError(w, 400, "invalid dataset kind")
+			return
+		}
+	}
+	ds, err := s.Store.DatasetsByKind(r.Context(), n.ID, kind)
 	if err != nil {
 		s.fail(w, r, err)
 		return

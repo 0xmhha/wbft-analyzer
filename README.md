@@ -733,6 +733,12 @@ and latest 100 committed batches. `GET /v1/networks/{net}/datasets/{dataset}/fol
 returns the same state. Stored importing status is not a process-liveness proof,
 and native RPC claims do not prove event capture or message-delivery completeness.
 
+The screen requests `GET /v1/networks/{net}/datasets?kind=follow`, so automatic
+refreshes do not load every historical header and observation child dataset.
+Dataset lists also accept `run`, `range`, `reports`, `messages`, `observations`
+and `runtime` as a single kind filter. Omitting the filter retains the full list;
+empty, repeated, unknown kinds and unrecognized query parameters are rejected.
+
 The 72-hour acceptance run with a node restart and RPC interruption remains a
 separate runtime check; short regression tests do not complete that requirement.
 

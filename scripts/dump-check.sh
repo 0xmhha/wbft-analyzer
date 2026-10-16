@@ -138,6 +138,10 @@ capture() {
 
  observation_net=$(jq -r '.networks[]|select(.chain_id=="8" and .genesis_hash=="0x1111111111111111111111111111111111111111111111111111111111111111")|.id' "$dir/networks.json")
  get "/networks/$observation_net/datasets" observation-datasets
+ get "/networks/$observation_net/datasets?kind=observations" observation-only-datasets
+ get "/networks/$observation_net/datasets?kind=follow" observation-no-follow-datasets
+ jq -e --slurpfile all "$dir/observation-datasets.json" '.datasets == [$all[0].datasets[] | select(.kind=="observations")]' "$dir/observation-only-datasets.json" >/dev/null
+ jq -e '.datasets==[]' "$dir/observation-no-follow-datasets.json" >/dev/null
  observation_id=$(jq -r '.datasets[]|select(.kind=="observations")|.id' "$dir/observation-datasets.json")
  get "/networks/$observation_net/datasets/$observation_id/observations" observation-capture
  get "/networks/$observation_net/datasets/$observation_id/observations/participation?from=1&to=2&limit=1000" observation-participation

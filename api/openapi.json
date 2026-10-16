@@ -12369,6 +12369,15 @@
               "format": "int64",
               "type": "integer"
             }
+          },
+          {
+            "description": "optional dataset kind: run, range, follow, reports, messages, observations or runtime",
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -12403,7 +12412,7 @@
             "description": "the request failed"
           }
         },
-        "summary": "Datasets and their import status, progress and errors."
+        "summary": "Datasets and their import status, progress and errors; optionally restricted to one kind before node metadata is computed."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}": {
