@@ -201,3 +201,31 @@ article pre { overflow: auto; max-height: 24rem; }
 
 .message-evidence { min-width: 0; }
 .message-evidence pre { max-width: 100%; overflow: auto; }
+
+/* Governance source history and selection cues. */
+.governance-history { min-width: 0; overflow-wrap: anywhere; }
+.governance-history select { max-width: 100%; }
+.gov-facts { display: grid; grid-template-columns: minmax(9rem,1fr) minmax(0,4fr); gap: .4rem 1rem; }
+.gov-facts dt { font-weight: 600; }
+.gov-facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.gov-caution { border-left: 3px solid #b45309; padding-left: .8rem; }
+.gov-mirrors { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,16rem),1fr)); gap: 1rem; margin: 1rem 0; }
+.gov-mirrors article, .gov-detail, .gov-source { border: 1px solid #cbd5e1; border-radius: .4rem; padding: 1rem; margin: 1rem 0; min-width: 0; }
+.gov-timeline { margin: 1rem 0; min-width: 0; }
+.gov-timeline > .table-scroll { max-height: none; }
+.gov-timeline svg { display: block; width: 100%; min-width: 760px; }
+.gov-timeline text { font-size: 12px; fill: #475569; }
+.gov-grid { stroke: #cbd5e1; stroke-dasharray: 2 4; }
+.gov-mark { cursor: pointer; }
+.gov-mark circle { fill: white; stroke-width: 2; stroke: #b45309; }
+.gov-mark.gov-effective circle { fill: #0e7490; stroke: #155e75; }
+.gov-mark.gov-failed circle, .gov-mark.gov-failed path { fill: white; stroke: #b91c1c; stroke-width: 2; }
+.gov-mark.gov-unknown circle { stroke-dasharray: 2 2; }
+.gov-mark circle.gov-selection { fill: none; stroke: #1d4ed8; stroke-dasharray: none; animation: governance-select .9s ease-out 2; }
+.gov-mark:focus { outline: 2px solid #1d4ed8; outline-offset: 3px; }
+.gov-selected { background: #eff6ff; transition: background .2s; }
+.gov-source pre { max-height: 28rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.gov-request.no-motion .gov-selection, .gov-request.no-motion .gov-selected { animation: none; transition: none; }
+@keyframes governance-select { from { stroke-width: 5; opacity: .3; } to { stroke-width: 2; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gov-mark circle.gov-selection, .gov-selected { animation: none; transition: none; } }
+@media (max-width: 600px) { .gov-facts { grid-template-columns: minmax(0,1fr); } .gov-facts dt { margin-top: .4rem; } }

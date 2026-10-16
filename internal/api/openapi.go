@@ -133,7 +133,7 @@ func (g *schemas) of(t reflect.Type) map[string]any {
 		return map[string]any{"type": "boolean"}
 	case reflect.Int, reflect.Int32, reflect.Int64:
 		return map[string]any{"type": "integer", "format": "int64"}
-	case reflect.Uint, reflect.Uint32, reflect.Uint64:
+	case reflect.Uint, reflect.Uint8, reflect.Uint32, reflect.Uint64:
 		return map[string]any{"type": "integer", "minimum": 0}
 	case reflect.Float64:
 		return map[string]any{"type": "number", "format": "double"}
