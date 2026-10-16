@@ -28,16 +28,17 @@ type Event struct {
 	ViewInferred                           bool
 }
 type Stats struct {
-	MonotonicRegressions int64  `json:"monotonic_regressions,omitempty"`
-	SequenceGaps         int64  `json:"sequence_gaps,omitempty"`
-	Lines                int64  `json:"lines"`
-	Events               int64  `json:"events"`
-	Unknown              int64  `json:"unknown"`
-	Malformed            int64  `json:"malformed"`
-	ClockRegressions     int64  `json:"clock_regressions"`
-	SHA256               string `json:"sha256"`
-	FirstWall            string `json:"first_wall"`
-	LastWall             string `json:"last_wall"`
+	OutOfProfileDuplicateContext int64  `json:"out_of_profile_duplicate_context,omitempty"`
+	MonotonicRegressions         int64  `json:"monotonic_regressions,omitempty"`
+	SequenceGaps                 int64  `json:"sequence_gaps,omitempty"`
+	Lines                        int64  `json:"lines"`
+	Events                       int64  `json:"events"`
+	Unknown                      int64  `json:"unknown"`
+	Malformed                    int64  `json:"malformed"`
+	ClockRegressions             int64  `json:"clock_regressions"`
+	SHA256                       string `json:"sha256"`
+	FirstWall                    string `json:"first_wall"`
+	LastWall                     string `json:"last_wall"`
 }
 
 // Read streams at most a 4MiB line into memory. Diagnostics contain counts,
@@ -61,6 +62,10 @@ func Read(ctx context.Context, r io.Reader, p *Profile, node, input string, emit
 		}
 		m, err := object(raw)
 		if err != nil {
+			if outOfProfileDuplicateContext(raw, p) {
+				stats.OutOfProfileDuplicateContext++
+				continue
+			}
 			stats.Malformed++
 			continue
 		}
@@ -209,4 +214,57 @@ func (s Stats) Diagnostic() string {
 		return ""
 	}
 	return strings.TrimSpace(fmt.Sprintf("unknown consensus phrases: %d; malformed log records: %d", s.Unknown, s.Malformed))
+}
+
+// A mixed log can retain records outside the selected profile. Only duplicate
+// non-envelope context is ignorable, and only after the entire envelope proves
+// that this profile would not read the record. No context values are projected.
+func outOfProfileDuplicateContext(raw []byte, p *Profile) bool {
+	d := json.NewDecoder(bytes.NewReader(raw))
+	tok, err := d.Token()
+	if err != nil || tok != json.Delim('{') {
+		return false
+	}
+	fields := map[string]json.RawMessage{}
+	duplicate := false
+	for d.More() {
+		tok, err := d.Token()
+		if err != nil {
+			return false
+		}
+		key, ok := tok.(string)
+		if !ok {
+			return false
+		}
+		var value json.RawMessage
+		if d.Decode(&value) != nil {
+			return false
+		}
+		if _, exists := fields[key]; exists {
+			switch key {
+			case "msg":
+				continue // Preserve the established first-phrase rule.
+			case "t", "time", "lvl", "level", "module":
+				return false
+			default:
+				duplicate = true
+				continue
+			}
+		}
+		fields[key] = value
+	}
+	if tok, err = d.Token(); err != nil || tok != json.Delim('}') {
+		return false
+	}
+	if _, err = d.Token(); err != io.EOF || !duplicate {
+		return false
+	}
+	var phrase, module string
+	if json.Unmarshal(fields["msg"], &phrase) != nil || phrase == "" {
+		return false
+	}
+	if value, present := fields["module"]; present && (bytes.Equal(bytes.TrimSpace(value), []byte("null")) || json.Unmarshal(value, &module) != nil) {
+		return false
+	}
+	return !p.relevant(phrase, module)
 }

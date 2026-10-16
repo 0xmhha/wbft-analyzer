@@ -1770,3 +1770,5 @@ retained for inspection. Declarations and suppression callbacks have no measured
 clock. The relationship reveal and source focus respect reduced-motion settings.
 
 Suppression records may retain inherited R-01 timestamps. Normalization keeps their callback clock unavailable; cache declarations still require their explicit unmeasured clock shape.
+
+Log normalization version 2 discloses duplicate context fields on records outside the selected log profile as `out_of_profile_duplicate_context`. These records contribute no events or context values. Relevant records, malformed JSON and ambiguous reserved envelope fields remain invalid. Full source hashes and original line numbers include every input line.

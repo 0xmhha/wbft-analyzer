@@ -30,7 +30,7 @@ func HealthMetadataPreserved(version string) bool {
 const ManifestFormat = "wbft-analyzer-run/1"
 
 // NormalizerVersion changes when stored metadata interpretation changes.
-const NormalizerVersion = "wbft-log-normalization/1"
+const NormalizerVersion = "wbft-log-normalization/2"
 
 type Network struct {
 	ChainID     string `json:"chain_id"`
