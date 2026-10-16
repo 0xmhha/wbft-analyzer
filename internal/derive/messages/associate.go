@@ -71,7 +71,7 @@ func VerifyAssociation(records []source.Record, events []logs.Event) Association
 	for i, r := range records {
 		n := canonicalNode(r.Node)
 		jruns[[2]string{n, r.Run}] = true
-		if r.Step == "" {
+		if r.Step == "" || r.Step == "0" {
 			continue
 		}
 		k := anchorKey{n, r.Run, journalEngines[i], r.Step}
@@ -80,7 +80,7 @@ func VerifyAssociation(records []source.Record, events []logs.Event) Association
 			a.signatures = append(a.signatures, signature(r.Key, r.Phase, r.Outcome))
 			a.pointers = append(a.pointers, recordSource(r))
 		}
-		if r.Type == "step" {
+		if associationCompletion(r) {
 			a.clocks++
 			a.wall = r.Wall
 			if r.Mono != nil {
@@ -220,6 +220,25 @@ func VerifyAssociation(records []source.Record, events []logs.Event) Association
 	return out
 }
 
+// R01 retains the same completion clocks in measured scheduler records. Own
+// message completions require the reader's closed own-input provenance proof.
+// Other frame timestamps are observations, not completed-step boundaries.
+func associationCompletion(r source.Record) bool {
+	if r.Type == "step" {
+		return true
+	}
+	if r.ClockSource != "recorded" || r.Journal == nil || r.EngineRun == "" || r.EngineRun == "0" || r.Step == "" || r.Step == "0" {
+		return false
+	}
+	switch r.Type {
+	case "scheduler_step":
+		return true
+	case "own_input":
+		return r.OwnInput != nil && r.OwnInput.EngineRun == r.EngineRun && r.OwnInput.Step == r.Step
+	}
+	return false
+}
+
 // AssociatedSources limits mixed projection to runs whose stepped outcomes
 // have been verified. Unshared runs remain in source coverage, not latency.
 func AssociatedSources(records []source.Record, events []logs.Event, proof AssociationProof) ([]source.Record, []logs.Event) {
@@ -262,8 +281,9 @@ func withinCompletedStep(previous, end, at *outcomeAnchor) bool {
 	return e1 == nil && e2 == nil && e3 == nil && e4 == nil && e5 == nil && e6 == nil && lo <= v && v <= hi && !t.Before(a) && !t.After(b) && !b.Before(a)
 }
 
-// Outcomes precede their completion record. Only that next same-input/run
-// completion may supply its engine namespace. Native events retain the explicit
+// Outcomes precede their completion record. The next same-input/run completion
+// supplies absent engine namespaces; recorded namespaces remain authoritative.
+// Native events retain the explicit
 // ENGINE_START boundary in source-line order, never a timestamp tolerance.
 func associationEngines(records []source.Record, events []logs.Event) ([]string, []string) {
 	jr := make([]string, len(records))
@@ -289,7 +309,7 @@ func associationEngines(records []source.Record, events []logs.Event) ([]string,
 		i := order[n]
 		r := records[i]
 		k := sourceKey{r.Input, canonicalNode(r.Node), r.Run}
-		if r.Type == "step" {
+		if associationCompletion(r) {
 			next[k] = completion{r.Step, r.EngineRun}
 			jr[i] = r.EngineRun
 			continue
@@ -297,6 +317,10 @@ func associationEngines(records []source.Record, events []logs.Event) ([]string,
 		if r.Step != "" {
 			if c, ok := next[k]; ok && c.step == r.Step {
 				jr[i] = c.engine
+				// A recorded namespace cannot be overwritten by a nearby completion.
+				if r.EngineRun != "" && r.EngineRun != "0" {
+					jr[i] = r.EngineRun
+				}
 			}
 		}
 	}

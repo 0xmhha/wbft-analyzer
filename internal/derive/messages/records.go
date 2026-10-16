@@ -5,7 +5,7 @@ import (
 	"sort"
 )
 
-const Version = "wbft-message-pairing/9"
+const Version = "wbft-message-pairing/10"
 
 const WriteStartToReadComplete = "write_start_to_read_complete"
 
