@@ -39,15 +39,16 @@ type ObservationImprovement struct {
 	Source string `json:"source"`
 }
 type ObservationCapture struct {
-	DatasetID    int64              `json:"dataset_id"`
-	From         string             `json:"from"`
-	To           string             `json:"to"`
-	Snapshot     string             `json:"snapshot"`
-	SourceKind   string             `json:"source_kind"`
-	SourceSHA256 string             `json:"source_sha256"`
-	Node         ObservationNode    `json:"node"`
-	Comparison   observe.Comparison `json:"comparison"`
-	Calls        []ObservationCall  `json:"calls"`
+	DatasetID    int64                          `json:"dataset_id"`
+	From         string                         `json:"from"`
+	To           string                         `json:"to"`
+	Snapshot     string                         `json:"snapshot"`
+	SourceKind   string                         `json:"source_kind"`
+	SourceSHA256 string                         `json:"source_sha256"`
+	Node         ObservationNode                `json:"node"`
+	Comparison   observe.Comparison             `json:"comparison"`
+	RoundChanges *observe.RoundChangeComparison `json:"round_changes,omitempty"`
+	Calls        []ObservationCall              `json:"calls"`
 }
 type ObservationCall struct {
 	Ordinal   int64    `json:"ordinal"`
@@ -87,7 +88,7 @@ func (s *Store) PutObservation(ctx context.Context, id int64, sourceKind, source
 		return errors.New("invalid observation source hash")
 	}
 	n := snap.Node
-	info := ObservationCapture{DatasetID: id, From: snap.From, To: snap.To, SourceKind: sourceKind, SourceSHA256: sourceSHA, Node: ObservationNode{Impl: n.Impl, Address: strings.ToLower(n.Address.String()), Validator: n.Validator, ChainID: n.ChainID.String(), GenesisHash: n.GenesisHash.String(), HeadNumber: n.Head.Number, HeadHash: n.Head.Hash.String(), Mode: n.Mode, Version: n.Version, Build: n.Build, LogProfile: n.LogProfile, SignFloor: n.SignFloor, BLSPublicKey: n.BLSPublicKey, Improvements: []ObservationImprovement{}, RuleActivations: map[string]string{}, RulesDigest: n.RulesDigest.String()}, Comparison: snap.Comparison, Calls: []ObservationCall{}}
+	info := ObservationCapture{DatasetID: id, From: snap.From, To: snap.To, SourceKind: sourceKind, SourceSHA256: sourceSHA, Node: ObservationNode{Impl: n.Impl, Address: strings.ToLower(n.Address.String()), Validator: n.Validator, ChainID: n.ChainID.String(), GenesisHash: n.GenesisHash.String(), HeadNumber: n.Head.Number, HeadHash: n.Head.Hash.String(), Mode: n.Mode, Version: n.Version, Build: n.Build, LogProfile: n.LogProfile, SignFloor: n.SignFloor, BLSPublicKey: n.BLSPublicKey, Improvements: []ObservationImprovement{}, RuleActivations: map[string]string{}, RulesDigest: n.RulesDigest.String()}, Comparison: snap.Comparison, RoundChanges: snap.RoundChanges, Calls: []ObservationCall{}}
 	for _, x := range n.Improvements {
 		info.Node.Improvements = append(info.Node.Improvements, ObservationImprovement{x.Name, x.Source})
 	}

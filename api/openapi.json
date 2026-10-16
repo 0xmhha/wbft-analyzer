@@ -3454,6 +3454,46 @@
         ],
         "type": "object"
       },
+      "ObserveRoundChangeComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "computed_count": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "different_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "different_rows": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "reported_count": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "different_fields",
+          "status"
+        ],
+        "type": "object"
+      },
       "PairPage": {
         "additionalProperties": false,
         "properties": {
@@ -10033,6 +10073,16 @@
           },
           "node": {
             "$ref": "#/components/schemas/StoreObservationNode"
+          },
+          "round_changes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObserveRoundChangeComparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "snapshot": {
             "type": "string"

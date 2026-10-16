@@ -17,7 +17,7 @@ func TestObservationImportIdentityIdempotenceAndTypedSources(t *testing.T) {
 		t.Fatal(e)
 	}
 	r, e := Observations(ctx, s, "synthetic-observations", "archive", sha, a)
-	if e != nil || r.Calls != 5 || r.Skipped || r.Comparison != "match" {
+	if e != nil || r.Calls != int64(len(a.Replies)) || r.Skipped || r.Comparison != "match" {
 		t.Fatal(r, e)
 	}
 	again, e := Observations(ctx, s, "synthetic-observations", "archive", sha, a)

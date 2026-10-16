@@ -22,7 +22,7 @@ import (
 )
 
 const Format = "wbft-analyzer-observe/1"
-const Normalizer = "wbft-observe-normalization/1"
+const Normalizer = "wbft-observe-normalization/2"
 const MaxBytes = 32 << 20
 const MaxCalls = 4096
 
@@ -67,11 +67,12 @@ type Comparison struct {
 	DifferentFields []string               `json:"different_fields"`
 }
 type Snapshot struct {
-	From       string          `json:"from"`
-	To         string          `json:"to"`
-	Node       native.NodeInfo `json:"node"`
-	Calls      []Call          `json:"calls"`
-	Comparison Comparison      `json:"comparison"`
+	From         string                 `json:"from"`
+	To           string                 `json:"to"`
+	Node         native.NodeInfo        `json:"node"`
+	Calls        []Call                 `json:"calls"`
+	Comparison   Comparison             `json:"comparison"`
+	RoundChanges *RoundChangeComparison `json:"round_changes,omitempty"`
 }
 
 var label = regexp.MustCompile(`^[A-Za-z0-9_.@:+-]{1,128}$`)
@@ -168,6 +169,9 @@ func Normalize(a Archive) (Snapshot, error) {
 	}
 	seen := map[string]bool{}
 	haveNode := false
+	var records []participation.Record
+	var roundChanges []participation.RoundChange
+	haveRecords, haveRoundChanges, requestedRoundChanges := false, false, false
 	totalBytes := 0
 	for i, r := range a.Replies {
 		keyRaw, _ := json.Marshal([]any{r.Method, r.Params})
@@ -198,6 +202,7 @@ func Normalize(a Archive) (Snapshot, error) {
 		}
 		sum := sha256.Sum256(r.Response)
 		c := Call{Ordinal: int64(i + 1), Method: r.Method, Params: r.Params, Status: "unavailable", SHA256: hex.EncodeToString(sum[:]), Data: json.RawMessage(`null`)}
+		requestedRoundChanges = requestedRoundChanges || r.Method == "wbft_roundChanges"
 		if response.Error != nil {
 			code := response.Error.Code
 			c.ErrorCode = &code
@@ -277,7 +282,6 @@ func Normalize(a Archive) (Snapshot, error) {
 			}
 			value = cfg
 		case "wbft_participation":
-			var records []participation.Record
 			if e = decode(response.Result, &records); e != nil {
 				return out, e
 			}
@@ -285,6 +289,7 @@ func Normalize(a Archive) (Snapshot, error) {
 				return out, e
 			}
 			value = records
+			haveRecords = true
 			s := participation.Summarize(records)
 			out.Comparison.Computed = &s
 		case "wbft_participationSummary":
@@ -297,6 +302,15 @@ func Normalize(a Archive) (Snapshot, error) {
 			}
 			value = s
 			out.Comparison.Reported = &s
+		case "wbft_roundChanges":
+			if e = decode(response.Result, &roundChanges); e != nil {
+				return out, e
+			}
+			if e = validateRoundChanges(roundChanges, from, to); e != nil {
+				return out, e
+			}
+			haveRoundChanges = true
+			value = roundChanges
 		case "wbft_headerCopy":
 			var h native.HeaderCopyResult
 			if e = decode(response.Result, &h); e != nil {
@@ -343,6 +357,12 @@ func Normalize(a Archive) (Snapshot, error) {
 		}
 	}
 	out.Comparison = compare(out.Comparison)
+	if requestedRoundChanges {
+		out.RoundChanges, e = compareRoundChanges(records, haveRecords, roundChanges, haveRoundChanges)
+		if e != nil {
+			return out, e
+		}
+	}
 	return out, nil
 }
 func oneOf(x string, values ...string) bool {
@@ -359,7 +379,7 @@ func validRequest(r Reply, from, to string) error {
 		if len(r.Params) == 0 {
 			return nil
 		}
-	case "wbft_participation", "wbft_participationSummary":
+	case "wbft_participation", "wbft_participationSummary", "wbft_roundChanges":
 		if len(r.Params) == 2 && r.Params[0] == from && r.Params[1] == to {
 			return nil
 		}
@@ -497,7 +517,7 @@ func Fetch(ctx context.Context, c *client.Client, from, to string) (Archive, err
 		}
 		return nil
 	}
-	if e = call([]client.Request{{Method: "wbft_nodeInfo"}, {Method: "wbft_participation", Params: []any{from, to}}, {Method: "wbft_participationSummary", Params: []any{from, to}}}); e != nil {
+	if e = call([]client.Request{{Method: "wbft_nodeInfo"}, {Method: "wbft_participation", Params: []any{from, to}}, {Method: "wbft_participationSummary", Params: []any{from, to}}, {Method: "wbft_roundChanges", Params: []any{from, to}}}); e != nil {
 		return a, e
 	}
 	// Refuse a malformed identity/range before issuing height-specific calls.

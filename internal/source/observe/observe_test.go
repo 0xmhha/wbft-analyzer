@@ -103,7 +103,7 @@ func TestUnavailableNeverBecomesEmptyAndScopesAreStrict(t *testing.T) {
 	}
 }
 func TestFetchUsesRecordedHashAndFullHeightRequests(t *testing.T) {
-	archive := fixture()
+	archive := roundChangeFixture()
 	lookup := map[string]Reply{}
 	for _, r := range archive.Replies {
 		b, _ := json.Marshal([]any{r.Method, r.Params})
@@ -144,11 +144,11 @@ func TestFetchUsesRecordedHashAndFullHeightRequests(t *testing.T) {
 		t.Fatal(e)
 	}
 	a, e := Fetch(context.Background(), c, archive.From, archive.To)
-	if e != nil || requests != 5 {
+	if e != nil || requests != 6 {
 		t.Fatal(a, e, requests)
 	}
 	s, e := Normalize(a)
-	if e != nil || s.Comparison.Status != "match" {
+	if e != nil || s.Comparison.Status != "match" || s.RoundChanges == nil || s.RoundChanges.Status != "match" {
 		t.Fatal(s, e)
 	}
 }

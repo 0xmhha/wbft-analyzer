@@ -620,6 +620,15 @@ request availability and parameters, node role/version/profile/rules metadata,
 full-height participation claims and reported versus recomputed validator totals.
 Configuration at one archived height does not establish the entire range.
 
+Live collection also retains `wbft_roundChanges(from, to)` and compares its
+ordered claims with the round changes computed from participation records.
+The node page keeps matching, conflicting, unavailable and uncaptured claims
+distinct, with links to both original requests. An available empty result is
+zero recorded claims; an unavailable response is not zero. Older archives
+without this request remain readable as uncaptured. Collect a new capture to add
+the missing RPC response; reindexing cannot create it. A conflicting available
+claim prevents follow from advancing its cursor for that batch.
+
 Collections are not atomic node snapshots. Captured participation records are
 aggregated with the pinned public WBFT definition; mismatched fields remain
 visible. `source=local`, `source=header` and gap records stay distinct. Header-only
