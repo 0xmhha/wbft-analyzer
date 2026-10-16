@@ -25,7 +25,7 @@ The analyzer is built in stages; the A0 foundation is complete:
 | A1 | header analysis: participation, proposers, epochs | implemented and validated on real testnet/G7 inputs |
 | A2 | node logs and chainbench runs | run ingestion, metadata timelines, round causes, inspector source overlay and phase latency implemented; visual replay and independent-run baseline comparison implemented |
 | A3 | wbft event streams and mixed networks | message matching, clock models, latency views and follow implemented; full acceptance in progress |
-| A4 | governance history | not started |
+| A4 | governance history | bounded RPC captures, source provenance, header/epoch links and read-only views implemented; full acceptance in progress |
 | A5 | private builds and comparisons | private overlay admission and dataset export implemented; comparisons pending |
 
 `wbft-analyzer help` lists the commands and their available options.
