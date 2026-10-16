@@ -1,6 +1,6 @@
 import {expect,it} from "vitest";
 import {renderToStaticMarkup} from "react-dom/server";
-import {EntryDetails,GovernanceHeaderResult,GovernanceTimeline} from "./views/Governance";
+import {EntryDetails,GovernanceHeaderResult,GovernanceHistoryNotice,GovernanceTimeline} from "./views/Governance";
 import type {Schemas} from "./api/client";
 import {parseRoute} from "./App";
 
@@ -58,4 +58,29 @@ it("separates epoch agreement from unverified execution keys and missing inputs"
  expect(html).toContain("Epoch claim comparison");expect(html).toContain("mismatch");expect(html).toContain("Candidates without keys remain unverified");
  const missing=renderToStaticMarkup(<GovernanceHeaderResult net={2} value={{...context,epoch:{...epoch,status:"not_epoch"}}}/>);
  expect(missing).toContain("Header has no epoch data");expect(missing).not.toContain("Epoch claim comparison");
+});
+
+
+it("keeps rebuilt zero-operation captures visibly distinct from evidence of no attempts",()=>{
+ const html=renderToStaticMarkup(<GovernanceHistoryNotice gaps={1} operations={0} onInspect={()=>{}}/>);
+ expect(html).toContain('aria-label="Governance history coverage"');
+ expect(html).toContain("Unconfirmed governance history");
+ expect(html).toContain("1 history gap reported");
+ expect(html).toContain("Zero reported operations does not establish that no attempts occurred");
+ expect(html).toContain("Inspect gap request");
+});
+it("warns about missing history even when some operations were retained",()=>{
+ const html=renderToStaticMarkup(<GovernanceHistoryNotice gaps={2} operations={7} onInspect={()=>{}}/>);
+ expect(html).toContain("2 history gaps reported");expect(html).toContain("Earlier attempts may be absent from these results");
+ expect(html).not.toContain("Zero reported operations");
+});
+it("distinguishes unavailable gap coverage from zero gaps and unavailable operation counts",()=>{
+ const unknown=renderToStaticMarkup(<GovernanceHistoryNotice gaps={null} operations={0} onInspect={()=>{}}/>);
+ expect(unknown).toContain("History coverage unavailable");expect(unknown).toContain("The gap request did not return data");
+ expect(unknown).not.toContain("0 history gaps");
+ const missing=renderToStaticMarkup(<GovernanceHistoryNotice gaps={1} operations={null}/>);
+ expect(missing).toContain("Unconfirmed governance history");expect(missing).not.toContain("Zero reported operations");expect(missing).not.toContain("Inspect gap request");
+});
+it("does not turn a source's empty gap list into an independent completeness verdict",()=>{
+ expect(renderToStaticMarkup(<GovernanceHistoryNotice gaps={0} operations={0}/>)).toBe("");
 });
