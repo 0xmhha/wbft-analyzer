@@ -1768,3 +1768,5 @@ peer/key FIFO. Cache behavior verdicts belong to inspector reports. A successful
 write does not prove delivery, and a recorded write of a suppressed decision is
 retained for inspection. Declarations and suppression callbacks have no measured
 clock. The relationship reveal and source focus respect reduced-motion settings.
+
+Suppression records may retain inherited R-01 timestamps. Normalization keeps their callback clock unavailable; cache declarations still require their explicit unmeasured clock shape.
