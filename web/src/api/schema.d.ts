@@ -1611,6 +1611,10 @@ export interface components {
             reason: string;
             source: components["schemas"]["MessagesSource"];
         };
+        MessagesJournalPosition: {
+            offset: string;
+            segment: string;
+        };
         MessagesLegacyAssociationProof: {
             address: string;
             anchors: components["schemas"]["MessagesLegacyHeadAnchor"][];
@@ -1632,6 +1636,20 @@ export interface components {
             height: string;
             legacy: components["schemas"]["MessagesSource"];
             native: components["schemas"]["MessagesSource"];
+        };
+        MessagesOwnInputEvidence: {
+            engine_run: string;
+            input: components["schemas"]["MessagesOwnSourcePoint"];
+            journal_position: components["schemas"]["MessagesJournalPosition"];
+            outcome: components["schemas"]["MessagesOwnSourcePoint"];
+            step: string;
+        };
+        MessagesOwnSourcePoint: {
+            file: string;
+            input: string;
+            /** Format: int64 */
+            ordinal: number;
+            seq: string;
         };
         MessagesPair: {
             at: string;
@@ -1699,7 +1717,10 @@ export interface components {
             height?: string;
             improvements?: string;
             input: string;
+            input_kind?: string;
+            input_of?: string;
             io?: components["schemas"]["MessagesIOInterval"] | null;
+            journal_position?: components["schemas"]["MessagesJournalPosition"] | null;
             known_hit?: boolean | null;
             node: string;
             of?: string;
@@ -1710,6 +1731,8 @@ export interface components {
             ordinal: number;
             out_digest?: string;
             outcome?: string;
+            own_input_evidence?: components["schemas"]["MessagesOwnInputEvidence"] | null;
+            own_message_of?: string;
             payload_sha256?: string;
             payload_source?: string;
             peer?: string;

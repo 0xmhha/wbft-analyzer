@@ -1556,6 +1556,22 @@
         ],
         "type": "object"
       },
+      "MessagesJournalPosition": {
+        "additionalProperties": false,
+        "properties": {
+          "offset": {
+            "type": "string"
+          },
+          "segment": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "offset",
+          "segment"
+        ],
+        "type": "object"
+      },
       "MessagesLegacyAssociationProof": {
         "additionalProperties": false,
         "properties": {
@@ -1638,6 +1654,59 @@
           "height",
           "legacy",
           "native"
+        ],
+        "type": "object"
+      },
+      "MessagesOwnInputEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "engine_run": {
+            "type": "string"
+          },
+          "input": {
+            "$ref": "#/components/schemas/MessagesOwnSourcePoint"
+          },
+          "journal_position": {
+            "$ref": "#/components/schemas/MessagesJournalPosition"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/MessagesOwnSourcePoint"
+          },
+          "step": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "engine_run",
+          "input",
+          "journal_position",
+          "outcome",
+          "step"
+        ],
+        "type": "object"
+      },
+      "MessagesOwnSourcePoint": {
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "seq": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "input",
+          "ordinal",
+          "seq"
         ],
         "type": "object"
       },
@@ -1900,10 +1969,26 @@
           "input": {
             "type": "string"
           },
+          "input_kind": {
+            "type": "string"
+          },
+          "input_of": {
+            "type": "string"
+          },
           "io": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/MessagesIOInterval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "journal_position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesJournalPosition"
               },
               {
                 "type": "null"
@@ -1940,6 +2025,19 @@
             "type": "string"
           },
           "outcome": {
+            "type": "string"
+          },
+          "own_input_evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesOwnInputEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "own_message_of": {
             "type": "string"
           },
           "payload_sha256": {

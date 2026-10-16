@@ -179,8 +179,18 @@ monotonic regressions are diagnostics. Inherited R-01 timestamps are marked
 separately from recorded frame timestamps. An absent R-01 write error is
 `no_error_recorded`, not proof of a successful write.
 
-Damage or a torn final journal record retains the readable prefix and
-fails the dataset. Retrying the same immutable input compares existing
+R-01 accepted own-message evidence links signed bytes to an accepted
+self outcome and its original internal input. The reader checks writer run,
+engine, step, message identity, recovered self signature and unique source
+references before emitting these records. Malformed references, missing source
+records, gaps or changed frame files fail this evidence without publishing a
+partial source chain. The messages page opens each original outcome or input
+by file ordinal, while preserving the original sequence as an exact string.
+Journal segment and byte positions identify the raw evidence to audit; the
+links prove neither a particular asynchronous send call nor peer delivery.
+
+Damage or a torn final journal record retains the readable prefix for legacy
+inputs and fails the dataset. Retrying the same immutable input compares existing
 rows and inserts no duplicates; repairing or extending an input needs a
 new dataset name. The reader bounds journal segments to 256 MiB, frame
 lines to 4 MiB, payload decoding to 16 MiB and frame sequence tracking to
