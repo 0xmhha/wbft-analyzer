@@ -118,6 +118,7 @@ article pre { overflow: auto; max-height: 24rem; }
 
 .missing-cell[aria-pressed="true"] { outline: 3px solid #7954c7; outline-offset: 2px; }
 
+.node-observations :is(h2, p) { overflow-wrap: anywhere; }
 .node-observations pre { overflow:auto; max-height:24rem; }
 .node-observations button[aria-pressed="true"] { outline:2px solid #7954c7; }
 
