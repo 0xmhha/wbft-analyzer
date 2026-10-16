@@ -96,7 +96,7 @@ func TestCacheSnapshotRejectsForgedContextAtomically(t *testing.T) {
 			ref := attempt["cache_decision"].(map[string]any)
 			switch name {
 			case "suppression clock":
-				rs[5]["t_mono_ns"] = 1
+				rs[5]["clock_source"] = "recorded"
 			case "count":
 				trace["operations"] = "3"
 			case "missing declaration":

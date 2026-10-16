@@ -487,11 +487,18 @@ func projectCacheFrame(r *Record, x frameRecord, fields map[string]json.RawMessa
 	if x.JournalSegment != nil && x.JournalOffset != nil {
 		r.Journal = &JournalPosition{number(*x.JournalSegment), strconv.FormatInt(*x.JournalOffset, 10)}
 	}
-	if raw.CacheTrace != nil || raw.CacheInstance != nil || raw.CacheDecision != nil {
+	if raw.CacheTrace != nil || raw.CacheInstance != nil {
 		wall, err := time.Parse(time.RFC3339Nano, raw.TWall)
 		if raw.ClockSource != "unavailable" || raw.TMono != 0 || err != nil || !wall.Equal(time.Unix(0, 0)) {
 			return errCacheFrameSource
 		}
+	}
+	if raw.CacheDecision != nil && (raw.ClockSource != "unavailable" || raw.TMono < 0) {
+		return errCacheFrameSource
+	}
+	if raw.CacheTrace != nil || raw.CacheInstance != nil || raw.CacheDecision != nil {
+		// R-01 suppression rows retain inherited timestamps for compatibility.
+		// They do not measure a callback and must not supply its clock.
 		r.ClockSource = "unavailable"
 		r.Mono = nil
 		r.Wall = ""

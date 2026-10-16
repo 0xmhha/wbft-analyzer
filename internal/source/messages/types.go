@@ -6,7 +6,7 @@ package messages
 import "github.com/0xmhha/wbft-analyzer/internal/source/logs"
 
 const Format = "wbft-analyzer-messages/1"
-const Normalizer = "wbft-message-normalization/12"
+const Normalizer = "wbft-message-normalization/13"
 
 type Clock struct {
 	Model  string `json:"model"`
