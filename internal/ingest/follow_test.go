@@ -31,6 +31,7 @@ type followRPC struct {
 	gap, outage, foreign       bool
 	roundClaims, roundConflict bool
 	address                    string
+	failMethod                 string
 	headers                    map[uint64]*types.Header
 	raw                        map[uint64]json.RawMessage
 }
@@ -77,6 +78,10 @@ func (f *followRPC) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	replies := []map[string]any{}
 	for _, q := range requests {
+		if q.Method == f.failMethod {
+			replies = append(replies, map[string]any{"jsonrpc": "2.0", "id": q.ID, "error": map[string]any{"code": -32603, "message": "https://synthetic:example@redacted.invalid/private"}})
+			continue
+		}
 		var result any
 		arg := func(i int) string { var s string; _ = json.Unmarshal(q.Params[i], &s); return s }
 		records := func() []participation.Record {

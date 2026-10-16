@@ -50,7 +50,12 @@ type FollowResult struct {
 
 // OpenFollower binds a restartable source without storing its RPC URL. Native
 // metadata and historical claims retain their independent collection semantics.
-func OpenFollower(ctx context.Context, s *store.Store, o FollowOptions) (*Follower, error) {
+func OpenFollower(ctx context.Context, s *store.Store, o FollowOptions) (f *Follower, err error) {
+	defer func() {
+		if err != nil {
+			err = &followFailure{stage: "open_source", err: err}
+		}
+	}()
 	if !logs.Identifier(o.Name) || !logs.Identifier(o.Node) || o.RPC == nil || o.From == 0 || o.From == ^uint64(0) {
 		return nil, errors.New("follow needs valid source labels, RPC and a start index with room for a child")
 	}
@@ -109,6 +114,12 @@ func (f *Follower) Close() {
 // Step captures at most 100 canonical indices and leaves a carrier available.
 // Full heights are obtained from the headers, never reconstructed from indices.
 func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
+	stage := "read_cursor"
+	defer func() {
+		if err != nil {
+			err = &followFailure{stage: stage, err: err}
+		}
+	}()
 	res.DatasetID = f.Dataset.ID
 	cursor, e := f.Store.FollowCursor(ctx, f.Dataset.ID)
 	if e != nil {
@@ -120,6 +131,7 @@ func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
 		return res, e
 	}
 	var encoded string
+	stage = "read_head"
 	if e = f.Options.RPC.Call(ctx, &encoded, "eth_blockNumber"); e != nil {
 		return res, e
 	}
@@ -136,6 +148,7 @@ func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
 	}
 	to := min(index-1, from+min(uint64(99), ^uint64(0)-from))
 	src := &headers.Source{Context: ctx, RPC: f.Options.RPC}
+	stage = "read_genesis"
 	g, e := src.Read(0)
 	if e != nil {
 		return res, e
@@ -143,6 +156,7 @@ func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
 	if codec.BlockHash(g).Hex() != f.Identity.GenesisHash {
 		return res, ErrFollowIdentity
 	}
+	stage = "read_current_header"
 	current, e := src.Read(index)
 	if e != nil {
 		return res, e
@@ -151,6 +165,7 @@ func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
 		return res, ErrFollowIdentity
 	}
 	if from > 0 {
+		stage = "read_parent_header"
 		h, e := src.Read(from - 1)
 		if e != nil {
 			return res, e
@@ -159,9 +174,11 @@ func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
 			return res, ErrFollowIdentity
 		}
 	}
+	stage = "prefetch_headers"
 	if e = src.Prefetch(from, to); e != nil {
 		return res, e
 	}
+	stage = "read_first_header"
 	first, e := src.Read(from)
 	if e != nil {
 		return res, e
@@ -169,6 +186,7 @@ func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
 	if first.ParentHash.Hex() != cursor.ParentHash {
 		return res, ErrFollowIdentity
 	}
+	stage = "validate_heights"
 	for n := from + 1; n <= to; n++ {
 		h, e := src.Read(n)
 		if e != nil {
@@ -180,14 +198,17 @@ func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
 			break
 		}
 	}
+	stage = "read_last_header"
 	last, e := src.Read(to)
 	if e != nil {
 		return res, e
 	}
+	stage = "capture_observations"
 	a, e := observe.Fetch(ctx, f.Options.RPC, first.Number.String(), last.Number.String())
 	if e != nil {
 		return res, e
 	}
+	stage = "normalize_observations"
 	snap, e := observe.Normalize(a)
 	if e != nil {
 		return res, e
@@ -195,26 +216,31 @@ func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
 	if strings.ToLower(snap.Node.Address.String()) != f.Address || snap.Node.GenesisHash.String() != f.Identity.GenesisHash || snap.Node.ChainID.String() != f.Identity.ChainID {
 		return res, ErrFollowIdentity
 	}
+	stage = "validate_observations"
 	if e = completeFollow(snap, src, from, to); e != nil {
 		return res, e
 	}
 	// Companion names bind immutable scopes/content. A crash before CommitFollow
 	// can replay the batch without replacing an earlier observation snapshot.
 	prefix := fmt.Sprintf("follow-%d-%d-%d", f.Dataset.ID, from, to)
+	stage = "ingest_headers"
 	r, e := Range(ctx, f.Store, RangeOptions{Name: prefix + "-headers", Node: f.Options.Node, NetworkName: f.Options.NetworkName, From: from, To: to, Config: f.Options.Config, Source: src})
 	if e != nil {
 		return res, e
 	}
+	stage = "encode_observations"
 	raw, e := json.Marshal(a)
 	if e != nil {
 		return res, e
 	}
 	sum := sha256.Sum256(raw)
 	sha := hex.EncodeToString(sum[:])
+	stage = "ingest_observations"
 	o, e := Observations(ctx, f.Store, fmt.Sprintf("follow-%d-observation-%s", f.Dataset.ID, sha), "rpc", sha, a)
 	if e != nil {
 		return res, e
 	}
+	stage = "commit_cursor"
 	if e = f.Store.CommitFollow(ctx, f.Dataset.ID, from, to, cursor.ParentHash, codec.BlockHash(last).Hex(), r.DatasetID, o.DatasetID); e != nil {
 		return res, e
 	}
