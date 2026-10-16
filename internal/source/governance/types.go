@@ -6,7 +6,7 @@ import "encoding/json"
 
 const (
 	Format     = "wbft-analyzer-governance/1"
-	Normalizer = "wbft-governance-normalization/1"
+	Normalizer = "wbft-governance-normalization/2"
 	MaxBytes   = 32 << 20
 	maxRows    = 65536
 )
@@ -100,6 +100,7 @@ type Log struct {
 	Data    Bytes    `json:"data"`
 }
 type Operation struct {
+	BlockHash           *string      `json:"block_hash,omitempty"`
 	Number              string       `json:"number"`
 	Tx                  uint32       `json:"tx"`
 	TxHash              string       `json:"tx_hash"`
@@ -163,6 +164,7 @@ type Epoch struct {
 	NoKey      []string `json:"no_key"`
 }
 type ValidatorChange struct {
+	BlockHash          *string     `json:"block_hash,omitempty"`
 	Number             string      `json:"number"`
 	Validators         []string    `json:"validators"`
 	ValidatorsReported bool        `json:"validators_reported"`

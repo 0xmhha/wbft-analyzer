@@ -19,6 +19,7 @@ type GovernanceProposalState struct {
 	Proposal *governance.Proposal `json:"proposal"`
 }
 type GovernanceChange struct {
+	BlockHash          *string           `json:"block_hash,omitempty"`
 	Number             string            `json:"number"`
 	Validators         []string          `json:"validators"`
 	ValidatorsReported bool              `json:"validators_reported"`

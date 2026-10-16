@@ -166,3 +166,18 @@ func within(number string, from, to uint64) bool {
 	n, ok := uint64Of(number)
 	return ok && n >= from && n <= to
 }
+
+// recordHash preserves source context without inventing a link for legacy data.
+func recordHash(value *string) (*string, error) {
+	if value == nil {
+		return nil, nil
+	}
+	if !fixed(*value, 32) {
+		return nil, ErrInvalid
+	}
+	normalized := strings.ToLower(*value)
+	if normalized == "0x"+strings.Repeat("0", 64) {
+		return nil, nil
+	}
+	return &normalized, nil
+}

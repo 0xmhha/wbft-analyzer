@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -169,5 +171,94 @@ func TestGovernanceAPIUnavailableEmptyAndIncomplete(t *testing.T) {
 		if code := c.do("GET", base+suffix, nil, nil); code != 409 {
 			t.Fatal(suffix, code)
 		}
+	}
+}
+
+func TestGovernanceAPIStoredBlockHashesAndLegacyUnknown(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	a, _, err := governance.Load("../source/governance/testdata/capture.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	hash := "0x" + strings.Repeat("a", 64)
+	// Preserve exact JSON numbers while adding independently supplied RPC fields.
+	for _, call := range []int{2, 4, 6} {
+		var env map[string]json.RawMessage
+		if json.Unmarshal(a.Replies[call].Response, &env) != nil {
+			t.Fatal("envelope")
+		}
+		var value any
+		dec := json.NewDecoder(strings.NewReader(string(env["result"])))
+		dec.UseNumber()
+		if dec.Decode(&value) != nil {
+			t.Fatal("result")
+		}
+		if call == 6 {
+			for _, op := range value.(map[string]any)["ops"].([]any) {
+				op.(map[string]any)["blockHash"] = hash
+			}
+		} else {
+			for _, item := range value.([]any) {
+				row := item.(map[string]any)
+				row["blockHash"] = hash
+				if call == 4 {
+					for _, op := range row["ops"].([]any) {
+						op.(map[string]any)["blockHash"] = hash
+					}
+				}
+			}
+		}
+		env["result"], _ = json.Marshal(value)
+		a.Replies[call].Response, _ = json.Marshal(env)
+	}
+	raw, _ := json.Marshal(a)
+	sum := sha256.Sum256(raw)
+	r, err := ingest.Governance(ctx, s, "governance-with-block-hashes", "archive", hex.EncodeToString(sum[:]), a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := client{t, (&Server{Store: s}).Handler()}
+	base := fmt.Sprintf("/v1/networks/%d/datasets/%d/governance", r.NetworkID, r.DatasetID)
+	var info store.GovernanceCapture
+	if c.do("GET", base, nil, &info) != 200 || info.Normalizer != "wbft-governance-normalization/2" {
+		t.Fatal(info)
+	}
+	for _, item := range []struct {
+		call       int
+		collection string
+	}{{3, "operations"}, {5, "changes"}, {5, "operations"}, {7, "operations"}} {
+		var page GovernancePage
+		path := fmt.Sprintf("%s/calls/%d/entries?collection=%s", base, item.call, item.collection)
+		if c.do("GET", path, nil, &page) != 200 || len(page.Rows) != 1 {
+			t.Fatal(page)
+		}
+		row := page.Rows[0]
+		var got *string
+		if row.Operation != nil {
+			got = row.Operation.BlockHash
+		} else if row.Change != nil {
+			got = row.Change.BlockHash
+		}
+		if got == nil || *got != hash {
+			t.Fatal("typed page lost hash", row)
+		}
+		var source governance.Call
+		if c.do("GET", fmt.Sprintf("%s/calls/%d", base, item.call), nil, &source) != 200 || !strings.Contains(string(source.Data), `"block_hash":"`+hash+`"`) {
+			t.Fatal("source lost hash", source)
+		}
+	}
+	legacy, sha, err := governance.Load("../source/governance/testdata/capture.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lr, err := ingest.Governance(ctx, s, "governance-legacy-hashes", "archive", sha, legacy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var page GovernancePage
+	path := fmt.Sprintf("/v1/networks/%d/datasets/%d/governance/calls/3/entries?collection=operations", lr.NetworkID, lr.DatasetID)
+	if c.do("GET", path, nil, &page) != 200 || len(page.Rows) != 1 || page.Rows[0].Operation.BlockHash != nil {
+		t.Fatal("legacy context invented", page)
 	}
 }

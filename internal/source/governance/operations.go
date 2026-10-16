@@ -14,9 +14,11 @@ func operations(raw json.RawMessage, from, to uint64, instance string) ([]Operat
 	out := make([]Operation, 0, len(rows))
 	seen := map[string]bool{}
 	txHashes := map[string]string{}
+	blockHashes := map[string]string{}
 	for _, row := range rows {
 		var w struct {
 			Number              string            `json:"number"`
+			BlockHash           *string           `json:"blockHash"`
 			Tx                  uint32            `json:"tx"`
 			TxHash              string            `json:"txHash"`
 			Path                []uint32          `json:"path"`
@@ -33,6 +35,16 @@ func operations(raw json.RawMessage, from, to uint64, instance string) ([]Operat
 		}
 		if decode(row, &w, "number", "tx", "txHash", "from", "instance", "input", "effective", "view", "result", "logs", "verified") != nil || !within(w.Number, from, to) || !fixed(w.TxHash, 32) || !fixed(w.From, 20) || !fixed(w.Instance, 20) || instance != "" && !strings.EqualFold(w.Instance, instance) || len(w.Path) > 128 || len(w.Logs) > 4096 || len(w.Result) > 4096 || w.ExecutingProposalID != nil && !quantity(*w.ExecutingProposalID, 64) {
 			return nil, ErrInvalid
+		}
+		hash, err := recordHash(w.BlockHash)
+		if err != nil {
+			return nil, err
+		}
+		if hash != nil {
+			if previous := blockHashes[w.Number]; previous != "" && previous != *hash {
+				return nil, ErrInvalid
+			}
+			blockHashes[w.Number] = *hash
 		}
 		var fields map[string]json.RawMessage
 		_ = json.Unmarshal(row, &fields)
@@ -91,7 +103,7 @@ func operations(raw json.RawMessage, from, to uint64, instance string) ([]Operat
 			annotation.Value = &v
 		}
 		result, errorName := outcome(w.Result)
-		out = append(out, Operation{Number: w.Number, Tx: w.Tx, TxHash: strings.ToLower(w.TxHash), Path: path, From: strings.ToLower(w.From), Instance: strings.ToLower(w.Instance), Input: summary(input), Selector: selector, Call: contractCall(input), Effective: w.Effective, View: w.View, Result: result, ErrorName: errorName, ResultValue: summary([]byte(w.Result)), Logs: logs, Verified: w.Verified, ExecutingProposalID: w.ExecutingProposalID, ValidatorChange: annotation})
+		out = append(out, Operation{Number: w.Number, BlockHash: hash, Tx: w.Tx, TxHash: strings.ToLower(w.TxHash), Path: path, From: strings.ToLower(w.From), Instance: strings.ToLower(w.Instance), Input: summary(input), Selector: selector, Call: contractCall(input), Effective: w.Effective, View: w.View, Result: result, ErrorName: errorName, ResultValue: summary([]byte(w.Result)), Logs: logs, Verified: w.Verified, ExecutingProposalID: w.ExecutingProposalID, ValidatorChange: annotation})
 	}
 	return out, nil
 }
@@ -133,6 +145,7 @@ func changes(raw json.RawMessage, from, to uint64) ([]ValidatorChange, error) {
 	for _, row := range rows {
 		var w struct {
 			Number     string          `json:"number"`
+			BlockHash  *string         `json:"blockHash"`
 			Validators []string        `json:"validators"`
 			Ops        json.RawMessage `json:"ops"`
 			Epoch      json.RawMessage `json:"epoch"`
@@ -141,6 +154,10 @@ func changes(raw json.RawMessage, from, to uint64) ([]ValidatorChange, error) {
 			return nil, ErrInvalid
 		}
 		seen[w.Number] = true
+		hash, err := recordHash(w.BlockHash)
+		if err != nil {
+			return nil, err
+		}
 		var fields map[string]json.RawMessage
 		_ = json.Unmarshal(row, &fields)
 		validatorsReported := len(fields["validators"]) > 0 && !null(fields["validators"])
@@ -152,6 +169,11 @@ func changes(raw json.RawMessage, from, to uint64) ([]ValidatorChange, error) {
 		ops, err := operations(w.Ops, n, n, "")
 		if err != nil {
 			return nil, err
+		}
+		for _, op := range ops {
+			if hash != nil && op.BlockHash != nil && *hash != *op.BlockHash {
+				return nil, ErrInvalid
+			}
 		}
 		var epoch *Epoch
 		if len(w.Epoch) > 0 && !null(w.Epoch) {
@@ -175,7 +197,7 @@ func changes(raw json.RawMessage, from, to uint64) ([]ValidatorChange, error) {
 			}
 			epoch = &Epoch{Candidates: lists[0], Validators: lists[1], Added: lists[2], Removed: lists[3], NoKey: lists[4]}
 		}
-		out = append(out, ValidatorChange{Number: w.Number, Validators: vs, ValidatorsReported: validatorsReported, Ops: ops, Epoch: epoch})
+		out = append(out, ValidatorChange{Number: w.Number, BlockHash: hash, Validators: vs, ValidatorsReported: validatorsReported, Ops: ops, Epoch: epoch})
 	}
 	return out, nil
 }

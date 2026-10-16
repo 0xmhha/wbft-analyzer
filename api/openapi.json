@@ -818,6 +818,12 @@
       "GovernanceOperation": {
         "additionalProperties": false,
         "properties": {
+          "block_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "call": {
             "$ref": "#/components/schemas/GovernanceContractCall"
           },
@@ -10444,6 +10450,12 @@
       "StoreGovernanceChange": {
         "additionalProperties": false,
         "properties": {
+          "block_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "epoch": {
             "anyOf": [
               {
