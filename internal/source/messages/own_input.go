@@ -59,10 +59,14 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (Stats
 	lost := map[ownScope]bool{}
 	identities := map[string]string{}
 	conflicted := false
+	var schedulerRows []Record
 	enc := json.NewEncoder(spool)
 	stats, readErr := readFramesRaw(ctx, p, func(r Record) error {
 		if err := enc.Encode(r); err != nil {
 			return errors.New("cannot spool frame metadata")
+		}
+		if r.Scheduler != nil || r.Timer != nil || r.Type == "scheduler_step" || r.Type == "own_input" {
+			schedulerRows = append(schedulerRows, r)
 		}
 		scope := ownKey(r).ownScope
 		if previous, ok := identities[r.File]; ok && previous != r.Run {
@@ -78,20 +82,23 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (Stats
 		}
 		return nil
 	})
-	if readErr != nil && (len(selected) > 0 || errors.Is(readErr, errOwnFrameProvenance)) {
+	if readErr != nil && (len(selected) > 0 || errors.Is(readErr, errOwnFrameProvenance) || errors.Is(readErr, errSchedulerFrameSource) || len(schedulerRows) > 0) {
 		return Stats{}, readErr
+	}
+	if err := validateSchedulerFrames(schedulerRows, lost, conflicted); err != nil {
+		return Stats{}, err
 	}
 	proofs, err := ownProofs(selected, lost, conflicted)
 	if err != nil {
 		return Stats{}, err
 	}
-	if len(selected) > 0 {
+	if len(selected) > 0 || len(schedulerRows) > 0 {
 		if p.Summary.SHA256 == "" {
-			return Stats{}, errors.New("own-input provenance requires source fingerprints")
+			return Stats{}, errors.New("frame evidence requires source fingerprints")
 		}
 		for _, f := range p.Summary.Files {
 			if frameName.MatchString(f.Name) && f.SHA256 == "" {
-				return Stats{}, errors.New("own-input provenance requires file fingerprints")
+				return Stats{}, errors.New("frame evidence requires file fingerprints")
 			}
 		}
 	}

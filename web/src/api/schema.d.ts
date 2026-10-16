@@ -1742,6 +1742,7 @@ export interface components {
             relay_of?: string;
             round?: string;
             run: string;
+            scheduler_trace?: components["schemas"]["MessagesSchedulerTrace"] | null;
             seq: string;
             signature_status?: string;
             signer?: string;
@@ -1755,6 +1756,11 @@ export interface components {
             via?: string;
             wire_code?: string | null;
             write?: string;
+        };
+        MessagesSchedulerTrace: {
+            operations: string;
+            steps: string;
+            version: string;
         };
         MessagesSeriesPoint: {
             at: string;

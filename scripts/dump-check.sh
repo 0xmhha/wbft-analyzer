@@ -67,6 +67,22 @@ capture() {
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
+ local scheduler_net scheduler_dataset
+ scheduler_net=$(jq -er '.networks[]|select(.name=="synthetic-scheduler-source")|.id' "$dir/networks.json")
+ get "/networks/$scheduler_net/datasets" scheduler-datasets
+ scheduler_dataset=$(jq -er '.datasets[]|select(.name=="synthetic-scheduler-source")|.id' "$dir/scheduler-datasets.json")
+ get "/networks/$scheduler_net/datasets/$scheduler_dataset/messages/records?type=scheduler_trace" scheduler-declarations
+ get "/networks/$scheduler_net/datasets/$scheduler_dataset/messages/records?type=timer_operation" scheduler-operations
+ get "/networks/$scheduler_net/datasets/$scheduler_dataset/messages/records?type=scheduler_step" scheduler-steps
+ jq -e '(.records|length)==1 and .records[0].scheduler_trace.operations=="8" and .records[0].scheduler_trace.steps=="4" and .records[0].clock_source=="unavailable" and (.records[0]|has("t_wall")|not) and (.records[0]|has("t_mono_ns")|not)' "$dir/scheduler-declarations.json" >/dev/null
+ jq -e '(.records|length)==8' "$dir/scheduler-operations.json" >/dev/null
+ jq -e '(.records|length)==4' "$dir/scheduler-steps.json" >/dev/null
+ get "/networks/$scheduler_net/datasets/$scheduler_dataset/messages/source?input=scheduler&file=frames-scheduler-fixture.jsonl&ordinal=1" scheduler-declaration-source
+ get "/networks/$scheduler_net/datasets/$scheduler_dataset/messages/source?input=scheduler&file=frames-scheduler-fixture.jsonl&ordinal=6" scheduler-queue-source
+ get "/networks/$scheduler_net/datasets/$scheduler_dataset/messages/source?input=scheduler&file=frames-scheduler-fixture.jsonl&ordinal=9" scheduler-step-source
+ jq -e '.seq=="1" and .journal_position.offset=="0" and .clock_source=="unavailable"' "$dir/scheduler-declaration-source.json" >/dev/null
+ jq -e '.seq=="6" and .timer_operation.sequence=="4" and .timer_operation.action=="queued" and .timer_operation.generation=="3"' "$dir/scheduler-queue-source.json" >/dev/null
+ jq -e '.seq=="9" and .entry_t_mono_ns=="3000000000" and .entry_t_wall=="2026-01-01T00:00:03Z"' "$dir/scheduler-step-source.json" >/dev/null
  local own_net own_dataset
  own_net=$(jq -r '.networks[]|select(.name=="synthetic-own-input")|.id' "$dir/networks.json")
  get "/networks/$own_net/datasets" own-input-datasets
@@ -253,6 +269,8 @@ run_dataset_id=$(sed -n 's/^dataset=\([0-9][0-9]*\).*/\1/p' "$out/run.log")
 "$bin" reindex messages --db "$src" --dataset "$run_dataset_id" >"$out/run-pair-index.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/baseline/manifest-1.json" >"$out/baseline-1.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/baseline/manifest-2.json" >"$out/baseline-2.log"
+jq -n --arg path "$root/internal/source/messages/testdata/scheduler-source" '{format:"wbft-analyzer-messages/1",name:"synthetic-scheduler-source",network:{name:"synthetic-scheduler-source",chain_id:"17",genesis_hash:("0x"+"0"*64)},clock:{model:"unknown"},inputs:[{id:"scheduler",kind:"frames",node:"0xaa00000000000000000000000000000000000000",path:$path}]}' >"$work/scheduler-source.json"
+"$bin" ingest messages --db "$src" --manifest "$work/scheduler-source.json" >"$out/scheduler-ingest.json"
 jq -n --arg path "$root/internal/source/messages/testdata/own-input-frames" '{format:"wbft-analyzer-messages/1",name:"synthetic-own-input",network:{name:"synthetic-own-input",chain_id:"13",genesis_hash:("0x"+"0"*64)},clock:{model:"unknown"},inputs:[{id:"native",kind:"frames",node:"0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",path:$path}]}' >"$work/own-input.json"
 "$bin" ingest messages --db "$src" --manifest "$work/own-input.json" >"$out/own-input-ingest.json"
 "$bin" ingest messages --db "$src" --manifest "$root/internal/source/messages/testdata/manifest.json" >"$out/messages.log"

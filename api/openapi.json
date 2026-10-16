@@ -2070,6 +2070,16 @@
           "run": {
             "type": "string"
           },
+          "scheduler_trace": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSchedulerTrace"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "seq": {
             "type": "string"
           },
@@ -2134,6 +2144,26 @@
           "run",
           "seq",
           "type"
+        ],
+        "type": "object"
+      },
+      "MessagesSchedulerTrace": {
+        "additionalProperties": false,
+        "properties": {
+          "operations": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "operations",
+          "steps",
+          "version"
         ],
         "type": "object"
       },

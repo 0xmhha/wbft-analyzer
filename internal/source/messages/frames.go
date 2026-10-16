@@ -16,13 +16,18 @@ import (
 )
 
 type frameRecord struct {
-	OwnMessageOf   *uint64 `json:"own_message_of"`
-	InputOf        *uint64 `json:"input_of"`
-	InputKind      string  `json:"input_kind"`
-	EngineRun      *uint64 `json:"engine_run"`
-	Step           *uint64 `json:"step"`
-	JournalSegment *uint64 `json:"journal_segment"`
-	JournalOffset  *int64  `json:"journal_offset"`
+	Scheduler      json.RawMessage `json:"scheduler_trace"`
+	Timer          json.RawMessage `json:"timer_operation"`
+	EntryMono      *string         `json:"entry_t_mono_ns"`
+	EntryWall      string          `json:"entry_t_wall"`
+	ClockSource    string          `json:"clock_source"`
+	OwnMessageOf   *uint64         `json:"own_message_of"`
+	InputOf        *uint64         `json:"input_of"`
+	InputKind      string          `json:"input_kind"`
+	EngineRun      *uint64         `json:"engine_run"`
+	Step           *uint64         `json:"step"`
+	JournalSegment *uint64         `json:"journal_segment"`
+	JournalOffset  *int64          `json:"journal_offset"`
 
 	V             int             `json:"v"`
 	Type          string          `json:"type"`
@@ -60,6 +65,7 @@ type frameRecord struct {
 func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s Stats, err error) {
 	s.ClockDiagnostics = "unavailable_export_order"
 	sawOwn := false
+	sawScheduler := false
 	root, e := os.OpenRoot(p.Input.Path)
 	if e != nil {
 		return s, errors.New("cannot open frame input")
@@ -96,6 +102,17 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 				}
 				var kind string
 				_ = json.Unmarshal(fields["type"], &kind)
+				if kind == "scheduler_trace" || kind == "scheduler_step" || kind == "timer_operation" || fields["scheduler_trace"] != nil || fields["timer_operation"] != nil {
+					sawScheduler = true
+				}
+				if (fields["scheduler_trace"] != nil && kind != "scheduler_trace") || (fields["timer_operation"] != nil && kind != "timer_operation") {
+					return errSchedulerFrameSource
+				}
+				for _, name := range []string{"entry_t_mono_ns", "entry_t_wall"} {
+					if v, ok := fields[name]; ok && bytes.Equal(bytes.TrimSpace(v), []byte("null")) {
+						return errSchedulerFrameSource
+					}
+				}
 				_, ownRef := fields["own_message_of"]
 				_, inputRef := fields["input_of"]
 				if kind == "own_input" || ownRef || inputRef {
@@ -246,6 +263,10 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 					} else {
 						r.Phase = phase(code)
 					}
+				case "scheduler_trace", "scheduler_step", "timer_operation":
+					if e = projectSchedulerFrame(&r, x, fields); e != nil {
+						return e
+					}
 				case "outcome":
 					if x.Code != "" {
 						code, e := strconv.ParseUint(strings.TrimPrefix(x.Code, "0x"), 16, 64)
@@ -272,6 +293,11 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 				default:
 					return errors.New("unknown frame record type")
 				}
+				if x.Type == "own_input" && (x.EntryMono != nil || x.EntryWall != "") {
+					if e = projectSchedulerEntry(&r, x); e != nil {
+						return e
+					}
+				}
 				if e = emit(r); e != nil {
 					return e
 				}
@@ -286,6 +312,9 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 			return nil
 		}()
 		if e != nil {
+			if sawScheduler {
+				return s, errors.Join(errSchedulerFrameSource, e)
+			}
 			if sawOwn {
 				return s, errors.Join(errOwnFrameProvenance, e)
 			}
