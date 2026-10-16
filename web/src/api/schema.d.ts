@@ -1523,6 +1523,8 @@ export interface components {
             /** Format: int64 */
             monotonic_regressions?: number;
             /** Format: int64 */
+            out_of_profile_duplicate_context?: number;
+            /** Format: int64 */
             sequence_gaps?: number;
             sha256: string;
             /** Format: int64 */

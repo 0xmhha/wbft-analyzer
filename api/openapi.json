@@ -1199,6 +1199,10 @@
             "format": "int64",
             "type": "integer"
           },
+          "out_of_profile_duplicate_context": {
+            "format": "int64",
+            "type": "integer"
+          },
           "sequence_gaps": {
             "format": "int64",
             "type": "integer"
