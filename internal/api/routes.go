@@ -6,6 +6,7 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/derive/rounds"
 	"github.com/0xmhha/wbft-analyzer/internal/replayjob"
 	"github.com/0xmhha/wbft-analyzer/internal/scenario"
+	"github.com/0xmhha/wbft-analyzer/internal/source/governance"
 	sourcemessages "github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/0xmhha/wbft-analyzer/internal/source/observe"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
@@ -45,6 +46,10 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/governance", id: "getGovernanceCapture", summary: "Immutable governance source identity, independent request scopes and availability; source claims are not canonical execution evidence.", params: runParams(), answers: map[int]any{200: store.GovernanceCapture{}}, handle: (*Server).governanceCapture},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}", id: "getGovernanceCall", summary: "One sanitized original request and normalized result with its captured envelope digest; opaque payloads and errors are omitted.", params: governanceCallParams(), answers: map[int]any{200: governance.Call{}}, handle: (*Server).governanceCall},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries", id: "listGovernanceEntries", summary: "Typed entries from one original request and collection, with normalized source pointers and immutable pagination; unavailable differs from empty.", params: governanceEntryParams(), answers: map[int]any{200: GovernancePage{}}, handle: (*Server).governanceEntries},
+
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/scenario-messages", id: "listScenarioMessages", summary: "At most 100 scanned frames from a registered transport input, projected into exact recorded message coordinates; queueing performs full validation.", params: append(runParams(), param{name: "source", in: "query", typ: "string", required: true, doc: "registered source ID"}, param{name: "input", in: "query", typ: "string", required: true, doc: "selected transport input ID"}, param{name: "height", in: "query", typ: "string", doc: "full decimal height"}, param{name: "round", in: "query", typ: "string", doc: "full decimal round"}, param{name: "cursor", in: "query", typ: "string", doc: "opaque cursor scoped to this source and filters"}), answers: map[int]any{200: ScenarioMessagePage{}}, handle: (*Server).scenarioMessages},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/runtime", id: "getRuntimeCapture", summary: "Runtime sidecar provenance and capture completeness, separate from execution model evidence.", params: runParams(), answers: map[int]any{200: RuntimeSummary{}}, handle: (*Server).runtimeSummary},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/runtime/calls", id: "listRuntimeCalls", summary: "At most 100 exact recorded operation intervals; missing calls are not inferred.", params: append(runParams(), param{name: "after", in: "query", typ: "integer", doc: "zero-based immutable call offset"}), answers: map[int]any{200: RuntimeCallPage{}}, handle: (*Server).runtimeCalls},

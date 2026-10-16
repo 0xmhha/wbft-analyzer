@@ -226,6 +226,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/governance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Immutable governance source identity, independent request scopes and availability; source claims are not canonical execution evidence. */
+        get: operations["getGovernanceCapture"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One sanitized original request and normalized result with its captured envelope digest; opaque payloads and errors are omitted. */
+        get: operations["getGovernanceCall"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Typed entries from one original request and collection, with normalized source pointers and immutable pagination; unavailable differs from empty. */
+        get: operations["listGovernanceEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/input-storage": {
         parameters: {
             query?: never;
@@ -1346,6 +1397,146 @@ export interface components {
             /** Format: int64 */
             result_capacity: number;
             running_gate: string;
+        };
+        GovernanceAnnotation: {
+            status: string;
+            value?: components["schemas"]["GovernanceBytes"] | null;
+        };
+        GovernanceArgument: {
+            bytes?: components["schemas"]["GovernanceBytes"] | null;
+            type: string;
+            value?: string;
+            values?: string[];
+        };
+        GovernanceBytes: {
+            /** Format: int64 */
+            length: number;
+            sha256: string;
+        };
+        GovernanceCall: {
+            /** @description a JSON value admitted by the source or report reader */
+            data: unknown;
+            /** Format: int64 */
+            error_code?: number | null;
+            /** Format: int64 */
+            ordinal: number;
+            request: components["schemas"]["GovernanceRequest"];
+            sha256: string;
+            status: string;
+        };
+        GovernanceContractCall: {
+            arguments: components["schemas"]["GovernanceArgument"][];
+            signature?: string;
+            status: string;
+        };
+        GovernanceEpoch: {
+            added: string[];
+            candidates: string[];
+            no_key: string[];
+            removed: string[];
+            validators: string[];
+        };
+        GovernanceFault: {
+            bounds_known: boolean;
+            description: components["schemas"]["GovernanceBytes"];
+            gap_from?: string | null;
+            gap_to?: string | null;
+            instance: string;
+            kind: string;
+            number: string;
+        };
+        GovernanceIdentity: {
+            address: string;
+            chain_id: string;
+            genesis_hash: string;
+            head: string;
+            head_hash: string;
+        };
+        GovernanceLog: {
+            address: string;
+            data: components["schemas"]["GovernanceBytes"];
+            topics: string[];
+        };
+        GovernanceMirror: {
+            authority: string;
+            authorized: string[];
+            blacklisted: string[];
+            bls_public_keys: string[];
+            gas_tip: string | null;
+            hash: string;
+            healthy: boolean;
+            modes: {
+                [key: string]: string;
+            };
+            number: string;
+            validators: string[];
+        };
+        GovernanceOperation: {
+            call: components["schemas"]["GovernanceContractCall"];
+            effective: boolean;
+            error_name?: string;
+            executing_proposal_id: string | null;
+            from: string;
+            input: components["schemas"]["GovernanceBytes"];
+            instance: string;
+            logs: components["schemas"]["GovernanceLog"][];
+            number: string;
+            path: number[];
+            result: string;
+            result_value: components["schemas"]["GovernanceBytes"];
+            selector: string;
+            tx: number;
+            tx_hash: string;
+            validator_change: components["schemas"]["GovernanceAnnotation"];
+            verified: boolean;
+            view: boolean;
+        };
+        GovernancePage: {
+            call: components["schemas"]["StoreGovernanceCall"];
+            /** @enum {string} */
+            collection: "operations" | "faults" | "states" | "proposals" | "changes" | "mirrors";
+            next: string | null;
+            rows: components["schemas"]["StoreGovernanceEntry"][];
+            snapshot: string;
+            /** Format: int64 */
+            total: number;
+        };
+        GovernanceProposal: {
+            action_type: string;
+            approved: number;
+            call_data: components["schemas"]["GovernanceBytes"];
+            execution_count: string;
+            id: string;
+            proposer: string;
+            rejected: number;
+            required_approvals: number;
+            status: number;
+        };
+        GovernanceRequest: {
+            method: string;
+            params: string[];
+            scope: string;
+        };
+        GovernanceState: {
+            authorized?: string[];
+            blacklist?: string[];
+            current_proposal_id: string;
+            gas_tip?: string | null;
+            inexact: boolean;
+            instance: string;
+            max_proposals: string;
+            member_version: string;
+            members: string[];
+            mode: string;
+            number: string;
+            operators?: {
+                [key: string]: string;
+            };
+            proposal_expiry: string;
+            proposals: components["schemas"]["GovernanceProposal"][];
+            quorum: string;
+            reported_fields: string[];
+            validators?: string[];
         };
         HeaderList: {
             headers: components["schemas"]["HeadersRow"][];
@@ -3616,6 +3807,60 @@ export interface components {
             /** Format: int64 */
             total_batches: number;
         };
+        StoreGovernanceCall: {
+            /** Format: int64 */
+            error_code?: number | null;
+            /** Format: int64 */
+            ordinal: number;
+            request: components["schemas"]["GovernanceRequest"];
+            sha256: string;
+            status: string;
+        };
+        StoreGovernanceCapture: {
+            after: components["schemas"]["GovernanceIdentity"];
+            atomic: boolean;
+            before: components["schemas"]["GovernanceIdentity"];
+            calls: components["schemas"]["StoreGovernanceCall"][];
+            /** Format: int64 */
+            dataset_id: number;
+            envelope_origin: string;
+            /** Format: int64 */
+            faults: number | null;
+            from: string;
+            /** Format: int64 */
+            gaps: number | null;
+            normalizer: string;
+            /** Format: int64 */
+            operations: number | null;
+            snapshot: string;
+            source_kind: string;
+            source_sha256: string;
+            to: string;
+        };
+        StoreGovernanceChange: {
+            epoch: components["schemas"]["GovernanceEpoch"] | null;
+            number: string;
+            validators: string[];
+            validators_reported: boolean;
+        };
+        StoreGovernanceEntry: {
+            /** Format: int64 */
+            call_ordinal: number;
+            change?: components["schemas"]["StoreGovernanceChange"] | null;
+            fault?: components["schemas"]["GovernanceFault"] | null;
+            mirror?: components["schemas"]["GovernanceMirror"] | null;
+            normalized_pointer: string;
+            operation?: components["schemas"]["GovernanceOperation"] | null;
+            /** Format: int64 */
+            ordinal: number;
+            proposal?: components["schemas"]["StoreGovernanceProposalState"] | null;
+            state?: components["schemas"]["GovernanceState"] | null;
+        };
+        StoreGovernanceProposalState: {
+            id: string;
+            instance: string;
+            proposal: components["schemas"]["GovernanceProposal"] | null;
+        };
         StoreHeaderBounds: {
             /** Format: int64 */
             bytes: number;
@@ -4841,6 +5086,146 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreFollowState"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getGovernanceCapture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreGovernanceCapture"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getGovernanceCall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description positive original request ordinal */
+                ordinal: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernanceCall"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listGovernanceEntries: {
+        parameters: {
+            query: {
+                /** @description operations, faults, states, proposals, changes or mirrors; must match the original RPC method */
+                collection: string;
+                /** @description page size 1..500 */
+                limit?: number;
+                /** @description immutable capture, network, dataset, request and collection-bound cursor */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description positive original request ordinal */
+                ordinal: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovernancePage"];
                 };
             };
             /** @description the request failed */

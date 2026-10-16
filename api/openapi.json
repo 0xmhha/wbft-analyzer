@@ -485,6 +485,641 @@
         ],
         "type": "object"
       },
+      "GovernanceAnnotation": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernanceBytes"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "GovernanceArgument": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernanceBytes"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "values": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "GovernanceBytes": {
+        "additionalProperties": false,
+        "properties": {
+          "length": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "length",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "GovernanceCall": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "description": "a JSON value admitted by the source or report reader"
+          },
+          "error_code": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "request": {
+            "$ref": "#/components/schemas/GovernanceRequest"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data",
+          "ordinal",
+          "request",
+          "sha256",
+          "status"
+        ],
+        "type": "object"
+      },
+      "GovernanceContractCall": {
+        "additionalProperties": false,
+        "properties": {
+          "arguments": {
+            "items": {
+              "$ref": "#/components/schemas/GovernanceArgument"
+            },
+            "type": "array"
+          },
+          "signature": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "arguments",
+          "status"
+        ],
+        "type": "object"
+      },
+      "GovernanceEpoch": {
+        "additionalProperties": false,
+        "properties": {
+          "added": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "candidates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "no_key": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "removed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "validators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "added",
+          "candidates",
+          "no_key",
+          "removed",
+          "validators"
+        ],
+        "type": "object"
+      },
+      "GovernanceFault": {
+        "additionalProperties": false,
+        "properties": {
+          "bounds_known": {
+            "type": "boolean"
+          },
+          "description": {
+            "$ref": "#/components/schemas/GovernanceBytes"
+          },
+          "gap_from": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gap_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instance": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bounds_known",
+          "description",
+          "instance",
+          "kind",
+          "number"
+        ],
+        "type": "object"
+      },
+      "GovernanceIdentity": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "chain_id": {
+            "type": "string"
+          },
+          "genesis_hash": {
+            "type": "string"
+          },
+          "head": {
+            "type": "string"
+          },
+          "head_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "chain_id",
+          "genesis_hash",
+          "head",
+          "head_hash"
+        ],
+        "type": "object"
+      },
+      "GovernanceLog": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GovernanceBytes"
+          },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "address",
+          "data",
+          "topics"
+        ],
+        "type": "object"
+      },
+      "GovernanceMirror": {
+        "additionalProperties": false,
+        "properties": {
+          "authority": {
+            "type": "string"
+          },
+          "authorized": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "blacklisted": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "bls_public_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "gas_tip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hash": {
+            "type": "string"
+          },
+          "healthy": {
+            "type": "boolean"
+          },
+          "modes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "number": {
+            "type": "string"
+          },
+          "validators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "authority",
+          "authorized",
+          "blacklisted",
+          "bls_public_keys",
+          "gas_tip",
+          "hash",
+          "healthy",
+          "modes",
+          "number",
+          "validators"
+        ],
+        "type": "object"
+      },
+      "GovernanceOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "call": {
+            "$ref": "#/components/schemas/GovernanceContractCall"
+          },
+          "effective": {
+            "type": "boolean"
+          },
+          "error_name": {
+            "type": "string"
+          },
+          "executing_proposal_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "from": {
+            "type": "string"
+          },
+          "input": {
+            "$ref": "#/components/schemas/GovernanceBytes"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "logs": {
+            "items": {
+              "$ref": "#/components/schemas/GovernanceLog"
+            },
+            "type": "array"
+          },
+          "number": {
+            "type": "string"
+          },
+          "path": {
+            "items": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "result": {
+            "type": "string"
+          },
+          "result_value": {
+            "$ref": "#/components/schemas/GovernanceBytes"
+          },
+          "selector": {
+            "type": "string"
+          },
+          "tx": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tx_hash": {
+            "type": "string"
+          },
+          "validator_change": {
+            "$ref": "#/components/schemas/GovernanceAnnotation"
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "view": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "call",
+          "effective",
+          "executing_proposal_id",
+          "from",
+          "input",
+          "instance",
+          "logs",
+          "number",
+          "path",
+          "result",
+          "result_value",
+          "selector",
+          "tx",
+          "tx_hash",
+          "validator_change",
+          "verified",
+          "view"
+        ],
+        "type": "object"
+      },
+      "GovernancePage": {
+        "additionalProperties": false,
+        "properties": {
+          "call": {
+            "$ref": "#/components/schemas/StoreGovernanceCall"
+          },
+          "collection": {
+            "enum": [
+              "operations",
+              "faults",
+              "states",
+              "proposals",
+              "changes",
+              "mirrors"
+            ],
+            "type": "string"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/StoreGovernanceEntry"
+            },
+            "type": "array"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "call",
+          "collection",
+          "next",
+          "rows",
+          "snapshot",
+          "total"
+        ],
+        "type": "object"
+      },
+      "GovernanceProposal": {
+        "additionalProperties": false,
+        "properties": {
+          "action_type": {
+            "type": "string"
+          },
+          "approved": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "call_data": {
+            "$ref": "#/components/schemas/GovernanceBytes"
+          },
+          "execution_count": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "proposer": {
+            "type": "string"
+          },
+          "rejected": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "required_approvals": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "status": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "action_type",
+          "approved",
+          "call_data",
+          "execution_count",
+          "id",
+          "proposer",
+          "rejected",
+          "required_approvals",
+          "status"
+        ],
+        "type": "object"
+      },
+      "GovernanceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "params": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "scope": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "method",
+          "params",
+          "scope"
+        ],
+        "type": "object"
+      },
+      "GovernanceState": {
+        "additionalProperties": false,
+        "properties": {
+          "authorized": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "blacklist": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "current_proposal_id": {
+            "type": "string"
+          },
+          "gas_tip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inexact": {
+            "type": "boolean"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "max_proposals": {
+            "type": "string"
+          },
+          "member_version": {
+            "type": "string"
+          },
+          "members": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "operators": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "proposal_expiry": {
+            "type": "string"
+          },
+          "proposals": {
+            "items": {
+              "$ref": "#/components/schemas/GovernanceProposal"
+            },
+            "type": "array"
+          },
+          "quorum": {
+            "type": "string"
+          },
+          "reported_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "validators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "current_proposal_id",
+          "inexact",
+          "instance",
+          "max_proposals",
+          "member_version",
+          "members",
+          "mode",
+          "number",
+          "proposal_expiry",
+          "proposals",
+          "quorum",
+          "reported_fields"
+        ],
+        "type": "object"
+      },
       "HeaderList": {
         "additionalProperties": false,
         "properties": {
@@ -9690,6 +10325,265 @@
         ],
         "type": "object"
       },
+      "StoreGovernanceCall": {
+        "additionalProperties": false,
+        "properties": {
+          "error_code": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "request": {
+            "$ref": "#/components/schemas/GovernanceRequest"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ordinal",
+          "request",
+          "sha256",
+          "status"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceCapture": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "$ref": "#/components/schemas/GovernanceIdentity"
+          },
+          "atomic": {
+            "type": "boolean"
+          },
+          "before": {
+            "$ref": "#/components/schemas/GovernanceIdentity"
+          },
+          "calls": {
+            "items": {
+              "$ref": "#/components/schemas/StoreGovernanceCall"
+            },
+            "type": "array"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "envelope_origin": {
+            "type": "string"
+          },
+          "faults": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "from": {
+            "type": "string"
+          },
+          "gaps": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "normalizer": {
+            "type": "string"
+          },
+          "operations": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "source_kind": {
+            "type": "string"
+          },
+          "source_sha256": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "after",
+          "atomic",
+          "before",
+          "calls",
+          "dataset_id",
+          "envelope_origin",
+          "faults",
+          "from",
+          "gaps",
+          "normalizer",
+          "operations",
+          "snapshot",
+          "source_kind",
+          "source_sha256",
+          "to"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceChange": {
+        "additionalProperties": false,
+        "properties": {
+          "epoch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernanceEpoch"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "number": {
+            "type": "string"
+          },
+          "validators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "validators_reported": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "epoch",
+          "number",
+          "validators",
+          "validators_reported"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "call_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "change": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreGovernanceChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fault": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernanceFault"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mirror": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernanceMirror"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "normalized_pointer": {
+            "type": "string"
+          },
+          "operation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernanceOperation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreGovernanceProposalState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernanceState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "call_ordinal",
+          "normalized_pointer",
+          "ordinal"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceProposalState": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernanceProposal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "instance",
+          "proposal"
+        ],
+        "type": "object"
+      },
       "StoreHeaderBounds": {
         "additionalProperties": false,
         "properties": {
@@ -13051,6 +13945,233 @@
           }
         },
         "summary": "Durable native follow cursor and latest completed header/observation companions; no event completeness claim."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/governance": {
+      "get": {
+        "operationId": "getGovernanceCapture",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreGovernanceCapture"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Immutable governance source identity, independent request scopes and availability; source claims are not canonical execution evidence."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}": {
+      "get": {
+        "operationId": "getGovernanceCall",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "positive original request ordinal",
+            "in": "path",
+            "name": "ordinal",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GovernanceCall"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "One sanitized original request and normalized result with its captured envelope digest; opaque payloads and errors are omitted."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries": {
+      "get": {
+        "operationId": "listGovernanceEntries",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "positive original request ordinal",
+            "in": "path",
+            "name": "ordinal",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "operations, faults, states, proposals, changes or mirrors; must match the original RPC method",
+            "in": "query",
+            "name": "collection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "page size 1..500",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "immutable capture, network, dataset, request and collection-bound cursor",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GovernancePage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Typed entries from one original request and collection, with normalized source pointers and immutable pagination; unavailable differs from empty."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/input-storage": {
