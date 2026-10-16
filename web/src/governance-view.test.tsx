@@ -1,6 +1,6 @@
 import {expect,it} from "vitest";
 import {renderToStaticMarkup} from "react-dom/server";
-import {EntryDetails,GovernanceTimeline} from "./views/Governance";
+import {EntryDetails,GovernanceHeaderResult,GovernanceTimeline} from "./views/Governance";
 import type {Schemas} from "./api/client";
 import {parseRoute} from "./App";
 
@@ -37,4 +37,25 @@ it("shows stored block hashes separately from transaction hashes and unknown leg
  expect(legacy).toContain("unknown · not reported");
  const change=renderToStaticMarkup(<EntryDetails entry={{call_ordinal:5,ordinal:1,normalized_pointer:"/data/0",change:{number:"0x1",block_hash:blockHash,validators:[],validators_reported:false,epoch:null}}}/>);
  expect(change).toContain(blockHash);expect(change).toContain("canonical cause is not inferred");
+});
+
+const context:Schemas["StoreGovernanceHeaderContext"]={snapshot:hash,call_ordinal:3,entry_ordinal:1,collection:"operations",normalized_pointer:"/data/0",source_number:"0xffffffffffffffff",index:"18446744073709551615",source_block_hash:"0x"+hash,canonical_hash:"0x"+hash,header_status:"matched",header:{index:"18446744073709551615",number:"36893488147419103231",hash:"0x"+hash,governing_epoch:"100"},sources:[{dataset_id:7,node:"node a&b",dataset_status:"complete"}],sources_truncated:false,epoch:null,cause_status:"unestablished"};
+
+it("links the exact header source without converting large indices to floating point",()=>{
+ const html=renderToStaticMarkup(<GovernanceHeaderResult net={2} value={context}/>);
+ expect(html).toContain("Exact canonical header match");expect(html).toContain("36893488147419103231");expect(html).toContain("index=18446744073709551615&amp;dataset=7&amp;node=node%20a%26b");
+ expect(html).toContain("Execution cause remains unestablished");expect(html).not.toContain("18446744073709552000");
+});
+it("does not link unknown, missing or mismatched canonical context",()=>{
+ for(const status of ["unknown_hash","header_unavailable","hash_mismatch"] as const){
+  const html=renderToStaticMarkup(<GovernanceHeaderResult net={2} value={{...context,header_status:status,header:null,sources:[]}}/>);
+  expect(html).not.toContain("href=");expect(html).not.toContain("Header full height");expect(html).toContain("Execution cause remains unestablished");
+ }
+});
+it("separates epoch agreement from unverified execution keys and missing inputs",()=>{
+ const epoch:Schemas["StoreGovernanceEpochEvidence"]={status:"available",candidates:"matched",validators:"mismatch",added:"unavailable",removed:"unavailable",header_candidates:[addr],header_validators:[addr],header_added:[],header_removed:[],no_key_status:"unverified_execution_keys"};
+ const html=renderToStaticMarkup(<GovernanceHeaderResult net={2} value={{...context,epoch}}/>);
+ expect(html).toContain("Epoch claim comparison");expect(html).toContain("mismatch");expect(html).toContain("Candidates without keys remain unverified");
+ const missing=renderToStaticMarkup(<GovernanceHeaderResult net={2} value={{...context,epoch:{...epoch,status:"not_epoch"}}}/>);
+ expect(missing).toContain("Header has no epoch data");expect(missing).not.toContain("Epoch claim comparison");
 });

@@ -167,7 +167,7 @@ func TestGovernanceAPIUnavailableEmptyAndIncomplete(t *testing.T) {
 	}
 	defer release()
 	base := fmt.Sprintf("/v1/networks/%d/datasets/%d/governance", d.NetworkID, d.ID)
-	for _, suffix := range []string{"", "/calls/3", "/calls/3/entries?collection=operations"} {
+	for _, suffix := range []string{"", "/calls/3", "/calls/3/entries?collection=operations", "/calls/3/entries/1/header-context?collection=operations"} {
 		if code := c.do("GET", base+suffix, nil, nil); code != 409 {
 			t.Fatal(suffix, code)
 		}

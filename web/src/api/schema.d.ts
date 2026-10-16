@@ -277,6 +277,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries/{entry}/header-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read-only comparison of one source block hash with this network's stored canonical header at the exact index. Re-evaluated on each request; no execution cause or missing key-state inference. */
+        get: operations["getGovernanceHeaderContext"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/input-storage": {
         parameters: {
             query?: never;
@@ -3858,6 +3875,58 @@ export interface components {
             proposal?: components["schemas"]["StoreGovernanceProposalState"] | null;
             state?: components["schemas"]["GovernanceState"] | null;
         };
+        StoreGovernanceEpochEvidence: {
+            /** @enum {string} */
+            added: "matched" | "mismatch" | "unavailable";
+            /** @enum {string} */
+            candidates: "matched" | "mismatch" | "unavailable";
+            header_added: string[];
+            header_candidates: string[];
+            header_removed: string[];
+            header_validators: string[];
+            /** @enum {string} */
+            no_key_status: "unverified_execution_keys";
+            /** @enum {string} */
+            removed: "matched" | "mismatch" | "unavailable";
+            /** @enum {string} */
+            status: "available" | "not_epoch" | "header_epoch_unavailable";
+            /** @enum {string} */
+            validators: "matched" | "mismatch" | "unavailable";
+        };
+        StoreGovernanceHeader: {
+            governing_epoch: string;
+            hash: string;
+            index: string;
+            number: string;
+        };
+        StoreGovernanceHeaderContext: {
+            /** Format: int64 */
+            call_ordinal: number;
+            canonical_hash: string | null;
+            /** @enum {string} */
+            cause_status: "unestablished";
+            /** @enum {string} */
+            collection: "operations" | "changes";
+            /** Format: int64 */
+            entry_ordinal: number;
+            epoch: components["schemas"]["StoreGovernanceEpochEvidence"] | null;
+            header: components["schemas"]["StoreGovernanceHeader"] | null;
+            /** @enum {string} */
+            header_status: "unknown_hash" | "header_unavailable" | "hash_mismatch" | "matched";
+            index: string;
+            normalized_pointer: string;
+            snapshot: string;
+            source_block_hash: string | null;
+            source_number: string;
+            sources: components["schemas"]["StoreGovernanceHeaderSource"][];
+            sources_truncated: boolean;
+        };
+        StoreGovernanceHeaderSource: {
+            /** Format: int64 */
+            dataset_id: number;
+            dataset_status: string;
+            node: string;
+        };
         StoreGovernanceProposalState: {
             id: string;
             instance: string;
@@ -5228,6 +5297,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GovernancePage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getGovernanceHeaderContext: {
+        parameters: {
+            query: {
+                /** @description operations or changes; must match the original RPC method */
+                collection: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description positive original request ordinal */
+                ordinal: number;
+                /** @description positive original collection entry ordinal */
+                entry: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreGovernanceHeaderContext"];
                 };
             };
             /** @description the request failed */
