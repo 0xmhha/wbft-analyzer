@@ -26,12 +26,13 @@ import (
 // Only the pre-existing public header samples are read. All native replies
 // below are hand-authored synthetic claims, not operational captures.
 type followRPC struct {
-	mu                   sync.Mutex
-	head                 uint64
-	gap, outage, foreign bool
-	address              string
-	headers              map[uint64]*types.Header
-	raw                  map[uint64]json.RawMessage
+	mu                         sync.Mutex
+	head                       uint64
+	gap, outage, foreign       bool
+	roundClaims, roundConflict bool
+	address                    string
+	headers                    map[uint64]*types.Header
+	raw                        map[uint64]json.RawMessage
 }
 
 func newFollowRPC(t *testing.T) (*followRPC, *rpc.Client) {
@@ -113,6 +114,15 @@ func (f *followRPC) serve(w http.ResponseWriter, r *http.Request) {
 			result = records()
 		case "wbft_participationSummary":
 			result = participation.Summarize(records())
+		case "wbft_roundChanges":
+			if !f.roundClaims {
+				replies = append(replies, map[string]any{"jsonrpc": "2.0", "id": q.ID, "error": map[string]any{"code": -32601, "message": "synthetic unsupported"}})
+				continue
+			}
+			result = participation.RoundChanges(records())
+			if f.roundConflict {
+				result = []participation.RoundChange{{Height: arg(0), Round: "0", Proposer: f.address, Cause: "timeout", Next: "1"}}
+			}
 		case "wbft_configAt":
 			result = map[string]any{"number": arg(0), "transitions": []any{}}
 		case "wbft_headerCopy":
@@ -132,6 +142,46 @@ func followOptions(t *testing.T, c *rpc.Client, name string) FollowOptions {
 		t.Fatal(e)
 	}
 	return FollowOptions{Name: name, Node: name, From: 1, Config: raw, RPC: c}
+}
+
+func TestFollowKeepsCursorOnConflictingRoundChangeClaims(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	wire, c := newFollowRPC(t)
+	f, err := OpenFollower(ctx, s, followOptions(t, c, "synthetic-follow-round-claims"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	wire.mu.Lock()
+	wire.roundClaims = true
+	wire.mu.Unlock()
+	first, err := f.Step(ctx)
+	if err != nil || first.Headers != 1 {
+		t.Fatal(first, err)
+	}
+	before, err := s.FollowState(ctx, f.Dataset.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wire.mu.Lock()
+	wire.head = 3
+	wire.roundConflict = true
+	wire.mu.Unlock()
+	if _, err = f.Step(ctx); !errors.Is(err, ErrFollowIncomplete) {
+		t.Fatal("conflicting round claims advanced", err)
+	}
+	after, err := s.FollowState(ctx, f.Dataset.ID)
+	if err != nil || after.Cursor != before.Cursor || after.Captured != before.Captured || after.TotalBatches != before.TotalBatches {
+		t.Fatal("committed cursor changed", before, after, err)
+	}
+	wire.mu.Lock()
+	wire.roundConflict = false
+	wire.mu.Unlock()
+	last, err := f.Step(ctx)
+	if err != nil || last.Headers != 1 || last.From != 2 || last.To != 2 {
+		t.Fatal("consistent claims did not resume from retained cursor", last, err)
+	}
 }
 
 func TestFollowGapOutageAndDurableResume(t *testing.T) {

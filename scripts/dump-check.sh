@@ -142,6 +142,9 @@ capture() {
  get "/networks/$observation_net/datasets/$observation_id/observations" observation-capture
  get "/networks/$observation_net/datasets/$observation_id/observations/participation?from=1&to=2&limit=1000" observation-participation
  get "/networks/$observation_net/datasets/$observation_id/observations/calls/5" observation-copy-source
+ get "/networks/$observation_net/datasets/$observation_id/observations/calls/6" observation-round-change-source
+ jq -e '.round_changes.status=="match" and .round_changes.computed_count==0 and .round_changes.reported_count==0 and .round_changes.different_rows==0' "$dir/observation-capture.json" >/dev/null
+ jq -e '.method=="wbft_roundChanges" and .status=="available" and .params==["1","2"] and .data==[]' "$dir/observation-round-change-source.json" >/dev/null
  get "/networks/$observation_net/datasets/$observation_id/observations/headers/index" observation-binding-index
  get "/networks/$observation_net/datasets/$observation_id/observations/headers?from=1&to=2&limit=1000" observation-bindings
 	header_net=$(jq -r --arg genesis "$(jq -r .hash "$root/internal/source/headers/testdata/0.json")" '.networks[] | select(.chain_id == "8283" and .genesis_hash == $genesis) | .id' "$dir/networks.json")

@@ -226,6 +226,9 @@ func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
 	return res, nil
 }
 func completeFollow(snap observe.Snapshot, src *headers.Source, from, to uint64) error {
+	if snap.RoundChanges != nil && snap.RoundChanges.Status == "different" {
+		return ErrFollowIncomplete
+	}
 	if snap.Comparison.Status != "match" || snap.Comparison.Computed == nil || snap.Comparison.Computed.Gaps != 0 {
 		return ErrFollowIncomplete
 	}

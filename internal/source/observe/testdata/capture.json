@@ -41,6 +41,18 @@
     {
       "method": "wbft_headerCopy", "params": ["0x2222222222222222222222222222222222222222222222222222222222222222"],
       "response": {"jsonrpc": "2.0", "id": 1, "result": {"number": "1", "hash": "0x2222222222222222222222222222222222222222222222222222222222222222", "round": 0, "preparedSeal": null, "committedSeal": {"sealers": [0], "signature": "0x00"}, "path": "imported"}}
+    },
+    {
+      "method": "wbft_roundChanges",
+      "params": [
+        "1",
+        "2"
+      ],
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 6,
+        "result": []
+      }
     }
   ]
 }

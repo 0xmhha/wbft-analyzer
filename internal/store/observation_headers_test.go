@@ -115,13 +115,17 @@ func TestObservationBindingAtomicCopiesAndStaleDependencies(t *testing.T) {
 		t.Fatal("obsolete structural copy retained", rows, e)
 	}
 	// Failed rebuild leaves the previous index and rows atomically intact.
-	if _, e = s.pool.Exec(ctx, `UPDATE datasets SET progress=99 WHERE id=$1`, d.ID); e != nil {
+	var originalProgress int64
+	if e = s.pool.QueryRow(ctx, `SELECT progress FROM datasets WHERE id=$1`, d.ID).Scan(&originalProgress); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = s.pool.Exec(ctx, `UPDATE datasets SET progress=progress+1 WHERE id=$1`, d.ID); e != nil {
 		t.Fatal(e)
 	}
 	if _, e = s.RebuildObservationHeaders(ctx, d.ID); e == nil {
 		t.Fatal("damaged source rebuilt")
 	}
-	if _, e = s.pool.Exec(ctx, `UPDATE datasets SET progress=5 WHERE id=$1`, d.ID); e != nil {
+	if _, e = s.pool.Exec(ctx, `UPDATE datasets SET progress=$2 WHERE id=$1`, d.ID, originalProgress); e != nil {
 		t.Fatal(e)
 	}
 	restored, e := s.ObservationHeaderIndex(ctx, d.ID)

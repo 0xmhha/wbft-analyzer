@@ -2079,6 +2079,16 @@ export interface components {
             reported: components["schemas"]["ParticipationSummary"] | null;
             status: string;
         };
+        ObserveRoundChangeComparison: {
+            /** Format: int64 */
+            computed_count?: number | null;
+            different_fields: string[];
+            /** Format: int64 */
+            different_rows?: number | null;
+            /** Format: int64 */
+            reported_count?: number | null;
+            status: string;
+        };
         PairPage: {
             index: components["schemas"]["StorePairIndex"];
             next: string | null;
@@ -3712,6 +3722,7 @@ export interface components {
             dataset_id: number;
             from: string;
             node: components["schemas"]["StoreObservationNode"];
+            round_changes?: components["schemas"]["ObserveRoundChangeComparison"] | null;
             snapshot: string;
             source_kind: string;
             source_sha256: string;
