@@ -12371,7 +12371,7 @@
             }
           },
           {
-            "description": "optional dataset kind: run, range, follow, reports, messages, observations or runtime",
+            "description": "optional dataset kind: run, range, follow, reports, messages, observations, runtime or governance",
             "in": "query",
             "name": "kind",
             "required": false,
