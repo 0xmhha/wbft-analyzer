@@ -67,6 +67,16 @@ capture() {
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
+ local own_net own_dataset
+ own_net=$(jq -r '.networks[]|select(.name=="synthetic-own-input")|.id' "$dir/networks.json")
+ get "/networks/$own_net/datasets" own-input-datasets
+ own_dataset=$(jq -er '.datasets[]|select(.name=="synthetic-own-input")|.id' "$dir/own-input-datasets.json")
+ get "/networks/$own_net/datasets/$own_dataset/messages/records?limit=1000" own-input-records
+ jq -e '[.records[]|select(.own_input_evidence!=null)]|length==3' "$dir/own-input-records.json" >/dev/null
+ get "/networks/$own_net/datasets/$own_dataset/messages/source?input=native&file=frames-own-fixture.jsonl&ordinal=3" own-input-outcome-source
+ get "/networks/$own_net/datasets/$own_dataset/messages/source?input=native&file=frames-own-fixture.jsonl&ordinal=4" own-input-internal-source
+ jq -e '.seq=="4" and .input_of=="5" and .own_input_evidence.input.ordinal==4' "$dir/own-input-outcome-source.json" >/dev/null
+ jq -e '.seq=="5" and .type=="own_input" and .own_input_evidence.outcome.ordinal==3 and .journal_position.offset=="469"' "$dir/own-input-internal-source.json" >/dev/null
  local runtime_net runtime_dataset
  runtime_net=$(jq -r '.networks[]|select(.chain_id=="10")|.id' "$dir/networks.json")
  get "/networks/$runtime_net/datasets" runtime-datasets
@@ -243,6 +253,8 @@ run_dataset_id=$(sed -n 's/^dataset=\([0-9][0-9]*\).*/\1/p' "$out/run.log")
 "$bin" reindex messages --db "$src" --dataset "$run_dataset_id" >"$out/run-pair-index.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/baseline/manifest-1.json" >"$out/baseline-1.log"
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/baseline/manifest-2.json" >"$out/baseline-2.log"
+jq -n --arg path "$root/internal/source/messages/testdata/own-input-frames" '{format:"wbft-analyzer-messages/1",name:"synthetic-own-input",network:{name:"synthetic-own-input",chain_id:"13",genesis_hash:("0x"+"0"*64)},clock:{model:"unknown"},inputs:[{id:"native",kind:"frames",node:"0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",path:$path}]}' >"$work/own-input.json"
+"$bin" ingest messages --db "$src" --manifest "$work/own-input.json" >"$out/own-input-ingest.json"
 "$bin" ingest messages --db "$src" --manifest "$root/internal/source/messages/testdata/manifest.json" >"$out/messages.log"
 message_dataset_id=$(jq -r .dataset_id "$out/messages.log")
 "$bin" reindex messages --db "$src" --dataset "$message_dataset_id" >"$out/message-pair-index.log"

@@ -147,6 +147,9 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 			decode(&r, b.Code, b.Payload, size > uint64(len(b.Payload)))
 		case *journal.OutcomeRec:
 			r.Type = "outcome"
+			if b.EngineRun != 0 {
+				r.EngineRun = number(b.EngineRun)
+			}
 			r.Peer = addr(b.Peer)
 			r.Key = hash(b.DedupKey)
 			r.Phase = phase(b.Code)

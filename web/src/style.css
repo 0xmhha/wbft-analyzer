@@ -168,3 +168,11 @@ article pre { overflow: auto; max-height: 24rem; }
 .scenario-panel .scenario-chart text { font-size: 18px; }
 .scenario-counterfactual { background: repeating-linear-gradient(135deg, transparent 0, transparent 12px, #b4530910 12px, #b4530910 14px); }
 @media (max-width: 800px) { .scenario-panels { grid-template-columns: minmax(0, 1fr); } .scenario-panel .scenario-chart text { font-size: 30px; } }
+
+.own-input-evidence { border: 1px solid #6c74ad; border-radius: .5rem; padding: 1rem; margin: 1rem 0; }
+.own-proof-chain { display: flex; flex-wrap: wrap; gap: 1.8rem; padding: 0; list-style: none; }
+.own-proof-chain li { position: relative; display: flex; flex: 1 1 12rem; flex-direction: column; gap: .5rem; min-width: 0; padding: .8rem; background: #f0f2ff; border-radius: .35rem; }
+.own-proof-chain li code, .own-proof-chain li span { overflow-wrap: anywhere; }
+.own-proof-chain li+li::before { content: ""; position: absolute; left: -1.8rem; top: 1.6rem; width: 1.8rem; border-top: 2px solid #6873b8; transform-origin: right; animation: own-source-link .35s ease-out both; }
+@keyframes own-source-link { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .own-proof-chain li+li::before { animation: none; } }

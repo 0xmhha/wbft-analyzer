@@ -16,6 +16,14 @@ import (
 )
 
 type frameRecord struct {
+	OwnMessageOf   *uint64 `json:"own_message_of"`
+	InputOf        *uint64 `json:"input_of"`
+	InputKind      string  `json:"input_kind"`
+	EngineRun      *uint64 `json:"engine_run"`
+	Step           *uint64 `json:"step"`
+	JournalSegment *uint64 `json:"journal_segment"`
+	JournalOffset  *int64  `json:"journal_offset"`
+
 	V             int             `json:"v"`
 	Type          string          `json:"type"`
 	Node          string          `json:"node"`
@@ -49,8 +57,9 @@ type frameRecord struct {
 	} `json:"dedup"`
 }
 
-func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Stats, err error) {
+func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s Stats, err error) {
 	s.ClockDiagnostics = "unavailable_export_order"
+	sawOwn := false
 	root, e := os.OpenRoot(p.Input.Path)
 	if e != nil {
 		return s, errors.New("cannot open frame input")
@@ -69,7 +78,8 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Sta
 		}
 		e = func() error {
 			defer fd.Close()
-			sc := bufio.NewScanner(fd)
+			digest := sha256.New()
+			sc := bufio.NewScanner(io.TeeReader(fd, digest))
 			sc.Buffer(make([]byte, 64<<10), 4<<20)
 			for line := int64(1); sc.Scan(); line++ {
 				if e := ctx.Err(); e != nil {
@@ -79,12 +89,28 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Sta
 				if len(bytes.TrimSpace(b)) == 0 {
 					continue
 				}
-				// Reject duplicate top-level keys; unknown fields are discarded rather
-				// than copied into stored error text or metadata.
+				// Detect the new evidence shape even when its fields are malformed.
+				var fields map[string]json.RawMessage
+				if json.Unmarshal(b, &fields) != nil {
+					return errors.New("invalid frame JSON fields")
+				}
+				var kind string
+				_ = json.Unmarshal(fields["type"], &kind)
+				_, ownRef := fields["own_message_of"]
+				_, inputRef := fields["input_of"]
+				if kind == "own_input" || ownRef || inputRef {
+					sawOwn = true
+				}
 				if !uniqueObject(b) {
 					return errors.New("invalid or duplicate frame JSON fields")
 				}
+				for _, name := range []string{"own_message_of", "input_of"} {
+					if value, ok := fields[name]; ok && bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+						return errors.New("null own-input reference")
+					}
+				}
 				var x frameRecord
+
 				if json.Unmarshal(b, &x) != nil || x.V != 1 || !addressPattern.MatchString(x.Node) || strings.ToLower(x.Node) != p.Summary.Node || x.Run == "" || len(x.Run) > 128 || x.Seq == nil || x.Mono == nil {
 					return errors.New("invalid frame identity or sequence")
 				}
@@ -122,17 +148,40 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Sta
 				if x.Key != "" && !hashPattern.MatchString(x.Key) {
 					return errors.New("invalid frame key")
 				}
+				if (x.Type == "own_input" || x.OwnMessageOf != nil || x.InputOf != nil) && (!hashPattern.MatchString(x.Key) || x.Key == "0x"+strings.Repeat("0", 64)) {
+					return errors.New("own input requires explicit message key")
+				}
 				r.Key = strings.ToLower(x.Key)
 				if r.Key == "0x"+strings.Repeat("0", 64) {
 					r.Key = ""
 				}
+
+				if x.OwnMessageOf != nil {
+					r.OwnMessageOf = number(*x.OwnMessageOf)
+				}
+				if x.InputOf != nil {
+					r.InputOf = number(*x.InputOf)
+				}
+				if x.EngineRun != nil {
+					r.EngineRun = number(*x.EngineRun)
+				}
+				if x.Step != nil {
+					r.Step = number(*x.Step)
+				}
+				if x.Type == "own_input" {
+					r.InputKind = choice(x.InputKind, "message")
+					r.Via = choice(x.Via, "internal")
+					if x.JournalSegment != nil && x.JournalOffset != nil {
+						r.Journal = &JournalPosition{number(*x.JournalSegment), strconv.FormatInt(*x.JournalOffset, 10)}
+					}
+				}
 				r.Cause = choice(x.Cause, "broadcast", "gossip", "relay", "retry", "reconnect", "replay", "direct")
 				switch x.Type {
-				case "frame":
+				case "frame", "own_input":
 					r.PayloadSource = payloadSource
 					r.IO = span
 					r.ClockSource = "recorded"
-					if x.Dir != "in" && x.Dir != "out" || x.Size == nil {
+					if x.Type == "frame" && x.Dir != "in" && x.Dir != "out" || x.Size == nil || x.Type == "own_input" && x.Dir != "" {
 						return errors.New("invalid frame direction or size")
 					}
 					r.Dir = x.Dir
@@ -198,6 +247,13 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Sta
 						r.Phase = phase(code)
 					}
 				case "outcome":
+					if x.Code != "" {
+						code, e := strconv.ParseUint(strings.TrimPrefix(x.Code, "0x"), 16, 64)
+						if e != nil {
+							return errors.New("invalid outcome code")
+						}
+						r.Phase = phase(code)
+					}
 					if x.Of != nil {
 						r.Of = number(*x.Of)
 					}
@@ -224,9 +280,15 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (s Sta
 			if sc.Err() != nil {
 				return errors.New("frame line damaged or oversized")
 			}
+			if f.SHA256 != "" && hex.EncodeToString(digest.Sum(nil)) != f.SHA256 {
+				return errors.New("frame file changed during read")
+			}
 			return nil
 		}()
 		if e != nil {
+			if sawOwn {
+				return s, errors.Join(errOwnFrameProvenance, e)
+			}
 			return s, e
 		}
 	}
