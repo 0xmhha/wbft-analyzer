@@ -179,6 +179,14 @@ func runFollow(args []string, stdout, stderr io.Writer) int {
 				detail = "source identity or stored cursor conflict; stopped"
 				code = exitDataErr
 			}
+			diagnostic := ingest.FollowFailure(u.err)
+			if diagnostic.Stage != "" {
+				detail += fmt.Sprintf(" (stage=%s kind=%s", diagnostic.Stage, diagnostic.Kind)
+				if diagnostic.Code != "" {
+					detail += " code=" + diagnostic.Code
+				}
+				detail += ")"
+			}
 			fmt.Fprintf(stderr, "follow %s: %s\n", u.node, detail)
 		} else if u.result.Headers > 0 {
 			if e = json.NewEncoder(stdout).Encode(struct {
