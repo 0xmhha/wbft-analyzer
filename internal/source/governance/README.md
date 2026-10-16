@@ -1,0 +1,9 @@
+# Governance capture reader
+
+This package reads the WBFT governance RPC contract without an execution-layer dependency. It collects `wbft_mirror`, `wbft_mirrorState`, `wbft_govOps`, `wbft_govProposal`, `wbft_validatorChanges`, and `wbft_mirrorFaults`, with `wbft_nodeInfo` identity bookends. The bookends must agree on node address, chain ID, and genesis hash. Heads may move during collection, so the snapshot always records `atomic: false`.
+
+Archive format `wbft-analyzer-governance/1` records the requested range, instance and proposal selections, ordered method/parameter pairs, and supplied JSON-RPC envelopes. `Load` returns the supplied archive digest. `Fetch` uses one client sequentially and labels reconstructed envelopes explicitly; their hashes are not hashes of original network packets. Normalization retains request ordinals, scopes, availability, error codes, and envelope hashes. Transport endpoints and arbitrary error text are omitted.
+
+Ranges use canonical uint64 hex quantities and contain at most 1,024 indices. Other quantities remain exact hex strings; chain IDs and full node head heights use exact decimal strings. A bounded operation request, a historical state request, and a proposal's full history/current state retain separate scopes. Empty available lists, unavailable calls, legacy gaps without bounds, zero bounds, nullable annotations, and optional state fields remain distinguishable.
+
+Calldata, log data, descriptions, and unsupported annotations retain only hashes and byte lengths. Allowlisted function arguments use standard EVM ABI decoding; noncanonical or unknown calls retain their original outcome claims without invented arguments. Mirror authority, health, verification, projection modes, and epoch differences remain source claims. Canonical header binding and evidence for a validator-change cause belong to the ingestion and analysis layers; this reader does not infer those links.
