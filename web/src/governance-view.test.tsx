@@ -28,3 +28,13 @@ it("keeps adjacent large indices and keyboard-addressable source marks",()=>{
  expect(html).toContain('tabindex="0"');expect(html).toContain('aria-pressed="true"');expect(html).toContain("outcome unknown");
  expect(parseRoute("#/networks/1/governance")).toEqual({view:"governance",net:1});
 });
+
+it("shows stored block hashes separately from transaction hashes and unknown legacy context",()=>{
+ const blockHash="0x"+"b".repeat(64);
+ const known=renderToStaticMarkup(<EntryDetails entry={{...entry,operation:{...operation,block_hash:blockHash}}}/>);
+ expect(known).toContain("Stored block hash (source)");expect(known).toContain(blockHash);expect(known).toContain(operation.tx_hash);
+ const legacy=renderToStaticMarkup(<EntryDetails entry={entry}/>);
+ expect(legacy).toContain("unknown · not reported");
+ const change=renderToStaticMarkup(<EntryDetails entry={{call_ordinal:5,ordinal:1,normalized_pointer:"/data/0",change:{number:"0x1",block_hash:blockHash,validators:[],validators_reported:false,epoch:null}}}/>);
+ expect(change).toContain(blockHash);expect(change).toContain("canonical cause is not inferred");
+});

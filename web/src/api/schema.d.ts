@@ -1472,6 +1472,7 @@ export interface components {
             validators: string[];
         };
         GovernanceOperation: {
+            block_hash?: string | null;
             call: components["schemas"]["GovernanceContractCall"];
             effective: boolean;
             error_name?: string;
@@ -3838,6 +3839,7 @@ export interface components {
             to: string;
         };
         StoreGovernanceChange: {
+            block_hash?: string | null;
             epoch: components["schemas"]["GovernanceEpoch"] | null;
             number: string;
             validators: string[];
