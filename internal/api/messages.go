@@ -92,7 +92,7 @@ func (s *Server) messageRecords(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "unknown message phase")
 		return
 	}
-	if f.Type != "" && !strings.Contains("|segment|conn|frame|outcome|send_suppressed|step|gap|timer_operation|own_input|scheduler_trace|scheduler_step|", "|"+f.Type+"|") {
+	if f.Type != "" && !strings.Contains("|segment|conn|frame|outcome|send_suppressed|step|gap|timer_operation|own_input|scheduler_trace|scheduler_step|cache_trace|cache_instance|cache_operation|", "|"+f.Type+"|") {
 		writeError(w, 400, "unknown message type")
 		return
 	}

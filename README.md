@@ -1750,3 +1750,21 @@ emitting any new source metadata. Damaged snapshots cannot leave a readable
 prefix that appears complete. Use a fresh dataset for the new normalization
 identity. Consensus cancellation verdicts remain the inspector's responsibility;
 authenticating source coordinates requires a separate retained-journal audit.
+
+
+### Cache decisions and queued writes
+
+Message datasets retain closed WBFT cache metadata from R-01 dumps and raw
+journals. The message browser separates cache-local mutex sequence, writer-local
+enqueue identity and physical write callback time. Open a selected frame's cache
+operation, empty-cache declaration or snapshot declaration by its exact retained
+file ordinal. Journal sequence numbers and large cache or attempt IDs remain
+strings throughout storage and the API.
+
+A complete snapshot validates counts, source coordinates and queue identity
+context. Incomplete traces and unavailable observer identities stay explicit;
+the analyzer does not infer an operation from adjacent records, timestamps or a
+peer/key FIFO. Cache behavior verdicts belong to inspector reports. A successful
+write does not prove delivery, and a recorded write of a suppressed decision is
+retained for inspection. Declarations and suppression callbacks have no measured
+clock. The relationship reveal and source focus respect reduced-motion settings.

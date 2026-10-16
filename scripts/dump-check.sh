@@ -83,6 +83,22 @@ capture() {
  jq -e '.seq=="1" and .journal_position.offset=="0" and .clock_source=="unavailable"' "$dir/scheduler-declaration-source.json" >/dev/null
  jq -e '.seq=="6" and .timer_operation.sequence=="4" and .timer_operation.action=="queued" and .timer_operation.generation=="3"' "$dir/scheduler-queue-source.json" >/dev/null
  jq -e '.seq=="9" and .entry_t_mono_ns=="3000000000" and .entry_t_wall=="2026-01-01T00:00:03Z"' "$dir/scheduler-step-source.json" >/dev/null
+ local cache_net cache_dataset
+ cache_net=$(jq -er '.networks[]|select(.name=="synthetic-cache-source")|.id' "$dir/networks.json")
+ get "/networks/$cache_net/datasets" cache-datasets
+ cache_dataset=$(jq -er '.datasets[]|select(.name=="synthetic-cache-source")|.id' "$dir/cache-datasets.json")
+ get "/networks/$cache_net/datasets/$cache_dataset/messages/records?type=cache_operation" cache-operations
+ get "/networks/$cache_net/datasets/$cache_dataset/messages/records?type=cache_instance" cache-instances
+ get "/networks/$cache_net/datasets/$cache_dataset/messages/source?input=cache&file=frames-cache-fixture.jsonl&ordinal=1" cache-declaration-source
+ get "/networks/$cache_net/datasets/$cache_dataset/messages/source?input=cache&file=frames-cache-fixture.jsonl&ordinal=4" cache-operation-source
+ get "/networks/$cache_net/datasets/$cache_dataset/messages/source?input=cache&file=frames-cache-fixture.jsonl&ordinal=6" cache-suppression-source
+ get "/networks/$cache_net/datasets/$cache_dataset/messages/source?input=cache&file=frames-cache-fixture.jsonl&ordinal=7" cache-write-source
+ jq -e '(.records|length)==2 and .records[0].cache_operation.sequence=="1" and .records[1].cache_operation.sequence=="2"' "$dir/cache-operations.json" >/dev/null
+ jq -e '(.records|length)==1 and .records[0].cache_instance.initial_state=="empty" and .records[0].clock_source=="unavailable"' "$dir/cache-instances.json" >/dev/null
+ jq -e '.cache_trace.complete==true and .cache_trace.operations=="2" and .scheduler_trace.operations=="0" and (.t_wall==null) and (.t_mono_ns==null)' "$dir/cache-declaration-source.json" >/dev/null
+ jq -e '.seq=="4" and .cache_operation.sequence=="1" and .journal_position.offset=="342"' "$dir/cache-operation-source.json" >/dev/null
+ jq -e '.cache_evidence.operation.ordinal==5 and .cache_decision.operation=="2" and .clock_source=="unavailable" and (.t_wall==null) and (.t_mono_ns==null)' "$dir/cache-suppression-source.json" >/dev/null
+ jq -e '.seq=="7" and .send_attempt.sequence=="9" and .send_attempt.cache_decision.operation=="1" and .cache_evidence.operation.ordinal==4 and .cache_evidence.operation.seq=="4" and .write=="ok"' "$dir/cache-write-source.json" >/dev/null
  local own_net own_dataset
  own_net=$(jq -r '.networks[]|select(.name=="synthetic-own-input")|.id' "$dir/networks.json")
  get "/networks/$own_net/datasets" own-input-datasets
@@ -271,6 +287,8 @@ run_dataset_id=$(sed -n 's/^dataset=\([0-9][0-9]*\).*/\1/p' "$out/run.log")
 "$bin" ingest run --db "$src" --manifest "$root/internal/source/logs/testdata/baseline/manifest-2.json" >"$out/baseline-2.log"
 jq -n --arg path "$root/internal/source/messages/testdata/scheduler-source" '{format:"wbft-analyzer-messages/1",name:"synthetic-scheduler-source",network:{name:"synthetic-scheduler-source",chain_id:"17",genesis_hash:("0x"+"0"*64)},clock:{model:"unknown"},inputs:[{id:"scheduler",kind:"frames",node:"0xaa00000000000000000000000000000000000000",path:$path}]}' >"$work/scheduler-source.json"
 "$bin" ingest messages --db "$src" --manifest "$work/scheduler-source.json" >"$out/scheduler-ingest.json"
+jq -n --arg path "$root/internal/source/messages/testdata/cache-source-combined" '{format:"wbft-analyzer-messages/1",name:"synthetic-cache-source",network:{name:"synthetic-cache-source",chain_id:"18",genesis_hash:("0x"+"0"*64)},clock:{model:"unknown"},inputs:[{id:"cache",kind:"frames",node:"0xaa00000000000000000000000000000000000000",path:$path}]}' >"$work/cache-source.json"
+"$bin" ingest messages --db "$src" --manifest "$work/cache-source.json" --inputs-dir "$out/cache-inputs" >"$out/cache-ingest.json"
 jq -n --arg path "$root/internal/source/messages/testdata/own-input-frames" '{format:"wbft-analyzer-messages/1",name:"synthetic-own-input",network:{name:"synthetic-own-input",chain_id:"13",genesis_hash:("0x"+"0"*64)},clock:{model:"unknown"},inputs:[{id:"native",kind:"frames",node:"0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",path:$path}]}' >"$work/own-input.json"
 "$bin" ingest messages --db "$src" --manifest "$work/own-input.json" >"$out/own-input-ingest.json"
 "$bin" ingest messages --db "$src" --manifest "$root/internal/source/messages/testdata/manifest.json" >"$out/messages.log"

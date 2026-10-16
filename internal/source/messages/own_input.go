@@ -60,8 +60,14 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (Stats
 	identities := map[string]string{}
 	conflicted := false
 	var schedulerRows []Record
+	var cacheRows []*cacheRawRecord
+	sawCache := false
 	enc := json.NewEncoder(spool)
 	stats, readErr := readFramesRaw(ctx, p, func(r Record) error {
+		if r.cacheRaw != nil {
+			cacheRows = append(cacheRows, r.cacheRaw)
+			sawCache = sawCache || r.cacheRaw.hasCache()
+		}
 		if err := enc.Encode(r); err != nil {
 			return errors.New("cannot spool frame metadata")
 		}
@@ -82,17 +88,21 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (Stats
 		}
 		return nil
 	})
-	if readErr != nil && (len(selected) > 0 || errors.Is(readErr, errOwnFrameProvenance) || errors.Is(readErr, errSchedulerFrameSource) || len(schedulerRows) > 0) {
+	if readErr != nil && (len(selected) > 0 || errors.Is(readErr, errOwnFrameProvenance) || errors.Is(readErr, errSchedulerFrameSource) || len(schedulerRows) > 0 || sawCache || errors.Is(readErr, errCacheFrameSource)) {
 		return Stats{}, readErr
 	}
 	if err := validateSchedulerFrames(schedulerRows, lost, conflicted); err != nil {
+		return Stats{}, err
+	}
+	cacheProofs, err := cacheFrameProofs(cacheRows)
+	if err != nil {
 		return Stats{}, err
 	}
 	proofs, err := ownProofs(selected, lost, conflicted)
 	if err != nil {
 		return Stats{}, err
 	}
-	if len(selected) > 0 || len(schedulerRows) > 0 {
+	if len(selected) > 0 || len(schedulerRows) > 0 || sawCache {
 		if p.Summary.SHA256 == "" {
 			return Stats{}, errors.New("frame evidence requires source fingerprints")
 		}
@@ -119,6 +129,7 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (Stats
 			return Stats{}, errors.New("cannot read frame metadata spool")
 		}
 		r.OwnInput = proofs[ownKey(r)]
+		r.CacheEvidence = cacheProofs[ownKey(r)]
 		if err = emit(r); err != nil {
 			return stats, err
 		}

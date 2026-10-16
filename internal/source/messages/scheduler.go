@@ -58,7 +58,7 @@ func projectSchedulerFrame(r *Record, x frameRecord, fields map[string]json.RawM
 	allowed := []string{"v", "type", "node", "run", "seq", "t_wall", "t_mono_ns", "journal_segment", "journal_offset"}
 	switch x.Type {
 	case "scheduler_trace":
-		allowed = append(allowed, "scheduler_trace", "clock_source")
+		allowed = append(allowed, "scheduler_trace", "clock_source", "cache_trace")
 	case "scheduler_step":
 		allowed = append(allowed, "engine_run", "step", "input_kind", "via", "entry_t_mono_ns", "entry_t_wall")
 	case "timer_operation":
