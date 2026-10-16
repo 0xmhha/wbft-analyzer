@@ -66,6 +66,7 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 	s.ClockDiagnostics = "unavailable_export_order"
 	sawOwn := false
 	sawScheduler := false
+	sawCache := false
 	root, e := os.OpenRoot(p.Input.Path)
 	if e != nil {
 		return s, errors.New("cannot open frame input")
@@ -100,8 +101,16 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 				if json.Unmarshal(b, &fields) != nil {
 					return errors.New("invalid frame JSON fields")
 				}
+				for _, name := range []string{"cache_trace", "cache_instance", "cache_operation", "cache_decision", "send_attempt"} {
+					if fields[name] != nil {
+						sawCache = true
+					}
+				}
 				var kind string
 				_ = json.Unmarshal(fields["type"], &kind)
+				if kind == "cache_trace" || kind == "cache_instance" || kind == "cache_operation" {
+					sawCache = true
+				}
 				if kind == "scheduler_trace" || kind == "scheduler_step" || kind == "timer_operation" || fields["scheduler_trace"] != nil || fields["timer_operation"] != nil {
 					sawScheduler = true
 				}
@@ -263,6 +272,7 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 					} else {
 						r.Phase = phase(code)
 					}
+				case "cache_trace", "cache_instance", "cache_operation":
 				case "scheduler_trace", "scheduler_step", "timer_operation":
 					if e = projectSchedulerFrame(&r, x, fields); e != nil {
 						return e
@@ -298,6 +308,9 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 						return e
 					}
 				}
+				if e = projectCacheFrame(&r, x, fields); e != nil {
+					return e
+				}
 				if e = emit(r); e != nil {
 					return e
 				}
@@ -312,6 +325,9 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 			return nil
 		}()
 		if e != nil {
+			if sawCache {
+				return s, errors.Join(errCacheFrameSource, e)
+			}
 			if sawScheduler {
 				return s, errors.Join(errSchedulerFrameSource, e)
 			}

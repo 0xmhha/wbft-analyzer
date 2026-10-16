@@ -176,3 +176,27 @@ article pre { overflow: auto; max-height: 24rem; }
 .own-proof-chain li+li::before { content: ""; position: absolute; left: -1.8rem; top: 1.6rem; width: 1.8rem; border-top: 2px solid #6873b8; transform-origin: right; animation: own-source-link .35s ease-out both; }
 @keyframes own-source-link { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @media (prefers-reduced-motion: reduce) { .own-proof-chain li+li::before { animation: none; } }
+
+
+.cache-evidence { border: 1px solid #0f766e; border-radius: .5rem; padding: 1rem; margin: 1rem 0; }
+.cache-source-chain { display: flex; flex-wrap: wrap; list-style: none; padding: 0; gap: 1.5rem; }
+.cache-source-chain li { position: relative; display: flex; flex: 1 1 12rem; flex-direction: column; gap: .5rem; padding: .8rem; min-width: 0; border: 1px solid #99c9c1; border-radius: .35rem; background: #f0fdfa; }
+.cache-source-chain code, .cache-source-chain span { overflow-wrap: anywhere; }
+.cache-source-chain li+li::before { content: ""; position: absolute; left: -1.5rem; top: 1.4rem; width: 1.5rem; border-top: 2px dashed #0f766e; transform-origin: left; animation: cache-source-reveal 250ms ease-out both; }
+.cache-source-chain li:nth-child(3)::before { animation-delay: 120ms; }
+.cache-evidence button[aria-pressed="true"] { outline: 3px solid #0f766e; outline-offset: 2px; }
+.cache-original { animation: cache-original-reveal 180ms ease-out both; }
+@keyframes cache-source-reveal { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes cache-original-reveal { from { opacity: 0; transform: translateY(.25rem); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 700px) {
+ .cache-source-chain { flex-direction: column; }
+ .cache-source-chain li { flex: none; }
+ .cache-source-chain li+li::before { left: 1rem; top: -1.5rem; width: 0; height: 1.5rem; border-top: 0; border-left: 2px dashed #0f766e; transform-origin: top; animation-name: cache-source-vertical; }
+}
+@keyframes cache-source-vertical { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.cache-source-chain.cache-unlinked li { background: #f8fafc; border-color: #94a3b8; }
+.cache-source-chain.cache-unlinked li+li::before { border-color: #94a3b8; animation: none; }
+@media (prefers-reduced-motion: reduce) { .cache-source-chain li+li::before, .cache-original { animation: none; } }
+
+.message-evidence { min-width: 0; }
+.message-evidence pre { max-width: 100%; overflow: auto; }

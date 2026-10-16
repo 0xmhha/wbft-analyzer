@@ -22,7 +22,7 @@ func Read(ctx context.Context, p Prepared, networkChain, networkGenesis string, 
 	return readJournal(ctx, p, networkChain, networkGenesis, emit)
 }
 
-func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit func(Record) error) (s Stats, err error) {
+func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit func(Record) error) (s Stats, err error) {
 	s.ClockDiagnostics = "recorded_sequence"
 	root, e := os.OpenRoot(p.Input.Path)
 	if e != nil {
@@ -39,6 +39,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 	peers := map[uint32]string{}
 	previousMono := int64(0)
 	haveMono := false
+	cacheState := newJournalCacheState()
 	for {
 		if e = ctx.Err(); e != nil {
 			return s, e
@@ -190,6 +191,8 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 			r.HeadHash = hash(b.HeadHash)
 			r.OutDigest = hash(b.OutDigest)
 			r.Via = choice(b.Via, "internal", "app", "timer", "peer", "wal")
+		case *journal.CacheRec:
+			// The closed cache projection below also checks its run capability.
 		case *journal.TimerRec:
 			r.Type = "timer_operation"
 			r.ClockSource = "recorded"
@@ -206,6 +209,9 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 			r.GapLastMono = strconv.FormatInt(int64(b.LastMono), 10)
 		default:
 			return s, errors.New("unsupported journal record")
+		}
+		if err := cacheState.project(&r, rec); err != nil {
+			return s, err
 		}
 		if r.Mono != nil {
 			n, _ := strconv.ParseInt(*r.Mono, 10, 64)

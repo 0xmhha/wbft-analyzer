@@ -1577,6 +1577,48 @@ export interface components {
             /** Format: int64 */
             unanchored_runs: number;
         };
+        MessagesCacheDecision: {
+            instance: string;
+            operation: string;
+            source_available: boolean | null;
+            source_offset?: string;
+            source_segment?: string;
+            source_seq?: string;
+        };
+        MessagesCacheEvidence: {
+            declaration: components["schemas"]["MessagesOwnSourcePoint"];
+            instance: components["schemas"]["MessagesOwnSourcePoint"];
+            operation: components["schemas"]["MessagesOwnSourcePoint"];
+        };
+        MessagesCacheInstance: {
+            initial_state: string;
+            instance: string;
+            message_capacity: string;
+            peer_capacity: string;
+            self: string;
+        };
+        MessagesCacheOperation: {
+            action: string;
+            candidates: string[];
+            candidates_available: boolean | null;
+            cause: string;
+            code: string;
+            dedup_key: string;
+            instance: string;
+            known_hit: boolean | null;
+            payload_sha256: string;
+            peer: string;
+            peer_recent_hit: boolean | null;
+            sequence: string;
+            suppressed: string[];
+            targets: string[];
+        };
+        MessagesCacheTrace: {
+            complete: boolean | null;
+            instances: string;
+            operations: string;
+            version: string;
+        };
         MessagesFile: {
             /** Format: int64 */
             bytes: number;
@@ -1694,6 +1736,11 @@ export interface components {
             percentile_method: string;
         };
         MessagesRecord: {
+            cache_decision?: components["schemas"]["MessagesCacheDecision"] | null;
+            cache_evidence?: components["schemas"]["MessagesCacheEvidence"] | null;
+            cache_instance?: components["schemas"]["MessagesCacheInstance"] | null;
+            cache_operation?: components["schemas"]["MessagesCacheOperation"] | null;
+            cache_trace?: components["schemas"]["MessagesCacheTrace"] | null;
             capture_id?: string;
             cause?: string;
             check?: string;
@@ -1743,6 +1790,7 @@ export interface components {
             round?: string;
             run: string;
             scheduler_trace?: components["schemas"]["MessagesSchedulerTrace"] | null;
+            send_attempt?: components["schemas"]["MessagesSendAttempt"] | null;
             seq: string;
             signature_status?: string;
             signer?: string;
@@ -1761,6 +1809,12 @@ export interface components {
             operations: string;
             steps: string;
             version: string;
+        };
+        MessagesSendAttempt: {
+            available: boolean | null;
+            cache_decision?: components["schemas"]["MessagesCacheDecision"] | null;
+            cache_source_available?: boolean | null;
+            sequence?: string;
         };
         MessagesSeriesPoint: {
             at: string;

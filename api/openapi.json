@@ -1425,6 +1425,195 @@
         ],
         "type": "object"
       },
+      "MessagesCacheDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "instance": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "source_available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "source_offset": {
+            "type": "string"
+          },
+          "source_segment": {
+            "type": "string"
+          },
+          "source_seq": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "instance",
+          "operation",
+          "source_available"
+        ],
+        "type": "object"
+      },
+      "MessagesCacheEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "declaration": {
+            "$ref": "#/components/schemas/MessagesOwnSourcePoint"
+          },
+          "instance": {
+            "$ref": "#/components/schemas/MessagesOwnSourcePoint"
+          },
+          "operation": {
+            "$ref": "#/components/schemas/MessagesOwnSourcePoint"
+          }
+        },
+        "required": [
+          "declaration",
+          "instance",
+          "operation"
+        ],
+        "type": "object"
+      },
+      "MessagesCacheInstance": {
+        "additionalProperties": false,
+        "properties": {
+          "initial_state": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "message_capacity": {
+            "type": "string"
+          },
+          "peer_capacity": {
+            "type": "string"
+          },
+          "self": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "initial_state",
+          "instance",
+          "message_capacity",
+          "peer_capacity",
+          "self"
+        ],
+        "type": "object"
+      },
+      "MessagesCacheOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "candidates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "candidates_available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "cause": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "dedup_key": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "known_hit": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "payload_sha256": {
+            "type": "string"
+          },
+          "peer": {
+            "type": "string"
+          },
+          "peer_recent_hit": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "sequence": {
+            "type": "string"
+          },
+          "suppressed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "targets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "action",
+          "candidates",
+          "candidates_available",
+          "cause",
+          "code",
+          "dedup_key",
+          "instance",
+          "known_hit",
+          "payload_sha256",
+          "peer",
+          "peer_recent_hit",
+          "sequence",
+          "suppressed",
+          "targets"
+        ],
+        "type": "object"
+      },
+      "MessagesCacheTrace": {
+        "additionalProperties": false,
+        "properties": {
+          "complete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "instances": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "complete",
+          "instances",
+          "operations",
+          "version"
+        ],
+        "type": "object"
+      },
       "MessagesFile": {
         "additionalProperties": false,
         "properties": {
@@ -1897,6 +2086,56 @@
       "MessagesRecord": {
         "additionalProperties": false,
         "properties": {
+          "cache_decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesCacheDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cache_evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesCacheEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cache_instance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesCacheInstance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cache_operation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesCacheOperation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cache_trace": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesCacheTrace"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "capture_id": {
             "type": "string"
           },
@@ -2080,6 +2319,16 @@
               }
             ]
           },
+          "send_attempt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSendAttempt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "seq": {
             "type": "string"
           },
@@ -2164,6 +2413,40 @@
           "operations",
           "steps",
           "version"
+        ],
+        "type": "object"
+      },
+      "MessagesSendAttempt": {
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "cache_decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesCacheDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cache_source_available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "sequence": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "available"
         ],
         "type": "object"
       },
