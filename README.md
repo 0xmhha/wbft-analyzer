@@ -1727,3 +1727,26 @@ scope is claimed, a binary of the other class refuses to open it. A copied
 database still requires verified input adoption into its own namespace
 before retained objects can be exported; physical ownership metadata is
 never included in the bundle.
+
+
+### Measured scheduler records from R01
+
+Message normalization version 11 reads `scheduler_trace`, `timer_operation`
+and `scheduler_step` records exported from measured WBFT journals. The API
+and message screen filter these types and retain each original file, line,
+sequence and journal segment/offset. A signed `own_input` also serves as its
+original step witness and preserves measured entry clocks when available.
+
+Snapshot declarations retain version and operation/step counts, with no
+measured wall or monotonic timestamp. Operations preserve exact decimal
+counters, original arm context, full height/round, mutation clocks and timeout
+hashes. The screen distinguishes the unavailable declaration clock from
+measured operations and shows the arm, deadline and callback cause separately.
+Missing WAL entry measurements stay absent.
+
+The reader validates closed metadata, complete snapshot counts, operation
+sequence continuity, unique source positions and step identities before
+emitting any new source metadata. Damaged snapshots cannot leave a readable
+prefix that appears complete. Use a fresh dataset for the new normalization
+identity. Consensus cancellation verdicts remain the inspector's responsibility;
+authenticating source coordinates requires a separate retained-journal audit.
