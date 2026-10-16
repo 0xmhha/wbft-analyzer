@@ -54,7 +54,7 @@ function RequestHistory({net,dataset,call,onAuth,motion,onMotion}:{net:number;da
   {choices.length>0&&<><Pending load={page} onAuth={onAuth}/>{page.state==="done"&&page.data&&<>
    {page.data.call.status!=="available"?<p className="gov-caution">Request unavailable. This does not establish zero {collection}.</p>:<p>{page.data.total.toLocaleString()} {page.data.total===1?collection.slice(0,-1):collection} reported by this request.</p>}
    {collection==="operations"&&page.data.rows.length>0&&<><label><input type="checkbox" checked={motion} onChange={e=>onMotion(e.target.checked)}/>Selection motion (respects reduced motion)</label><GovernanceTimeline rows={page.data.rows} selected={selected} onSelect={n=>{select(n);setSource(null)}}/></>}
-   {selectedEntry&&<EntryDetails entry={selectedEntry}/>}
+   {selectedEntry&&<><EntryDetails entry={selectedEntry}/>{(selectedEntry.operation||selectedEntry.change)&&<GovernanceHeaderEvidence key={`${call.ordinal}:${collection}:${selectedEntry.ordinal}`} net={net} dataset={dataset} entry={selectedEntry} collection={collection} onAuth={onAuth}/>}</>}
    <div className="table-scroll"><table aria-label={`Governance ${collection}`}><thead><tr><th>Source row</th><th>Block index / proposal ID</th><th>Recorded item</th><th>Outcome / state</th><th>Details</th><th>Source</th></tr></thead><tbody>{page.data.rows.map(row=><tr key={row.ordinal} className={row.ordinal===selected?"gov-selected":""}><td>{row.ordinal}</td><td>{entryIndex(row)}</td><td>{entryTitle(row)}</td><td>{entryOutcome(row)}</td><td><button type="button" aria-pressed={row.ordinal===selected} onClick={()=>{select(row.ordinal);setSource(null)}}>Details {row.ordinal}</button></td><td><button type="button" onClick={()=>setSource({ordinal:row.call_ordinal,pointer:row.normalized_pointer})}>Source {row.ordinal}</button></td></tr>)}</tbody></table></div>
    <div className="controls"><button type="button" disabled={!cursors.length} onClick={()=>{setCursors(cursors.slice(0,-1));clear()}}>Previous entries</button><button type="button" disabled={!page.data.next} onClick={()=>{if(page.data?.next)setCursors([...cursors,page.data.next]);clear()}}>Next entries</button></div>
   </>}</>}
@@ -92,6 +92,23 @@ export function EntryDetails({entry:e}:{entry:Entry}){
  </aside>;
 }
 function AddressList({label,values}:{label:string;values:string[]}){return <p>{label}: {values.length?values.slice(0,50).join(" · "):"no entries reported"}{values.length>50?` · showing 50 of ${values.length}; full list in normalized source`:""}</p>;}
+
+function GovernanceHeaderEvidence({net,dataset,entry,collection,onAuth}:{net:number;dataset:number;entry:Entry;collection:Collection;onAuth:()=>void}){
+ const [revision,refresh]=useState(0);
+ const load=useLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries/{entry}/header-context",{path:{net,dataset,ordinal:entry.call_ordinal,entry:entry.ordinal},query:{collection}}),[net,dataset,entry.call_ordinal,entry.ordinal,collection,revision]);
+ return <section className="gov-detail" aria-label="Canonical header context"><h3>Current header context</h3><p>Evaluated from the headers currently stored in this network. Importing more headers does not change the original governance capture.</p><button type="button" onClick={()=>refresh(revision+1)}>Refresh header context</button><Pending load={load} onAuth={onAuth}/>{load.state==="done"&&<GovernanceHeaderResult net={net} value={load.data}/>}</section>;
+}
+
+export function GovernanceHeaderResult({net,value:v}:{net:number;value:Schemas["StoreGovernanceHeaderContext"]}){
+ const labels={unknown_hash:"Source block hash not reported",header_unavailable:"Canonical header not imported",hash_mismatch:"Different canonical hash at this index",matched:"Exact canonical header match"};
+ const link=`#/networks/${net}/headers?index=${v.index}`;
+ const epoch=v.epoch;
+ return <><p><strong>{labels[v.header_status]}</strong></p><dl className="gov-facts"><dt>Source block index</dt><dd>{v.index} ({v.source_number})</dd><dt>Source block hash</dt><dd>{v.source_block_hash||"not reported"}</dd>{v.canonical_hash&&<><dt>Stored canonical hash</dt><dd>{v.canonical_hash}</dd></>}{v.header&&<><dt>Header full height</dt><dd>{v.header.number}</dd><dt>Governing epoch height</dt><dd>{v.header.governing_epoch}</dd></>}</dl>
+  <p className="gov-caution">Execution cause remains unestablished. A matching header identifies block context; it does not verify an operation, proposal execution or its effect.</p>
+  {v.header&&<><a href={link}>Open canonical header</a>{v.sources.length>0&&<ul aria-label="Matching header sources">{v.sources.map(source=><li key={`${source.dataset_id}:${source.node}`}><a href={`${link}&dataset=${source.dataset_id}&node=${encodeURIComponent(source.node)}`}>Dataset {source.dataset_id} · {source.node}</a> · {source.dataset_status}</li>)}</ul>}{v.sources_truncated&&<p>Showing the first 20 matching dataset and node sources.</p>}</>}
+  {epoch&&<><h4>Epoch claims against this header</h4>{epoch.status==="available"?<><div className="table-scroll"><table aria-label="Epoch claim comparison"><thead><tr><th>Claim</th><th>Comparison</th></tr></thead><tbody>{(["candidates","validators","added","removed"] as const).map(field=><tr key={field}><td>{field}</td><td>{epoch[field]}</td></tr>)}</tbody></table></div><p>Candidate and validator order are compared exactly. Added and removed validators use this header's governing set; gaps are not filled with a nearby stored epoch.</p><details><summary>Header epoch values</summary><AddressList label="Header candidates" values={epoch.header_candidates}/><AddressList label="Header validators" values={epoch.header_validators}/><AddressList label="Header added" values={epoch.header_added}/><AddressList label="Header removed" values={epoch.header_removed}/></details></>:<p>{epoch.status==="not_epoch"?"Header has no epoch data; the source epoch claim is unverified.":"Header epoch inputs unavailable; comparisons remain unverified."}</p>}<p>Candidates without keys remain unverified: execution state keys are unavailable. Header-reconstructed BLS inputs do not verify this claim.</p></>}
+ </>;
+}
 
 function GovernanceSource({net,dataset,selection,onAuth}:{net:number;dataset:number;selection:SourceSelection;onAuth:()=>void}){
  const load=useLoad(()=>get("/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}",{path:{net,dataset,ordinal:selection.ordinal}}),[net,dataset,selection.ordinal]);

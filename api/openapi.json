@@ -10569,6 +10569,245 @@
         ],
         "type": "object"
       },
+      "StoreGovernanceEpochEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "added": {
+            "enum": [
+              "matched",
+              "mismatch",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "candidates": {
+            "enum": [
+              "matched",
+              "mismatch",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "header_added": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "header_candidates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "header_removed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "header_validators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "no_key_status": {
+            "enum": [
+              "unverified_execution_keys"
+            ],
+            "type": "string"
+          },
+          "removed": {
+            "enum": [
+              "matched",
+              "mismatch",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "not_epoch",
+              "header_epoch_unavailable"
+            ],
+            "type": "string"
+          },
+          "validators": {
+            "enum": [
+              "matched",
+              "mismatch",
+              "unavailable"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "added",
+          "candidates",
+          "header_added",
+          "header_candidates",
+          "header_removed",
+          "header_validators",
+          "no_key_status",
+          "removed",
+          "status",
+          "validators"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceHeader": {
+        "additionalProperties": false,
+        "properties": {
+          "governing_epoch": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "governing_epoch",
+          "hash",
+          "index",
+          "number"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceHeaderContext": {
+        "additionalProperties": false,
+        "properties": {
+          "call_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "canonical_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cause_status": {
+            "enum": [
+              "unestablished"
+            ],
+            "type": "string"
+          },
+          "collection": {
+            "enum": [
+              "operations",
+              "changes"
+            ],
+            "type": "string"
+          },
+          "entry_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "epoch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreGovernanceEpochEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "header": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreGovernanceHeader"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "header_status": {
+            "enum": [
+              "unknown_hash",
+              "header_unavailable",
+              "hash_mismatch",
+              "matched"
+            ],
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "normalized_pointer": {
+            "type": "string"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "source_block_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_number": {
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/StoreGovernanceHeaderSource"
+            },
+            "type": "array"
+          },
+          "sources_truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "call_ordinal",
+          "canonical_hash",
+          "cause_status",
+          "collection",
+          "entry_ordinal",
+          "epoch",
+          "header",
+          "header_status",
+          "index",
+          "normalized_pointer",
+          "snapshot",
+          "source_block_hash",
+          "source_number",
+          "sources",
+          "sources_truncated"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceHeaderSource": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dataset_status": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dataset_id",
+          "dataset_status",
+          "node"
+        ],
+        "type": "object"
+      },
       "StoreGovernanceProposalState": {
         "additionalProperties": false,
         "properties": {
@@ -14184,6 +14423,95 @@
           }
         },
         "summary": "Typed entries from one original request and collection, with normalized source pointers and immutable pagination; unavailable differs from empty."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries/{entry}/header-context": {
+      "get": {
+        "operationId": "getGovernanceHeaderContext",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "positive original request ordinal",
+            "in": "path",
+            "name": "ordinal",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "positive original collection entry ordinal",
+            "in": "path",
+            "name": "entry",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "operations or changes; must match the original RPC method",
+            "in": "query",
+            "name": "collection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreGovernanceHeaderContext"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Read-only comparison of one source block hash with this network's stored canonical header at the exact index. Re-evaluated on each request; no execution cause or missing key-state inference."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/input-storage": {
