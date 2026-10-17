@@ -18,6 +18,7 @@ import (
 
 var addressPattern = regexp.MustCompile(`^0x[0-9a-f]{40}$`)
 var hashPattern = regexp.MustCompile(`^0x[0-9a-f]{64}$`)
+var runIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_.:-]{1,128}$`)
 var shaPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 func LoadManifest(ctx context.Context, path string) (Manifest, error) {
@@ -39,7 +40,7 @@ func LoadManifest(ctx context.Context, path string) (Manifest, error) {
 
 func validManifest(m Manifest) bool {
 	n, ok := new(big.Int).SetString(m.Network.ChainID, 10)
-	if m.Format != ManifestFormat || !addressPattern.MatchString(m.Node) || !hashPattern.MatchString(m.Network.GenesisHash) || !ok || n.Sign() < 0 || n.BitLen() > 512 || n.String() != m.Network.ChainID {
+	if !validScopes(m) || m.Format != ManifestFormat || !addressPattern.MatchString(m.Node) || !hashPattern.MatchString(m.Network.GenesisHash) || !ok || n.Sign() < 0 || n.BitLen() > 512 || n.String() != m.Network.ChainID {
 		return false
 	}
 	for _, file := range []*File{&m.Log, m.Frames, m.Runtime, m.Chain} {
