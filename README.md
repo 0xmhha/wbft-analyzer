@@ -743,6 +743,51 @@ The 72-hour acceptance run with a node restart and RPC interruption remains a
 separate runtime check; short regression tests do not complete that requirement.
 
 
+### Log reconstruction input assessment
+
+Before reconstructing inputs from logs and wire captures, inspect a fixed
+source bundle without a database or network connection:
+
+```sh
+wbft-analyzer reconstruct --manifest sources.json --from 100 --to 150
+```
+
+The manifest has format `wbft-reconstruction-input/1`, the recording `node`
+address, `network` (`chain_id` and `genesis_hash`), and a required `log` object.
+Optional `frames`, `runtime`, and `chain` objects add recorded received wire
+bytes, runtime startup observations, and a parent-linked RLP block chain. Each
+object contains a local `path` and its pinned `sha256`. Relative paths resolve
+beside the manifest. For ordinary files the checksum covers all bytes; for
+`frames` it is the existing `ingest messages` input fingerprint, covering the
+sorted file names, lengths and hashes, including payload objects. A native
+journal from another node cannot substitute for this node's received frames.
+
+The JSON assessment includes every requested active height, even when no
+source record names it. Heights remain full decimal integers and a request
+contains at most 10,000 heights. Original file/line/run/sequence coordinates
+are retained as bounded examples with full source counts; block-chain
+coordinates are explicit block indices. Payloads, arbitrary log fields and
+local paths are excluded. Changed bytes, invalid frame payload hashes,
+conflicting node identities, duplicate manifest keys and invalid chain structure
+are refused before any assessment is emitted.
+
+The log profile digest and log/frame/runtime normalizer versions identify the
+projection rules. Genesis and parent-link checks establish the supplied chain's
+structure, not independently verified finality or every consensus seal. Equal
+node addresses, heights or nearby times never associate independent process
+runs; that association remains explicitly unbound.
+
+This command reports `phase: source_readiness` and `core_executed: false`.
+Without received-message or timer sources a height is `not_possible`, including
+Info-only logs. Trace timer rows and decoded frames can make it `partial`,
+with processing order, application answers, proposal requests, head delivery
+and validator context explicitly unbound. Startup snapshots remain candidates
+at their recorded height; they are not projected across later heights.
+This stage does not emit `complete`, reconstruct core inputs or produce a
+cross-implementation output comparison. Exit 0 means the assessment was
+written, not that a core replay completed. The closed-journal command below
+continues to require its original recorded inputs.
+
 ### Closed core replay
 
 Retain a journal with `ingest messages --inputs-dir DIR`, then run:

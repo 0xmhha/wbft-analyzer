@@ -41,6 +41,7 @@ Commands:
   follow    load the blocks of a network as they come
   dataset   adopt retained inputs, delete a dataset, or inspect deletion
   reexec    compare recorded journal steps with the actual WBFT core
+  reconstruct assess fixed log and frame sources before core input reconstruction
   whatif    run a counterfactual timer policy on complete retained input
   scenario  inspect a recorded network scenario and its fitting coverage
   reindex   rebuild the derived tables of a dataset
@@ -58,6 +59,7 @@ var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
 	"follow":        runFollow,
 	"reindex":       runReindex,
 	"reexec":        runReexec,
+	"reconstruct":   runReconstruct,
 	"whatif":        runWhatif,
 	"scenario":      runScenario,
 	"reexec-helper": runReexecHelper,
