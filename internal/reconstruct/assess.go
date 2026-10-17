@@ -1,6 +1,7 @@
 package reconstruct
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
@@ -53,7 +54,20 @@ func assess(ctx context.Context, m Manifest, from, to string) (Assessment, error
 	}
 	out.Sources.LogSHA, out.Sources.LogBytes = m.Log.SHA256, int64(len(raw))
 	out.Sources.LogProfile, out.Sources.LogProfileSHA, out.Sources.LogNormalizer = profile.ID, profile.SHA256, logs.NormalizerVersion
+	processing := newProcessing(m, index)
+	cursor := bufio.NewScanner(bytes.NewReader(raw))
+	cursor.Buffer(make([]byte, 64<<10), 4<<20)
+	var cursorLine int64
 	out.Sources.LogStats, err = logs.Read(ctx, bytes.NewReader(raw), profile, m.Node, "log", func(e logs.Event) error {
+		for cursorLine < e.Line {
+			if !cursor.Scan() {
+				return errors.New("reconstruction log coordinates unavailable")
+			}
+			cursorLine++
+		}
+		if err := processing.log(e, cursor.Bytes()); err != nil {
+			return err
+		}
 		if e.Record.Kind == event.EngineStart {
 			if address, ok := e.Record.Fields["address"].(string); ok && !strings.EqualFold(address, m.Node) {
 				return errors.New("reconstruction log node identity mismatch")
@@ -82,6 +96,9 @@ func assess(ctx context.Context, m Manifest, from, to string) (Assessment, error
 			return out, errors.New("reconstruction frames exceed 512MiB")
 		}
 		stats, err := messages.Read(ctx, prepared[0], m.Network.ChainID, m.Network.GenesisHash, func(r messages.Record) error {
+			if err := processing.frame(r); err != nil {
+				return err
+			}
 			if r.Type == "frame" && r.Dir == "in" && r.Decode == "decoded" {
 				kind := "received_frame"
 				if r.Peer == "" {
@@ -169,6 +186,9 @@ func assess(ctx context.Context, m Manifest, from, to string) (Assessment, error
 			h.Issues = append(h.Issues, "unlocated_frames_require_review")
 		}
 		sort.Slice(h.Evidence, func(i, j int) bool { return h.Evidence[i].Kind < h.Evidence[j].Kind })
+	}
+	if err := processing.finish(ctx, m, &out); err != nil {
+		return out, err
 	}
 	return out, nil
 }

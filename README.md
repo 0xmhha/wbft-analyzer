@@ -788,6 +788,60 @@ cross-implementation output comparison. Exit 0 means the assessment was
 written, not that a core replay completed. The closed-journal command below
 continues to require its original recorded inputs.
 
+#### Processing-source witnesses
+
+The same command also projects `wbft-processing-witnesses/1` metadata. Optional
+`processing_scopes` explicitly declare which log run and frame run were
+recorded in one execution, within a fixed interval:
+
+```json
+{
+  "processing_scopes": [{
+    "log_run": "log:1",
+    "frame_run": "capture-1",
+    "from_t": "2000-01-01T00:00:00Z",
+    "to_t": "2000-01-01T00:01:00Z"
+  }]
+}
+```
+
+This is an operator declaration, not an inferred process identity. At least two
+**distinct** signed own-message contents must appear in both the declared log
+run and outgoing frame run before it is `declared_content_anchored`. Repeated
+writes of the same bytes count once. The output retains full anchor counts and
+up to 16 example source pairs. Up to 100 scopes, each at most 24 hours, are
+accepted. Unknown runs, repeated log-run declarations and malformed intervals
+are refused. The combined selected handler, logged-payload and frame sources
+are bounded to 100,000 records; excess input is refused rather than truncated.
+
+For each processing log, the command searches by message kind, full-width view,
+recovered signer and any explicitly logged digest. Received frames need a
+recorded peer; self-delivery uses the original signed payload log instead.
+Candidates must precede the handler, inside the declared interval. Equal wall
+timestamps do not establish processing order. A unique candidate in an
+anchored declaration can be `linked`; multiple candidates are `ambiguous`,
+including repeated frames containing identical bytes. Missing sources, unknown
+scope, incomplete capture, inconsistent context and reused physical evidence
+remain explicit. Candidate counts are exact, with up to four examples; reuse
+counts cover the selected handler range. Proposer-derived handler views remain
+marked as inferred. ECDSA recovery does not validate validator membership, BLS
+seals or every consensus rule. Unfilled sender context cannot override the
+recovered signing identity and recording node; contradictory identities are
+refused.
+
+`success_witness` requires an explicit accepted-proposal log after a uniquely
+linked PRE-PREPARE, in the same engine/view and declared interval, with no
+intervening message, proposal-request or timeout handler, engine/view boundary
+or proposal failure. Missing error
+logs never supply success. Duplicate acceptance records remain ambiguous;
+acceptance without a unique source remains `unbound_acceptance`.
+
+These are conditional source links, **not completed core inputs**. Every
+`core_input_ready` remains false. Complete input delivery, replay/backlog
+identity, timer ordering, all application answers and the core comparison are
+still unresolved. The height classifications and `core_executed: false` above
+continue to apply.
+
 ### Closed core replay
 
 Retain a journal with `ingest messages --inputs-dir DIR`, then run:
