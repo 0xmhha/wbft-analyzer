@@ -6,7 +6,7 @@ package messages
 import "github.com/0xmhha/wbft-analyzer/internal/source/logs"
 
 const Format = "wbft-analyzer-messages/1"
-const Normalizer = "wbft-message-normalization/14"
+const Normalizer = "wbft-message-normalization/15"
 
 type Clock struct {
 	Model  string `json:"model"`
@@ -46,7 +46,8 @@ type Prepared struct {
 
 // Record is deliberately closed: no arbitrary field map and no payload bytes.
 // Ordinal is the original journal record ordinal or frame file line; Seq is
-// the original per-run jseq, which need not be file-ordered in R-01 exports.
+// the original per-run source sequence, which need not be file-ordered in
+// R-01 exports. It is empty when an original record has no sequence.
 // Empty wall/mono values on peer/outcome records remain unknown.
 type TimerOperation struct {
 	Sequence      string   `json:"sequence"`
@@ -73,6 +74,10 @@ type SchedulerTrace struct {
 }
 
 type Record struct {
+	Notification         *SyncNotification         `json:"sync_notification,omitempty"`
+	NotificationSource   *SyncNotificationSource   `json:"sync_notification_source,omitempty"`
+	NotificationEvidence *SyncNotificationEvidence `json:"sync_notification_evidence,omitempty"`
+
 	syncJournal    bool
 	SyncTrace      *SyncTrace    `json:"sync_trace,omitempty"`
 	SyncControl    *SyncControl  `json:"sync_control,omitempty"`

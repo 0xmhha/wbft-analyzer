@@ -3040,6 +3040,36 @@
               }
             ]
           },
+          "sync_notification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSyncNotification"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sync_notification_evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSyncNotificationEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sync_notification_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSyncNotificationSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "sync_trace": {
             "anyOf": [
               {
@@ -3474,6 +3504,180 @@
         "required": [
           "complete",
           "declaration"
+        ],
+        "type": "object"
+      },
+      "MessagesSyncNotification": {
+        "additionalProperties": false,
+        "properties": {
+          "hash": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "posted_at": {
+            "type": "string"
+          },
+          "posted_at_available": {
+            "type": "boolean"
+          },
+          "sequence": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "posted_at_available",
+          "sequence",
+          "type"
+        ],
+        "type": "object"
+      },
+      "MessagesSyncNotificationEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "footer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesOwnSourcePoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "header": {
+            "$ref": "#/components/schemas/MessagesOwnSourcePoint"
+          },
+          "retained_complete": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "header",
+          "retained_complete"
+        ],
+        "type": "object"
+      },
+      "MessagesSyncNotificationSource": {
+        "additionalProperties": false,
+        "properties": {
+          "footer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSyncNotificationsFooter"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "format": {
+            "type": "string"
+          },
+          "header": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSyncNotificationsHeader"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "format",
+          "stage"
+        ],
+        "type": "object"
+      },
+      "MessagesSyncNotificationsFooter": {
+        "additionalProperties": false,
+        "properties": {
+          "closed_normally": {
+            "type": "boolean"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "core_complete": {
+            "type": "boolean"
+          },
+          "core_stop_seq": {
+            "type": "string"
+          },
+          "dropped": {
+            "type": "string"
+          },
+          "invalid": {
+            "type": "string"
+          },
+          "observed": {
+            "type": "string"
+          },
+          "sequence_exhausted": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          },
+          "written": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "closed_normally",
+          "complete",
+          "core_complete",
+          "dropped",
+          "invalid",
+          "observed",
+          "sequence_exhausted",
+          "type",
+          "written"
+        ],
+        "type": "object"
+      },
+      "MessagesSyncNotificationsHeader": {
+        "additionalProperties": false,
+        "properties": {
+          "core_start_seq": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "validator": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "core_start_seq",
+          "format",
+          "node",
+          "run",
+          "type",
+          "validator"
         ],
         "type": "object"
       },

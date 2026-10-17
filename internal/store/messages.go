@@ -46,7 +46,7 @@ func (s *Store) PutMessageRecords(ctx context.Context, id int64, xs []messages.R
 			if e != nil {
 				return e
 			}
-			b.Queue(`INSERT INTO message_records(dataset_id,input_id,file,ordinal,node,run,seq,type,height,round,record) VALUES($1,$2,$3,$4,$5,$6,$7::numeric,$8,nullif($9,'')::numeric,nullif($10,'')::numeric,$11) ON CONFLICT(dataset_id,input_id,file,ordinal) DO UPDATE SET record=message_records.record WHERE message_records.record=EXCLUDED.record`, id, r.Input, r.File, r.Ordinal, r.Node, r.Run, r.Seq, r.Type, r.Height, r.Round, raw)
+			b.Queue(`INSERT INTO message_records(dataset_id,input_id,file,ordinal,node,run,seq,type,height,round,record) VALUES($1,$2,$3,$4,$5,$6,nullif($7,'')::numeric,$8,nullif($9,'')::numeric,nullif($10,'')::numeric,$11) ON CONFLICT(dataset_id,input_id,file,ordinal) DO UPDATE SET record=message_records.record WHERE message_records.record=EXCLUDED.record`, id, r.Input, r.File, r.Ordinal, r.Node, r.Run, r.Seq, r.Type, r.Height, r.Round, raw)
 		}
 		res := tx.SendBatch(ctx, b)
 		for range xs {

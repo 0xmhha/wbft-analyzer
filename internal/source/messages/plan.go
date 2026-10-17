@@ -23,6 +23,7 @@ var addressPattern = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)
 var hashPattern = regexp.MustCompile(`^0x[0-9a-fA-F]{64}$`)
 var shaPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
 var journalName = regexp.MustCompile(`^[0-9]{20}\.wal(\.idx)?$`)
+var syncNotificationName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,143}\.jsonl$`)
 var frameName = regexp.MustCompile(`^frames-[A-Za-z0-9_.-]{1,128}\.jsonl$`)
 
 func LoadManifest(path string) (Manifest, error) {
@@ -71,7 +72,7 @@ func Prepare(ctx context.Context, m Manifest) ([]Prepared, json.RawMessage, erro
 	out := []Prepared{}
 	sums := []Summary{}
 	for _, in := range m.Inputs {
-		if !logs.Identifier(in.ID) || ids[in.ID] || !addressPattern.MatchString(in.Node) || (in.Kind != "journal" && in.Kind != "frames") {
+		if !logs.Identifier(in.ID) || ids[in.ID] || !addressPattern.MatchString(in.Node) || (in.Kind != "journal" && in.Kind != "frames" && in.Kind != "sync_notifications") {
 			return nil, nil, errors.New("invalid message input")
 		}
 		ids[in.ID] = true
@@ -102,6 +103,9 @@ func Prepare(ctx context.Context, m Manifest) ([]Prepared, json.RawMessage, erro
 // payloads. It rejects symlinks and unrecognized artifact names. A completed
 // dataset must match this fingerprint again after streaming normalization.
 func Fingerprint(ctx context.Context, in Input) (Summary, error) {
+	if in.Kind != "journal" && in.Kind != "frames" && in.Kind != "sync_notifications" {
+		return Summary{}, errors.New("invalid message input kind")
+	}
 	s := Summary{ID: in.ID, Kind: in.Kind, Node: strings.ToLower(in.Node), Files: []File{}}
 	root, e := os.OpenRoot(in.Path)
 	if e != nil {
@@ -123,12 +127,18 @@ func Fingerprint(ctx context.Context, in Input) (Summary, error) {
 			return nil
 		}
 		allowed := false
-		if in.Kind == "journal" {
+		switch in.Kind {
+		case "journal":
 			allowed = journalName.MatchString(name)
 			if allowed && strings.HasSuffix(name, ".wal") {
 				dataFiles++
 			}
-		} else {
+		case "sync_notifications":
+			allowed = syncNotificationName.MatchString(name)
+			if allowed {
+				dataFiles++
+			}
+		case "frames":
 			allowed = frameName.MatchString(name)
 			if allowed {
 				dataFiles++

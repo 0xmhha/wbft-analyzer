@@ -2049,6 +2049,9 @@ export interface components {
             step?: string;
             sync_control?: components["schemas"]["MessagesSyncControl"] | null;
             sync_evidence?: components["schemas"]["MessagesSyncEvidence"] | null;
+            sync_notification?: components["schemas"]["MessagesSyncNotification"] | null;
+            sync_notification_evidence?: components["schemas"]["MessagesSyncNotificationEvidence"] | null;
+            sync_notification_source?: components["schemas"]["MessagesSyncNotificationSource"] | null;
             sync_trace?: components["schemas"]["MessagesSyncTrace"] | null;
             t_mono_ns?: string | null;
             t_wall?: string;
@@ -2149,6 +2152,46 @@ export interface components {
             complete: boolean;
             declaration: components["schemas"]["MessagesOwnSourcePoint"];
             request?: components["schemas"]["MessagesOwnSourcePoint"] | null;
+        };
+        MessagesSyncNotification: {
+            hash?: string;
+            kind: string;
+            number?: string;
+            posted_at?: string;
+            posted_at_available: boolean;
+            sequence: string;
+            type: string;
+        };
+        MessagesSyncNotificationEvidence: {
+            footer?: components["schemas"]["MessagesOwnSourcePoint"] | null;
+            header: components["schemas"]["MessagesOwnSourcePoint"];
+            retained_complete: boolean;
+        };
+        MessagesSyncNotificationSource: {
+            footer?: components["schemas"]["MessagesSyncNotificationsFooter"] | null;
+            format: string;
+            header?: components["schemas"]["MessagesSyncNotificationsHeader"] | null;
+            stage: string;
+        };
+        MessagesSyncNotificationsFooter: {
+            closed_normally: boolean;
+            complete: boolean;
+            core_complete: boolean;
+            core_stop_seq?: string;
+            dropped: string;
+            invalid: string;
+            observed: string;
+            sequence_exhausted: boolean;
+            type: string;
+            written: string;
+        };
+        MessagesSyncNotificationsHeader: {
+            core_start_seq: string;
+            format: string;
+            node: string;
+            run: string;
+            type: string;
+            validator: boolean;
         };
         MessagesSyncRequestSource: {
             source_available: boolean | null;
