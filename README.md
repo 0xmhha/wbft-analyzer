@@ -811,7 +811,7 @@ run and outgoing frame run before it is `declared_content_anchored`. Repeated
 writes of the same bytes count once. The output retains full anchor counts and
 up to 16 example source pairs. Up to 100 scopes, each at most 24 hours, are
 accepted. Unknown runs, repeated log-run declarations and malformed intervals
-are refused. The combined selected handler, logged-payload and frame sources
+are refused. The combined selected handler, proposal-request, logged-payload and frame sources
 are bounded to 100,000 records; excess input is refused rather than truncated.
 
 For each processing log, the command searches by message kind, full-width view,
@@ -835,6 +835,18 @@ intervening message, proposal-request or timeout handler, engine/view boundary
 or proposal failure. Missing error
 logs never supply success. Duplicate acceptance records remain ambiguous;
 acceptance without a unique source remains `unbound_acceptance`.
+
+`proposal_requests` retains each selected builder-request log and its original
+view and coordinates. A `linked_proposal_source` requires one explicitly logged,
+signed own PRE-PREPARE after that round-zero request and a uniquely linked next
+message handler in the declared scope. Duplicate payloads, conflicting context,
+equal wall times and intervening input or engine/view boundaries prevent the
+binding. Only closed source coordinates, hashes and the recorded peer appear
+in `body_source`; the proposal bytes remain local. Requests with no such body
+remain `body_unavailable`. A canonical block or another proposer's message does
+not supply an unsent builder request. Request logs without a height are counted
+in `unlocated_proposal_requests`. These witnesses keep `core_input_ready: false`
+and do not establish a complete core input stream or execute the core.
 
 These are conditional source links, **not completed core inputs**. Every
 `core_input_ready` remains false. Complete input delivery, replay/backlog

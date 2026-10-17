@@ -342,6 +342,8 @@ func TestProcessingInterveningInputsBreakAcceptance(t *testing.T) {
 	for _, tc := range []struct{ name, phrase, level string }{
 		{"proposal request", "WBFT: handle block proposal request", "debug"},
 		{"round timeout", "WBFT: TIMER CHANGING ROUND", "warn"},
+		{"head handler", "WBFT: handle final committed", "info"},
+		{"late seal or internal carry", "WBFT: new extra prepare seal message", "trace"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newProcessingFixture(t, "1")
