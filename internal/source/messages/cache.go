@@ -248,6 +248,9 @@ func cacheSources(records []*cacheRawRecord) ([]cacheSource, []string) {
 				if r.Type != "cache_operation" {
 					allowed = append(allowed, "clock_source")
 				}
+				if r.Type == "cache_trace" {
+					allowed = append(allowed, "sync_trace")
+				}
 				for name := range r.present {
 					if !slices.Contains(allowed, name) {
 						add(r, "unknown cache source field "+name)

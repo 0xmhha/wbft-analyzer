@@ -61,9 +61,11 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (Stats
 	conflicted := false
 	var schedulerRows []Record
 	var cacheRows []*cacheRawRecord
+	sawSync := false
 	sawCache := false
 	enc := json.NewEncoder(spool)
 	stats, readErr := readFramesRaw(ctx, p, func(r Record) error {
+		sawSync = sawSync || r.SyncTrace != nil || r.SyncControl != nil
 		if r.cacheRaw != nil {
 			cacheRows = append(cacheRows, r.cacheRaw)
 			sawCache = sawCache || r.cacheRaw.hasCache()
@@ -88,7 +90,7 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (Stats
 		}
 		return nil
 	})
-	if readErr != nil && (len(selected) > 0 || errors.Is(readErr, errOwnFrameProvenance) || errors.Is(readErr, errSchedulerFrameSource) || len(schedulerRows) > 0 || sawCache || errors.Is(readErr, errCacheFrameSource)) {
+	if readErr != nil && (len(selected) > 0 || errors.Is(readErr, errOwnFrameProvenance) || errors.Is(readErr, errSchedulerFrameSource) || len(schedulerRows) > 0 || sawCache || errors.Is(readErr, errCacheFrameSource) || sawSync || errors.Is(readErr, errSyncSource)) {
 		return Stats{}, readErr
 	}
 	if err := validateSchedulerFrames(schedulerRows, lost, conflicted); err != nil {
@@ -102,7 +104,18 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (Stats
 	if err != nil {
 		return Stats{}, err
 	}
-	if len(selected) > 0 || len(schedulerRows) > 0 || sawCache {
+	var syncRows []syncSourceRow
+	if sawSync {
+		syncRows, err = readSyncSpool(ctx, spool)
+		if err != nil {
+			return Stats{}, err
+		}
+	}
+	syncProofs, err := finishSyncSources(syncRows, false, conflicted)
+	if err != nil {
+		return Stats{}, err
+	}
+	if len(selected) > 0 || len(schedulerRows) > 0 || sawCache || sawSync {
 		if p.Summary.SHA256 == "" {
 			return Stats{}, errors.New("frame evidence requires source fingerprints")
 		}
@@ -130,6 +143,9 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (Stats
 		}
 		r.OwnInput = proofs[ownKey(r)]
 		r.CacheEvidence = cacheProofs[ownKey(r)]
+		if source, ok := syncProofs[ownKey(r)]; ok {
+			r.SyncTrace, r.SyncControl, r.SyncEvidence = source.SyncTrace, source.SyncControl, source.SyncEvidence
+		}
 		if err = emit(r); err != nil {
 			return stats, err
 		}

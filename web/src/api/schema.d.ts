@@ -2047,6 +2047,9 @@ export interface components {
             signer?: string;
             size?: string | null;
             step?: string;
+            sync_control?: components["schemas"]["MessagesSyncControl"] | null;
+            sync_evidence?: components["schemas"]["MessagesSyncEvidence"] | null;
+            sync_trace?: components["schemas"]["MessagesSyncTrace"] | null;
             t_mono_ns?: string | null;
             t_wall?: string;
             timer_operation?: components["schemas"]["MessagesTimerOperation"] | null;
@@ -2123,6 +2126,42 @@ export interface components {
             kind: string;
             node: string;
             sha256: string;
+        };
+        MessagesSyncControl: {
+            action: string;
+            event_after: string;
+            event_before: string;
+            events_available: boolean | null;
+            failed: boolean | null;
+            first_after: boolean | null;
+            first_before: boolean | null;
+            operation: string;
+            request: string;
+            request_source?: components["schemas"]["MessagesSyncRequestSource"] | null;
+            running_after: boolean | null;
+            running_before: boolean | null;
+            sequence_exhausted: boolean | null;
+            stage: string;
+            success: boolean | null;
+            syncing: boolean | null;
+        };
+        MessagesSyncEvidence: {
+            complete: boolean;
+            declaration: components["schemas"]["MessagesOwnSourcePoint"];
+            request?: components["schemas"]["MessagesOwnSourcePoint"] | null;
+        };
+        MessagesSyncRequestSource: {
+            source_available: boolean | null;
+            source_offset?: string;
+            source_segment?: string;
+            source_seq?: string;
+        };
+        MessagesSyncTrace: {
+            complete: boolean | null;
+            event_cursor: string;
+            operations: string;
+            requests: string;
+            version: string;
         };
         MessagesTimeSeries: {
             /** Format: int64 */

@@ -259,7 +259,9 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 	defer func() { _ = spool.Close(); _ = os.Remove(spool.Name()) }()
 	encoder := json.NewEncoder(spool)
 	var rows []*cacheRawRecord
+	sawSync := false
 	stats, readErr := readJournalRaw(ctx, p, chain, genesis, func(r Record) error {
+		sawSync = sawSync || r.syncJournal
 		if r.cacheRaw != nil {
 			rows = append(rows, r.cacheRaw)
 		}
@@ -268,7 +270,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 		}
 		return encoder.Encode(r)
 	})
-	if errors.Is(readErr, errCacheFrameSource) {
+	if errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) {
 		return Stats{}, readErr
 	}
 	if len(rows) > 0 {
@@ -282,6 +284,26 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 		if e != nil || p.Summary.SHA256 == "" || sum.SHA256 != p.Summary.SHA256 {
 			return Stats{}, errors.New("journal cache source changed during read")
 		}
+	}
+	var syncRows []syncSourceRow
+	if sawSync {
+		if readErr != nil {
+			return stats, readErr
+		}
+		if len(rows) == 0 {
+			sum, e := Fingerprint(ctx, p.Input)
+			if e != nil || p.Summary.SHA256 == "" || sum.SHA256 != p.Summary.SHA256 {
+				return Stats{}, errors.New("journal sync source changed during read")
+			}
+		}
+		syncRows, err = readSyncSpool(ctx, spool)
+		if err != nil {
+			return Stats{}, err
+		}
+	}
+	syncProofs, err := finishSyncSources(syncRows, true, false)
+	if err != nil {
+		return Stats{}, err
 	}
 	proofs, err := cacheFrameProofs(rows)
 	if err != nil {
@@ -312,6 +334,9 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 			r.CacheTrace, r.SendAttempt, r.CacheDecision = raw.CacheTrace, raw.SendAttempt, raw.CacheDecision
 		}
 		r.CacheEvidence = proofs[k]
+		if source, ok := syncProofs[k]; ok {
+			r.SyncTrace, r.SyncControl, r.SyncEvidence = source.SyncTrace, source.SyncControl, source.SyncEvidence
+		}
 		if err = emit(r); err != nil {
 			return stats, err
 		}

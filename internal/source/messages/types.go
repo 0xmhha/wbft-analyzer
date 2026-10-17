@@ -6,7 +6,7 @@ package messages
 import "github.com/0xmhha/wbft-analyzer/internal/source/logs"
 
 const Format = "wbft-analyzer-messages/1"
-const Normalizer = "wbft-message-normalization/13"
+const Normalizer = "wbft-message-normalization/14"
 
 type Clock struct {
 	Model  string `json:"model"`
@@ -73,6 +73,10 @@ type SchedulerTrace struct {
 }
 
 type Record struct {
+	syncJournal    bool
+	SyncTrace      *SyncTrace    `json:"sync_trace,omitempty"`
+	SyncControl    *SyncControl  `json:"sync_control,omitempty"`
+	SyncEvidence   *SyncEvidence `json:"sync_evidence,omitempty"`
 	cacheRaw       *cacheRawRecord
 	CacheTrace     *CacheTrace     `json:"cache_trace,omitempty"`
 	CacheInstance  *CacheInstance  `json:"cache_instance,omitempty"`
