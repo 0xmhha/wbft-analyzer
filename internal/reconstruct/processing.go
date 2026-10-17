@@ -34,10 +34,13 @@ type processingCollector struct {
 	unlocated                                            int64
 	invalidPayloads                                      int64
 	count                                                int
+	requests                                             []proposalRequest
+	pendingRequest                                       int
+	unlocatedRequests                                    int64
 }
 
 func newProcessing(m Manifest, index map[string]int) *processingCollector {
-	p := &processingCollector{node: m.Node, index: index, pending: -1, logRuns: map[string]bool{}, frameRuns: map[string]bool{}}
+	p := &processingCollector{node: m.Node, index: index, pending: -1, pendingRequest: -1, logRuns: map[string]bool{}, frameRuns: map[string]bool{}}
 	for _, s := range m.Scopes {
 		p.logRuns[s.LogRun] = false
 		p.frameRuns[s.FrameRun] = false
@@ -62,7 +65,7 @@ func (p *processingCollector) log(e logs.Event, raw []byte) error {
 	if _, ok := p.logRuns[e.Run]; ok {
 		p.logRuns[e.Run] = true
 	}
-	boundary := e.Record.Kind == event.EngineStart || e.Record.Kind == event.EngineStop || e.Record.Kind == event.NewHead || e.Record.Kind == event.RoundEnter || e.Record.Kind == event.BuildRequest || e.Record.Kind == event.TimerFire
+	boundary := e.Record.Kind == event.EngineStart || e.Record.Kind == event.EngineStop || e.Record.Kind == event.NewHead || e.Record.Kind == event.RoundEnter || e.Record.Kind == event.BuildRequest || e.Record.Kind == event.TimerFire || e.Record.Kind == event.FinalizeHandover || e.Record.Kind == event.ExtraSeal
 	if boundary {
 		p.pending = -1
 	}
@@ -78,6 +81,9 @@ func (p *processingCollector) log(e logs.Event, raw []byte) error {
 	var payload *logs.PayloadWitness
 	if e.Level == "trace" || e.Record.Kind == event.Send && phase == "ROUND-CHANGE" {
 		payload = logs.MessagePayload(raw)
+	}
+	if err := p.requestLog(e, boundary || handle, payload); err != nil {
+		return err
 	}
 	if handle || accepted || payload != nil {
 		if address := field(e, "address"); address != "" && address != p.node {
@@ -317,6 +323,7 @@ func (p *processingCollector) finish(ctx context.Context, m Manifest, out *Asses
 		}
 		out.Heights[p.index[v.Height]].Processing = append(out.Heights[p.index[v.Height]].Processing, v)
 	}
+	p.finishRequests(m, out)
 	return nil
 }
 

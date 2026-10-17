@@ -97,14 +97,16 @@ type ProcessingWitness struct {
 }
 
 type Height struct {
-	Processing []ProcessingWitness `json:"processing_witnesses,omitempty"`
-	Height     string              `json:"height"`
-	Status     string              `json:"status"`
-	Issues     []string            `json:"issues"`
-	Evidence   []Evidence          `json:"evidence"`
+	Requests   []ProposalRequestWitness `json:"proposal_requests,omitempty"`
+	Processing []ProcessingWitness      `json:"processing_witnesses,omitempty"`
+	Height     string                   `json:"height"`
+	Status     string                   `json:"status"`
+	Issues     []string                 `json:"issues"`
+	Evidence   []Evidence               `json:"evidence"`
 }
 
 type Sources struct {
+	UnlocatedRequests         int64             `json:"unlocated_proposal_requests"`
 	ProcessingInvalidPayloads int64             `json:"incomplete_logged_payloads"`
 	ProcessingUnlocated       int64             `json:"unlocated_processing_handlers"`
 	ProcessingVersion         string            `json:"processing_version"`
