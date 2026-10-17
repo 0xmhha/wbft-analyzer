@@ -64,7 +64,8 @@ func mirror(raw json.RawMessage) (Mirror, error) {
 	}
 	keys := make([]string, 0, len(w.BLSKeys))
 	for _, k := range w.BLSKeys {
-		if !fixed(k, 48) {
+		// An empty key is a reported absence, not a verified BLS key.
+		if k != "0x" && !fixed(k, 48) {
 			return Mirror{}, ErrInvalid
 		}
 		keys = append(keys, strings.ToLower(k))
