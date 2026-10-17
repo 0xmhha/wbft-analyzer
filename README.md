@@ -1787,3 +1787,33 @@ clock. The relationship reveal and source focus respect reduced-motion settings.
 Suppression records may retain inherited R-01 timestamps. Normalization keeps their callback clock unavailable; cache declarations still require their explicit unmeasured clock shape.
 
 Log normalization version 2 discloses duplicate context fields on records outside the selected log profile as `out_of_profile_duplicate_context`. These records contribute no events or context values. Relevant records, malformed JSON and ambiguous reserved envelope fields remain invalid. Full source hashes and original line numbers include every input line.
+
+### Recorded application sync controls
+
+Message normalization version 14 reads WBFT sync trace version 1 from raw
+journals and R01 exports. Submitted notifications and actual node handling keep
+separate request/processing identities, original order and exact decimal
+counters. Repeated handling and superseded notifications remain visible. A
+snapshot declaration can share one source row with scheduler/cache metadata.
+
+The message browser shows the recorded sync state, actual handling action,
+first-success guard, running state and call error flag. Requested records do not
+measure engine or guard state; their raw padding is not presented as a measured
+state. Actual control calls retain next-event cursor bounds
+`[event_before, event_after)`, including empty ranges and failed calls. These
+bounds are separate from journal sequence numbers and clocks. No event boundary
+is reconstructed from timestamps.
+
+Open a retained snapshot or submitted request by its original input, filename
+and ordinal. Request links validate writer identity, state and exact journal
+segment/offset. Incomplete sources retain explicit coverage and no invented
+request coordinates. Unknown versions, ambiguous identities, invalid declared
+counts, forged references and source changes are rejected before source
+evidence is emitted. Legacy inputs remain supported; a fresh dataset uses the
+new normalization identity.
+
+Source completeness describes retained context, not whether every notification
+was handled. It does not independently authenticate an external downloader
+result, match canonical event bytes, or decide consensus conformance. Those
+questions require their own source audit and inspector verdict. Original-source
+reveals respect reduced-motion settings.

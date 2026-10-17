@@ -3020,6 +3020,36 @@
           "step": {
             "type": "string"
           },
+          "sync_control": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSyncControl"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sync_evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSyncEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sync_trace": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSyncTrace"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "t_mono_ns": {
             "type": [
               "string",
@@ -3313,6 +3343,192 @@
           "kind",
           "node",
           "sha256"
+        ],
+        "type": "object"
+      },
+      "MessagesSyncControl": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "event_after": {
+            "type": "string"
+          },
+          "event_before": {
+            "type": "string"
+          },
+          "events_available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "failed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "first_after": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "first_before": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "operation": {
+            "type": "string"
+          },
+          "request": {
+            "type": "string"
+          },
+          "request_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSyncRequestSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "running_after": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "running_before": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "sequence_exhausted": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "stage": {
+            "type": "string"
+          },
+          "success": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "syncing": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "action",
+          "event_after",
+          "event_before",
+          "events_available",
+          "failed",
+          "first_after",
+          "first_before",
+          "operation",
+          "request",
+          "running_after",
+          "running_before",
+          "sequence_exhausted",
+          "stage",
+          "success",
+          "syncing"
+        ],
+        "type": "object"
+      },
+      "MessagesSyncEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "declaration": {
+            "$ref": "#/components/schemas/MessagesOwnSourcePoint"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesOwnSourcePoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "complete",
+          "declaration"
+        ],
+        "type": "object"
+      },
+      "MessagesSyncRequestSource": {
+        "additionalProperties": false,
+        "properties": {
+          "source_available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "source_offset": {
+            "type": "string"
+          },
+          "source_segment": {
+            "type": "string"
+          },
+          "source_seq": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_available"
+        ],
+        "type": "object"
+      },
+      "MessagesSyncTrace": {
+        "additionalProperties": false,
+        "properties": {
+          "complete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "event_cursor": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "string"
+          },
+          "requests": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "complete",
+          "event_cursor",
+          "operations",
+          "requests",
+          "version"
         ],
         "type": "object"
       },

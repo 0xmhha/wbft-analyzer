@@ -99,6 +99,37 @@ capture() {
  jq -e '.seq=="4" and .cache_operation.sequence=="1" and .journal_position.offset=="342"' "$dir/cache-operation-source.json" >/dev/null
  jq -e '.cache_evidence.operation.ordinal==5 and .cache_decision.operation=="2" and .clock_source=="unavailable" and (.t_wall==null) and (.t_mono_ns==null)' "$dir/cache-suppression-source.json" >/dev/null
  jq -e '.seq=="7" and .send_attempt.sequence=="9" and .send_attempt.cache_decision.operation=="1" and .cache_evidence.operation.ordinal==4 and .cache_evidence.operation.seq=="4" and .write=="ok"' "$dir/cache-write-source.json" >/dev/null
+ # Preserve complete and incomplete sync sources through independent restore.
+ local sync_net sync_dataset sync_mode sync_kind sync_name sync_file
+ for sync_mode in combined incomplete; do
+  for sync_kind in frames journal; do
+   sync_name="synthetic-sync-$sync_mode-$sync_kind"
+   sync_net=$(jq -er '.networks[]|select(.name=="synthetic-sync-source")|.id' "$dir/networks.json")
+   get "/networks/$sync_net/datasets" "$sync_name-datasets"
+   sync_dataset=$(jq -er --arg name "$sync_name" '.datasets[]|select(.name==$name)|.id' "$dir/$sync_name-datasets.json")
+   get "/networks/$sync_net/datasets/$sync_dataset/messages/records?type=sync_control" "$sync_name-controls"
+   if [ "$sync_kind" = frames ]; then
+    sync_file="frames-sync-control-$sync_mode.jsonl"
+   else
+    sync_file=00000000000000000000.wal
+   fi
+   get "/networks/$sync_net/datasets/$sync_dataset/messages/source?input=sync&file=$sync_file&ordinal=1" "$sync_name-declaration"
+   get "/networks/$sync_net/datasets/$sync_dataset/messages/source?input=sync&file=$sync_file&ordinal=2" "$sync_name-processed"
+   jq -e '.seq=="1" and .sync_trace.event_cursor=="next_sequence" and .clock_source=="unavailable" and (.t_wall==null) and (.t_mono_ns==null)' "$dir/$sync_name-declaration.json" >/dev/null
+   jq -e '.seq=="2" and .sync_control.stage=="processed" and .sync_control.syncing==true and .sync_control.success==false and .sync_control.event_before=="9" and .sync_control.event_after=="11"' "$dir/$sync_name-processed.json" >/dev/null
+   if [ "$sync_mode" = combined ]; then
+    jq -e '(.records|length)==5 and all(.records[]; .sync_evidence.complete==true)' "$dir/$sync_name-controls.json" >/dev/null
+    jq -e '.sync_trace.complete==true and .sync_trace.requests=="2" and .sync_trace.operations=="3"' "$dir/$sync_name-declaration.json" >/dev/null
+    jq -e '.sync_control.request_source.source_seq=="3" and .sync_control.request_source.source_offset=="219" and .sync_evidence.request.ordinal==3 and .sync_evidence.request.seq=="3"' "$dir/$sync_name-processed.json" >/dev/null
+    get "/networks/$sync_net/datasets/$sync_dataset/messages/source?input=sync&file=$sync_file&ordinal=3" "$sync_name-request"
+    jq -e '.seq=="3" and .sync_control.stage=="requested" and .sync_control.request=="1" and .sync_control.operation=="0" and .sync_control.syncing==true and .sync_control.success==false and .journal_position.offset=="219"' "$dir/$sync_name-request.json" >/dev/null
+   else
+    jq -e '(.records|length)==1 and .records[0].sync_evidence.complete==false and (.records[0].sync_evidence.request==null)' "$dir/$sync_name-controls.json" >/dev/null
+    jq -e '.sync_trace.complete==false and .sync_trace.requests=="0"' "$dir/$sync_name-declaration.json" >/dev/null
+    jq -e '.sync_control.request_source.source_available==false and (.sync_evidence.request==null)' "$dir/$sync_name-processed.json" >/dev/null
+   fi
+  done
+ done
  local own_net own_dataset
  own_net=$(jq -r '.networks[]|select(.name=="synthetic-own-input")|.id' "$dir/networks.json")
  get "/networks/$own_net/datasets" own-input-datasets
@@ -298,6 +329,14 @@ jq -n --arg path "$root/internal/source/messages/testdata/cache-source-combined"
 "$bin" ingest messages --db "$src" --manifest "$work/cache-source.json" --inputs-dir "$out/cache-inputs" >"$out/cache-ingest.json"
 jq -n --arg path "$root/internal/source/messages/testdata/own-input-frames" '{format:"wbft-analyzer-messages/1",name:"synthetic-own-input",network:{name:"synthetic-own-input",chain_id:"13",genesis_hash:("0x"+"0"*64)},clock:{model:"unknown"},inputs:[{id:"native",kind:"frames",node:"0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",path:$path}]}' >"$work/own-input.json"
 "$bin" ingest messages --db "$src" --manifest "$work/own-input.json" >"$out/own-input-ingest.json"
+# Both frame projections and raw journals retain sync-control source links.
+for sync_mode in combined incomplete; do
+ for sync_kind in frames journal; do
+  sync_name="synthetic-sync-$sync_mode-$sync_kind"
+  jq -n --arg path "$root/internal/source/messages/testdata/sync-$sync_mode/$sync_kind" --arg name "$sync_name" --arg chain "9" --arg kind "$sync_kind" '{format:"wbft-analyzer-messages/1",name:$name,network:{name:"synthetic-sync-source",chain_id:$chain,genesis_hash:("0x"+"0"*64)},clock:{model:"unknown"},inputs:[{id:"sync",kind:$kind,node:"0xaa00000000000000000000000000000000000000",path:$path}]}' >"$work/$sync_name.json"
+  "$bin" ingest messages --db "$src" --manifest "$work/$sync_name.json" --inputs-dir "$out/$sync_name-inputs" >"$out/$sync_name-ingest.json"
+ done
+done
 "$bin" ingest messages --db "$src" --manifest "$root/internal/source/messages/testdata/manifest.json" >"$out/messages.log"
 message_dataset_id=$(jq -r .dataset_id "$out/messages.log")
 "$bin" reindex messages --db "$src" --dataset "$message_dataset_id" >"$out/message-pair-index.log"

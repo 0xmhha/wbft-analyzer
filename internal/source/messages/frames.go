@@ -16,6 +16,8 @@ import (
 )
 
 type frameRecord struct {
+	SyncTrace      json.RawMessage `json:"sync_trace"`
+	SyncControl    json.RawMessage `json:"sync_control"`
 	Scheduler      json.RawMessage `json:"scheduler_trace"`
 	Timer          json.RawMessage `json:"timer_operation"`
 	EntryMono      *string         `json:"entry_t_mono_ns"`
@@ -67,6 +69,7 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 	sawOwn := false
 	sawScheduler := false
 	sawCache := false
+	sawSync := false
 	root, e := os.OpenRoot(p.Input.Path)
 	if e != nil {
 		return s, errors.New("cannot open frame input")
@@ -108,6 +111,9 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 				}
 				var kind string
 				_ = json.Unmarshal(fields["type"], &kind)
+				if kind == "sync_trace" || kind == "sync_control" || fields["sync_trace"] != nil || fields["sync_control"] != nil {
+					sawSync = true
+				}
 				if kind == "cache_trace" || kind == "cache_instance" || kind == "cache_operation" {
 					sawCache = true
 				}
@@ -272,6 +278,7 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 					} else {
 						r.Phase = phase(code)
 					}
+				case "sync_trace", "sync_control":
 				case "cache_trace", "cache_instance", "cache_operation":
 				case "scheduler_trace", "scheduler_step", "timer_operation":
 					if e = projectSchedulerFrame(&r, x, fields); e != nil {
@@ -311,6 +318,9 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 				if e = projectCacheFrame(&r, x, fields); e != nil {
 					return e
 				}
+				if e = projectSyncFrame(&r, x, fields); e != nil {
+					return e
+				}
 				if e = emit(r); e != nil {
 					return e
 				}
@@ -325,6 +335,9 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 			return nil
 		}()
 		if e != nil {
+			if sawSync {
+				return s, errors.Join(errSyncSource, e)
+			}
 			if sawCache {
 				return s, errors.Join(errCacheFrameSource, e)
 			}

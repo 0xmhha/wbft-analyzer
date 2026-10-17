@@ -233,3 +233,8 @@ article pre { overflow: auto; max-height: 24rem; }
 .gov-history-notice { margin: 1rem 0; padding: .8rem 1rem; background: #fff7df; }
 .gov-history-notice h3 { margin-top: 0; }
 .gov-history-notice p { margin: .5rem 0; }
+
+.sync-evidence { border: 1px solid #2563eb; border-radius: .5rem; padding: 1rem; margin: 1rem 0; }
+.sync-evidence button[aria-pressed="true"] { outline: 3px solid #2563eb; outline-offset: 2px; }
+.sync-original { animation: cache-original-reveal 180ms ease-out both; }
+@media (prefers-reduced-motion: reduce) { .sync-original { animation: none; } }

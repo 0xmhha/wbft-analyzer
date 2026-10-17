@@ -40,6 +40,7 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 	previousMono := int64(0)
 	haveMono := false
 	cacheState := newJournalCacheState()
+	syncState := newJournalSyncState()
 	for {
 		if e = ctx.Err(); e != nil {
 			return s, e
@@ -193,6 +194,8 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 			r.Via = choice(b.Via, "internal", "app", "timer", "peer", "wal")
 		case *journal.CacheRec:
 			// The closed cache projection below also checks its run capability.
+		case *journal.SyncRec:
+			// The sync projection below retains the actual control-call cursors.
 		case *journal.TimerRec:
 			r.Type = "timer_operation"
 			r.ClockSource = "recorded"
@@ -209,6 +212,9 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 			r.GapLastMono = strconv.FormatInt(int64(b.LastMono), 10)
 		default:
 			return s, errors.New("unsupported journal record")
+		}
+		if err := syncState.project(&r, rec); err != nil {
+			return s, err
 		}
 		if err := cacheState.project(&r, rec); err != nil {
 			return s, err
