@@ -84,3 +84,13 @@ it("distinguishes unavailable gap coverage from zero gaps and unavailable operat
 it("does not turn a source's empty gap list into an independent completeness verdict",()=>{
  expect(renderToStaticMarkup(<GovernanceHistoryNotice gaps={0} operations={0}/>)).toBe("");
 });
+
+
+it("shows reported empty mirror keys without treating them as verified eligibility",()=>{
+ const mirror:Schemas["GovernanceMirror"]={number:"0x14",hash:"0x"+hash,healthy:true,authority:"contract",modes:{[addr]:"replay"},validators:[addr],bls_public_keys:["0x"],gas_tip:null,blacklisted:[],authorized:[]};
+ const html=renderToStaticMarkup(<EntryDetails entry={{call_ordinal:2,ordinal:1,normalized_pointer:"/data",mirror}}/>);
+ expect(html).toContain("BLS keys reported: 1; empty keys reported: 1");
+ expect(html).toContain("do not independently verify epoch eligibility");
+ const present=renderToStaticMarkup(<EntryDetails entry={{call_ordinal:2,ordinal:1,normalized_pointer:"/data",mirror:{...mirror,bls_public_keys:["0x"+"a".repeat(96)]}}}/>);
+ expect(present).toContain("empty keys reported: 0");
+});
