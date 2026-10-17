@@ -148,11 +148,11 @@ against real runs before these workflows are marked complete.
 ## Message metadata inputs
 
 `ingest messages --db DSN --manifest FILE` accepts immutable journal
-or R-01 frame directories. The manifest format is
+or R-01 frame directories, or typed downloader notification directories. The manifest format is
 `wbft-analyzer-messages/1`, with `name`, a `network` (`chain_id`,
 `genesis_hash`, `name`), `clock` and `inputs` (`id`, `kind`, `node`, `path`).
 `node` is the recording node's consensus address; paths are local-only.
-`kind` is `journal` or `frames`. `clock.model` is `unknown`, `shared-host`
+`kind` is `journal`, `frames` or `sync_notifications`. `clock.model` is `unknown`, `shared-host`
 or `ntp`; only `ntp` takes a required nonnegative `skew_ms` bound.
 An optional input `sha256` checks the canonical, sorted file manifest hash.
 
@@ -1817,3 +1817,28 @@ was handled. It does not independently authenticate an external downloader
 result, match canonical event bytes, or decide consensus conformance. Those
 questions require their own source audit and inspector verdict. Original-source
 reveals respect reduced-motion settings.
+
+
+### Typed downloader notification sources
+
+Message inputs of kind `sync_notifications` read `wbft-sync-notifications/1`
+JSON Lines files from a dedicated immutable directory. Use safe ASCII `.jsonl`
+filenames and retain each process run once per input. The manifest declares
+network identity; the typed file itself contains no chain ID or genesis hash.
+Its header binds the original recording node and process run.
+
+The reader preserves notification order, exact decimal sequences and downloaded
+header numbers, available posting clocks, and original header/footer metadata.
+A posting clock supplies no canonical event boundary or monotonic measurement.
+Headers and footers have no original notification sequence: their normalized
+sequence stays empty and PostgreSQL migration 31 stores its absence. Other
+record types still require their original sequence and retain uniqueness.
+
+Closed field validation rejects unknown metadata, missing booleans, ambiguous
+process identities, contradictory counts and source changes before projection.
+Missing footers or final line terminators retain incomplete file coverage; an
+original producer completeness claim stays separate from retained-byte coverage.
+File hashes and exact input/file/row pointers open each original header/footer
+from the messages page. Notifications have no protocol payload or inferred core
+request association. They do not independently authenticate a downloader result
+or establish consensus-policy success. Source reveals respect reduced motion.

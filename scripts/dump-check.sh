@@ -130,6 +130,27 @@ capture() {
    fi
   done
  done
+ # Original typed headers/footers retain absent source sequences after restore.
+ local typed_net typed_dataset typed_mode typed_name
+ typed_net=$(jq -er '.networks[]|select(.name=="synthetic-typed-sync")|.id' "$dir/networks.json")
+ for typed_mode in complete incomplete; do
+  typed_name="synthetic-typed-sync-$typed_mode"
+  get "/networks/$typed_net/datasets" "$typed_name-datasets"
+  typed_dataset=$(jq -er --arg name "$typed_name" '.datasets[]|select(.name==$name)|.id' "$dir/$typed_name-datasets.json")
+  get "/networks/$typed_net/datasets/$typed_dataset/messages/inputs" "$typed_name-inputs"
+  get "/networks/$typed_net/datasets/$typed_dataset/messages/records?type=sync_notification" "$typed_name-notifications"
+  get "/networks/$typed_net/datasets/$typed_dataset/messages/records?type=sync_notification_source" "$typed_name-sources"
+  get "/networks/$typed_net/datasets/$typed_dataset/messages/source?input=typed&file=notifications.jsonl&ordinal=1" "$typed_name-header"
+  jq -e '.seq=="" and .sync_notification_source.header.core_start_seq=="0" and (.t_wall==null) and (.t_mono_ns==null)' "$dir/$typed_name-header.json" >/dev/null
+  jq -e '(.records|length)==6 and .records[3].seq=="4" and .records[3].sync_notification.number=="9007199254740993" and .records[1].clock_source=="unavailable" and (.records[1].t_wall==null)' "$dir/$typed_name-notifications.json" >/dev/null
+  if [ "$typed_mode" = complete ]; then
+   get "/networks/$typed_net/datasets/$typed_dataset/messages/source?input=typed&file=notifications.jsonl&ordinal=8" "$typed_name-footer"
+   jq -e '.seq=="" and .sync_notification_source.footer.complete==true and .sync_notification_evidence.retained_complete==true' "$dir/$typed_name-footer.json" >/dev/null
+   jq -e '(.records|length)==2 and all(.records[]; .seq=="")' "$dir/$typed_name-sources.json" >/dev/null
+  else
+   jq -e '(.records|length)==1 and .records[0].sync_notification_evidence.retained_complete==false and (.records[0].sync_notification_evidence.footer==null)' "$dir/$typed_name-sources.json" >/dev/null
+  fi
+ done
  local own_net own_dataset
  own_net=$(jq -r '.networks[]|select(.name=="synthetic-own-input")|.id' "$dir/networks.json")
  get "/networks/$own_net/datasets" own-input-datasets
@@ -336,6 +357,18 @@ for sync_mode in combined incomplete; do
   jq -n --arg path "$root/internal/source/messages/testdata/sync-$sync_mode/$sync_kind" --arg name "$sync_name" --arg chain "9" --arg kind "$sync_kind" '{format:"wbft-analyzer-messages/1",name:$name,network:{name:"synthetic-sync-source",chain_id:$chain,genesis_hash:("0x"+"0"*64)},clock:{model:"unknown"},inputs:[{id:"sync",kind:$kind,node:"0xaa00000000000000000000000000000000000000",path:$path}]}' >"$work/$sync_name.json"
   "$bin" ingest messages --db "$src" --manifest "$work/$sync_name.json" --inputs-dir "$out/$sync_name-inputs" >"$out/$sync_name-ingest.json"
  done
+done
+# Typed metadata carries its original absence of header/footer sequences.
+for typed_mode in complete incomplete; do
+ typed_name="synthetic-typed-sync-$typed_mode"
+ mkdir "$work/$typed_name"
+ if [ "$typed_mode" = complete ]; then
+  cp "$root/internal/source/messages/testdata/sync-notifications/complete.jsonl" "$work/$typed_name/notifications.jsonl"
+ else
+  sed '$d' "$root/internal/source/messages/testdata/sync-notifications/complete.jsonl" >"$work/$typed_name/notifications.jsonl"
+ fi
+ jq -n --arg path "$work/$typed_name" --arg name "$typed_name" '{format:"wbft-analyzer-messages/1",name:$name,network:{name:"synthetic-typed-sync",chain_id:"19",genesis_hash:("0x"+"0"*64)},clock:{model:"unknown"},inputs:[{id:"typed",kind:"sync_notifications",node:"0xaa00000000000000000000000000000000000000",path:$path}]}' >"$work/$typed_name.json"
+ "$bin" ingest messages --db "$src" --manifest "$work/$typed_name.json" --inputs-dir "$out/$typed_name-inputs" >"$out/$typed_name-ingest.json"
 done
 "$bin" ingest messages --db "$src" --manifest "$root/internal/source/messages/testdata/manifest.json" >"$out/messages.log"
 message_dataset_id=$(jq -r .dataset_id "$out/messages.log")

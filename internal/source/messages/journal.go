@@ -16,10 +16,16 @@ import (
 )
 
 func Read(ctx context.Context, p Prepared, networkChain, networkGenesis string, emit func(Record) error) (Stats, error) {
-	if p.Input.Kind == "frames" {
+	switch p.Input.Kind {
+	case "frames":
 		return readFrames(ctx, p, emit)
+	case "journal":
+		return readJournal(ctx, p, networkChain, networkGenesis, emit)
+	case "sync_notifications":
+		return readSyncNotifications(ctx, p, emit)
+	default:
+		return Stats{}, errors.New("invalid message input kind")
 	}
-	return readJournal(ctx, p, networkChain, networkGenesis, emit)
 }
 
 func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit func(Record) error) (s Stats, err error) {
