@@ -9,6 +9,7 @@ import { PhaseLatency } from "./PhaseLatency";
 import { VisualReplay } from "./VisualReplay";
 import { RoundBaselines } from "./RoundBaselines";
 import { RunPhaseComparison } from "./RunPhaseComparison";
+import { ActivationPhaseComparison } from "./ActivationPhaseComparison";
 import { BuildLifecycleEvidence } from "./BuildLifecycleEvidence";
 
 type Filter = { node: string; kind: string; phase: string; height: string; round: string };
@@ -69,8 +70,8 @@ export function Events({ net, focus, sourceError, onAuth }: { net: number; focus
       {datasets.data.length === 0 ? <p>No run dataset yet. Load a run manifest or a local chainbench workspace.</p> : <label>Run dataset <select value={id} onChange={(e) => resetDataset(Number(e.target.value))}>{datasets.data.map((d) => <option key={d.id} value={d.id}>{d.name} · {d.status}</option>)}</select></label>}
       {run && <p>{run.status} · {run.progress.toLocaleString()} stored events {run.error && <span className="error">· {run.error}</span>}</p>}
     </>}
-    {datasets.state==="done" && <RoundBaselines key={net} net={net} datasets={datasets.data} onAuth={onAuth}/>}
-    {datasets.state === "done" && <RunPhaseComparison key={net} net={net} datasets={datasets.data} onAuth={onAuth} onRun={resetDataset} />}
+    {datasets.state==="done" && <RoundBaselines key={`baselines:${net}`} net={net} datasets={datasets.data} onAuth={onAuth}/>}
+    {datasets.state === "done" && <RunPhaseComparison key={`run-phases:${net}`} net={net} datasets={datasets.data} onAuth={onAuth} onRun={resetDataset} />}
     <Pending load={info} onAuth={onAuth} />
     {info.state === "done" && info.data && <details><summary>Input hashes, profiles and diagnostics</summary><p>Clock model: {String((run?.metadata as Record<string, unknown> | null)?.clock || (run?.metadata as Record<string, unknown> | null)?.Clock || "unknown")}. Source timestamps can arrive out of order; the counts below do not establish clock skew. Logs have no monotonic clock and do not establish complete event coverage. Duplicate context outside the selected profile contributes no events; ambiguous relevant records remain malformed.</p><table><thead><tr><th>Input / node</th><th>Profile</th><th>Normalized source records</th><th>Unknown / malformed</th><th>Out-of-profile duplicate context</th><th>Wall / monotonic regressions / sequence gaps</th><th>SHA256</th></tr></thead><tbody>{info.data.inputs.map((i) => <tr key={i.id}><td>{i.id} / {i.node} · {i.kind}</td><td title={i.profile_sha256}>{i.profile}</td><td>{i.stats.events.toLocaleString()}</td><td>{i.stats.unknown} / {i.stats.malformed}</td><td>{i.kind === "events" ? "not applicable" : i.stats.out_of_profile_duplicate_context || 0}</td><td>{i.stats.clock_regressions} / {i.stats.monotonic_regressions || 0} / {i.stats.sequence_gaps || 0}</td><td className="mono" title={i.sha256}>{i.sha256.slice(0, 16)}…</td></tr>)}</tbody></table></details>}
     {times && <>
@@ -95,6 +96,7 @@ export function Events({ net, focus, sourceError, onAuth }: { net: number; focus
       {chosenEvent && <aside><h2>{chosenEvent.kind}: {chosenEvent.node}</h2>{data && !data.events.some((e)=>eventKey(e)===eventKey(chosenEvent)) && <p>This source event was fetched separately and is highlighted alongside the current filtered page.</p>}<p>Source {chosenEvent.input}:{chosenEvent.line} · {chosenEvent.run} · {chosenEvent.profile} · {chosenEvent.source || "log"}-{chosenEvent.level}</p><p className="mono">{chosenEvent.t_wall} · full height {chosenEvent.height || "unknown"} / round {chosenEvent.round || "unknown"}</p><p>{chosenEvent.view_inferred ? "View is inferred from this engine run's latest round." : "View is recorded in this line or unavailable."} {chosenEvent.t_mono_ns !== undefined ? `Monotonic time: ${chosenEvent.t_mono_ns} ns.` : "No monotonic timestamp is present."}</p><pre>{JSON.stringify(chosenEvent.fields, null, 2)}</pre><BuildLifecycleEvidence net={net} dataset={id} source={chosenEvent} onAuth={onAuth} onSelect={(input,line)=>{setProof(null);setSelected(null);setPointer({input,line})}}/><button type="button" onClick={()=>setReplaySource(chosenEvent)}>Show this source in replay</button><a href={`#/networks/${net}/headers`}>Compare header participation and missed proposer opportunities</a></aside>}
       {proof && <><Pending load={evidence} onAuth={onAuth}/>{evidence.state==="done"&&evidence.data&&<p>Inspector source: {evidence.data.status} · {evidence.data.report_input} → {evidence.data.dataset_input || "unavailable"}:{evidence.data.line} · SHA256 {evidence.data.sha256 || "unavailable"}</p>}</>}
       <VisualReplay key={`${id}:${replaySource?.input}:${replaySource?.line}`} focus={replaySource || undefined} net={net} dataset={id} times={times} node={filter.node} onAuth={onAuth} onPoint={(input,line)=>{setProof(null);setSelected(null);setPointer({input,line});}} />
+      <ActivationPhaseComparison key={`activation:${id}`} net={net} dataset={id} onAuth={onAuth} />
       <PhaseLatency net={net} dataset={id} times={times} node={filter.node} height={filter.height} round={filter.round} onAuth={onAuth} onPoint={(input,line)=>{setProof(null);setSelected(null);setPointer({input,line});}} />
       <LogOverlay net={net} dataset={id} onAuth={onAuth} onEvidence={(p)=>{setSelected(null);setPointer(null);setProof(p)}}/>
       <Pending load={rounds} onAuth={onAuth} />

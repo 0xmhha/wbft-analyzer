@@ -84,16 +84,16 @@ export function RunPhaseComparison({ net, datasets, onAuth, onRun }: {
   </details>;
 }
 
-function PhaseComparisonBands({ runs }: { runs: Run[] }) {
+export function PhaseComparisonBands({ runs }: { runs: Run[] }) {
   return <>{["monotonic", "wall"].map((clock) => {
-    const all = runs.flatMap((run) => run.summary.groups.filter((group) => group.clock === clock && group.p50_seconds !== null && group.p95_seconds !== null && group.p99_seconds !== null).map((group) => ({ run, group })));
+    const all = runs.flatMap((run, runIndex) => run.summary.groups.filter((group) => group.clock === clock && group.p50_seconds !== null && group.p95_seconds !== null && group.p99_seconds !== null).map((group) => ({ run, group, runIndex })));
     if (!all.length) return null;
     const rows = all.slice(0, 32), maximum = all.reduce((max, { group }) => Math.max(max, group.p99_seconds ?? 0), .000001);
     const x = (value: number) => 280 + 490 * value / maximum;
     return <figure key={clock}><figcaption>{clock}: p50 marker, bar through p95, p99 endpoint · common scale. {all.length > rows.length ? `Showing the first ${rows.length} of ${all.length} groups; all groups remain in the table.` : `${rows.length} measured groups.`}</figcaption>
       <svg viewBox={`0 0 800 ${45 + rows.length * 30}`} role="img" aria-label={`Independent run phase percentile comparison ${clock}`}>
         <text x="280" y="15">0 ms</text><text x="680" y="15">{seconds(maximum)}</text>
-        {rows.map(({ run, group }, index) => { const label = `${run.name} (net ${run.network.id}) / ${group.node} / ${group.profile}`; return <g key={`${run.dataset}:${group.node}:${group.profile}`}><title>{`${label}: p50 ${seconds(group.p50_seconds)}, p95 ${seconds(group.p95_seconds)}, p99 ${seconds(group.p99_seconds)}; ${group.valid} valid`}</title>
+        {rows.map(({ run, group, runIndex }, index) => { const label = `${run.name} (net ${run.network.id}) / ${group.node} / ${group.profile}`; return <g key={`${runIndex}:${run.dataset}:${group.node}:${group.profile}`}><title>{`${label}: p50 ${seconds(group.p50_seconds)}, p95 ${seconds(group.p95_seconds)}, p99 ${seconds(group.p99_seconds)}; ${group.valid} valid`}</title>
           <text x="0" y={39 + index * 30} fontSize="10">{label.length > 45 ? label.slice(0, 42) + "…" : label}</text>
           <rect x="280" y={25 + index * 30} width={x(group.p95_seconds!) - 280} height="18" fill="#7954c7" opacity=".45" />
           <line x1={x(group.p50_seconds!)} x2={x(group.p50_seconds!)} y1={23 + index * 30} y2={45 + index * 30} stroke="#3a2870" strokeWidth="3" />
