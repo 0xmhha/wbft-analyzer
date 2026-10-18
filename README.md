@@ -357,6 +357,43 @@ is unavailable for this source profile. This does not establish A2 replay or
 complete event coverage.
 
 
+
+### Comparing independent run phases and rounds
+
+On the events page, choose **Compare run phases and round distributions**,
+select 2–16 completed runs, and enter the same numeric full-height interval
+and one phase metric. The optional observer filter narrows the source scope.
+To compare independently recorded networks, explicitly enable **Include runs
+from independent networks**. Each result retains its network ID, chain ID,
+genesis hash, input identity and source hash. Interpret the numeric interval
+as a benchmark alignment across those independently configured networks.
+
+The read-only endpoint is:
+
+```
+GET /v1/networks/{net}/phases/comparison?datasets=1,2&from=6&to=55&metric=round_to_decision
+```
+
+Add `cross_network=1` to permit run IDs from other networks. Reused
+node/profile/source hashes across selected runs are rejected. The interval
+contains at most 100000 heights, and the entire request can read at most
+100000 relevant phase and engine-boundary records. Narrow the range or
+observer filter when the request exceeds that bound.
+
+Latency distributions stay separate for each run, node, profile and clock.
+Percentiles use the raw valid measurements in that group. The charts use a
+common scale within each clock and show p50, p95 and p99; the first 32 groups
+are plotted, with every group retained in the table. Missing endpoints,
+negative measurements, invalid clocks and heights with no observed attempt
+remain explicit. Recorded round counts have their own known, unknown and
+missing head-claim counts.
+
+Input hashes and up to 64 first-per-node/profile/clock/status examples per run
+link back to their original start and end events. Example truncation is
+reported separately and leaves the full statistics and coverage unchanged.
+These descriptive measurements alone do not establish a causal improvement
+or a conformance verdict.
+
 ## Visual replay
 
 Run manifests accept input kind `events` for the pinned WBFT events-v1 schema,

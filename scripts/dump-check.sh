@@ -242,6 +242,7 @@ capture() {
  get "/networks/$baseline_net/datasets" baseline-datasets
  baseline_ids=$(jq -r '.datasets[] | select(.kind=="run") | .id' "$dir/baseline-datasets.json" | paste -sd, -)
  get "/networks/$baseline_net/rounds/baseline?datasets=$baseline_ids&from=31&to=32&node=n1" run-baseline
+ get "/networks/$baseline_net/phases/comparison?datasets=$baseline_ids&from=31&to=32&metric=round_to_decision&node=n1" run-phase-comparison
  message_net=$(jq -r '.networks[]|select(.name=="synthetic-messages")|.id' "$dir/networks.json")
  get "/networks/$message_net/datasets" message-datasets
  message_id=$(jq -r '[.datasets[] | select(.kind=="messages" and .name=="synthetic-messages")] | if length==1 then .[0].id else error("expected one synthetic-messages dataset") end' "$dir/message-datasets.json")

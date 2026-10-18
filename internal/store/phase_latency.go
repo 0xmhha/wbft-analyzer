@@ -9,6 +9,7 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/derive/latency"
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
 	"github.com/0xmhha/wbft/observe/event"
+	"github.com/jackc/pgx/v5"
 )
 
 var ErrPhaseWindowTooLarge = errors.New("phase window and its context exceed 100000 relevant records; narrow the window or node filter")
@@ -25,6 +26,14 @@ func (s *Store) PhaseSamples(ctx context.Context, dataset int64, f latency.Filte
 	if err != nil {
 		return nil, err
 	}
+	records, err := phaseRecords(rows, 100000)
+	if err != nil {
+		return nil, err
+	}
+	return latency.Derive(records, f), nil
+}
+
+func phaseRecords(rows pgx.Rows, limit int) ([]logs.Event, error) {
 	defer rows.Close()
 	records := []logs.Event{}
 	for rows.Next() {
@@ -47,12 +56,12 @@ func (s *Store) PhaseSamples(ctx context.Context, dataset int64, f latency.Filte
 			v = &event.View{Seq: x.Height, Round: x.Round}
 		}
 		records = append(records, logs.Event{Record: event.Record{Kind: x.Kind, View: v, Src: "log", Fields: fields}, Mono: x.Mono, Node: x.Node, Input: x.Input, Run: x.Run, Wall: x.Wall, Profile: x.Profile, Level: x.Level, Line: x.Line, ViewInferred: x.ViewInferred})
-		if len(records) > 100000 {
+		if len(records) > limit {
 			return nil, ErrPhaseWindowTooLarge
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	return latency.Derive(records, f), nil
+	return records, nil
 }
