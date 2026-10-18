@@ -1,3 +1,4 @@
+import {GovernanceExecution} from "./GovernanceExecution";
 import type {GovernanceFocus} from "../governanceLink";
 import {useEffect,useRef,useState} from "react";
 import {get,type Schemas} from "../api/client";
@@ -130,6 +131,7 @@ export function GovernanceHeaderResult({net,value:v}:{net:number;value:Schemas["
  return <><p><strong>{labels[v.header_status]}</strong></p><dl className="gov-facts"><dt>Source block index</dt><dd>{v.index} ({v.source_number})</dd><dt>Source block hash</dt><dd>{v.source_block_hash||"not reported"}</dd>{v.canonical_hash&&<><dt>Stored canonical hash</dt><dd>{v.canonical_hash}</dd></>}{v.header&&<><dt>Header full height</dt><dd>{v.header.number}</dd><dt>Governing epoch height</dt><dd>{v.header.governing_epoch}</dd></>}</dl>
   <p className="gov-caution">Execution cause remains unestablished. A matching header identifies block context; it does not verify an operation, proposal execution or its effect.</p>
   {v.header&&<><a href={link}>Open canonical header</a>{v.sources.length>0&&<ul aria-label="Matching header sources">{v.sources.map(source=><li key={`${source.dataset_id}:${source.node}`}><a href={`${link}&dataset=${source.dataset_id}&node=${encodeURIComponent(source.node)}`}>Dataset {source.dataset_id} · {source.node}</a> · {source.dataset_status}</li>)}</ul>}{v.sources_truncated&&<p>Showing the first 20 matching dataset and node sources.</p>}</>}
+  {v.execution&&<GovernanceExecution value={v.execution}/>}
   {epoch&&<><h4>Epoch claims against this header</h4>{epoch.status==="available"?<><div className="table-scroll"><table aria-label="Epoch claim comparison"><thead><tr><th>Claim</th><th>Comparison</th></tr></thead><tbody>{(["candidates","validators","added","removed"] as const).map(field=><tr key={field}><td>{field}</td><td>{epoch[field]}</td></tr>)}</tbody></table></div><p>Candidate and validator order are compared exactly. Added and removed validators use this header's governing set; gaps are not filled with a nearby stored epoch.</p><details><summary>Header epoch values</summary><AddressList label="Header candidates" values={epoch.header_candidates}/><AddressList label="Header validators" values={epoch.header_validators}/><AddressList label="Header added" values={epoch.header_added}/><AddressList label="Header removed" values={epoch.header_removed}/></details></>:<p>{epoch.status==="not_epoch"?"Header has no epoch data; the source epoch claim is unverified.":"Header epoch inputs unavailable; comparisons remain unverified."}</p>}<ExecutionKeyStatus epoch={epoch}/></>}
  </>;
 }
