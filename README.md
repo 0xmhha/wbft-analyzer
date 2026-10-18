@@ -394,6 +394,29 @@ reported separately and leaves the full statistics and coverage unchanged.
 These descriptive measurements alone do not establish a causal improvement
 or a conformance verdict.
 
+### Comparing windows around a reported activation
+
+On the events page, select a run and expand **Compare phases around a reported
+rule activation**. Choose a completed observation capture from this network,
+a rule it explicitly reports, and the number of heights on either side.
+The earlier window excludes the declaration's `from` height; the later window
+includes it. The earlier window stops at zero and is absent when `from` is zero.
+The combined interval contains at most 100000 heights and the request reads
+at most 100000 relevant context records across both windows.
+
+`GET /v1/networks/{net}/datasets/{dataset}/phases/activation` accepts `capture`,
+`key`, `before`, `after`, `metric` and an optional `node`. The selected declaration
+must agree with the capture's retained normalized `wbft_nodeInfo` call, node
+identity, chain and genesis. Missing declarations, unavailable or inconsistent
+sources, incomplete datasets and foreign-network captures are refused.
+
+The response and screen preserve the declaration's source hash, snapshot and
+original request ordinal, along with each window's raw-sample distributions,
+round claims, height coverage and bounded original measurement examples.
+Charts share a scale within each clock. A capture node is not inferred to be
+a run observer, and the reported schedule does not independently prove
+historical execution or a causal improvement.
+
 ## Visual replay
 
 Run manifests accept input kind `events` for the pinned WBFT events-v1 schema,

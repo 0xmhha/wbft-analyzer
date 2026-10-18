@@ -42,8 +42,16 @@ type PhaseComparison struct {
 // PhaseComparison uses logical height intervals rather than shared wall-clock
 // windows. Percentiles are computed separately from each run's raw samples.
 func (s *Store) PhaseComparison(ctx context.Context, network int64, ids []int64, from, to, node, metric string, crossNetwork bool) (PhaseComparison, error) {
+	if len(ids) < 2 {
+		return PhaseComparison{}, ErrBaseline
+	}
+	return s.phaseRange(ctx, network, ids, from, to, node, metric, crossNetwork, 100000)
+}
+
+// phaseRange shares the same range reader across independent runs and activation windows.
+func (s *Store) phaseRange(ctx context.Context, network int64, ids []int64, from, to, node, metric string, crossNetwork bool, contextLimit int) (PhaseComparison, error) {
 	out := PhaseComparison{Metric: metric, Runs: []PhaseComparisonRun{}, Method: "same numeric full-height interval; independent network/run/node/profile/clock distributions; nearest-rank percentiles from each group's raw valid samples; no percentile averaging or network-decision pooling; unobserved heights are not zero latency; at most 64 first-per-status evidence examples per run"}
-	if len(ids) < 2 || len(ids) > 16 {
+	if len(ids) < 1 || len(ids) > 16 || contextLimit < 0 || contextLimit > 100000 {
 		return out, ErrBaseline
 	}
 	seen := map[int64]bool{}
@@ -105,7 +113,7 @@ func (s *Store) PhaseComparison(ctx context.Context, network int64, ids []int64,
 	a, _ := new(big.Int).SetString(from, 10)
 	b, _ := new(big.Int).SetString(to, 10)
 	for _, run := range rounds.Runs {
-		remaining := 100000 - int(out.ContextRecords)
+		remaining := contextLimit - int(out.ContextRecords)
 		// Preserve intervening engine/run boundaries even when their own rows have no selected height.
 		// Decisions without a view can carry their full height in an explicit number field.
 		// Guard its numeric cast inside CASE so malformed metadata cannot fail the request.

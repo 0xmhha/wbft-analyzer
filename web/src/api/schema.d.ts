@@ -617,6 +617,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/phases/activation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One completed run before and at/after a source-backed rule activation declaration; separate observations, clocks and missing measurements. */
+        get: operations["comparePhasesAroundDeclaredActivation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/phases/samples": {
         parameters: {
             query?: never;
@@ -5061,6 +5078,20 @@ export interface components {
             to_t: string | null;
             version: string;
         };
+        StorePhaseActivationComparison: {
+            after: components["schemas"]["StorePhaseComparison"];
+            before: components["schemas"]["StorePhaseComparison"] | null;
+            capture: components["schemas"]["StoreObservationCapture"];
+            capture_name: string;
+            /** Format: int64 */
+            context_records: number;
+            /** Format: int64 */
+            declaration_call: number;
+            from: string;
+            key: string;
+            method: string;
+            metric: string;
+        };
         StorePhaseComparison: {
             /** Format: int64 */
             context_records: number;
@@ -7365,6 +7396,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ObservationPage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    comparePhasesAroundDeclaredActivation: {
+        parameters: {
+            query: {
+                /** @description completed observation capture on the same network */
+                capture: number;
+                /** @description rule key explicitly reported by the capture */
+                key: string;
+                /** @description requested heights before activation; truncated at height zero */
+                before: number;
+                /** @description heights starting at activation; combined interval at most 100000 */
+                after: number;
+                /** @description optional run observer; capture node identity is not inferred */
+                node?: string;
+                /** @description one WBFT phase metric; combined relevant context cap 100000 */
+                metric: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description completed run dataset ID */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorePhaseActivationComparison"];
                 };
             };
             /** @description the request failed */

@@ -63,7 +63,7 @@ stop() {
 
 # capture PORT DIR writes the answers of the read endpoints to DIR.
 capture() {
-	local base=http://127.0.0.1:$1/v1 dir=$2 header_net header_dataset run_net run_id log_report baseline_net baseline_ids message_net message_id missing_id observation_net observation_id timer_net timer_dataset timer_run
+	local base=http://127.0.0.1:$1/v1 dir=$2 header_net header_dataset run_net run_id log_report baseline_net baseline_ids message_net message_id missing_id observation_net observation_id timer_net timer_dataset timer_run activation_run
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
@@ -206,6 +206,9 @@ capture() {
  jq -e --slurpfile all "$dir/observation-datasets.json" '.datasets == [$all[0].datasets[] | select(.kind=="observations")]' "$dir/observation-only-datasets.json" >/dev/null
  jq -e '.datasets==[]' "$dir/observation-no-follow-datasets.json" >/dev/null
  observation_id=$(jq -r '.datasets[]|select(.kind=="observations")|.id' "$dir/observation-datasets.json")
+ activation_run=$(jq -er '[.datasets[]|select(.kind=="run" and .name=="synthetic-activation")]|if length==1 then .[0].id else error("expected activation run") end' "$dir/observation-datasets.json")
+ get "/networks/$observation_net/datasets/$activation_run/phases/activation?capture=$observation_id&key=example-rule&before=1&after=1&metric=round_to_decision" activation-phase-comparison
+ jq -e '.from=="2" and .before.rounds.from=="1" and .before.rounds.to=="1" and .after.rounds.from=="2" and .after.rounds.to=="2" and .declaration_call==1' "$dir/activation-phase-comparison.json" >/dev/null
  get "/networks/$observation_net/datasets/$observation_id/observations" observation-capture
  get "/networks/$observation_net/datasets/$observation_id/observations/participation?from=1&to=2&limit=1000" observation-participation
  get "/networks/$observation_net/datasets/$observation_id/observations/calls/5" observation-copy-source
@@ -399,7 +402,26 @@ base['observations']=[dict(id='log-source',kind='round_change_f_plus_one',count=
 Path(sys.argv[2]).write_text(json.dumps(base)+'\n')
 PYLOG
 "$bin" ingest reports --db "$src" "$work/log-report.json" >"$out/log-report.log"
-"$bin" ingest observe --db "$src" --name synthetic-observation-dump --archive "$root/internal/source/observe/testdata/capture.json" >"$out/observation-ingest.log"
+python3 - "$root" "$work" <<'PYACTIVATION'
+import hashlib,json,pathlib,sys
+root,work=map(pathlib.Path,sys.argv[1:])
+archive=json.loads((root/'internal/source/observe/testdata/capture.json').read_text())
+archive['replies'][0]['response']['result']['ruleActivations']={'example-rule':'2'}
+(work/'activation-observation.json').write_text(json.dumps(archive)+'\n')
+manifest=json.loads((root/'internal/source/logs/testdata/baseline/manifest-1.json').read_text())
+manifest.update(name='synthetic-activation',run='synthetic-activation',network=dict(chain_id='8',genesis_hash='0x'+'1'*64,name='synthetic-activation'))
+rows=[]
+for line in (root/'internal/source/logs/testdata/baseline/run-1.jsonl').read_text().splitlines():
+ row=json.loads(line)
+ for key in ['next.seq','number']:
+  if key in row:row[key]=str(int(row[key])-30) if isinstance(row[key],str) else row[key]-30
+ rows.append(json.dumps(row))
+raw=('\n'.join(rows)+'\n').encode();(work/'activation-run.jsonl').write_bytes(raw)
+manifest['inputs'][0].update(path='activation-run.jsonl',sha256=hashlib.sha256(raw).hexdigest())
+(work/'activation-run.json').write_text(json.dumps(manifest)+'\n')
+PYACTIVATION
+"$bin" ingest observe --db "$src" --name synthetic-observation-dump --archive "$work/activation-observation.json" >"$out/observation-ingest.log"
+"$bin" ingest run --db "$src" --manifest "$work/activation-run.json" >"$out/activation-run-ingest.log"
 observation_dataset_id=$(jq -r .dataset_id "$out/observation-ingest.log")
 "$bin" reindex observations --db "$src" --dataset "$observation_dataset_id" >"$out/observation-bindings.log"
 # Full synthetic journals exercise non-empty counterfactual result tables.

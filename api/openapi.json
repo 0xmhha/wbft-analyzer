@@ -15017,6 +15017,63 @@
         ],
         "type": "object"
       },
+      "StorePhaseActivationComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "$ref": "#/components/schemas/StorePhaseComparison"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StorePhaseComparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capture": {
+            "$ref": "#/components/schemas/StoreObservationCapture"
+          },
+          "capture_name": {
+            "type": "string"
+          },
+          "context_records": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "declaration_call": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "after",
+          "before",
+          "capture",
+          "capture_name",
+          "context_records",
+          "declaration_call",
+          "from",
+          "key",
+          "method",
+          "metric"
+        ],
+        "type": "object"
+      },
       "StorePhaseComparison": {
         "additionalProperties": false,
         "properties": {
@@ -20201,6 +20258,121 @@
           }
         },
         "summary": "Original full-height participation claims, preserving local/header/gap source and immutable request pointers."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/phases/activation": {
+      "get": {
+        "operationId": "comparePhasesAroundDeclaredActivation",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "completed run dataset ID",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "completed observation capture on the same network",
+            "in": "query",
+            "name": "capture",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "rule key explicitly reported by the capture",
+            "in": "query",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "requested heights before activation; truncated at height zero",
+            "in": "query",
+            "name": "before",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "heights starting at activation; combined interval at most 100000",
+            "in": "query",
+            "name": "after",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "optional run observer; capture node identity is not inferred",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "one WBFT phase metric; combined relevant context cap 100000",
+            "in": "query",
+            "name": "metric",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorePhaseActivationComparison"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "One completed run before and at/after a source-backed rule activation declaration; separate observations, clocks and missing measurements."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/phases/samples": {
