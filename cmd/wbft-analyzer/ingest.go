@@ -24,6 +24,7 @@ Use "ingest run -h" for node log datasets; events and node logs.
 Use "ingest messages -h" for journal/R-01 message metadata datasets.
 Use "ingest runtime -h" for separate runtime sidecar observations.
 Use "ingest governance -h" for bounded governance claims.
+Use "ingest execution-witness -h" to replay original blocks with an operator-trusted execution helper.
 Use "ingest state-witness -h" to authenticate execution state and attach it to completed governance and header datasets.
 Use "ingest observe -h" for read-only native RPC observation datasets.
 
@@ -38,6 +39,9 @@ const (
 )
 
 func runIngest(args []string, stdout, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "execution-witness" {
+		return runExecutionWitness(args[1:], stdout, stderr)
+	}
 	if len(args) > 0 && args[0] == "state-witness" {
 		return runStateWitness(args[1:], stdout, stderr)
 	}

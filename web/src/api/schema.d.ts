@@ -1534,6 +1534,93 @@ export interface components {
             result_capacity: number;
             running_gate: string;
         };
+        ExecutionwitnessBlockEvidence: {
+            file: components["schemas"]["ExecutionwitnessDigest"];
+            gas_used: string;
+            hash: string;
+            index: string;
+            parent_hash: string;
+            receipt_root: string;
+            state_root: string;
+            transaction_root: string;
+        };
+        ExecutionwitnessDigest: {
+            /** Format: int64 */
+            bytes: number;
+            sha256: string;
+        };
+        ExecutionwitnessFrame: {
+            abi_status: string;
+            /** Format: int64 */
+            account_code_bytes: number;
+            account_code_hash: string;
+            authority: string;
+            authority_config_index: string;
+            effective: boolean;
+            error_name: string;
+            from: string;
+            gas: string;
+            gas_used: string;
+            input: components["schemas"]["ExecutionwitnessDigest"];
+            kind: string;
+            observation: string;
+            path: number[];
+            return: components["schemas"]["ExecutionwitnessDigest"];
+            selector: string;
+            status: string;
+            to: string;
+            vm_error: string;
+        };
+        ExecutionwitnessLog: {
+            address: string;
+            data: components["schemas"]["ExecutionwitnessDigest"];
+            topics: string[];
+        };
+        ExecutionwitnessOrigin: {
+            path: string;
+            sum: string;
+            version: string;
+        };
+        ExecutionwitnessProjection: {
+            report: components["schemas"]["ExecutionwitnessReport"];
+            verifier: components["schemas"]["ExecutionwitnessVerifier"];
+        };
+        ExecutionwitnessReport: {
+            origin: components["schemas"]["ExecutionwitnessOrigin"];
+            protocol: string;
+            source: components["schemas"]["ExecutionwitnessSnapshot"];
+            transactions: components["schemas"]["ExecutionwitnessTransaction"][];
+        };
+        ExecutionwitnessSnapshot: {
+            blocks: components["schemas"]["ExecutionwitnessBlockEvidence"][];
+            chain_id: string;
+            config_sha256: string;
+            format: string;
+            genesis: components["schemas"]["ExecutionwitnessDigest"];
+            genesis_hash: string;
+            manifest: components["schemas"]["ExecutionwitnessDigest"];
+            node: string;
+        };
+        ExecutionwitnessTransaction: {
+            block_hash: string;
+            frames: components["schemas"]["ExecutionwitnessFrame"][];
+            from: string;
+            gas_used: string;
+            hash: string;
+            index: string;
+            input: components["schemas"]["ExecutionwitnessDigest"];
+            logs: components["schemas"]["ExecutionwitnessLog"][];
+            receipt: components["schemas"]["ExecutionwitnessDigest"];
+            receipt_status: string;
+            selector: string;
+            to: string;
+            /** Format: int64 */
+            transaction_index: number;
+        };
+        ExecutionwitnessVerifier: {
+            origin: components["schemas"]["ExecutionwitnessOrigin"];
+            sha256: string;
+        };
         GovernanceAnnotation: {
             status: string;
             value?: components["schemas"]["GovernanceBytes"] | null;
@@ -4404,6 +4491,40 @@ export interface components {
             /** @enum {string} */
             validators: "matched" | "mismatch" | "unavailable";
         };
+        StoreGovernanceExecutionEvidence: {
+            /** @enum {string} */
+            binding: "matched" | "header_unavailable" | "header_mismatch" | "config_mismatch" | "network_mismatch" | "source_unavailable";
+            /** @enum {string} */
+            error_status: "unverified" | "not_reported" | "matched" | "mismatch";
+            point: components["schemas"]["ExecutionwitnessTransaction"];
+            /** @enum {string} */
+            reason: "source_unavailable" | "source_unbound" | "nested_path_unmapped" | "source_hash_unavailable" | "identity_mismatch" | "outcome_mismatch" | "outcome_unavailable" | "logs_mismatch" | "matched";
+            /** @enum {string} */
+            status: "unverified" | "matched" | "mismatch";
+            witness: components["schemas"]["StoreGovernanceExecutionWitness"];
+        };
+        StoreGovernanceExecutionEvidenceList: {
+            /** @enum {string} */
+            error_status: "unverified" | "not_reported" | "matched" | "mismatch" | "ambiguous";
+            evidence: components["schemas"]["StoreGovernanceExecutionEvidence"][];
+            /** @enum {string} */
+            status: "unverified" | "matched" | "mismatch" | "ambiguous";
+            truncated: boolean;
+        };
+        StoreGovernanceExecutionWitness: {
+            /** Format: int64 */
+            blocks: number;
+            /** Format: int64 */
+            dataset_id: number;
+            /** Format: int64 */
+            header_source_id: number;
+            /** Format: int64 */
+            headers_dataset: number | null;
+            snapshot: string;
+            source: components["schemas"]["ExecutionwitnessProjection"];
+            /** Format: int64 */
+            transactions: number;
+        };
         StoreGovernanceHeader: {
             governing_epoch: string;
             hash: string;
@@ -4421,6 +4542,7 @@ export interface components {
             /** Format: int64 */
             entry_ordinal: number;
             epoch: components["schemas"]["StoreGovernanceEpochEvidence"] | null;
+            execution: components["schemas"]["StoreGovernanceExecutionEvidenceList"] | null;
             header: components["schemas"]["StoreGovernanceHeader"] | null;
             /** @enum {string} */
             header_status: "unknown_hash" | "header_unavailable" | "hash_mismatch" | "matched";

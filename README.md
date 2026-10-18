@@ -2074,3 +2074,58 @@ It returns at most twenty witnesses and an explicit truncation flag. Evidence
 also accompanies governance header contexts and exact-hash header governance
 claims. An epoch key match does not verify diligence, validator selection,
 aggregate seals, transaction causation or complete governance history.
+
+
+### Independent governance execution evidence
+
+An operator can replay a complete original block sequence with the separate
+`tools/execution-witness` module and attach the result to an existing complete
+governance capture and a specific complete canonical header dataset:
+
+```
+wbft-analyzer ingest execution-witness --db DSN \
+  --dataset-id N --headers-dataset-id H --manifest FILE --root DIR \
+  --helper BINARY --helper-sha256 SHA256 --timeout 5m --work-dir DIR
+```
+
+Build and review the helper independently, then obtain its SHA-256 outside the
+source manifest. Its implementation origin, version and module checksum must
+match the pinned execution implementation. HTTP requests cannot select a local
+executable, source path or command arguments. The main analyzer's consensus and
+Ethereum trie dependencies remain unchanged.
+
+The helper manifest and bounds are documented in
+[the helper module](tools/execution-witness/README.md). It requires original
+full genesis JSON and every full block RLP from zero through the selected end;
+header-only inputs cannot establish execution. Original files and the helper
+are snapshotted privately and fingerprinted again after execution. Every
+transaction/receipt root, gas total, final state root and block hash must agree.
+No completed witness or verified prefix is accepted after an incomplete replay.
+Only metadata and digests cross this boundary; raw calldata, return bytes,
+log data, keys, arbitrary error text and local paths are not retained.
+
+The capture must match the declared source node, network, chain, genesis and
+both identity bookends. Replay must cover the capture's entire requested range.
+Every non-genesis replayed block, including the prefix before that range, must
+have the exact full height, hash and parent hash in the explicitly selected
+canonical dataset. Its configuration digest must match the original genesis
+configuration. Attaching a result is atomic and immutable; repeated identical
+imports are idempotent. Exports include the canonical dependency, and deleting
+that dependency leaves historical evidence with an unavailable binding.
+
+Operation header contexts include execution evidence for bounded operations,
+proposal history and validator-change operation rows. Reads re-evaluate all
+canonical/configuration/visibility bindings. Call identity, transaction index,
+input digest, source block hash, effective/view flags, result and ordered receipt
+logs are compared separately from the source's own verification label. Named
+VM errors require the effective configured address, observed runtime code hash
+and canonical ABI return encoding. Unknown runtimes and malformed or unknown
+returns do not borrow names from source claims. Unreported source block hashes
+remain unverified. Nested source paths remain unmapped until an independent
+path contract is established; observed VM child ordinals are not that contract.
+
+The screen shows replay, canonical binding, source comparison, safe error
+classification and observed calls. More than twenty witnesses or conflicting
+results remain ambiguous; no latest row is chosen to make a match. Receipt
+outcomes and named return values do not establish the original throwing call,
+proposal causation, epoch change causation or complete governance history.

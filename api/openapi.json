@@ -485,6 +485,364 @@
         ],
         "type": "object"
       },
+      "ExecutionwitnessBlockEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "gas_used": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "parent_hash": {
+            "type": "string"
+          },
+          "receipt_root": {
+            "type": "string"
+          },
+          "state_root": {
+            "type": "string"
+          },
+          "transaction_root": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "gas_used",
+          "hash",
+          "index",
+          "parent_hash",
+          "receipt_root",
+          "state_root",
+          "transaction_root"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessDigest": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bytes",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessFrame": {
+        "additionalProperties": false,
+        "properties": {
+          "abi_status": {
+            "type": "string"
+          },
+          "account_code_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "account_code_hash": {
+            "type": "string"
+          },
+          "authority": {
+            "type": "string"
+          },
+          "authority_config_index": {
+            "type": "string"
+          },
+          "effective": {
+            "type": "boolean"
+          },
+          "error_name": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "gas": {
+            "type": "string"
+          },
+          "gas_used": {
+            "type": "string"
+          },
+          "input": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "observation": {
+            "type": "string"
+          },
+          "path": {
+            "items": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "return": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "selector": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "vm_error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "abi_status",
+          "account_code_bytes",
+          "account_code_hash",
+          "authority",
+          "authority_config_index",
+          "effective",
+          "error_name",
+          "from",
+          "gas",
+          "gas_used",
+          "input",
+          "kind",
+          "observation",
+          "path",
+          "return",
+          "selector",
+          "status",
+          "to",
+          "vm_error"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessLog": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "address",
+          "data",
+          "topics"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessOrigin": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "sum": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "sum",
+          "version"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessProjection": {
+        "additionalProperties": false,
+        "properties": {
+          "report": {
+            "$ref": "#/components/schemas/ExecutionwitnessReport"
+          },
+          "verifier": {
+            "$ref": "#/components/schemas/ExecutionwitnessVerifier"
+          }
+        },
+        "required": [
+          "report",
+          "verifier"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessReport": {
+        "additionalProperties": false,
+        "properties": {
+          "origin": {
+            "$ref": "#/components/schemas/ExecutionwitnessOrigin"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ExecutionwitnessSnapshot"
+          },
+          "transactions": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessTransaction"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "origin",
+          "protocol",
+          "source",
+          "transactions"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessBlockEvidence"
+            },
+            "type": "array"
+          },
+          "chain_id": {
+            "type": "string"
+          },
+          "config_sha256": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "genesis": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "genesis_hash": {
+            "type": "string"
+          },
+          "manifest": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "node": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blocks",
+          "chain_id",
+          "config_sha256",
+          "format",
+          "genesis",
+          "genesis_hash",
+          "manifest",
+          "node"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessTransaction": {
+        "additionalProperties": false,
+        "properties": {
+          "block_hash": {
+            "type": "string"
+          },
+          "frames": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessFrame"
+            },
+            "type": "array"
+          },
+          "from": {
+            "type": "string"
+          },
+          "gas_used": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "input": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "logs": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessLog"
+            },
+            "type": "array"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "receipt_status": {
+            "type": "string"
+          },
+          "selector": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "transaction_index": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "block_hash",
+          "frames",
+          "from",
+          "gas_used",
+          "hash",
+          "index",
+          "input",
+          "logs",
+          "receipt",
+          "receipt_status",
+          "selector",
+          "to",
+          "transaction_index"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessVerifier": {
+        "additionalProperties": false,
+        "properties": {
+          "origin": {
+            "$ref": "#/components/schemas/ExecutionwitnessOrigin"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "origin",
+          "sha256"
+        ],
+        "type": "object"
+      },
       "GovernanceAnnotation": {
         "additionalProperties": false,
         "properties": {
@@ -12402,6 +12760,152 @@
         ],
         "type": "object"
       },
+      "StoreGovernanceExecutionEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "binding": {
+            "enum": [
+              "matched",
+              "header_unavailable",
+              "header_mismatch",
+              "config_mismatch",
+              "network_mismatch",
+              "source_unavailable"
+            ],
+            "type": "string"
+          },
+          "error_status": {
+            "enum": [
+              "unverified",
+              "not_reported",
+              "matched",
+              "mismatch"
+            ],
+            "type": "string"
+          },
+          "point": {
+            "$ref": "#/components/schemas/ExecutionwitnessTransaction"
+          },
+          "reason": {
+            "enum": [
+              "source_unavailable",
+              "source_unbound",
+              "nested_path_unmapped",
+              "source_hash_unavailable",
+              "identity_mismatch",
+              "outcome_mismatch",
+              "outcome_unavailable",
+              "logs_mismatch",
+              "matched"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "unverified",
+              "matched",
+              "mismatch"
+            ],
+            "type": "string"
+          },
+          "witness": {
+            "$ref": "#/components/schemas/StoreGovernanceExecutionWitness"
+          }
+        },
+        "required": [
+          "binding",
+          "error_status",
+          "point",
+          "reason",
+          "status",
+          "witness"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceExecutionEvidenceList": {
+        "additionalProperties": false,
+        "properties": {
+          "error_status": {
+            "enum": [
+              "unverified",
+              "not_reported",
+              "matched",
+              "mismatch",
+              "ambiguous"
+            ],
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/StoreGovernanceExecutionEvidence"
+            },
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "unverified",
+              "matched",
+              "mismatch",
+              "ambiguous"
+            ],
+            "type": "string"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "error_status",
+          "evidence",
+          "status",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceExecutionWitness": {
+        "additionalProperties": false,
+        "properties": {
+          "blocks": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "header_source_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "headers_dataset": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ExecutionwitnessProjection"
+          },
+          "transactions": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "blocks",
+          "dataset_id",
+          "header_source_id",
+          "headers_dataset",
+          "snapshot",
+          "source",
+          "transactions"
+        ],
+        "type": "object"
+      },
       "StoreGovernanceHeader": {
         "additionalProperties": false,
         "properties": {
@@ -12466,6 +12970,16 @@
               }
             ]
           },
+          "execution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreGovernanceExecutionEvidenceList"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "header": {
             "anyOf": [
               {
@@ -12520,6 +13034,7 @@
           "collection",
           "entry_ordinal",
           "epoch",
+          "execution",
           "header",
           "header_status",
           "index",

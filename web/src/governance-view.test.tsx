@@ -39,7 +39,7 @@ it("shows stored block hashes separately from transaction hashes and unknown leg
  expect(change).toContain(blockHash);expect(change).toContain("canonical cause is not inferred");
 });
 
-const context:Schemas["StoreGovernanceHeaderContext"]={snapshot:hash,call_ordinal:3,entry_ordinal:1,collection:"operations",normalized_pointer:"/data/0",source_number:"0xffffffffffffffff",index:"18446744073709551615",source_block_hash:"0x"+hash,canonical_hash:"0x"+hash,header_status:"matched",header:{index:"18446744073709551615",number:"36893488147419103231",hash:"0x"+hash,governing_epoch:"100"},sources:[{dataset_id:7,node:"node a&b",dataset_status:"complete"}],sources_truncated:false,epoch:null,cause_status:"unestablished"};
+const context:Schemas["StoreGovernanceHeaderContext"]={snapshot:hash,call_ordinal:3,entry_ordinal:1,collection:"operations",normalized_pointer:"/data/0",source_number:"0xffffffffffffffff",index:"18446744073709551615",source_block_hash:"0x"+hash,canonical_hash:"0x"+hash,header_status:"matched",header:{index:"18446744073709551615",number:"36893488147419103231",hash:"0x"+hash,governing_epoch:"100"},sources:[{dataset_id:7,node:"node a&b",dataset_status:"complete"}],sources_truncated:false,epoch:null,execution:null,cause_status:"unestablished"};
 
 it("links the exact header source without converting large indices to floating point",()=>{
  const html=renderToStaticMarkup(<GovernanceHeaderResult net={2} value={context}/>);
