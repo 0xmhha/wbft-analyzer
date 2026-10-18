@@ -262,3 +262,11 @@ article pre { overflow: auto; max-height: 24rem; }
 .activation-results { animation: activation-result-entry .18s ease-out; }
 @keyframes activation-result-entry { from { opacity: .35; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .activation-results { animation: none; } }
+
+.activation-charts { max-width: 100%; overflow: auto; }
+.activation-charts figure { margin: 1rem 0; }
+.activation-charts svg { display: block; width: 100%; min-width: 60rem; }
+.activation-charts svg g > text { font-size: 12px; }
+.activation-results .table-scroll table { width: 100%; min-width: 64rem; table-layout: fixed; overflow-wrap: anywhere; }
+.activation-results .table-scroll th:first-child { width: 14rem; }
+.activation-charts:focus-visible, .activation-results .table-scroll:focus-visible { outline: 2px solid #7954c7; outline-offset: 2px; }
