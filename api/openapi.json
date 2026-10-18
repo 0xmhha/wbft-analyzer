@@ -15017,6 +15017,132 @@
         ],
         "type": "object"
       },
+      "StorePhaseComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "context_records": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "method": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "rounds": {
+            "$ref": "#/components/schemas/BaselineSummary"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/StorePhaseComparisonRun"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "context_records",
+          "method",
+          "metric",
+          "rounds",
+          "runs"
+        ],
+        "type": "object"
+      },
+      "StorePhaseComparisonNetwork": {
+        "additionalProperties": false,
+        "properties": {
+          "chain_id": {
+            "type": "string"
+          },
+          "genesis_hash": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chain_id",
+          "genesis_hash",
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "StorePhaseComparisonRun": {
+        "additionalProperties": false,
+        "properties": {
+          "coverage": {
+            "items": {
+              "$ref": "#/components/schemas/StorePhaseHeightCoverage"
+            },
+            "type": "array"
+          },
+          "dataset": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/LatencySample"
+            },
+            "type": "array"
+          },
+          "examples_truncated": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "network": {
+            "$ref": "#/components/schemas/StorePhaseComparisonNetwork"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/LatencySummary"
+          }
+        },
+        "required": [
+          "coverage",
+          "dataset",
+          "examples",
+          "examples_truncated",
+          "name",
+          "network",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "StorePhaseHeightCoverage": {
+        "additionalProperties": false,
+        "properties": {
+          "node": {
+            "type": "string"
+          },
+          "observed_heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "unobserved_heights": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "node",
+          "observed_heights",
+          "profile",
+          "unobserved_heights"
+        ],
+        "type": "object"
+      },
       "StoreReconstructionDetail": {
         "additionalProperties": false,
         "properties": {
@@ -23392,6 +23518,110 @@
           }
         },
         "summary": "Paginated original replay states and retained transaction registry effects for an epoch. Every read revalidates the original capture and canonical/configuration dependency; retention does not establish validator selection, diligence or an epoch-wide cause."
+      }
+    },
+    "/v1/networks/{net}/phases/comparison": {
+      "get": {
+        "operationId": "compareRunPhaseLatency",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "first full decimal block height",
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "last full decimal block height, included; interval at most 100000 heights",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "2..16 comma-separated distinct completed run dataset IDs",
+            "in": "query",
+            "name": "datasets",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "optional observer node",
+            "in": "query",
+            "name": "node",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "explicit 1 permits selected runs on independent networks; each chain/genesis identity is retained",
+            "in": "query",
+            "name": "cross_network",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "one WBFT phase metric; at most 100000 relevant context records across all runs",
+            "in": "query",
+            "name": "metric",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorePhaseComparison"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Independent run phase and round distributions over the same full-height range; separate node/profile/clock groups and bounded source examples."
       }
     },
     "/v1/networks/{net}/rounds/baseline": {

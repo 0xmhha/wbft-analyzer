@@ -1300,6 +1300,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/phases/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Independent run phase and round distributions over the same full-height range; separate node/profile/clock groups and bounded source examples. */
+        get: operations["compareRunPhaseLatency"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/rounds/baseline": {
         parameters: {
             query?: never;
@@ -5043,6 +5060,39 @@ export interface components {
             snapshot: string;
             to_t: string | null;
             version: string;
+        };
+        StorePhaseComparison: {
+            /** Format: int64 */
+            context_records: number;
+            method: string;
+            metric: string;
+            rounds: components["schemas"]["BaselineSummary"];
+            runs: components["schemas"]["StorePhaseComparisonRun"][];
+        };
+        StorePhaseComparisonNetwork: {
+            chain_id: string;
+            genesis_hash: string;
+            /** Format: int64 */
+            id: number;
+            name: string;
+        };
+        StorePhaseComparisonRun: {
+            coverage: components["schemas"]["StorePhaseHeightCoverage"][];
+            /** Format: int64 */
+            dataset: number;
+            examples: components["schemas"]["LatencySample"][];
+            examples_truncated: boolean;
+            name: string;
+            network: components["schemas"]["StorePhaseComparisonNetwork"];
+            summary: components["schemas"]["LatencySummary"];
+        };
+        StorePhaseHeightCoverage: {
+            node: string;
+            /** Format: int64 */
+            observed_heights: number;
+            profile: string;
+            /** Format: int64 */
+            unobserved_heights: number;
         };
         StoreReconstructionDetail: {
             /** Format: int64 */
@@ -9346,6 +9396,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EpochRegistryPage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    compareRunPhaseLatency: {
+        parameters: {
+            query: {
+                /** @description first full decimal block height */
+                from: string;
+                /** @description last full decimal block height, included; interval at most 100000 heights */
+                to: string;
+                /** @description 2..16 comma-separated distinct completed run dataset IDs */
+                datasets: string;
+                /** @description optional observer node */
+                node?: string;
+                /** @description explicit 1 permits selected runs on independent networks; each chain/genesis identity is retained */
+                cross_network?: string;
+                /** @description one WBFT phase metric; at most 100000 relevant context records across all runs */
+                metric: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorePhaseComparison"];
                 };
             };
             /** @description the request failed */
