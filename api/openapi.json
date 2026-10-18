@@ -397,6 +397,54 @@
         ],
         "type": "object"
       },
+      "EpochRegistryPage": {
+        "additionalProperties": false,
+        "properties": {
+          "hash": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/StoreEpochRegistryRow"
+            },
+            "type": "array"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "genesis",
+              "not_epoch"
+            ],
+            "type": "string"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hash",
+          "index",
+          "next",
+          "rows",
+          "snapshot",
+          "status",
+          "total"
+        ],
+        "type": "object"
+      },
       "Error": {
         "additionalProperties": false,
         "properties": {
@@ -618,6 +666,56 @@
         "required": [
           "bytes",
           "sha256"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessEpochEffectLineage": {
+        "additionalProperties": false,
+        "properties": {
+          "checked_blocks": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "checked_transactions": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "epoch_index": {
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "invalid_scope",
+              "origin_effect_unverified",
+              "next_epoch_unavailable",
+              "epoch_header_mismatch",
+              "registry_state_unavailable",
+              "registry_boundary_mismatch",
+              "system_phase_changed",
+              "effect_not_retained",
+              "retained_write_overwritten",
+              "verified_retained_registry_effect"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "unverified",
+              "verified_retained_registry_effect"
+            ],
+            "type": "string"
+          },
+          "transaction_index": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "checked_blocks",
+          "checked_transactions",
+          "epoch_index",
+          "reason",
+          "status",
+          "transaction_index"
         ],
         "type": "object"
       },
@@ -12784,6 +12882,219 @@
         ],
         "type": "object"
       },
+      "StoreEpochRegistryEffect": {
+        "additionalProperties": false,
+        "properties": {
+          "change": {
+            "$ref": "#/components/schemas/ExecutionwitnessRegistryEffect"
+          },
+          "effect_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "retention": {
+            "$ref": "#/components/schemas/ExecutionwitnessEpochEffectLineage"
+          },
+          "transaction_index": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "change",
+          "effect_ordinal",
+          "hash",
+          "index",
+          "retention",
+          "transaction_index"
+        ],
+        "type": "object"
+      },
+      "StoreEpochRegistryOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "call_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "comparisons_truncated": {
+            "type": "boolean"
+          },
+          "entry_ordinal": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "normalized_pointer": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "matched",
+              "unverified",
+              "mismatch",
+              "ambiguous"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "call_ordinal",
+          "comparisons_truncated",
+          "entry_ordinal",
+          "normalized_pointer",
+          "status"
+        ],
+        "type": "object"
+      },
+      "StoreEpochRegistryRow": {
+        "additionalProperties": false,
+        "properties": {
+          "binding": {
+            "enum": [
+              "matched",
+              "header_unavailable",
+              "header_mismatch",
+              "config_mismatch",
+              "network_mismatch",
+              "source_unavailable"
+            ],
+            "type": "string"
+          },
+          "capture_snapshot": {
+            "type": "string"
+          },
+          "config_sha256": {
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dataset_name": {
+            "type": "string"
+          },
+          "effect": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreEpochRegistryEffect"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "epoch_header_status": {
+            "enum": [
+              "matched",
+              "mismatch",
+              "unavailable",
+              "not_compared_genesis"
+            ],
+            "type": "string"
+          },
+          "execution_snapshot": {
+            "type": "string"
+          },
+          "header_source_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "headers_dataset": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "kind": {
+            "enum": [
+              "epoch_state",
+              "transaction_effect"
+            ],
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/StoreEpochRegistryOperation"
+            },
+            "type": "array"
+          },
+          "operations_truncated": {
+            "type": "boolean"
+          },
+          "reason": {
+            "enum": [
+              "source_unbound",
+              "header_state_only",
+              "initial_registry_state",
+              "registry_unavailable",
+              "epoch_header_mismatch",
+              "retention_unverified",
+              "operation_unavailable",
+              "operation_unverified",
+              "operation_mismatch",
+              "operation_ambiguous",
+              "verified_retained_registry_effect"
+            ],
+            "type": "string"
+          },
+          "registry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionwitnessRegistryRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "unverified",
+              "matched",
+              "verified_retained_registry_effect"
+            ],
+            "type": "string"
+          },
+          "verifier": {
+            "$ref": "#/components/schemas/ExecutionwitnessVerifier"
+          },
+          "witness_snapshot": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "binding",
+          "capture_snapshot",
+          "config_sha256",
+          "dataset_id",
+          "dataset_name",
+          "effect",
+          "epoch_header_status",
+          "execution_snapshot",
+          "header_source_id",
+          "headers_dataset",
+          "kind",
+          "node",
+          "operations",
+          "operations_truncated",
+          "reason",
+          "registry",
+          "status",
+          "verifier",
+          "witness_snapshot"
+        ],
+        "type": "object"
+      },
       "StoreEventBounds": {
         "additionalProperties": false,
         "properties": {
@@ -23004,6 +23315,83 @@
           }
         },
         "summary": "At most twenty completed governance source claims with this network's exact canonical index and block hash. Re-evaluated on each read; neither execution causes nor complete history are established."
+      }
+    },
+    "/v1/networks/{net}/headers/{index}/registry-effects": {
+      "get": {
+        "operationId": "listEpochRegistryEffects",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "canonical decimal uint64 epoch block index",
+            "in": "path",
+            "name": "index",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "page size 1..20; state and effect rows share the same stable page order",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "canonical header and immutable source-set-bound cursor; live original-source binding is rechecked on every read",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpochRegistryPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Paginated original replay states and retained transaction registry effects for an epoch. Every read revalidates the original capture and canonical/configuration dependency; retention does not establish validator selection, diligence or an epoch-wide cause."
       }
     },
     "/v1/networks/{net}/rounds/baseline": {

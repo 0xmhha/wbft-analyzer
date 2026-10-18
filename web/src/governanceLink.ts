@@ -1,4 +1,4 @@
-export type GovernanceFocus={dataset:number;call:number;entry:number;collection:"changes";snapshot:string};
+export type GovernanceFocus={dataset:number;call:number;entry:number;collection:"changes"|"operations";snapshot:string};
 
 export function governanceFocus(query:string):{governanceFocus?:GovernanceFocus;sourceError?:string}{
  if(!query)return {};
@@ -7,10 +7,11 @@ export function governanceFocus(query:string):{governanceFocus?:GovernanceFocus;
  if(keys.some(k=>p.getAll(k).length!==1)||[...p.keys()].some(k=>!keys.includes(k)))return fail;
  const positive=(key:string)=>{const raw=p.get(key)||"";return /^[1-9][0-9]*$/.test(raw)&&Number.isSafeInteger(Number(raw))?Number(raw):0};
  const dataset=positive("dataset"),call=positive("call"),entry=positive("entry"),snapshot=p.get("snapshot")||"";
- if(!dataset||!call||!entry||p.get("collection")!=="changes"||!/^[0-9a-f]{64}$/.test(snapshot))return fail;
- return {governanceFocus:{dataset,call,entry,collection:"changes",snapshot}};
+ const collection=p.get("collection");
+ if(!dataset||!call||!entry||(collection!=="changes"&&collection!=="operations")||!/^[0-9a-f]{64}$/.test(snapshot))return fail;
+ return {governanceFocus:{dataset,call,entry,collection,snapshot}};
 }
 
 export function governanceSourceLink(net:number,source:GovernanceFocus):string{
- return `#/networks/${net}/governance?dataset=${source.dataset}&call=${source.call}&entry=${source.entry}&collection=changes&snapshot=${source.snapshot}`;
+ return `#/networks/${net}/governance?dataset=${source.dataset}&call=${source.call}&entry=${source.entry}&collection=${source.collection}&snapshot=${source.snapshot}`;
 }

@@ -2113,6 +2113,38 @@ canonical dependency; deleting their governance owner removes them. Lists retain
 at most 20 witnesses with explicit truncation and conflicting evidence. Raw
 storage values, slots, public keys, calldata and VM returns are not exposed.
 
+### Registry effects retained through an epoch
+
+The epoch view can follow a registry effect back to its original governance
+operation. `GET /v1/networks/{net}/headers/{index}/registry-effects` lists
+replayed epoch states and transaction effects in stable source order. The
+`limit` is 1..20; follow `next` to reach the complete row set. State rows remain
+visible when there is no transaction effect, including candidates without keys.
+
+`verified_retained_registry_effect` requires the original capture and canonical
+header/configuration dependency, an exact matching root operation, and the
+complete transaction/system interval through the next epoch. A removed and
+re-added candidate, an unavailable phase, or a later retained write to the
+effect's storage fields prevents attribution. Reverted writes and unrelated
+proposal counters are kept separate. Epoch candidate order and selected key
+digests are compared with the canonical header. Retention does not explain
+validator selection, diligence or the entire epoch change.
+
+Each row links the original capture snapshot, request and operation entry.
+Operation references and attached witness comparisons are independently bounded
+at twenty; conflicting or truncated comparison sets remain unverified. A cursor
+binds the canonical epoch hash and immutable source set. A changed set returns
+409 and requires refreshing from the first page. Current source binding is
+rechecked on every page, so deleting the selected header source invalidates
+attribution even if matching alternate headers survive. Historical replay
+retention remains visible separately from current attribution.
+
+Candidate tables support bounded local pages, and effect selection/reveal motion
+respects the motion control and reduced-motion preferences. Empty results do not
+establish absent operations or complete history. Genesis registry state remains
+separate from its initial validator set. Existing source annotations and
+governance responses are preserved.
+
 ### Independent governance execution evidence
 
 An operator can replay a complete original block sequence with the separate

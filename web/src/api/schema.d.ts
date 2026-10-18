@@ -1283,6 +1283,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/headers/{index}/registry-effects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Paginated original replay states and retained transaction registry effects for an epoch. Every read revalidates the original capture and canonical/configuration dependency; retention does not establish validator selection, diligence or an epoch-wide cause. */
+        get: operations["listEpochRegistryEffects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/rounds/baseline": {
         parameters: {
             query?: never;
@@ -1512,6 +1529,17 @@ export interface components {
         EpochList: {
             epochs: components["schemas"]["StoreEpoch"][];
         };
+        EpochRegistryPage: {
+            hash: string;
+            index: string;
+            next: string | null;
+            rows: components["schemas"]["StoreEpochRegistryRow"][];
+            snapshot: string;
+            /** @enum {string} */
+            status: "available" | "genesis" | "not_epoch";
+            /** Format: int64 */
+            total: number;
+        };
         Error: {
             error: string;
         };
@@ -1563,6 +1591,18 @@ export interface components {
             /** Format: int64 */
             bytes: number;
             sha256: string;
+        };
+        ExecutionwitnessEpochEffectLineage: {
+            /** Format: int64 */
+            checked_blocks: number;
+            /** Format: int64 */
+            checked_transactions: number;
+            epoch_index: string;
+            /** @enum {string} */
+            reason: "invalid_scope" | "origin_effect_unverified" | "next_epoch_unavailable" | "epoch_header_mismatch" | "registry_state_unavailable" | "registry_boundary_mismatch" | "system_phase_changed" | "effect_not_retained" | "retained_write_overwritten" | "verified_retained_registry_effect";
+            /** @enum {string} */
+            status: "unverified" | "verified_retained_registry_effect";
+            transaction_index: string;
         };
         ExecutionwitnessFrame: {
             abi_status: string;
@@ -4486,6 +4526,55 @@ export interface components {
             index: number;
             /** Format: int64 */
             validator_order: number | null;
+        };
+        StoreEpochRegistryEffect: {
+            change: components["schemas"]["ExecutionwitnessRegistryEffect"];
+            /** Format: int64 */
+            effect_ordinal: number;
+            hash: string;
+            index: string;
+            retention: components["schemas"]["ExecutionwitnessEpochEffectLineage"];
+            /** Format: int64 */
+            transaction_index: number;
+        };
+        StoreEpochRegistryOperation: {
+            /** Format: int64 */
+            call_ordinal: number;
+            comparisons_truncated: boolean;
+            /** Format: int64 */
+            entry_ordinal: number;
+            normalized_pointer: string;
+            /** @enum {string} */
+            status: "matched" | "unverified" | "mismatch" | "ambiguous";
+        };
+        StoreEpochRegistryRow: {
+            /** @enum {string} */
+            binding: "matched" | "header_unavailable" | "header_mismatch" | "config_mismatch" | "network_mismatch" | "source_unavailable";
+            capture_snapshot: string;
+            config_sha256: string;
+            /** Format: int64 */
+            dataset_id: number;
+            dataset_name: string;
+            effect: components["schemas"]["StoreEpochRegistryEffect"] | null;
+            /** @enum {string} */
+            epoch_header_status: "matched" | "mismatch" | "unavailable" | "not_compared_genesis";
+            execution_snapshot: string;
+            /** Format: int64 */
+            header_source_id: number;
+            /** Format: int64 */
+            headers_dataset: number | null;
+            /** @enum {string} */
+            kind: "epoch_state" | "transaction_effect";
+            node: string;
+            operations: components["schemas"]["StoreEpochRegistryOperation"][];
+            operations_truncated: boolean;
+            /** @enum {string} */
+            reason: "source_unbound" | "header_state_only" | "initial_registry_state" | "registry_unavailable" | "epoch_header_mismatch" | "retention_unverified" | "operation_unavailable" | "operation_unverified" | "operation_mismatch" | "operation_ambiguous" | "verified_retained_registry_effect";
+            registry: components["schemas"]["ExecutionwitnessRegistryRead"] | null;
+            /** @enum {string} */
+            status: "unverified" | "matched" | "verified_retained_registry_effect";
+            verifier: components["schemas"]["ExecutionwitnessVerifier"];
+            witness_snapshot: string;
         };
         StoreEventBounds: {
             /** Format: int64 */
@@ -9209,6 +9298,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreHeaderGovernanceClaims"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listEpochRegistryEffects: {
+        parameters: {
+            query?: {
+                /** @description page size 1..20; state and effect rows share the same stable page order */
+                limit?: number;
+                /** @description canonical header and immutable source-set-bound cursor; live original-source binding is rechecked on every read */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description canonical decimal uint64 epoch block index */
+                index: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EpochRegistryPage"];
                 };
             };
             /** @description the request failed */

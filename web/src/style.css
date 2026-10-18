@@ -248,3 +248,5 @@ article pre { overflow: auto; max-height: 24rem; }
 .gov-state-evidence[open] > .gov-state-content { animation: gov-state-reveal 180ms ease-out both; }
 @keyframes gov-state-reveal { from { opacity: .3; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .gov-state-evidence[open] > .gov-state-content { animation: none; } }
+
+.gov-request.no-motion .gov-state-content { animation: none; }
