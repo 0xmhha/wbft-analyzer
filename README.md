@@ -2076,6 +2076,43 @@ claims. An epoch key match does not verify diligence, validator selection,
 aggregate seals, transaction causation or complete governance history.
 
 
+### Independent governance registry transitions
+
+Replay the same checksummed original genesis and complete block sequence with
+storage-transition observation enabled through a separate operator command:
+
+```
+wbft-analyzer ingest governance-transitions --db DSN \
+  --dataset-id GOVERNANCE --headers-dataset-id HEADERS \
+  --manifest FILE --root DIR --helper BINARY --helper-sha256 SHA256
+```
+
+The trusted binary is built from `tools/execution-witness`. Helper selection,
+fingerprint and mode are independent of the source manifest and public HTTP
+input. The loader authenticates the complete original replay, strict transition
+report, transaction identities, storage phases and epoch candidate/key bindings
+before returning an opaque bundle. A serialized report cannot construct one.
+Replay and transition rows commit atomically against the selected completed
+governance and canonical header sources. Repeated attachment is idempotent;
+conflicting immutable content is refused.
+
+Governance header contexts include independent `transitions` evidence for source
+operations and validator-change entries. The view separates before/after
+candidate membership and order, key and operator changes, proposal status and counts, reverted writes,
+system phases and the next replayed epoch registry. A reviewed effective root
+transaction can establish `verified_transaction_effect` for registry changes.
+Unknown runtime, unmatched or nested source calls, missing dependencies and
+overlapping system effects leave causation unestablished. Header-only state and
+the next epoch never establish the transaction that caused validator selection.
+The original capture annotations remain intact.
+
+All canonical bindings are checked again on reads. Deleting the specifically
+selected header source invalidates the replay dependency even if another source
+has identical headers. Logical export includes transition rows and the surviving
+canonical dependency; deleting their governance owner removes them. Lists retain
+at most 20 witnesses with explicit truncation and conflicting evidence. Raw
+storage values, slots, public keys, calldata and VM returns are not exposed.
+
 ### Independent governance execution evidence
 
 An operator can replay a complete original block sequence with the separate

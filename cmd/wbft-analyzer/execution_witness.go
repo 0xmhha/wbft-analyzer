@@ -16,7 +16,19 @@ import (
 )
 
 func runExecutionWitness(args []string, stdout, stderr io.Writer) int {
-	fs := flag.NewFlagSet("ingest execution-witness", flag.ContinueOnError)
+	return runExecutionWitnessMode(args, stdout, stderr, false)
+}
+
+func runGovernanceTransitions(args []string, stdout, stderr io.Writer) int {
+	return runExecutionWitnessMode(args, stdout, stderr, true)
+}
+
+func runExecutionWitnessMode(args []string, stdout, stderr io.Writer, transitions bool) int {
+	command := "execution-witness"
+	if transitions {
+		command = "governance-transitions"
+	}
+	fs := flag.NewFlagSet("ingest "+command, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	dsn := fs.String("db", "", "PostgreSQL DSN (default $WBFT_ANALYZER_DB)")
 	dataset := fs.Int64("dataset-id", 0, "completed governance dataset ID")
@@ -29,7 +41,7 @@ func runExecutionWitness(args []string, stdout, stderr io.Writer) int {
 	work := fs.String("work-dir", "", "directory for private temporary source and helper snapshots")
 	if err := fs.Parse(args); err != nil {
 		if err == flag.ErrHelp {
-			fmt.Fprintln(stderr, "Usage: wbft-analyzer ingest execution-witness --db DSN --dataset-id N --headers-dataset-id N --manifest FILE --root DIR --helper FILE --helper-sha256 SHA256")
+			fmt.Fprintf(stderr, "Usage: wbft-analyzer ingest %s --db DSN --dataset-id N --headers-dataset-id N --manifest FILE --root DIR --helper FILE --helper-sha256 SHA256\n", command)
 			fs.SetOutput(stderr)
 			fs.PrintDefaults()
 			return exitOK
@@ -63,7 +75,21 @@ func runExecutionWitness(args []string, stdout, stderr io.Writer) int {
 		return exitDataErr
 	}
 	defer root.Close()
-	bundle, err := executionwitness.Load(ctx, raw, root, executionwitness.Helper{Path: *helper, SHA256: *fingerprint, Timeout: *timeout, WorkDir: *work})
+	implementation := executionwitness.Helper{Path: *helper, SHA256: *fingerprint, Timeout: *timeout, WorkDir: *work}
+	var persist func(context.Context, *store.Store) (any, error)
+	if transitions {
+		var bundle executionwitness.TransitionBundle
+		bundle, err = executionwitness.LoadTransitions(ctx, raw, root, implementation)
+		persist = func(ctx context.Context, s *store.Store) (any, error) {
+			return s.PutGovernanceTransitions(ctx, *dataset, *headers, bundle)
+		}
+	} else {
+		var bundle executionwitness.Bundle
+		bundle, err = executionwitness.Load(ctx, raw, root, implementation)
+		persist = func(ctx context.Context, s *store.Store) (any, error) {
+			return s.PutGovernanceExecutionWitness(ctx, *dataset, *headers, bundle)
+		}
+	}
 	if err != nil {
 		fmt.Fprintln(stderr, "execution original sources could not be authenticated")
 		return exitDataErr
@@ -78,7 +104,7 @@ func runExecutionWitness(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "execution schema migration failed")
 		return exitInternal
 	}
-	result, err := s.PutGovernanceExecutionWitness(ctx, *dataset, *headers, bundle)
+	result, err := persist(ctx, s)
 	if err != nil {
 		fmt.Fprintln(stderr, "execution witness has no matching available governance and header sources")
 		return exitDataErr

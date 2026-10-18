@@ -20,6 +20,7 @@ import (
 	"github.com/0xmhha/wbft/codec"
 	"github.com/0xmhha/wbft/codec/rlp"
 	"github.com/0xmhha/wbft/crypto/keccak"
+	"github.com/0xmhha/wbft/types"
 )
 
 var ErrSource = errors.New("execution witness originals or implementation could not be verified")
@@ -117,6 +118,8 @@ type expectedTransaction struct {
 	blockHash string
 }
 type snapshot struct {
+	epochs       map[string]*types.EpochInfo
+	extraValid   map[string]bool
 	manifest     Manifest
 	source       Snapshot
 	files        map[string]originalFile
@@ -157,7 +160,7 @@ func readOriginal(ctx context.Context, root *os.Root, input FileInput, remaining
 	return raw, nil
 }
 func prepare(ctx context.Context, raw []byte, root *os.Root, destination string) (snapshot, error) {
-	s := snapshot{files: map[string]originalFile{}}
+	s := snapshot{files: map[string]originalFile{}, epochs: map[string]*types.EpochInfo{}, extraValid: map[string]bool{}}
 	m := &s.manifest
 	if exactJSON(raw, MaxManifestBytes, m) != nil || m.Format != InputFormat || !strings.HasPrefix(m.Node, "0x") || len(m.Node) != 42 || len(m.Blocks) == 0 || len(m.Blocks) > MaxBlocks {
 		return s, ErrSource
@@ -225,6 +228,10 @@ func prepare(ctx context.Context, raw []byte, root *os.Root, destination string)
 			return s, ErrSource
 		}
 		h := block.Header
+		if extra, failure := codec.DecodeExtra(h); failure == nil {
+			s.extraValid[input.Index] = true
+			s.epochs[input.Index] = extra.EpochInfo
+		}
 		if h.GasLimit > MaxBlockGas || i > 0 && h.GasUsed > MaxTotalGas-totalGas {
 			return s, ErrSource
 		}

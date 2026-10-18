@@ -32,8 +32,11 @@ type GovernanceExecutionWitness struct {
 // Only the loader's opaque result may cross the persistence boundary. Source
 // capture data is immutable and never rewritten to agree with VM execution.
 func (s *Store) PutGovernanceExecutionWitness(ctx context.Context, dataset, headerDataset int64, bundle executionwitness.Bundle) (GovernanceExecutionWitness, error) {
+	return s.putGovernanceExecutionWitness(ctx, dataset, headerDataset, bundle.Projection(), nil)
+}
+
+func (s *Store) putGovernanceExecutionWitness(ctx context.Context, dataset, headerDataset int64, projection executionwitness.Projection, attach func(context.Context, pgx.Tx, GovernanceExecutionWitness) error) (GovernanceExecutionWitness, error) {
 	var result GovernanceExecutionWitness
-	projection := bundle.Projection()
 	source := projection.Report.Source
 	if dataset < 1 || headerDataset < 1 || dataset == headerDataset || projection.Report.Protocol != executionwitness.Protocol || len(source.Blocks) < 1 || len(source.Blocks) > executionwitness.MaxBlocks || len(projection.Report.Transactions) > executionwitness.MaxTransactions || projection.Verifier.SHA256 == "" {
 		return result, ErrExecutionWitnessBinding
@@ -82,8 +85,12 @@ func (s *Store) PutGovernanceExecutionWitness(ctx context.Context, dataset, head
 			if err != nil {
 				return err
 			}
-			if _, err = tx.Exec(ctx, `INSERT INTO governance_execution_blocks(dataset_id,snapshot,index_,block) VALUES($1,$2,$3::numeric,$4) ON CONFLICT DO NOTHING`, dataset, result.Snapshot, block.Index, raw); err != nil {
+			tag, err := tx.Exec(ctx, `INSERT INTO governance_execution_blocks(dataset_id,snapshot,index_,block) VALUES($1,$2,$3::numeric,$4) ON CONFLICT(dataset_id,snapshot,index_) DO UPDATE SET block=governance_execution_blocks.block WHERE governance_execution_blocks.block=EXCLUDED.block`, dataset, result.Snapshot, block.Index, raw)
+			if err != nil {
 				return err
+			}
+			if tag.RowsAffected() != 1 {
+				return ErrExecutionWitnessBinding
 			}
 		}
 		for _, point := range projection.Report.Transactions {
@@ -91,8 +98,12 @@ func (s *Store) PutGovernanceExecutionWitness(ctx context.Context, dataset, head
 			if err != nil {
 				return err
 			}
-			if _, err = tx.Exec(ctx, `INSERT INTO governance_execution_transactions(dataset_id,snapshot,index_,tx_ordinal,point) VALUES($1,$2,$3::numeric,$4,$5) ON CONFLICT DO NOTHING`, dataset, result.Snapshot, point.Index, point.Ordinal, raw); err != nil {
+			tag, err := tx.Exec(ctx, `INSERT INTO governance_execution_transactions(dataset_id,snapshot,index_,tx_ordinal,point) VALUES($1,$2,$3::numeric,$4,$5) ON CONFLICT(dataset_id,snapshot,index_,tx_ordinal) DO UPDATE SET point=governance_execution_transactions.point WHERE governance_execution_transactions.point=EXCLUDED.point`, dataset, result.Snapshot, point.Index, point.Ordinal, raw)
+			if err != nil {
 				return err
+			}
+			if tag.RowsAffected() != 1 {
+				return ErrExecutionWitnessBinding
 			}
 		}
 		binding, err := bindExecutionHeaders(ctx, tx, network, result)
@@ -101,6 +112,9 @@ func (s *Store) PutGovernanceExecutionWitness(ctx context.Context, dataset, head
 		}
 		if binding != "matched" {
 			return ErrExecutionWitnessBinding
+		}
+		if attach != nil {
+			return attach(ctx, tx, result)
 		}
 		return nil
 	})

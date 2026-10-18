@@ -2,8 +2,11 @@ package executionwitness
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -37,4 +40,45 @@ func TestSyntheticExecutionHelperClosedInput(t *testing.T) {
 	if _, err := Load(context.Background(), raw, root, Helper{Path: binary, SHA256: fingerprint, Timeout: time.Nanosecond}); err == nil {
 		t.Fatal("expired verification accepted")
 	}
+	transitions, err := LoadTransitions(context.Background(), raw, root, Helper{Path: binary, SHA256: fingerprint, Timeout: time.Minute})
+	if err != nil {
+		t.Fatal("closed transition source not verified", err)
+	}
+	projection := transitions.Projection()
+	if projection.Verifier != source.Verifier || projection.Report.Protocol != TransitionProtocol || !reflect.DeepEqual(projection.Report.Execution, source.Report) || len(projection.Report.Blocks) != 1 || !projection.Report.Blocks[0].Genesis || len(projection.Report.Transactions) != 0 {
+		t.Fatal("transition mode changed the execution report")
+	}
+	assertRefused := func(raw []byte, h Helper) {
+		t.Helper()
+		got, err := LoadTransitions(context.Background(), raw, root, h)
+		if err == nil || got.Projection().Report.Protocol != "" {
+			t.Fatal("unverified transition source admitted", err)
+		}
+	}
+	operator := Helper{Path: binary, SHA256: fingerprint, Timeout: time.Minute}
+	wrong := operator
+	wrong.SHA256 = strings.Repeat("0", 64)
+	assertRefused(raw, wrong)
+	expired := operator
+	expired.Timeout = time.Nanosecond
+	assertRefused(raw, expired)
+	var manifest map[string]any
+	if json.Unmarshal(raw, &manifest) != nil {
+		t.Fatal("decode synthetic manifest")
+	}
+	manifest["transitions"] = true
+	modeRaw, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertRefused(modeRaw, operator)
+	delete(manifest, "transitions")
+	blocks := manifest["blocks"].([]any)
+	file := blocks[len(blocks)-1].(map[string]any)["file"].(map[string]any)
+	file["sha256"] = strings.Repeat("0", 64)
+	badChecksum, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertRefused(badChecksum, operator)
 }
