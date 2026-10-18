@@ -53,7 +53,7 @@ it("does not link unknown, missing or mismatched canonical context",()=>{
  }
 });
 it("separates epoch agreement from unverified execution keys and missing inputs",()=>{
- const epoch:Schemas["StoreGovernanceEpochEvidence"]={status:"available",candidates:"matched",validators:"mismatch",added:"unavailable",removed:"unavailable",header_candidates:[addr],header_validators:[addr],header_added:[],header_removed:[],no_key_status:"unverified_execution_keys"};
+ const epoch:Schemas["StoreGovernanceEpochEvidence"]={status:"available",candidates:"matched",validators:"mismatch",added:"unavailable",removed:"unavailable",header_candidates:[addr],header_validators:[addr],header_added:[],header_removed:[],no_key_status:"unverified_execution_keys",execution_state:null};
  const html=renderToStaticMarkup(<GovernanceHeaderResult net={2} value={{...context,epoch}}/>);
  expect(html).toContain("Epoch claim comparison");expect(html).toContain("mismatch");expect(html).toContain("Candidates without keys remain unverified");
  const missing=renderToStaticMarkup(<GovernanceHeaderResult net={2} value={{...context,epoch:{...epoch,status:"not_epoch"}}}/>);

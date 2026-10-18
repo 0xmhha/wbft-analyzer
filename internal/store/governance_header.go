@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/0xmhha/wbft-analyzer/internal/privacy"
 	"github.com/0xmhha/wbft-analyzer/internal/source/governance"
 	"github.com/0xmhha/wbft-analyzer/internal/source/headers"
 	"github.com/0xmhha/wbft/types"
@@ -48,16 +49,17 @@ type GovernanceHeaderSource struct {
 // Ordered epoch claims are compared separately. NoKey requires execution state
 // and is never verified by a matching header or its reconstructed BLS inputs.
 type GovernanceEpochEvidence struct {
-	Status           string   `json:"status" enum:"available,not_epoch,header_epoch_unavailable"`
-	Candidates       string   `json:"candidates" enum:"matched,mismatch,unavailable"`
-	Validators       string   `json:"validators" enum:"matched,mismatch,unavailable"`
-	Added            string   `json:"added" enum:"matched,mismatch,unavailable"`
-	Removed          string   `json:"removed" enum:"matched,mismatch,unavailable"`
-	HeaderCandidates []string `json:"header_candidates"`
-	HeaderValidators []string `json:"header_validators"`
-	HeaderAdded      []string `json:"header_added"`
-	HeaderRemoved    []string `json:"header_removed"`
-	NoKeyStatus      string   `json:"no_key_status" enum:"unverified_execution_keys"`
+	Status           string                       `json:"status" enum:"available,not_epoch,header_epoch_unavailable"`
+	Candidates       string                       `json:"candidates" enum:"matched,mismatch,unavailable"`
+	Validators       string                       `json:"validators" enum:"matched,mismatch,unavailable"`
+	Added            string                       `json:"added" enum:"matched,mismatch,unavailable"`
+	Removed          string                       `json:"removed" enum:"matched,mismatch,unavailable"`
+	HeaderCandidates []string                     `json:"header_candidates"`
+	HeaderValidators []string                     `json:"header_validators"`
+	HeaderAdded      []string                     `json:"header_added"`
+	HeaderRemoved    []string                     `json:"header_removed"`
+	NoKeyStatus      string                       `json:"no_key_status" enum:"unverified_execution_keys,verified_execution_keys,mismatch_execution_keys,ambiguous_execution_keys"`
+	ExecutionState   *GovernanceStateEvidenceList `json:"execution_state"`
 }
 
 func (s *Store) GovernanceHeaderContext(ctx context.Context, id int64, call, entry int, collection string) (result GovernanceHeaderContext, err error) {
@@ -68,7 +70,7 @@ func (s *Store) GovernanceHeaderContext(ctx context.Context, id int64, call, ent
 	err = pgx.BeginTxFunc(ctx, s.pool, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
 		var raw []byte
 		var network int64
-		if err := tx.QueryRow(ctx, `SELECT c.info,d.network_id FROM governance_captures c JOIN datasets d ON d.id=c.dataset_id WHERE d.id=$1 AND d.kind='governance' AND d.status='complete'`, id).Scan(&raw, &network); err != nil {
+		if err := tx.QueryRow(ctx, `SELECT c.info,d.network_id FROM governance_captures c JOIN datasets d ON d.id=c.dataset_id JOIN networks n ON n.id=d.network_id WHERE d.id=$1 AND d.kind='governance' AND d.status='complete' AND d.visibility=$2 AND n.visibility=$2`, id, privacy.Visibility()).Scan(&raw, &network); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return ErrNotFound
 			}
@@ -138,7 +140,7 @@ func (s *Store) GovernanceHeaderContext(ctx context.Context, id int64, call, ent
 		if epochClaim != nil {
 			result.Epoch = compareGovernanceEpoch(fact, *epochClaim)
 		}
-		rows, err := tx.Query(ctx, `SELECT hc.dataset_id,hc.node,d.status FROM header_copies hc JOIN datasets d ON d.id=hc.dataset_id WHERE d.network_id=$1 AND hc.index_=$2::numeric AND hc.hash=$3 ORDER BY hc.dataset_id,hc.node LIMIT 21`, network, result.Index, hash)
+		rows, err := tx.Query(ctx, `SELECT hc.dataset_id,hc.node,d.status FROM header_copies hc JOIN datasets d ON d.id=hc.dataset_id WHERE d.network_id=$1 AND d.visibility=$4 AND hc.index_=$2::numeric AND hc.hash=$3 ORDER BY hc.dataset_id,hc.node LIMIT 21`, network, result.Index, hash, privacy.Visibility())
 		if err != nil {
 			return err
 		}
@@ -153,7 +155,19 @@ func (s *Store) GovernanceHeaderContext(ctx context.Context, id int64, call, ent
 		if len(result.Sources) > 20 {
 			result.Sources, result.SourcesTruncated = result.Sources[:20], true
 		}
-		return rows.Err()
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return err
+		}
+		if result.Epoch != nil {
+			evidence, err := governanceStateEvidence(ctx, tx, network, id, result.Index)
+			if err != nil {
+				return err
+			}
+			applyGovernanceState(result.Epoch, *epochClaim, evidence)
+		}
+		return nil
 	})
 	return result, err
 }

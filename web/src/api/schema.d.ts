@@ -311,6 +311,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/governance/state-witnesses/{index}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** At most twenty authenticated execution-state witnesses at one exact canonical index, with current header/config binding. Missing or conflicting sources remain explicit; remote identity, full consensus validity and transaction causation are not established. */
+        get: operations["getGovernanceStateWitnesses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/input-storage": {
         parameters: {
             query?: never;
@@ -1552,6 +1569,7 @@ export interface components {
             added: string[];
             candidates: string[];
             no_key: string[];
+            no_key_reported: boolean;
             removed: string[];
             validators: string[];
         };
@@ -4167,6 +4185,53 @@ export interface components {
             wall_origin: string;
             wire_metric: string;
         };
+        StatewitnessCandidateKey: {
+            address: string;
+            /** Format: int64 */
+            key_bytes: number;
+            key_sha256: string;
+        };
+        StatewitnessEpochEvidence: {
+            /** @enum {string} */
+            keys: "not_epoch" | "matched" | "mismatch";
+            sha256: string;
+        };
+        StatewitnessFileEvidence: {
+            /** Format: int64 */
+            bytes: number;
+            sha256: string;
+        };
+        StatewitnessPoint: {
+            block_file: components["schemas"]["StatewitnessFileEvidence"];
+            block_hash: string;
+            epoch: components["schemas"]["StatewitnessEpochEvidence"];
+            index: string;
+            request: components["schemas"]["StatewitnessFileEvidence"];
+            response: components["schemas"]["StatewitnessFileEvidence"];
+            state: components["schemas"]["StatewitnessValidatorState"];
+        };
+        StatewitnessSnapshot: {
+            chain_id: string;
+            config_file: components["schemas"]["StatewitnessFileEvidence"];
+            config_sha256: string;
+            format: string;
+            genesis_file: components["schemas"]["StatewitnessFileEvidence"];
+            genesis_hash: string;
+            manifest: components["schemas"]["StatewitnessFileEvidence"];
+            node: string;
+            points: components["schemas"]["StatewitnessPoint"][];
+        };
+        StatewitnessValidatorState: {
+            candidates: components["schemas"]["StatewitnessCandidateKey"][];
+            code_hash: string;
+            contract: string;
+            layout: string;
+            /** Format: int64 */
+            slots: number;
+            state_root: string;
+            storage_root: string;
+            without_keys: string[];
+        };
         StoreBuildLifecycle: {
             assembly_ns: string | null;
             build_id: string;
@@ -4325,12 +4390,13 @@ export interface components {
             added: "matched" | "mismatch" | "unavailable";
             /** @enum {string} */
             candidates: "matched" | "mismatch" | "unavailable";
+            execution_state: components["schemas"]["StoreGovernanceStateEvidenceList"] | null;
             header_added: string[];
             header_candidates: string[];
             header_removed: string[];
             header_validators: string[];
             /** @enum {string} */
-            no_key_status: "unverified_execution_keys";
+            no_key_status: "unverified_execution_keys" | "verified_execution_keys" | "mismatch_execution_keys" | "ambiguous_execution_keys";
             /** @enum {string} */
             removed: "matched" | "mismatch" | "unavailable";
             /** @enum {string} */
@@ -4376,6 +4442,29 @@ export interface components {
             id: string;
             instance: string;
             proposal: components["schemas"]["GovernanceProposal"] | null;
+        };
+        StoreGovernanceStateEvidence: {
+            point: components["schemas"]["StatewitnessPoint"];
+            /** @enum {string} */
+            status: "matched" | "header_unavailable" | "header_mismatch" | "config_mismatch" | "network_mismatch" | "source_unavailable";
+            witness: components["schemas"]["StoreGovernanceStateWitness"];
+        };
+        StoreGovernanceStateEvidenceList: {
+            evidence: components["schemas"]["StoreGovernanceStateEvidence"][];
+            index: string;
+            truncated: boolean;
+        };
+        StoreGovernanceStateWitness: {
+            /** Format: int64 */
+            dataset_id: number;
+            /** Format: int64 */
+            header_source_id: number;
+            /** Format: int64 */
+            headers_dataset: number | null;
+            /** Format: int64 */
+            points: number;
+            snapshot: string;
+            source: components["schemas"]["StatewitnessSnapshot"];
         };
         StoreHeaderBounds: {
             /** Format: int64 */
@@ -5912,6 +6001,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoreGovernanceHeaderContext"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getGovernanceStateWitnesses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description canonical decimal uint64 index */
+                index: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreGovernanceStateEvidenceList"];
                 };
             };
             /** @description the request failed */

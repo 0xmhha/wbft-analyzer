@@ -6,7 +6,7 @@ import "encoding/json"
 
 const (
 	Format     = "wbft-analyzer-governance/1"
-	Normalizer = "wbft-governance-normalization/2"
+	Normalizer = "wbft-governance-normalization/3"
 	MaxBytes   = 32 << 20
 	maxRows    = 65536
 )
@@ -157,11 +157,12 @@ type State struct {
 	Inexact           bool              `json:"inexact"`
 }
 type Epoch struct {
-	Candidates []string `json:"candidates"`
-	Validators []string `json:"validators"`
-	Added      []string `json:"added"`
-	Removed    []string `json:"removed"`
-	NoKey      []string `json:"no_key"`
+	NoKeyReported bool     `json:"no_key_reported"`
+	Candidates    []string `json:"candidates"`
+	Validators    []string `json:"validators"`
+	Added         []string `json:"added"`
+	Removed       []string `json:"removed"`
+	NoKey         []string `json:"no_key"`
 }
 type ValidatorChange struct {
 	BlockHash          *string     `json:"block_hash,omitempty"`

@@ -73,6 +73,8 @@ var exportTables = []exportTable{
 	{"gov_ops", `dataset_id=ANY($1)`}, {"gov_gaps", `dataset_id=ANY($1)`},
 	{"gov_states", `dataset_id=ANY($1)`}, {"gov_proposals", `dataset_id=ANY($1)`},
 	{"gov_validator_changes", `dataset_id=ANY($1)`},
+	{"governance_state_witnesses", `dataset_id=ANY($1)`},
+	{"governance_state_points", `dataset_id=ANY($1)`},
 	{"input_files", `dataset_id=ANY($1)`},
 	{"reexec_runs", `dataset_id=ANY($1)`},
 	{"reexec_steps", `run_id IN (SELECT id FROM reexec_runs WHERE dataset_id=ANY($1))`},
@@ -94,6 +96,7 @@ const exportClosureSQL = `WITH RECURSIVE edges(a,b) AS (
  SELECT dataset_id,headers_dataset FROM follow_batches UNION SELECT dataset_id,observations_dataset FROM follow_batches
  UNION SELECT dataset_id,source_id FROM message_pair_dependencies WHERE source_id IS NOT NULL
  UNION SELECT dataset_id,message_id FROM missing_indexes WHERE message_id IS NOT NULL
+ UNION SELECT dataset_id,header_dataset_id FROM governance_state_witnesses WHERE header_dataset_id IS NOT NULL
 ), ids(id) AS (SELECT $1::bigint UNION SELECT e.b FROM edges e JOIN ids ON e.a=ids.id)
 SELECT id FROM ids ORDER BY id`
 
