@@ -239,7 +239,7 @@ func Normalize(a Archive) (Snapshot, error) {
 				}
 			}
 			for _, x := range n.Improvements {
-				if !label.MatchString(x.Name) || (x.Source != "profile" && x.Source != "app") {
+				if !label.MatchString(x.Name) || (x.Source != "profile" && x.Source != "app" && x.Source != "chain") {
 					return out, errors.New("invalid improvement metadata")
 				}
 			}
