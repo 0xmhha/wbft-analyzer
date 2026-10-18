@@ -22,6 +22,7 @@ type File struct {
 // Manifest paths remain local. Only verified hashes and closed source
 // coordinates appear in an assessment.
 type Manifest struct {
+	Inputs  *File        `json:"input_observations,omitempty"`
 	Scopes  []RunScope   `json:"processing_scopes,omitempty"`
 	Format  string       `json:"format"`
 	Node    string       `json:"node"`
@@ -30,6 +31,7 @@ type Manifest struct {
 	Frames  *File        `json:"frames,omitempty"`
 	Runtime *File        `json:"runtime,omitempty"`
 	Chain   *File        `json:"chain,omitempty"`
+	Genesis *File        `json:"genesis,omitempty"`
 }
 
 type Point struct {
@@ -54,10 +56,13 @@ type Evidence struct {
 // content corroborates this declaration; it does not establish a complete
 // core input order, receive-to-handle delivery, timer or application history.
 type RunScope struct {
-	LogRun   string `json:"log_run"`
-	FrameRun string `json:"frame_run"`
-	From     string `json:"from_t"`
-	To       string `json:"to_t"`
+	InputRun      string `json:"input_run,omitempty"`
+	InputInstance string `json:"input_instance,omitempty"`
+	GenesisSHA    string `json:"genesis_sha256,omitempty"`
+	LogRun        string `json:"log_run"`
+	FrameRun      string `json:"frame_run"`
+	From          string `json:"from_t"`
+	To            string `json:"to_t"`
 }
 type ProcessingScope struct {
 	From             string          `json:"from_t"`
@@ -106,23 +111,44 @@ type Height struct {
 }
 
 type Sources struct {
-	UnlocatedRequests         int64             `json:"unlocated_proposal_requests"`
-	ProcessingInvalidPayloads int64             `json:"incomplete_logged_payloads"`
-	ProcessingUnlocated       int64             `json:"unlocated_processing_handlers"`
-	ProcessingVersion         string            `json:"processing_version"`
-	ProcessingScopes          []ProcessingScope `json:"processing_scopes"`
-	LogProfile                string            `json:"log_profile"`
-	LogProfileSHA             string            `json:"log_profile_sha256"`
-	LogNormalizer             string            `json:"log_normalizer"`
-	FrameNormalizer           string            `json:"frame_normalizer,omitempty"`
-	RuntimeNormalizer         string            `json:"runtime_normalizer,omitempty"`
-	LogSHA                    string            `json:"log_sha256"`
-	LogBytes                  int64             `json:"log_bytes"`
-	LogStats                  logs.Stats        `json:"log_diagnostics"`
-	Frames                    *messages.Summary `json:"frames,omitempty"`
-	FrameStats                *messages.Stats   `json:"frame_diagnostics,omitempty"`
-	RuntimeSHA                string            `json:"runtime_sha256,omitempty"`
-	ChainSHA                  string            `json:"chain_sha256,omitempty"`
+	Inputs                    *InputObservationSummary `json:"input_observations,omitempty"`
+	GenesisSHA                string                   `json:"genesis_sha256,omitempty"`
+	UnlocatedRequests         int64                    `json:"unlocated_proposal_requests"`
+	ProcessingInvalidPayloads int64                    `json:"incomplete_logged_payloads"`
+	ProcessingUnlocated       int64                    `json:"unlocated_processing_handlers"`
+	ProcessingVersion         string                   `json:"processing_version"`
+	ProcessingScopes          []ProcessingScope        `json:"processing_scopes"`
+	LogProfile                string                   `json:"log_profile"`
+	LogProfileSHA             string                   `json:"log_profile_sha256"`
+	LogNormalizer             string                   `json:"log_normalizer"`
+	FrameNormalizer           string                   `json:"frame_normalizer,omitempty"`
+	RuntimeNormalizer         string                   `json:"runtime_normalizer,omitempty"`
+	LogSHA                    string                   `json:"log_sha256"`
+	LogBytes                  int64                    `json:"log_bytes"`
+	LogStats                  logs.Stats               `json:"log_diagnostics"`
+	Frames                    *messages.Summary        `json:"frames,omitempty"`
+	FrameStats                *messages.Stats          `json:"frame_diagnostics,omitempty"`
+	RuntimeSHA                string                   `json:"runtime_sha256,omitempty"`
+	ChainSHA                  string                   `json:"chain_sha256,omitempty"`
+}
+
+// InputObservationSummary describes a verified capture, not a successful
+// reconstruction. Declared scope matches are not proof of delivery coverage.
+type InputObservationSummary struct {
+	Format               string   `json:"format"`
+	Normalizer           string   `json:"normalizer"`
+	SHA256               string   `json:"sha256"`
+	Bytes                int64    `json:"bytes"`
+	Run                  string   `json:"run"`
+	FrameRun             string   `json:"frame_run"`
+	BinarySHA            string   `json:"binary_sha256"`
+	SourceCommit         string   `json:"source_commit"`
+	GenesisSHA           string   `json:"genesis_sha256"`
+	Inputs               int64    `json:"inputs"`
+	Answers              int64    `json:"application_answers"`
+	CaptureComplete      bool     `json:"capture_complete"`
+	Unavailable          []string `json:"unavailable"`
+	DeclaredScopeMatches int64    `json:"declared_scope_matches"`
 }
 
 type Assessment struct {

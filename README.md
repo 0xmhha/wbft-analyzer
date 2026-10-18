@@ -743,7 +743,7 @@ The 72-hour acceptance run with a node restart and RPC interruption remains a
 separate runtime check; short regression tests do not complete that requirement.
 
 
-### Log reconstruction input assessment
+### Log reconstruction and observable core comparison
 
 Before reconstructing inputs from logs and wire captures, inspect a fixed
 source bundle without a database or network connection:
@@ -787,6 +787,42 @@ This stage does not emit `complete`, reconstruct core inputs or produce a
 cross-implementation output comparison. Exit 0 means the assessment was
 written, not that a core replay completed. The closed-journal command below
 continues to require its original recorded inputs.
+
+#### Closed processing capture execution
+
+Add `--execute` to compare a closed processing-boundary capture with the
+linked WBFT core. The manifest must also bind `genesis` and
+`input_observations` files, and each selected processing instance must have
+an explicit same-execution scope. Source version, signed own-content anchors,
+continuous input order, received content, timer arms, configuration and exact
+recorded application answers are checked before a height can be `complete`.
+Missing or ambiguous evidence stops that instance and retains `partial` or
+`not_possible`. An Info-only source remains `not_possible`.
+
+The comparison model `wbft-observable-state-actions/1` covers the full
+observable state context, own unsigned broadcast contents, timer arm views
+and durations, and accepted sealed-header handovers. Differences are
+cross-implementation candidates, not specification verdicts. Signatures,
+packet delivery and application block import are outside this model. Source
+processing-boundary clocks are not wire arrival clocks; derived timer
+generations and reconstructed ordinals are not native journal identities.
+
+To retain a closed result, first import the same log into a completed log
+dataset, then supply `--execute --db DSN --dataset ID --input LOG_ID`.
+Storage checks the network, node, profile and exact log fingerprint. Saving
+is atomic and the same result reuses its existing ID. Local paths and payload
+bytes are excluded. The reconstruction view shows completeness, original
+coordinates, state/action comparisons, candidate differences and bounded
+step playback. Reduced-motion preferences disable transition effects.
+
+Below `/v1/networks/{net}/datasets/{dataset}`, read the latest 100 summaries
+at `/reconstruction`, one result at `/reconstruction/{reconstruction}`, and
+immutable comparison pages at `/reconstruction/{reconstruction}/steps`.
+Pages accept `after` (a storage position), `limit` (1..100), full decimal
+`height`, exact log `run`, and `different=true` filters. Result summaries
+retain height assessments but omit step arrays; pages contain the steps.
+Original source sequence, reconstructed input ordinal and page position stay
+separate. Native journal replay continues to use the command below.
 
 #### Processing-source witnesses
 
@@ -1953,3 +1989,29 @@ File hashes and exact input/file/row pointers open each original header/footer
 from the messages page. Notifications have no protocol payload or inferred core
 request association. They do not independently authenticate a downloader result
 or establish consensus-policy success. Source reveals respect reduced motion.
+
+#### Selected step records for independent inspection
+
+In the reconstruction view, select an input and use **Download step for
+inspection**. The file retains the selected height status, source fingerprints,
+original processing sequence, reconstructed ordinal, observation instance and
+observable state/action difference candidates. It excludes paths and raw
+payloads. The file checksum is shown when the browser supports it.
+
+The same record is available below the result at
+`/reconstruction/{reconstruction}/steps/{position}/review`. `position` is the
+one-based comparison page position, not an original source sequence. An old
+result without the required source identities returns 409; absent steps
+return 404.
+
+For an offline execution, use `reconstruct --execute --review-position N`
+with the original manifest and height range. This emits one
+`wbft-reconstruction-review/1` record instead of the complete result.
+The parent identity hashes the compact typed execution result, while a
+packet's file checksum covers its own exact bytes.
+
+Pass the file to `wbft-inspector reconstruction --packet FILE --sha256 HASH`.
+The independent reader checks the bounded typed record and optional expected
+checksum. Packet validation keeps `specification_verdict: not_evaluated`;
+it cannot authenticate source truth or determine specification compliance
+without the original evidence. A partial or unapplied step stays labelled.

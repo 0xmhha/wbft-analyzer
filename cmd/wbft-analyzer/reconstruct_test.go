@@ -39,6 +39,11 @@ func TestReconstructionCommandKeepsUnavailableHeightsAndRejectsChangedInput(t *t
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil || len(result.Heights) != 2 || result.Heights[0].Status != "not_possible" || result.Heights[1].Status != "not_possible" || result.CoreExecuted {
 		t.Fatal(result, err)
 	}
+	stdout.Reset()
+	stderr.Reset()
+	if code := run(append(append([]string{}, args...), "--execute", "--review-position", "1"), &stdout, &stderr); code != exitDataErr || stdout.Len() != 0 {
+		t.Fatal("Info-only source manufactured a review step", code, stdout.String(), stderr.String())
+	}
 	if err := os.WriteFile(filepath.Join(dir, "log.jsonl"), []byte("changed"), 0600); err != nil {
 		t.Fatal(err)
 	}

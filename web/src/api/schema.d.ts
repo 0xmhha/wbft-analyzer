@@ -634,6 +634,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/networks/{net}/datasets/{dataset}/reconstruction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest 100 closed log reconstruction summaries, separate from native journal replay. */
+        get: operations["listReconstructionRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/reconstruction/{reconstruction}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Source fingerprints, completeness by height and comparison model. Step arrays are empty; immutable pages provide compared projections. */
+        get: operations["getReconstructionRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/reconstruction/{reconstruction}/steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** At most 100 reconstructed comparisons with original source pointers and separate page positions; no native journal step identity or payloads. */
+        get: operations["listReconstructionSteps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/networks/{net}/datasets/{dataset}/reconstruction/{reconstruction}/steps/{position}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One bounded source-bound comparison packet for independent review; no native journal identity or specification verdict. */
+        get: operations["getReconstructionReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/networks/{net}/datasets/{dataset}/reexec": {
         parameters: {
             query?: never;
@@ -1671,6 +1739,14 @@ export interface components {
             state: string;
             webhook_error?: string;
         };
+        InputobsParameters: {
+            allowed_future_block_seconds: string;
+            block_period_seconds: string;
+            epoch: string;
+            max_request_timeout_seconds: string;
+            proposer_policy: string;
+            request_timeout_ms: string;
+        };
         LatencyBucket: {
             /** Format: int64 */
             count: number;
@@ -2479,6 +2555,253 @@ export interface components {
             samples: components["schemas"]["LatencySample"][];
             /** Format: int64 */
             total: number;
+        };
+        ReconstructContentAnchor: {
+            frame: components["schemas"]["ReconstructPoint"];
+            log: components["schemas"]["ReconstructPoint"];
+            payload_sha256: string;
+        };
+        ReconstructDifferenceCandidate: {
+            actual?: components["schemas"]["ReconstructProjection"] | null;
+            expected?: components["schemas"]["ReconstructProjection"] | null;
+            kind: string;
+        };
+        ReconstructEvidence: {
+            /** Format: int64 */
+            count: number;
+            examples: components["schemas"]["ReconstructPoint"][];
+            kind: string;
+        };
+        ReconstructExecutionResult: {
+            all_improvements_off: boolean;
+            chain_id: string;
+            comparison_model: string;
+            core_executed: boolean;
+            core_version: string;
+            execution_version: string;
+            executions: components["schemas"]["ReconstructHeightExecution"][];
+            from_height: string;
+            genesis_hash: string;
+            heights: components["schemas"]["ReconstructHeight"][];
+            node: string;
+            phase: string;
+            sources: components["schemas"]["ReconstructSources"];
+            to_height: string;
+            version: string;
+        };
+        ReconstructExecutionStep: {
+            computed: components["schemas"]["ReconstructProjection"][];
+            core_applied: boolean;
+            difference_candidates: components["schemas"]["ReconstructDifferenceCandidate"][];
+            input: components["schemas"]["ReconstructReconstructedInput"];
+            issues: string[];
+            observed: components["schemas"]["ReconstructProjection"][];
+        };
+        ReconstructHeight: {
+            evidence: components["schemas"]["ReconstructEvidence"][];
+            height: string;
+            issues: string[];
+            processing_witnesses?: components["schemas"]["ReconstructProcessingWitness"][];
+            proposal_requests?: components["schemas"]["ReconstructProposalRequestWitness"][];
+            status: string;
+        };
+        ReconstructHeightExecution: {
+            /** Format: int64 */
+            difference_candidates: number;
+            height: string;
+            issues: string[];
+            log_run: string;
+            status: string;
+            steps: components["schemas"]["ReconstructExecutionStep"][];
+        };
+        ReconstructInputObservationSummary: {
+            /** Format: int64 */
+            application_answers: number;
+            binary_sha256: string;
+            /** Format: int64 */
+            bytes: number;
+            capture_complete: boolean;
+            /** Format: int64 */
+            declared_scope_matches: number;
+            format: string;
+            frame_run: string;
+            genesis_sha256: string;
+            /** Format: int64 */
+            inputs: number;
+            normalizer: string;
+            run: string;
+            sha256: string;
+            source_commit: string;
+            unavailable: string[];
+        };
+        ReconstructPoint: {
+            block_index?: string;
+            file: string;
+            kind: string;
+            /** Format: int64 */
+            line?: number;
+            run?: string;
+            sequence?: string;
+            view_inferred?: boolean;
+        };
+        ReconstructProcessingCandidate: {
+            digest: string;
+            payload_sha256: string;
+            peer: string;
+            source: components["schemas"]["ReconstructPoint"];
+        };
+        ReconstructProcessingScope: {
+            anchors: components["schemas"]["ReconstructContentAnchor"][];
+            /** Format: int64 */
+            distinct_payloads: number;
+            frame_run: string;
+            from_t: string;
+            log_run: string;
+            status: string;
+            to_t: string;
+        };
+        ReconstructProcessingWitness: {
+            accepted?: components["schemas"]["ReconstructPoint"] | null;
+            application_verification: string;
+            /** Format: int64 */
+            candidate_count: number;
+            candidates: components["schemas"]["ReconstructProcessingCandidate"][];
+            candidates_truncated: boolean;
+            core_input_ready: boolean;
+            declared_digest?: string;
+            handler: components["schemas"]["ReconstructPoint"];
+            height: string;
+            phase: string;
+            round: string;
+            signer?: string;
+            /** Format: int64 */
+            source_uses: number;
+            status: string;
+        };
+        ReconstructProjection: {
+            argument_sha256?: string;
+            code?: string;
+            digest?: string;
+            duration_ns?: string;
+            duration_seconds?: string;
+            height?: string;
+            kind: string;
+            method?: string;
+            parameters?: components["schemas"]["InputobsParameters"] | null;
+            proposer?: string;
+            round?: string;
+            running?: boolean | null;
+            source?: components["schemas"]["ReconstructPoint"] | null;
+            state?: string;
+            timer?: string;
+            valset_digest?: string;
+        };
+        ReconstructProposalRequestWitness: {
+            body_source?: components["schemas"]["ReconstructProcessingCandidate"] | null;
+            core_input_ready: boolean;
+            height: string;
+            message_handler?: components["schemas"]["ReconstructPoint"] | null;
+            /** Format: int64 */
+            proposal_payload_count: number;
+            request: components["schemas"]["ReconstructPoint"];
+            round: string;
+            status: string;
+        };
+        ReconstructReconstructedInput: {
+            application?: components["schemas"]["ReconstructPoint"] | null;
+            content?: components["schemas"]["ReconstructProcessingCandidate"] | null;
+            content_model?: string;
+            derived_timer_generation?: string;
+            head?: components["schemas"]["ReconstructPoint"] | null;
+            height: string;
+            kind: string;
+            observation_instance?: string;
+            ordinal: string;
+            processing_mono_ns?: string;
+            receive_clock?: string;
+            round: string;
+            source: components["schemas"]["ReconstructPoint"];
+            timer_arm?: components["schemas"]["ReconstructPoint"] | null;
+            via: string;
+        };
+        ReconstructReviewHeight: {
+            height: string;
+            issues: string[];
+            status: string;
+        };
+        ReconstructReviewNetwork: {
+            chain_id: string;
+            genesis_hash: string;
+        };
+        ReconstructReviewPacket: {
+            all_improvements_off: boolean;
+            classification: string;
+            comparison_model: string;
+            core_version: string;
+            execution_version: string;
+            format: string;
+            height: components["schemas"]["ReconstructReviewHeight"];
+            log_run: string;
+            network: components["schemas"]["ReconstructReviewNetwork"];
+            node: string;
+            /** Format: int64 */
+            position: number;
+            result_sha256: string;
+            source: components["schemas"]["ReconstructReviewSource"];
+            specification_verdict: string;
+            step: components["schemas"]["ReconstructExecutionStep"];
+        };
+        ReconstructReviewSource: {
+            binary_sha256: string;
+            capture_complete: boolean;
+            capture_issues: string[];
+            chain_sha256: string;
+            frame_run: string;
+            frame_sha256: string;
+            genesis_sha256: string;
+            log_normalizer: string;
+            log_profile: string;
+            log_profile_sha256: string;
+            log_sha256: string;
+            processing_format: string;
+            processing_instance: string;
+            processing_normalizer: string;
+            processing_run: string;
+            processing_sha256: string;
+            source_commit: string;
+        };
+        ReconstructSources: {
+            chain_sha256?: string;
+            frame_diagnostics?: components["schemas"]["MessagesStats"] | null;
+            frame_normalizer?: string;
+            frames?: components["schemas"]["MessagesSummary"] | null;
+            genesis_sha256?: string;
+            /** Format: int64 */
+            incomplete_logged_payloads: number;
+            input_observations?: components["schemas"]["ReconstructInputObservationSummary"] | null;
+            /** Format: int64 */
+            log_bytes: number;
+            log_diagnostics: components["schemas"]["LogsStats"];
+            log_normalizer: string;
+            log_profile: string;
+            log_profile_sha256: string;
+            log_sha256: string;
+            processing_scopes: components["schemas"]["ReconstructProcessingScope"][];
+            processing_version: string;
+            runtime_normalizer?: string;
+            runtime_sha256?: string;
+            /** Format: int64 */
+            unlocated_processing_handlers: number;
+            /** Format: int64 */
+            unlocated_proposal_requests: number;
+        };
+        ReconstructionList: {
+            runs: components["schemas"]["StoreReconstructionRun"][];
+        };
+        ReconstructionPage: {
+            /** Format: int64 */
+            next: number | null;
+            steps: components["schemas"]["StoreReconstructionStep"][];
         };
         ReexecAnswerSource: {
             /** Format: int64 */
@@ -4285,6 +4608,54 @@ export interface components {
             snapshot: string;
             to_t: string | null;
             version: string;
+        };
+        StoreReconstructionDetail: {
+            /** Format: int64 */
+            complete_heights: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: int64 */
+            dataset_id: number;
+            /** Format: int64 */
+            difference_candidates: number;
+            from_height: string;
+            /** Format: int64 */
+            heights: number;
+            /** Format: int64 */
+            id: number;
+            input_id: string;
+            result_sha256: string;
+            /** Format: int64 */
+            steps: number;
+            summary: components["schemas"]["ReconstructExecutionResult"];
+            to_height: string;
+        };
+        StoreReconstructionRun: {
+            /** Format: int64 */
+            complete_heights: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: int64 */
+            dataset_id: number;
+            /** Format: int64 */
+            difference_candidates: number;
+            from_height: string;
+            /** Format: int64 */
+            heights: number;
+            /** Format: int64 */
+            id: number;
+            input_id: string;
+            result_sha256: string;
+            /** Format: int64 */
+            steps: number;
+            to_height: string;
+        };
+        StoreReconstructionStep: {
+            height: string;
+            log_run: string;
+            /** Format: int64 */
+            position: number;
+            step: components["schemas"]["ReconstructExecutionStep"];
         };
         StoreReexecEventEvidence: {
             /** Format: int64 */
@@ -6586,6 +6957,197 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LatencySummary"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listReconstructionRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconstructionList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getReconstructionRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description immutable source reconstruction ID */
+                reconstruction: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreReconstructionDetail"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listReconstructionSteps: {
+        parameters: {
+            query?: {
+                /** @description storage page position, distinct from actual source and reconstructed ordinals */
+                after?: number;
+                /** @description 1..100, default 50 */
+                limit?: number;
+                /** @description full decimal active height */
+                height?: string;
+                /** @description exact log run identity */
+                run?: string;
+                /** @description true selects difference candidates; false retains all steps */
+                different?: string;
+            };
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description immutable source reconstruction ID */
+                reconstruction: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconstructionPage"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getReconstructionReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description network ID */
+                net: number;
+                /** @description run dataset ID belonging to the network */
+                dataset: number;
+                /** @description immutable source reconstruction ID */
+                reconstruction: number;
+                /** @description positive immutable storage position */
+                position: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconstructReviewPacket"];
                 };
             };
             /** @description the request failed */
