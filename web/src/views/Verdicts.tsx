@@ -1,7 +1,25 @@
 import { get } from "../api/client";
+import type { Schemas } from "../api/client";
 import { buildMatrix } from "../matrix";
 import { Glyph, Labelled, Pending, useLoad } from "../ui";
 import { absent, partlyPassed, verdictEncoding, verdicts } from "../visual";
+
+export function ReportIdentities({ reports }: { reports: Schemas["Report"][] }) {
+  return <>
+    <h2>Report build and stored scope</h2>
+    <p className="muted">Inspector build identifies the report writer. Stored scope describes this copy's classification; a public inspector report may be stored privately.</p>
+    <div className="scroll report-identities" role="region" aria-label="Report build and stored scope" tabIndex={0}>
+      <table>
+        <thead><tr><th>Column</th><th>Report identity</th><th>Inspector build</th><th>Stored scope</th></tr></thead>
+        <tbody>{reports.map((r, i) => <tr key={r.id}>
+          <th scope="row">Report {i + 1}</th>
+          <td><div>{r.finished_at}</div><div>{r.run_id}</div><code>{r.id}</code></td>
+          <td>{r.inspector_build}</td><td>{r.visibility}</td>
+        </tr>)}</tbody>
+      </table>
+    </div>
+  </>;
+}
 
 /** Where are the specification violations? Requirements by reports, whole-run verdicts. */
 export function Verdicts({ net, onAuth }: { net: number; onAuth: () => void }) {
@@ -31,14 +49,16 @@ export function Verdicts({ net, onAuth }: { net: number; onAuth: () => void }) {
       <Pending load={load} onAuth={onAuth} />
       {load.state === "done" && load.data.reports.length === 0 && <p className="muted">No report on this network.</p>}
       {load.state === "done" && load.data.reports.length > 0 && (
+        <>
+        <ReportIdentities reports={load.data.reports} />
         <div className="scroll">
           <table className="matrix">
             <thead>
               <tr>
                 <th>Requirement</th>
-                {load.data.reports.map((r) => (
+                {load.data.reports.map((r, i) => (
                   <th key={r.id} className="col" title={`${r.run_id}\n${r.id}`}>
-                    {r.finished_at.slice(0, 16).replace("T", " ")}
+                    Report {i + 1} · {r.finished_at.slice(0, 16).replace("T", " ")}
                   </th>
                 ))}
                 <th className="num">FAIL</th>
@@ -59,6 +79,7 @@ export function Verdicts({ net, onAuth }: { net: number; onAuth: () => void }) {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </section>
   );

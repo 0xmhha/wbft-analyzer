@@ -11,6 +11,8 @@ function report(id: string, finished: string): Schemas["Report"] {
     started_at: finished,
     finished_at: finished,
     inspector_version: "v",
+    inspector_build: "public",
+    visibility: "public",
     inspector_commit: "c",
     catalog_sha256: "x",
     spec_commit: "s",
