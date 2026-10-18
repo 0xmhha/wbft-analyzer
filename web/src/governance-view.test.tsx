@@ -94,3 +94,26 @@ it("shows reported empty mirror keys without treating them as verified eligibili
  const present=renderToStaticMarkup(<EntryDetails entry={{call_ordinal:2,ordinal:1,normalized_pointer:"/data",mirror:{...mirror,bls_public_keys:["0x"+"a".repeat(96)]}}}/>);
  expect(present).toContain("empty keys reported: 0");
 });
+
+it("keeps missing source annotations distinct from decoded arguments and replay evidence",()=>{
+ const html=renderToStaticMarkup(<EntryDetails entry={entry}/>);
+ expect(html).toContain('aria-label="Source annotation availability"');
+ expect(html).toContain("Awaiting source annotations");
+ expect(html).toContain("Executing proposal ID: not reported by this source");
+ expect(html).toContain("Validator-change annotation: not reported by this source");
+ expect(html).toContain("replay evidence are shown separately and do not fill these fields");
+});
+it("preserves a supplied zero proposal identifier without a missing-annotation notice",()=>{
+ const supplied={...operation,executing_proposal_id:"0x0",validator_change:{status:"reported-opaque",value:{sha256:hash,length:2}}};
+ const html=renderToStaticMarkup(<EntryDetails entry={{...entry,operation:supplied}}/>);
+ expect(html).toContain("0 (0x0)");expect(html).toContain("reported-opaque");
+ expect(html).not.toContain('aria-label="Source annotation availability"');
+});
+it("names only the source annotation that is missing",()=>{
+ const missingChange=renderToStaticMarkup(<EntryDetails entry={{...entry,operation:{...operation,executing_proposal_id:"0x5"}}}/>);
+ expect(missingChange).toContain("Validator-change annotation: not reported by this source");
+ expect(missingChange).not.toContain("Executing proposal ID: not reported by this source");
+ const missingID=renderToStaticMarkup(<EntryDetails entry={{...entry,operation:{...operation,validator_change:{status:"reported-opaque",value:{sha256:hash,length:2}}}}}/>);
+ expect(missingID).toContain("Executing proposal ID: not reported by this source");
+ expect(missingID).not.toContain("Validator-change annotation: not reported by this source");
+});
