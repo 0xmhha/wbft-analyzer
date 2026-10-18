@@ -3316,6 +3316,7 @@ export interface components {
             catalog_sha256: string;
             finished_at: string;
             id: string;
+            inspector_build: string;
             inspector_commit: string;
             inspector_version: string;
             /** Format: date-time */
@@ -3331,6 +3332,8 @@ export interface components {
             started_at: string;
             /** @description a JSON value admitted by the source or report reader */
             summary: unknown;
+            /** @enum {string} */
+            visibility: "public" | "private";
         };
         ReportList: {
             reports: components["schemas"]["Report"][];

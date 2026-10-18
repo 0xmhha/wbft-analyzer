@@ -56,6 +56,8 @@ type ReportInfo struct {
 	FinishedAt       string
 	InspectorVersion string
 	InspectorCommit  string
+	InspectorBuild   string
+	Visibility       string
 	CatalogSHA256    string
 	SpecCommit       string
 	Network          json.RawMessage
@@ -64,21 +66,21 @@ type ReportInfo struct {
 	LoadedAt         time.Time
 }
 
-const reportColumns = `id, network_id, run_id, started_at, finished_at, inspector_version, inspector_commit,
-	catalog_sha256, spec_commit, network, range_, summary, loaded_at`
+const reportColumns = `r.id, r.network_id, r.run_id, r.started_at, r.finished_at, r.inspector_version, r.inspector_commit,
+	r.catalog_sha256, r.spec_commit, r.network, r.range_, r.summary, r.loaded_at, r.inspector_build, d.visibility`
 
 func scanReport(r pgx.CollectableRow) (ReportInfo, error) {
 	var x ReportInfo
 	err := r.Scan(&x.ID, &x.NetworkID, &x.RunID, &x.StartedAt, &x.FinishedAt, &x.InspectorVersion, &x.InspectorCommit,
-		&x.CatalogSHA256, &x.SpecCommit, &x.Network, &x.Range, &x.Summary, &x.LoadedAt)
+		&x.CatalogSHA256, &x.SpecCommit, &x.Network, &x.Range, &x.Summary, &x.LoadedAt, &x.InspectorBuild, &x.Visibility)
 	return x, err
 }
 
 // Reports returns the reports of a network (all reports when networkID is
 // nil), by finish time and ID.
 func (s *Store) Reports(ctx context.Context, networkID *int64) ([]ReportInfo, error) {
-	rows, err := s.pool.Query(ctx, `SELECT `+reportColumns+` FROM reports
-		WHERE $1::bigint IS NULL OR network_id = $1 ORDER BY finished_at, id`, networkID)
+	rows, err := s.pool.Query(ctx, `SELECT `+reportColumns+` FROM reports r JOIN datasets d ON d.id=r.dataset_id
+		WHERE $1::bigint IS NULL OR r.network_id = $1 ORDER BY r.finished_at, r.id`, networkID)
 	if err != nil {
 		return nil, fmt.Errorf("store: %w", err)
 	}
@@ -87,7 +89,7 @@ func (s *Store) Reports(ctx context.Context, networkID *int64) ([]ReportInfo, er
 
 // Report returns one report, or ErrNotFound.
 func (s *Store) Report(ctx context.Context, id string) (ReportInfo, error) {
-	rows, err := s.pool.Query(ctx, `SELECT `+reportColumns+` FROM reports WHERE id = $1`, id)
+	rows, err := s.pool.Query(ctx, `SELECT `+reportColumns+` FROM reports r JOIN datasets d ON d.id=r.dataset_id WHERE r.id = $1`, id)
 	if err != nil {
 		return ReportInfo{}, fmt.Errorf("store: %w", err)
 	}

@@ -32,6 +32,11 @@ th { font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line)
 
 .matrix th.col { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 11px; padding: 4px 2px; }
 .matrix td.cell { padding: 1px 3px; }
+.report-identities table { min-width: 42rem; table-layout: fixed; width: 100%; }
+.report-identities th:first-child { width: 6rem; }
+.report-identities th:nth-child(2) { width: 20rem; }
+.report-identities td { overflow-wrap: anywhere; }
+.report-identities:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
 .glyph { display: inline-block; vertical-align: middle; }
 .glyph circle, .glyph rect { stroke: none; }

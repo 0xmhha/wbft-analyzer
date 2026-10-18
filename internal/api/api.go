@@ -170,6 +170,8 @@ type Report struct {
 	FinishedAt       string          `json:"finished_at"`
 	InspectorVersion string          `json:"inspector_version"`
 	InspectorCommit  string          `json:"inspector_commit"`
+	InspectorBuild   string          `json:"inspector_build"`
+	Visibility       string          `json:"visibility" enum:"public,private"`
 	CatalogSHA256    string          `json:"catalog_sha256"`
 	SpecCommit       string          `json:"spec_commit"`
 	Network          json.RawMessage `json:"network"`
@@ -180,7 +182,7 @@ type Report struct {
 
 func toReport(x store.ReportInfo) Report {
 	return Report{ID: x.ID, NetworkID: x.NetworkID, RunID: x.RunID, StartedAt: x.StartedAt, FinishedAt: x.FinishedAt,
-		InspectorVersion: x.InspectorVersion, InspectorCommit: x.InspectorCommit, CatalogSHA256: x.CatalogSHA256,
+		InspectorVersion: x.InspectorVersion, InspectorCommit: x.InspectorCommit, InspectorBuild: x.InspectorBuild, Visibility: x.Visibility, CatalogSHA256: x.CatalogSHA256,
 		SpecCommit: x.SpecCommit, Network: orNull(x.Network), Range: orNull(x.Range), Summary: orNull(x.Summary), LoadedAt: x.LoadedAt}
 }
 

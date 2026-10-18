@@ -7748,6 +7748,9 @@
           "id": {
             "type": "string"
           },
+          "inspector_build": {
+            "type": "string"
+          },
           "inspector_commit": {
             "type": "string"
           },
@@ -7782,12 +7785,20 @@
           },
           "summary": {
             "description": "a JSON value admitted by the source or report reader"
+          },
+          "visibility": {
+            "enum": [
+              "public",
+              "private"
+            ],
+            "type": "string"
           }
         },
         "required": [
           "catalog_sha256",
           "finished_at",
           "id",
+          "inspector_build",
           "inspector_commit",
           "inspector_version",
           "loaded_at",
@@ -7797,7 +7808,8 @@
           "run_id",
           "spec_commit",
           "started_at",
-          "summary"
+          "summary",
+          "visibility"
         ],
         "type": "object"
       },

@@ -1954,6 +1954,12 @@ database still requires verified input adoption into its own namespace
 before retained objects can be exported; physical ownership metadata is
 never included in the bundle.
 
+Report list and detail responses retain the writer's `inspector_build` and
+the owning dataset's `visibility` separately. The verdict screen identifies
+each report column with its original run and report ID, writer build and
+stored scope. A public inspector report stored in a private deployment
+still identifies its writer as public while its stored scope is private.
+
 
 ### Measured scheduler records from R01
 
