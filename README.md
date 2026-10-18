@@ -2076,6 +2076,12 @@ claims. An epoch key match does not verify diligence, validator selection,
 aggregate seals, transaction causation or complete governance history.
 
 
+Operation details keep source-supplied annotations separate from decoded input
+and independent replay. When an executing proposal ID or validator-change
+annotation was not supplied, an explicit availability note identifies the missing
+fields. A reported zero proposal ID remains a valid value. Decoded calls, logs
+and replay evidence do not fill missing source annotations.
+
 ### Independent governance registry transitions
 
 Replay the same checksummed original genesis and complete block sequence with
