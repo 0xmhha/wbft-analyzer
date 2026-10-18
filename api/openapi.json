@@ -1488,6 +1488,38 @@
         ],
         "type": "object"
       },
+      "InputobsParameters": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed_future_block_seconds": {
+            "type": "string"
+          },
+          "block_period_seconds": {
+            "type": "string"
+          },
+          "epoch": {
+            "type": "string"
+          },
+          "max_request_timeout_seconds": {
+            "type": "string"
+          },
+          "proposer_policy": {
+            "type": "string"
+          },
+          "request_timeout_ms": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "allowed_future_block_seconds",
+          "block_period_seconds",
+          "epoch",
+          "max_request_timeout_seconds",
+          "proposer_policy",
+          "request_timeout_ms"
+        ],
+        "type": "object"
+      },
       "LatencyBucket": {
         "additionalProperties": false,
         "properties": {
@@ -4790,6 +4822,1064 @@
           "next",
           "samples",
           "total"
+        ],
+        "type": "object"
+      },
+      "ReconstructContentAnchor": {
+        "additionalProperties": false,
+        "properties": {
+          "frame": {
+            "$ref": "#/components/schemas/ReconstructPoint"
+          },
+          "log": {
+            "$ref": "#/components/schemas/ReconstructPoint"
+          },
+          "payload_sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "frame",
+          "log",
+          "payload_sha256"
+        ],
+        "type": "object"
+      },
+      "ReconstructDifferenceCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "actual": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconstructProjection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expected": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconstructProjection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "ReconstructEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructPoint"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "examples",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "ReconstructExecutionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "all_improvements_off": {
+            "type": "boolean"
+          },
+          "chain_id": {
+            "type": "string"
+          },
+          "comparison_model": {
+            "type": "string"
+          },
+          "core_executed": {
+            "type": "boolean"
+          },
+          "core_version": {
+            "type": "string"
+          },
+          "execution_version": {
+            "type": "string"
+          },
+          "executions": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructHeightExecution"
+            },
+            "type": "array"
+          },
+          "from_height": {
+            "type": "string"
+          },
+          "genesis_hash": {
+            "type": "string"
+          },
+          "heights": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructHeight"
+            },
+            "type": "array"
+          },
+          "node": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "sources": {
+            "$ref": "#/components/schemas/ReconstructSources"
+          },
+          "to_height": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "all_improvements_off",
+          "chain_id",
+          "comparison_model",
+          "core_executed",
+          "core_version",
+          "execution_version",
+          "executions",
+          "from_height",
+          "genesis_hash",
+          "heights",
+          "node",
+          "phase",
+          "sources",
+          "to_height",
+          "version"
+        ],
+        "type": "object"
+      },
+      "ReconstructExecutionStep": {
+        "additionalProperties": false,
+        "properties": {
+          "computed": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructProjection"
+            },
+            "type": "array"
+          },
+          "core_applied": {
+            "type": "boolean"
+          },
+          "difference_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructDifferenceCandidate"
+            },
+            "type": "array"
+          },
+          "input": {
+            "$ref": "#/components/schemas/ReconstructReconstructedInput"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "observed": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructProjection"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "computed",
+          "core_applied",
+          "difference_candidates",
+          "input",
+          "issues",
+          "observed"
+        ],
+        "type": "object"
+      },
+      "ReconstructHeight": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructEvidence"
+            },
+            "type": "array"
+          },
+          "height": {
+            "type": "string"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "processing_witnesses": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructProcessingWitness"
+            },
+            "type": "array"
+          },
+          "proposal_requests": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructProposalRequestWitness"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "evidence",
+          "height",
+          "issues",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ReconstructHeightExecution": {
+        "additionalProperties": false,
+        "properties": {
+          "difference_candidates": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "height": {
+            "type": "string"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "log_run": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructExecutionStep"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "difference_candidates",
+          "height",
+          "issues",
+          "log_run",
+          "status",
+          "steps"
+        ],
+        "type": "object"
+      },
+      "ReconstructInputObservationSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "application_answers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "binary_sha256": {
+            "type": "string"
+          },
+          "bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "capture_complete": {
+            "type": "boolean"
+          },
+          "declared_scope_matches": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "format": {
+            "type": "string"
+          },
+          "frame_run": {
+            "type": "string"
+          },
+          "genesis_sha256": {
+            "type": "string"
+          },
+          "inputs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "normalizer": {
+            "type": "string"
+          },
+          "run": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "source_commit": {
+            "type": "string"
+          },
+          "unavailable": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "application_answers",
+          "binary_sha256",
+          "bytes",
+          "capture_complete",
+          "declared_scope_matches",
+          "format",
+          "frame_run",
+          "genesis_sha256",
+          "inputs",
+          "normalizer",
+          "run",
+          "sha256",
+          "source_commit",
+          "unavailable"
+        ],
+        "type": "object"
+      },
+      "ReconstructPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "block_index": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "line": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "run": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "string"
+          },
+          "view_inferred": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "file",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "ReconstructProcessingCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "digest": {
+            "type": "string"
+          },
+          "payload_sha256": {
+            "type": "string"
+          },
+          "peer": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ReconstructPoint"
+          }
+        },
+        "required": [
+          "digest",
+          "payload_sha256",
+          "peer",
+          "source"
+        ],
+        "type": "object"
+      },
+      "ReconstructProcessingScope": {
+        "additionalProperties": false,
+        "properties": {
+          "anchors": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructContentAnchor"
+            },
+            "type": "array"
+          },
+          "distinct_payloads": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "frame_run": {
+            "type": "string"
+          },
+          "from_t": {
+            "type": "string"
+          },
+          "log_run": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "to_t": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "anchors",
+          "distinct_payloads",
+          "frame_run",
+          "from_t",
+          "log_run",
+          "status",
+          "to_t"
+        ],
+        "type": "object"
+      },
+      "ReconstructProcessingWitness": {
+        "additionalProperties": false,
+        "properties": {
+          "accepted": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconstructPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "application_verification": {
+            "type": "string"
+          },
+          "candidate_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructProcessingCandidate"
+            },
+            "type": "array"
+          },
+          "candidates_truncated": {
+            "type": "boolean"
+          },
+          "core_input_ready": {
+            "type": "boolean"
+          },
+          "declared_digest": {
+            "type": "string"
+          },
+          "handler": {
+            "$ref": "#/components/schemas/ReconstructPoint"
+          },
+          "height": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "signer": {
+            "type": "string"
+          },
+          "source_uses": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "application_verification",
+          "candidate_count",
+          "candidates",
+          "candidates_truncated",
+          "core_input_ready",
+          "handler",
+          "height",
+          "phase",
+          "round",
+          "source_uses",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ReconstructProjection": {
+        "additionalProperties": false,
+        "properties": {
+          "argument_sha256": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "duration_ns": {
+            "type": "string"
+          },
+          "duration_seconds": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InputobsParameters"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposer": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "running": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconstructPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "timer": {
+            "type": "string"
+          },
+          "valset_digest": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "ReconstructProposalRequestWitness": {
+        "additionalProperties": false,
+        "properties": {
+          "body_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconstructProcessingCandidate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "core_input_ready": {
+            "type": "boolean"
+          },
+          "height": {
+            "type": "string"
+          },
+          "message_handler": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconstructPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposal_payload_count": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "request": {
+            "$ref": "#/components/schemas/ReconstructPoint"
+          },
+          "round": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "core_input_ready",
+          "height",
+          "proposal_payload_count",
+          "request",
+          "round",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ReconstructReconstructedInput": {
+        "additionalProperties": false,
+        "properties": {
+          "application": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconstructPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconstructProcessingCandidate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content_model": {
+            "type": "string"
+          },
+          "derived_timer_generation": {
+            "type": "string"
+          },
+          "head": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconstructPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "observation_instance": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "string"
+          },
+          "processing_mono_ns": {
+            "type": "string"
+          },
+          "receive_clock": {
+            "type": "string"
+          },
+          "round": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ReconstructPoint"
+          },
+          "timer_arm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconstructPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "via": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "height",
+          "kind",
+          "ordinal",
+          "round",
+          "source",
+          "via"
+        ],
+        "type": "object"
+      },
+      "ReconstructReviewHeight": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "type": "string"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "height",
+          "issues",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ReconstructReviewNetwork": {
+        "additionalProperties": false,
+        "properties": {
+          "chain_id": {
+            "type": "string"
+          },
+          "genesis_hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chain_id",
+          "genesis_hash"
+        ],
+        "type": "object"
+      },
+      "ReconstructReviewPacket": {
+        "additionalProperties": false,
+        "properties": {
+          "all_improvements_off": {
+            "type": "boolean"
+          },
+          "classification": {
+            "type": "string"
+          },
+          "comparison_model": {
+            "type": "string"
+          },
+          "core_version": {
+            "type": "string"
+          },
+          "execution_version": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "height": {
+            "$ref": "#/components/schemas/ReconstructReviewHeight"
+          },
+          "log_run": {
+            "type": "string"
+          },
+          "network": {
+            "$ref": "#/components/schemas/ReconstructReviewNetwork"
+          },
+          "node": {
+            "type": "string"
+          },
+          "position": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "result_sha256": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ReconstructReviewSource"
+          },
+          "specification_verdict": {
+            "type": "string"
+          },
+          "step": {
+            "$ref": "#/components/schemas/ReconstructExecutionStep"
+          }
+        },
+        "required": [
+          "all_improvements_off",
+          "classification",
+          "comparison_model",
+          "core_version",
+          "execution_version",
+          "format",
+          "height",
+          "log_run",
+          "network",
+          "node",
+          "position",
+          "result_sha256",
+          "source",
+          "specification_verdict",
+          "step"
+        ],
+        "type": "object"
+      },
+      "ReconstructReviewSource": {
+        "additionalProperties": false,
+        "properties": {
+          "binary_sha256": {
+            "type": "string"
+          },
+          "capture_complete": {
+            "type": "boolean"
+          },
+          "capture_issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "chain_sha256": {
+            "type": "string"
+          },
+          "frame_run": {
+            "type": "string"
+          },
+          "frame_sha256": {
+            "type": "string"
+          },
+          "genesis_sha256": {
+            "type": "string"
+          },
+          "log_normalizer": {
+            "type": "string"
+          },
+          "log_profile": {
+            "type": "string"
+          },
+          "log_profile_sha256": {
+            "type": "string"
+          },
+          "log_sha256": {
+            "type": "string"
+          },
+          "processing_format": {
+            "type": "string"
+          },
+          "processing_instance": {
+            "type": "string"
+          },
+          "processing_normalizer": {
+            "type": "string"
+          },
+          "processing_run": {
+            "type": "string"
+          },
+          "processing_sha256": {
+            "type": "string"
+          },
+          "source_commit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "binary_sha256",
+          "capture_complete",
+          "capture_issues",
+          "chain_sha256",
+          "frame_run",
+          "frame_sha256",
+          "genesis_sha256",
+          "log_normalizer",
+          "log_profile",
+          "log_profile_sha256",
+          "log_sha256",
+          "processing_format",
+          "processing_instance",
+          "processing_normalizer",
+          "processing_run",
+          "processing_sha256",
+          "source_commit"
+        ],
+        "type": "object"
+      },
+      "ReconstructSources": {
+        "additionalProperties": false,
+        "properties": {
+          "chain_sha256": {
+            "type": "string"
+          },
+          "frame_diagnostics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesStats"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "frame_normalizer": {
+            "type": "string"
+          },
+          "frames": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "genesis_sha256": {
+            "type": "string"
+          },
+          "incomplete_logged_payloads": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_observations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconstructInputObservationSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "log_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "log_diagnostics": {
+            "$ref": "#/components/schemas/LogsStats"
+          },
+          "log_normalizer": {
+            "type": "string"
+          },
+          "log_profile": {
+            "type": "string"
+          },
+          "log_profile_sha256": {
+            "type": "string"
+          },
+          "log_sha256": {
+            "type": "string"
+          },
+          "processing_scopes": {
+            "items": {
+              "$ref": "#/components/schemas/ReconstructProcessingScope"
+            },
+            "type": "array"
+          },
+          "processing_version": {
+            "type": "string"
+          },
+          "runtime_normalizer": {
+            "type": "string"
+          },
+          "runtime_sha256": {
+            "type": "string"
+          },
+          "unlocated_processing_handlers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "unlocated_proposal_requests": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "incomplete_logged_payloads",
+          "log_bytes",
+          "log_diagnostics",
+          "log_normalizer",
+          "log_profile",
+          "log_profile_sha256",
+          "log_sha256",
+          "processing_scopes",
+          "processing_version",
+          "unlocated_processing_handlers",
+          "unlocated_proposal_requests"
+        ],
+        "type": "object"
+      },
+      "ReconstructionList": {
+        "additionalProperties": false,
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/StoreReconstructionRun"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "runs"
+        ],
+        "type": "object"
+      },
+      "ReconstructionPage": {
+        "additionalProperties": false,
+        "properties": {
+          "next": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/StoreReconstructionStep"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "next",
+          "steps"
         ],
         "type": "object"
       },
@@ -12145,6 +13235,153 @@
         ],
         "type": "object"
       },
+      "StoreReconstructionDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "complete_heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "difference_candidates": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from_height": {
+            "type": "string"
+          },
+          "heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_id": {
+            "type": "string"
+          },
+          "result_sha256": {
+            "type": "string"
+          },
+          "steps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ReconstructExecutionResult"
+          },
+          "to_height": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "complete_heights",
+          "created_at",
+          "dataset_id",
+          "difference_candidates",
+          "from_height",
+          "heights",
+          "id",
+          "input_id",
+          "result_sha256",
+          "steps",
+          "summary",
+          "to_height"
+        ],
+        "type": "object"
+      },
+      "StoreReconstructionRun": {
+        "additionalProperties": false,
+        "properties": {
+          "complete_heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "difference_candidates": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from_height": {
+            "type": "string"
+          },
+          "heights": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_id": {
+            "type": "string"
+          },
+          "result_sha256": {
+            "type": "string"
+          },
+          "steps": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "to_height": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "complete_heights",
+          "created_at",
+          "dataset_id",
+          "difference_candidates",
+          "from_height",
+          "heights",
+          "id",
+          "input_id",
+          "result_sha256",
+          "steps",
+          "to_height"
+        ],
+        "type": "object"
+      },
+      "StoreReconstructionStep": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "type": "string"
+          },
+          "log_run": {
+            "type": "string"
+          },
+          "position": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "step": {
+            "$ref": "#/components/schemas/ReconstructExecutionStep"
+          }
+        },
+        "required": [
+          "height",
+          "log_run",
+          "position",
+          "step"
+        ],
+        "type": "object"
+      },
       "StoreReexecEventEvidence": {
         "additionalProperties": false,
         "properties": {
@@ -17264,6 +18501,332 @@
           }
         },
         "summary": "WBFT consecutive phase distributions, counts and raw-sample overall percentiles; missing and negative samples remain explicit."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/reconstruction": {
+      "get": {
+        "operationId": "listReconstructionRuns",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconstructionList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Latest 100 closed log reconstruction summaries, separate from native journal replay."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/reconstruction/{reconstruction}": {
+      "get": {
+        "operationId": "getReconstructionRun",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "immutable source reconstruction ID",
+            "in": "path",
+            "name": "reconstruction",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreReconstructionDetail"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Source fingerprints, completeness by height and comparison model. Step arrays are empty; immutable pages provide compared projections."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/reconstruction/{reconstruction}/steps": {
+      "get": {
+        "operationId": "listReconstructionSteps",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "immutable source reconstruction ID",
+            "in": "path",
+            "name": "reconstruction",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "storage page position, distinct from actual source and reconstructed ordinals",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "1..100, default 50",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "full decimal active height",
+            "in": "query",
+            "name": "height",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "exact log run identity",
+            "in": "query",
+            "name": "run",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "true selects difference candidates; false retains all steps",
+            "in": "query",
+            "name": "different",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconstructionPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "At most 100 reconstructed comparisons with original source pointers and separate page positions; no native journal step identity or payloads."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/reconstruction/{reconstruction}/steps/{position}/review": {
+      "get": {
+        "operationId": "getReconstructionReview",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "immutable source reconstruction ID",
+            "in": "path",
+            "name": "reconstruction",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "positive immutable storage position",
+            "in": "path",
+            "name": "position",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconstructReviewPacket"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "One bounded source-bound comparison packet for independent review; no native journal identity or specification verdict."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/reexec": {

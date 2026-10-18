@@ -67,6 +67,17 @@ capture() {
 	mkdir -p "$dir"
 	get() { curl -sf "$base$1" | jq -S . >"$dir/$2.json"; }
 	get /networks networks
+ local reconstruction_net reconstruction_dataset reconstruction_run
+ reconstruction_net=$(jq -er '.networks[]|select(.name=="synthetic-reconstruction")|.id' "$dir/networks.json")
+ get "/networks/$reconstruction_net/datasets" reconstruction-datasets
+ reconstruction_dataset=$(jq -er '.datasets[]|select(.name=="synthetic-reconstruction")|.id' "$dir/reconstruction-datasets.json")
+ get "/networks/$reconstruction_net/datasets/$reconstruction_dataset/reconstruction" reconstruction-runs
+ jq -e '(.runs|length)==1 and .runs[0].heights==2 and .runs[0].complete_heights==0 and .runs[0].steps==0' "$dir/reconstruction-runs.json" >/dev/null
+ reconstruction_run=$(jq -er '.runs[0].id' "$dir/reconstruction-runs.json")
+ get "/networks/$reconstruction_net/datasets/$reconstruction_dataset/reconstruction/$reconstruction_run" reconstruction-summary
+ jq -e '.summary.core_executed==false and (.summary.heights|length)==2 and all(.summary.heights[];.status=="not_possible")' "$dir/reconstruction-summary.json" >/dev/null
+ get "/networks/$reconstruction_net/datasets/$reconstruction_dataset/reconstruction/$reconstruction_run/steps" reconstruction-steps
+ jq -e '.steps==[] and .next==null' "$dir/reconstruction-steps.json" >/dev/null
  local scheduler_net scheduler_dataset
  scheduler_net=$(jq -er '.networks[]|select(.name=="synthetic-scheduler-source")|.id' "$dir/networks.json")
  get "/networks/$scheduler_net/datasets" scheduler-datasets
@@ -412,6 +423,24 @@ GOTIMER
 timer_dataset=$(jq -r .dataset_id "$out/timer-ingest.json")
 printf '%s\n' '{"request_timeout_seconds":"2"}' >"$work/timer-policy.json"
 "$bin" whatif --db "$src" --dataset "$timer_dataset" --input journal --chain "$work/timer-fixture/chain.rlp" --timer-policy "$work/timer-policy.json" >"$out/timer-experiment.json"
+# Synthetic Info-only logs retain unavailable heights after dump/restore.
+python3 - "$work" <<'PYRECONSTRUCTION'
+from pathlib import Path
+import json,hashlib,sys
+work=Path(sys.argv[1]);node='0x'+'2'*40
+raw=(json.dumps({'t':'2020-01-01T00:00:00Z','lvl':'info','msg':'WBFT: start new round','address':node,'next.seq':'1','next.round':'0'})+'\n').encode()
+path=work/'reconstruction-log.jsonl';path.write_bytes(raw)
+file={'path':str(path),'sha256':hashlib.sha256(raw).hexdigest()}
+network={'chain_id':'17','genesis_hash':'0x'+'7'*64,'name':'synthetic-reconstruction'}
+run={'format':'wbft-analyzer-run/1','name':'synthetic-reconstruction','run':'synthetic-reconstruction','network':network,'clock':'shared-host','inputs':[dict(file,id='log',kind='log',node=node,profile='gstable@740526d03')]}
+manifest={'format':'wbft-reconstruction-input/1','node':node,'network':network,'log':file}
+(work/'reconstruction-ingest.json').write_text(json.dumps(run)+'\n')
+(work/'reconstruction-sources.json').write_text(json.dumps(manifest)+'\n')
+PYRECONSTRUCTION
+"$bin" ingest run --db "$src" --manifest "$work/reconstruction-ingest.json" >"$out/reconstruction-ingest.log"
+reconstruction_dataset=$(sed -n 's/^dataset=\([0-9]*\).*/\1/p' "$out/reconstruction-ingest.log")
+test -n "$reconstruction_dataset"
+"$bin" reconstruct --execute --db "$src" --dataset "$reconstruction_dataset" --input log --manifest "$work/reconstruction-sources.json" --from 1 --to 2 >"$out/reconstruction-execution.json" 2>"$out/reconstruction-execution.log"
 capture 18091 "$out/source"
 stop
 

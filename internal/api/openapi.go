@@ -164,8 +164,7 @@ func (g *schemas) component(t reflect.Type) string {
 	g.names[t] = name
 	props := map[string]any{}
 	var required []string
-	for i := range t.NumField() {
-		f := t.Field(i)
+	for _, f := range jsonFields(t) {
 		tag, _, _ := strings.Cut(f.Tag.Get("json"), ",")
 		if !f.IsExported() || tag == "-" {
 			continue
@@ -273,6 +272,21 @@ func (g *schemas) component(t reflect.Type) string {
 	}
 	g.components[name] = sch
 	return name
+}
+
+// Untagged embedded structs flatten into the containing JSON object.
+// These response types use unique field names, matching encoding/json.
+func jsonFields(t reflect.Type) []reflect.StructField {
+	var fields []reflect.StructField
+	for i := range t.NumField() {
+		f := t.Field(i)
+		if f.Anonymous && f.Tag.Get("json") == "" && f.Type.Kind() == reflect.Struct {
+			fields = append(fields, jsonFields(f.Type)...)
+		} else {
+			fields = append(fields, f)
+		}
+	}
+	return fields
 }
 
 // nullable allows null besides the schema s.
