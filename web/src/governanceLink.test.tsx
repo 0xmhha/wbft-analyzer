@@ -13,7 +13,7 @@ it("round-trips an exact source beyond the first page",()=>{
 });
 it("rejects partial, duplicate, unsafe or noncanonical source coordinates",()=>{
  const valid=governanceSourceLink(2,focus).split("?")[1]!;
- for(const q of ["dataset=7",valid+"&dataset=8",valid+"&unknown=1",valid.replace("entry=501","entry=0"),valid.replace("entry=501","entry=0501"),valid.replace("call=5","call=9007199254740993"),valid.replace("collection=changes","collection=operations"),valid.replace(snapshot,"../secret"),valid.replace(snapshot,"a".repeat(63))]){
+ for(const q of ["dataset=7",valid+"&dataset=8",valid+"&unknown=1",valid.replace("entry=501","entry=0"),valid.replace("entry=501","entry=0501"),valid.replace("call=5","call=9007199254740993"),valid.replace("collection=changes","collection=states"),valid.replace(snapshot,"../secret"),valid.replace(snapshot,"a".repeat(63))]){
   expect(governanceFocus(q)).toEqual({sourceError:"Invalid governance source link."});
  }
  expect(governanceFocus("")).toEqual({});
@@ -26,4 +26,12 @@ it("does not infer absence or complete history from zero exact-hash claims",()=>
 it("links immutable source coordinates and exposes truncation",()=>{
  const html=renderToStaticMarkup(<HeaderGovernanceResult net={2} value={{...value,truncated:true,claims:[{dataset_id:7,dataset_name:"source",node:"node-a",snapshot,call_ordinal:5,entry_ordinal:501,normalized_pointer:"/data/500",epoch:null}]}}/>);
  expect(html).toContain("Only the first 20");expect(html).toContain("entry=501&amp;collection=changes&amp;snapshot="+snapshot);expect(html).toContain("/data/500");expect(html).not.toContain("verified cause");
+});
+
+it("links an original operation without substituting a change claim",()=>{
+ const operation={...focus,collection:"operations" as const};
+ const link=governanceSourceLink(2,operation);
+ expect(link).toContain("collection=operations");
+ expect(governanceFocus(link.split("?")[1]!)).toEqual({governanceFocus:operation});
+ expect(parseRoute(link)).toEqual({view:"governance",net:2,governanceFocus:operation});
 });
