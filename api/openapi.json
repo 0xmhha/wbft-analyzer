@@ -525,6 +525,85 @@
         ],
         "type": "object"
       },
+      "ExecutionwitnessBlockTransition": {
+        "additionalProperties": false,
+        "properties": {
+          "after_transactions": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessContractStorage"
+            },
+            "type": "array"
+          },
+          "before_system": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessContractStorage"
+            },
+            "type": "array"
+          },
+          "before_transactions": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessContractStorage"
+            },
+            "type": "array"
+          },
+          "epoch_registry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionwitnessRegistryRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finalized": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessContractStorage"
+            },
+            "type": "array"
+          },
+          "genesis": {
+            "type": "boolean"
+          },
+          "index": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "after_transactions",
+          "before_system",
+          "before_transactions",
+          "epoch_registry",
+          "finalized",
+          "genesis",
+          "index"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessContractStorage": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "code_hash": {
+            "type": "string"
+          },
+          "exists": {
+            "type": "boolean"
+          },
+          "storage_root": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "code_hash",
+          "exists",
+          "storage_root"
+        ],
+        "type": "object"
+      },
       "ExecutionwitnessDigest": {
         "additionalProperties": false,
         "properties": {
@@ -690,6 +769,188 @@
         ],
         "type": "object"
       },
+      "ExecutionwitnessProposalState": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "approved": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "call_data": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "executed_at": {
+            "type": "string"
+          },
+          "execution_count": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "member_version": {
+            "type": "string"
+          },
+          "proposer": {
+            "type": "string"
+          },
+          "rejected": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "required_approvals": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "approved",
+          "call_data",
+          "created_at",
+          "executed_at",
+          "execution_count",
+          "id",
+          "member_version",
+          "proposer",
+          "rejected",
+          "required_approvals",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessRegistryCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "key": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "operator": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "key",
+          "operator"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessRegistryEffect": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionwitnessRegistryCandidate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "before": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionwitnessRegistryCandidate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "candidate": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "after",
+          "before",
+          "candidate",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessRegistryRead": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionwitnessRegistryState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "state",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessRegistryState": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessRegistryCandidate"
+            },
+            "type": "array"
+          },
+          "code_hash": {
+            "type": "string"
+          },
+          "layout": {
+            "type": "string"
+          },
+          "storage_root": {
+            "type": "string"
+          },
+          "without_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "address",
+          "candidates",
+          "code_hash",
+          "layout",
+          "storage_root",
+          "without_keys"
+        ],
+        "type": "object"
+      },
       "ExecutionwitnessReport": {
         "additionalProperties": false,
         "properties": {
@@ -760,6 +1021,82 @@
         ],
         "type": "object"
       },
+      "ExecutionwitnessStorageInstruction": {
+        "additionalProperties": false,
+        "properties": {
+          "code_hash": {
+            "type": "string"
+          },
+          "code_reference": {
+            "type": "string"
+          },
+          "pc": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code_hash",
+          "code_reference",
+          "pc"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessStorageWrite": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "after": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "before": {
+            "$ref": "#/components/schemas/ExecutionwitnessDigest"
+          },
+          "frame": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "instruction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionwitnessStorageInstruction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "owner_code_hash": {
+            "type": "string"
+          },
+          "path": {
+            "items": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "reverted": {
+            "type": "boolean"
+          },
+          "slot_sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "after",
+          "before",
+          "frame",
+          "instruction",
+          "owner_code_hash",
+          "path",
+          "reverted",
+          "slot_sha256"
+        ],
+        "type": "object"
+      },
       "ExecutionwitnessTransaction": {
         "additionalProperties": false,
         "properties": {
@@ -824,6 +1161,151 @@
           "selector",
           "to",
           "transaction_index"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessTransactionTransition": {
+        "additionalProperties": false,
+        "properties": {
+          "accounts_after": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessContractStorage"
+            },
+            "type": "array"
+          },
+          "accounts_before": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessContractStorage"
+            },
+            "type": "array"
+          },
+          "block_hash": {
+            "type": "string"
+          },
+          "cause_status": {
+            "type": "string"
+          },
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessRegistryEffect"
+            },
+            "type": "array"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "index": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "proposal_after": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionwitnessProposalState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposal_before": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionwitnessProposalState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "registry_after": {
+            "$ref": "#/components/schemas/ExecutionwitnessRegistryRead"
+          },
+          "registry_before": {
+            "$ref": "#/components/schemas/ExecutionwitnessRegistryRead"
+          },
+          "status": {
+            "type": "string"
+          },
+          "transaction_index": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "writes": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessStorageWrite"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "accounts_after",
+          "accounts_before",
+          "block_hash",
+          "cause_status",
+          "effects",
+          "hash",
+          "index",
+          "method",
+          "proposal_after",
+          "proposal_before",
+          "reason",
+          "registry_after",
+          "registry_before",
+          "status",
+          "transaction_index",
+          "writes"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessTransitionProjection": {
+        "additionalProperties": false,
+        "properties": {
+          "report": {
+            "$ref": "#/components/schemas/ExecutionwitnessTransitionReport"
+          },
+          "verifier": {
+            "$ref": "#/components/schemas/ExecutionwitnessVerifier"
+          }
+        },
+        "required": [
+          "report",
+          "verifier"
+        ],
+        "type": "object"
+      },
+      "ExecutionwitnessTransitionReport": {
+        "additionalProperties": false,
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessBlockTransition"
+            },
+            "type": "array"
+          },
+          "execution": {
+            "$ref": "#/components/schemas/ExecutionwitnessReport"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "transactions": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionwitnessTransactionTransition"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "blocks",
+          "execution",
+          "protocol",
+          "transactions"
         ],
         "type": "object"
       },
@@ -13025,6 +13507,16 @@
           },
           "sources_truncated": {
             "type": "boolean"
+          },
+          "transitions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreGovernanceTransitionEvidenceList"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -13043,7 +13535,8 @@
           "source_block_hash",
           "source_number",
           "sources",
-          "sources_truncated"
+          "sources_truncated",
+          "transitions"
         ],
         "type": "object"
       },
@@ -13182,6 +13675,172 @@
           "points",
           "snapshot",
           "source"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceTransitionEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "binding": {
+            "enum": [
+              "matched",
+              "header_unavailable",
+              "header_mismatch",
+              "config_mismatch",
+              "network_mismatch",
+              "source_unavailable"
+            ],
+            "type": "string"
+          },
+          "block": {
+            "$ref": "#/components/schemas/ExecutionwitnessBlockTransition"
+          },
+          "cause_status": {
+            "enum": [
+              "unestablished",
+              "verified_transaction_effect"
+            ],
+            "type": "string"
+          },
+          "next_epoch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionwitnessBlockTransition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "operation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreGovernanceExecutionEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "point": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionwitnessTransactionTransition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "enum": [
+              "source_unbound",
+              "operation_unmatched",
+              "header_state_only",
+              "transaction_effect_unestablished",
+              "verified_transaction_effect"
+            ],
+            "type": "string"
+          },
+          "replay": {
+            "$ref": "#/components/schemas/StoreGovernanceExecutionWitness"
+          },
+          "status": {
+            "enum": [
+              "unverified",
+              "matched",
+              "mismatch"
+            ],
+            "type": "string"
+          },
+          "witness": {
+            "$ref": "#/components/schemas/StoreGovernanceTransitionWitness"
+          }
+        },
+        "required": [
+          "binding",
+          "block",
+          "cause_status",
+          "next_epoch",
+          "operation",
+          "point",
+          "reason",
+          "replay",
+          "status",
+          "witness"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceTransitionEvidenceList": {
+        "additionalProperties": false,
+        "properties": {
+          "cause_status": {
+            "enum": [
+              "unestablished",
+              "verified_transaction_effect",
+              "ambiguous"
+            ],
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/StoreGovernanceTransitionEvidence"
+            },
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "unverified",
+              "matched",
+              "mismatch",
+              "ambiguous"
+            ],
+            "type": "string"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cause_status",
+          "evidence",
+          "status",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceTransitionWitness": {
+        "additionalProperties": false,
+        "properties": {
+          "blocks": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "execution_snapshot": {
+            "type": "string"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ExecutionwitnessTransitionProjection"
+          },
+          "transactions": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "blocks",
+          "dataset_id",
+          "execution_snapshot",
+          "snapshot",
+          "source",
+          "transactions"
         ],
         "type": "object"
       },

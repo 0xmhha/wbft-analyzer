@@ -39,17 +39,17 @@ it("shows stored block hashes separately from transaction hashes and unknown leg
  expect(change).toContain(blockHash);expect(change).toContain("canonical cause is not inferred");
 });
 
-const context:Schemas["StoreGovernanceHeaderContext"]={snapshot:hash,call_ordinal:3,entry_ordinal:1,collection:"operations",normalized_pointer:"/data/0",source_number:"0xffffffffffffffff",index:"18446744073709551615",source_block_hash:"0x"+hash,canonical_hash:"0x"+hash,header_status:"matched",header:{index:"18446744073709551615",number:"36893488147419103231",hash:"0x"+hash,governing_epoch:"100"},sources:[{dataset_id:7,node:"node a&b",dataset_status:"complete"}],sources_truncated:false,epoch:null,execution:null,cause_status:"unestablished"};
+const context:Schemas["StoreGovernanceHeaderContext"]={snapshot:hash,call_ordinal:3,entry_ordinal:1,collection:"operations",normalized_pointer:"/data/0",source_number:"0xffffffffffffffff",index:"18446744073709551615",source_block_hash:"0x"+hash,canonical_hash:"0x"+hash,header_status:"matched",header:{index:"18446744073709551615",number:"36893488147419103231",hash:"0x"+hash,governing_epoch:"100"},sources:[{dataset_id:7,node:"node a&b",dataset_status:"complete"}],sources_truncated:false,epoch:null,execution:null,transitions:null,cause_status:"unestablished"};
 
 it("links the exact header source without converting large indices to floating point",()=>{
  const html=renderToStaticMarkup(<GovernanceHeaderResult net={2} value={context}/>);
  expect(html).toContain("Exact canonical header match");expect(html).toContain("36893488147419103231");expect(html).toContain("index=18446744073709551615&amp;dataset=7&amp;node=node%20a%26b");
- expect(html).toContain("Execution cause remains unestablished");expect(html).not.toContain("18446744073709552000");
+ expect(html).toContain("Header matching alone leaves execution cause unestablished");expect(html).not.toContain("18446744073709552000");
 });
 it("does not link unknown, missing or mismatched canonical context",()=>{
  for(const status of ["unknown_hash","header_unavailable","hash_mismatch"] as const){
   const html=renderToStaticMarkup(<GovernanceHeaderResult net={2} value={{...context,header_status:status,header:null,sources:[]}}/>);
-  expect(html).not.toContain("href=");expect(html).not.toContain("Header full height");expect(html).toContain("Execution cause remains unestablished");
+  expect(html).not.toContain("href=");expect(html).not.toContain("Header full height");expect(html).toContain("Header matching alone leaves execution cause unestablished");
  }
 });
 it("separates epoch agreement from unverified execution keys and missing inputs",()=>{

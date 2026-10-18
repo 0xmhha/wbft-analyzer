@@ -1544,6 +1544,21 @@ export interface components {
             state_root: string;
             transaction_root: string;
         };
+        ExecutionwitnessBlockTransition: {
+            after_transactions: components["schemas"]["ExecutionwitnessContractStorage"][];
+            before_system: components["schemas"]["ExecutionwitnessContractStorage"][];
+            before_transactions: components["schemas"]["ExecutionwitnessContractStorage"][];
+            epoch_registry: components["schemas"]["ExecutionwitnessRegistryRead"] | null;
+            finalized: components["schemas"]["ExecutionwitnessContractStorage"][];
+            genesis: boolean;
+            index: string;
+        };
+        ExecutionwitnessContractStorage: {
+            address: string;
+            code_hash: string;
+            exists: boolean;
+            storage_root: string;
+        };
         ExecutionwitnessDigest: {
             /** Format: int64 */
             bytes: number;
@@ -1585,6 +1600,44 @@ export interface components {
             report: components["schemas"]["ExecutionwitnessReport"];
             verifier: components["schemas"]["ExecutionwitnessVerifier"];
         };
+        ExecutionwitnessProposalState: {
+            action: string;
+            approved: number;
+            call_data: components["schemas"]["ExecutionwitnessDigest"];
+            created_at: string;
+            executed_at: string;
+            execution_count: string;
+            id: string;
+            member_version: string;
+            proposer: string;
+            rejected: number;
+            required_approvals: number;
+            status: string;
+        };
+        ExecutionwitnessRegistryCandidate: {
+            address: string;
+            key: components["schemas"]["ExecutionwitnessDigest"];
+            operator: string;
+        };
+        ExecutionwitnessRegistryEffect: {
+            after: components["schemas"]["ExecutionwitnessRegistryCandidate"] | null;
+            before: components["schemas"]["ExecutionwitnessRegistryCandidate"] | null;
+            candidate: string;
+            kind: string;
+        };
+        ExecutionwitnessRegistryRead: {
+            reason: string;
+            state: components["schemas"]["ExecutionwitnessRegistryState"] | null;
+            status: string;
+        };
+        ExecutionwitnessRegistryState: {
+            address: string;
+            candidates: components["schemas"]["ExecutionwitnessRegistryCandidate"][];
+            code_hash: string;
+            layout: string;
+            storage_root: string;
+            without_keys: string[];
+        };
         ExecutionwitnessReport: {
             origin: components["schemas"]["ExecutionwitnessOrigin"];
             protocol: string;
@@ -1601,6 +1654,23 @@ export interface components {
             manifest: components["schemas"]["ExecutionwitnessDigest"];
             node: string;
         };
+        ExecutionwitnessStorageInstruction: {
+            code_hash: string;
+            code_reference: string;
+            pc: string;
+        };
+        ExecutionwitnessStorageWrite: {
+            address: string;
+            after: components["schemas"]["ExecutionwitnessDigest"];
+            before: components["schemas"]["ExecutionwitnessDigest"];
+            /** Format: int64 */
+            frame: number;
+            instruction: components["schemas"]["ExecutionwitnessStorageInstruction"] | null;
+            owner_code_hash: string;
+            path: number[];
+            reverted: boolean;
+            slot_sha256: string;
+        };
         ExecutionwitnessTransaction: {
             block_hash: string;
             frames: components["schemas"]["ExecutionwitnessFrame"][];
@@ -1616,6 +1686,35 @@ export interface components {
             to: string;
             /** Format: int64 */
             transaction_index: number;
+        };
+        ExecutionwitnessTransactionTransition: {
+            accounts_after: components["schemas"]["ExecutionwitnessContractStorage"][];
+            accounts_before: components["schemas"]["ExecutionwitnessContractStorage"][];
+            block_hash: string;
+            cause_status: string;
+            effects: components["schemas"]["ExecutionwitnessRegistryEffect"][];
+            hash: string;
+            index: string;
+            method: string;
+            proposal_after: components["schemas"]["ExecutionwitnessProposalState"] | null;
+            proposal_before: components["schemas"]["ExecutionwitnessProposalState"] | null;
+            reason: string;
+            registry_after: components["schemas"]["ExecutionwitnessRegistryRead"];
+            registry_before: components["schemas"]["ExecutionwitnessRegistryRead"];
+            status: string;
+            /** Format: int64 */
+            transaction_index: number;
+            writes: components["schemas"]["ExecutionwitnessStorageWrite"][];
+        };
+        ExecutionwitnessTransitionProjection: {
+            report: components["schemas"]["ExecutionwitnessTransitionReport"];
+            verifier: components["schemas"]["ExecutionwitnessVerifier"];
+        };
+        ExecutionwitnessTransitionReport: {
+            blocks: components["schemas"]["ExecutionwitnessBlockTransition"][];
+            execution: components["schemas"]["ExecutionwitnessReport"];
+            protocol: string;
+            transactions: components["schemas"]["ExecutionwitnessTransactionTransition"][];
         };
         ExecutionwitnessVerifier: {
             origin: components["schemas"]["ExecutionwitnessOrigin"];
@@ -4553,6 +4652,7 @@ export interface components {
             source_number: string;
             sources: components["schemas"]["StoreGovernanceHeaderSource"][];
             sources_truncated: boolean;
+            transitions: components["schemas"]["StoreGovernanceTransitionEvidenceList"] | null;
         };
         StoreGovernanceHeaderSource: {
             /** Format: int64 */
@@ -4587,6 +4687,41 @@ export interface components {
             points: number;
             snapshot: string;
             source: components["schemas"]["StatewitnessSnapshot"];
+        };
+        StoreGovernanceTransitionEvidence: {
+            /** @enum {string} */
+            binding: "matched" | "header_unavailable" | "header_mismatch" | "config_mismatch" | "network_mismatch" | "source_unavailable";
+            block: components["schemas"]["ExecutionwitnessBlockTransition"];
+            /** @enum {string} */
+            cause_status: "unestablished" | "verified_transaction_effect";
+            next_epoch: components["schemas"]["ExecutionwitnessBlockTransition"] | null;
+            operation: components["schemas"]["StoreGovernanceExecutionEvidence"] | null;
+            point: components["schemas"]["ExecutionwitnessTransactionTransition"] | null;
+            /** @enum {string} */
+            reason: "source_unbound" | "operation_unmatched" | "header_state_only" | "transaction_effect_unestablished" | "verified_transaction_effect";
+            replay: components["schemas"]["StoreGovernanceExecutionWitness"];
+            /** @enum {string} */
+            status: "unverified" | "matched" | "mismatch";
+            witness: components["schemas"]["StoreGovernanceTransitionWitness"];
+        };
+        StoreGovernanceTransitionEvidenceList: {
+            /** @enum {string} */
+            cause_status: "unestablished" | "verified_transaction_effect" | "ambiguous";
+            evidence: components["schemas"]["StoreGovernanceTransitionEvidence"][];
+            /** @enum {string} */
+            status: "unverified" | "matched" | "mismatch" | "ambiguous";
+            truncated: boolean;
+        };
+        StoreGovernanceTransitionWitness: {
+            /** Format: int64 */
+            blocks: number;
+            /** Format: int64 */
+            dataset_id: number;
+            execution_snapshot: string;
+            snapshot: string;
+            source: components["schemas"]["ExecutionwitnessTransitionProjection"];
+            /** Format: int64 */
+            transactions: number;
         };
         StoreHeaderBounds: {
             /** Format: int64 */

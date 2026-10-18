@@ -16,22 +16,23 @@ import (
 // Header context is evaluated when read. Appending headers never mutates the
 // immutable governance capture, source entries or their pagination snapshot.
 type GovernanceHeaderContext struct {
-	Snapshot         string                           `json:"snapshot"`
-	CallOrdinal      int                              `json:"call_ordinal"`
-	EntryOrdinal     int                              `json:"entry_ordinal"`
-	Collection       string                           `json:"collection" enum:"operations,changes"`
-	Pointer          string                           `json:"normalized_pointer"`
-	SourceNumber     string                           `json:"source_number"`
-	Index            string                           `json:"index"`
-	SourceBlockHash  *string                          `json:"source_block_hash"`
-	HeaderStatus     string                           `json:"header_status" enum:"unknown_hash,header_unavailable,hash_mismatch,matched"`
-	CanonicalHash    *string                          `json:"canonical_hash"`
-	Header           *GovernanceHeader                `json:"header"`
-	Sources          []GovernanceHeaderSource         `json:"sources"`
-	SourcesTruncated bool                             `json:"sources_truncated"`
-	Epoch            *GovernanceEpochEvidence         `json:"epoch"`
-	Execution        *GovernanceExecutionEvidenceList `json:"execution"`
-	CauseStatus      string                           `json:"cause_status" enum:"unestablished"`
+	Snapshot         string                            `json:"snapshot"`
+	CallOrdinal      int                               `json:"call_ordinal"`
+	EntryOrdinal     int                               `json:"entry_ordinal"`
+	Collection       string                            `json:"collection" enum:"operations,changes"`
+	Pointer          string                            `json:"normalized_pointer"`
+	SourceNumber     string                            `json:"source_number"`
+	Index            string                            `json:"index"`
+	SourceBlockHash  *string                           `json:"source_block_hash"`
+	HeaderStatus     string                            `json:"header_status" enum:"unknown_hash,header_unavailable,hash_mismatch,matched"`
+	CanonicalHash    *string                           `json:"canonical_hash"`
+	Header           *GovernanceHeader                 `json:"header"`
+	Sources          []GovernanceHeaderSource          `json:"sources"`
+	SourcesTruncated bool                              `json:"sources_truncated"`
+	Epoch            *GovernanceEpochEvidence          `json:"epoch"`
+	Execution        *GovernanceExecutionEvidenceList  `json:"execution"`
+	Transitions      *GovernanceTransitionEvidenceList `json:"transitions"`
+	CauseStatus      string                            `json:"cause_status" enum:"unestablished"`
 }
 
 type GovernanceHeader struct {
@@ -110,12 +111,22 @@ func (s *Store) GovernanceHeaderContext(ctx context.Context, id int64, call, ent
 				return err
 			}
 			result.Execution = &evidence
+			transitions, err := governanceTransitionEvidence(ctx, tx, network, id, result.Index, &op)
+			if err != nil {
+				return err
+			}
+			result.Transitions = &transitions
 		} else {
 			var change GovernanceChange
 			if err := json.Unmarshal(raw, &change); err != nil {
 				return err
 			}
 			result.SourceNumber, result.SourceBlockHash, epochClaim = change.Number, change.BlockHash, change.Epoch
+			transitions, err := governanceTransitionEvidence(ctx, tx, network, id, result.Index, nil)
+			if err != nil {
+				return err
+			}
+			result.Transitions = &transitions
 		}
 		if result.SourceBlockHash == nil {
 			result.HeaderStatus = "unknown_hash"

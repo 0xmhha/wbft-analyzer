@@ -10,7 +10,7 @@ function example():Schemas["StoreGovernanceExecutionEvidenceList"] {
 }
 it("shows canonical binding, actual VM error, logs and source comparison separately from cause",()=>{
  const html=renderToStaticMarkup(<GovernanceExecution value={example()}/>);
- for(const text of ["Source operation matches independently replayed VM execution","Original blocks","Canonical headers and configuration match","Call identity, outcome and receipt logs match","InvalidProposal","Receipt logs","Proposal execution cause remains unestablished","Successful children of reverted ancestors have no retained effect"]) expect(html).toContain(text);
+ for(const text of ["Source operation matches independently replayed VM execution","Original blocks","Canonical headers and configuration match","Call identity, outcome and receipt logs match","InvalidProposal","Receipt logs","VM error comparison is separate from registry transition evidence","Successful children of reverted ancestors have no retained effect"]) expect(html).toContain(text);
  expect(html).not.toContain("raw calldata");
 });
 it("keeps missing canonical dependencies unverified",()=>{

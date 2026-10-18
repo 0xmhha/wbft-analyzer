@@ -51,3 +51,39 @@ rechecks, and 32 MiB of output. Replay accepts at most one billion gas per
 block and in total across non-genesis blocks. Inputs exceeding any bound are
 refused as a whole; no verified prefix is emitted. The parent process also
 bounds execution time and output and rechecks the binary and sources.
+
+## Governance transitions
+
+The explicit `--transitions` mode emits `wbft-governance-transitions/1` with
+the complete unchanged execution report embedded in `execution`. The manifest
+cannot select this mode. It observes configured governance storage accounts
+before system processing, before and after transactions, and after finalization.
+All configured targets are checked, including those without an observed write.
+Surviving writes must reconstruct each target's final storage root; unexplained
+storage, code or account-lifecycle changes refuse the complete report.
+
+Candidate-order-only changes remain a separate registry effect even when membership, keys and operators are unchanged.
+
+Writes retain their storage owner, VM frame, SSTORE instruction and execution
+code identity, with slot and value digests. Snapshot rollback distinguishes
+caught child reverts and reverted ancestors from retained effects. Unrelated
+account creation still executes normally and is excluded from governance storage
+observation. Delegate calls use the actual storage owner.
+
+Reviewed validator runtime and layout readers check the complete candidate order,
+position and reverse mappings, operators, and public keys. Missing keys are
+explicit; malformed keys or inconsistent layout reads remain unavailable.
+Proposal metadata contains status, counts and calldata digests. Unknown runtime,
+ambiguous authority and unavailable registry state never mean unchanged state.
+
+`verified_transaction_effect` requires a successful effective root CALL to the
+configured reviewed validator contract, canonical method input, matching observed
+writes and no overlapping system-phase change for that registry. Other paths
+remain `unestablished`. This identifies registry effects, not SDK path mappings,
+the original throwing call, validator selection policy or full epoch causation.
+Epoch registry states are reported separately, including keyless candidates.
+At genesis the initial validator set may differ from the loaded registry.
+
+The mode additionally bounds each candidate set to 4,096 entries, each
+transaction's storage writes to 10,000 and all observed writes to 100,000.
+The complete report still shares the 32 MiB output limit.

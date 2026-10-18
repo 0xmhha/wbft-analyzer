@@ -93,6 +93,10 @@ func blockEvidence(b *types.Block, file Digest) BlockEvidence {
 // the VM rejects before emitting a call hook. Its state, logs and gas must match
 // the normal ApplyTransaction path; it never replaces canonical processing.
 func apply(ctx context.Context, chain *chainContext, header *types.Header, st *state.StateDB, tx *types.Transaction, ordinal int, gp *core.GasPool, used *uint64, contracts params.SystemContracts, parent string) (Transaction, *types.Receipt, error) {
+	return applyWithTransitions(ctx, chain, header, st, tx, ordinal, gp, used, contracts, parent, nil)
+}
+
+func applyWithTransitions(ctx context.Context, chain *chainContext, header *types.Header, st *state.StateDB, tx *types.Transaction, ordinal int, gp *core.GasPool, used *uint64, contracts params.SystemContracts, parent string, transitions *transitionCapture) (Transaction, *types.Receipt, error) {
 	empty := Transaction{}
 	if ctx.Err() != nil {
 		return empty, nil, ErrInput
@@ -104,7 +108,17 @@ func apply(ctx context.Context, chain *chainContext, header *types.Header, st *s
 		return empty, nil, ErrInput
 	}
 	context := core.NewEVMBlockContext(header, chain, &header.Coinbase)
-	env := vm.NewEVM(context, core.NewEVMTxContext(message), shadow, chain.config, vm.Config{})
+	var observed *storageObserver
+	var executionState vm.StateDB = shadow
+	vmConfig := vm.Config{}
+	if transitions != nil && len(governanceTargets(contracts)) > 0 {
+		observed, err = newStorageObserver(shadow, &capture{ctx: ctx, contracts: contracts, authorityIndex: parent}, governanceTargets(contracts))
+		if err != nil {
+			return empty, nil, err
+		}
+		executionState, vmConfig.Tracer = observed, observed.trace
+	}
+	env := vm.NewEVM(context, core.NewEVMTxContext(message), executionState, chain.config, vmConfig)
 	stop := contextAfter(ctx, env.Cancel)
 	raw, err := core.ApplyMessage(env, message, new(core.GasPool).AddGas(gp.Gas()))
 	stop()
@@ -178,7 +192,13 @@ func apply(ctx context.Context, chain *chainContext, header *types.Header, st *s
 	if err != nil {
 		return empty, nil, err
 	}
-	return Transaction{Logs: logs, Index: header.Number.String(), Ordinal: ordinal, Hash: strings.ToLower(tx.Hash().Hex()), BlockHash: strings.ToLower(header.Hash().Hex()), From: strings.ToLower(message.From.Hex()), To: to, Input: digest(tx.Data()), Selector: selector(tx.Data()), GasUsed: strconv.FormatUint(receipt.GasUsed, 10), ReceiptStatus: receiptStatus, Receipt: digest(rawReceipt), Frames: frames}, receipt, nil
+	result := Transaction{Logs: logs, Index: header.Number.String(), Ordinal: ordinal, Hash: strings.ToLower(tx.Hash().Hex()), BlockHash: strings.ToLower(header.Hash().Hex()), From: strings.ToLower(message.From.Hex()), To: to, Input: digest(tx.Data()), Selector: selector(tx.Data()), GasUsed: strconv.FormatUint(receipt.GasUsed, 10), ReceiptStatus: receiptStatus, Receipt: digest(rawReceipt), Frames: frames}
+	if transitions != nil {
+		if err := transitions.transaction(header, tx, ordinal, contracts, st, observed, result, chain.config.IsEIP158(header.Number)); err != nil {
+			return empty, nil, err
+		}
+	}
+	return result, receipt, nil
 }
 func normalizeLogs(logs []*types.Log) ([]Log, error) {
 	if len(logs) > MaxTransactionLogs {
@@ -209,7 +229,11 @@ func transactionAuthority(cfg *wbft.Config, chain *params.ChainConfig, number *b
 	return cfg.GetSystemContracts(parent, chain), parent.String(), nil
 }
 
-func verify(ctx context.Context, raw []byte, root *os.Root) (report Report, err error) {
+func verify(ctx context.Context, raw []byte, root *os.Root) (Report, error) {
+	return verifyReplay(ctx, raw, root, nil)
+}
+
+func verifyReplay(ctx context.Context, raw []byte, root *os.Root, transitions *transitionCapture) (report Report, err error) {
 	defer func() {
 		if recover() != nil {
 			report = Report{}
@@ -246,6 +270,12 @@ func verify(ctx context.Context, raw []byte, root *os.Root) (report Report, err 
 		return Report{}, ErrInput
 	}
 	engine := wbftengine.NewEngine(cfg, common.Address{}, nil, nil)
+	if transitions != nil {
+		initial, err := state.New(created.Root(), states, nil)
+		if err != nil || transitions.beginBlock(created.Header(), initial, cfg, g.Config, true) != nil || transitions.blockPhase(created.Header(), initial, cfg, g.Config, "finalized") != nil {
+			return Report{}, ErrInput
+		}
+	}
 	report = Report{Protocol: Protocol, Origin: Origin{Path: OriginPath, Version: OriginVersion, Sum: OriginSum}, Source: source, Transactions: []Transaction{}}
 	projectionBytes := 0
 	frameCount := 0
@@ -265,6 +295,9 @@ func verify(ctx context.Context, raw []byte, root *os.Root) (report Report, err 
 		if err != nil {
 			return Report{}, ErrInput
 		}
+		if transitions != nil && transitions.beginBlock(header, st, cfg, g.Config, false) != nil {
+			return Report{}, ErrInput
+		}
 		if g.Config.DAOForkSupport && g.Config.DAOForkBlock != nil && g.Config.DAOForkBlock.Cmp(header.Number) == 0 {
 			misc.ApplyDAOHardFork(st)
 		}
@@ -274,6 +307,9 @@ func verify(ctx context.Context, raw []byte, root *os.Root) (report Report, err 
 			core.ProcessBeaconBlockRoot(*beacon, env, st)
 		}
 		if types.DeriveSha(block.Transactions(), trie.NewStackTrie(nil)) != block.TxHash() {
+			return Report{}, ErrInput
+		}
+		if transitions != nil && transitions.blockPhase(header, st, cfg, g.Config, "before_transactions") != nil {
 			return Report{}, ErrInput
 		}
 		gp := new(core.GasPool).AddGas(block.GasLimit())
@@ -287,7 +323,7 @@ func verify(ctx context.Context, raw []byte, root *os.Root) (report Report, err 
 			if err != nil {
 				return Report{}, ErrInput
 			}
-			result, receipt, err := apply(ctx, chain, header, st, tx, i, gp, &used, contracts, authorityIndex)
+			result, receipt, err := applyWithTransitions(ctx, chain, header, st, tx, i, gp, &used, contracts, authorityIndex, transitions)
 			if err != nil {
 				return Report{}, ErrInput
 			}
@@ -310,7 +346,13 @@ func verify(ctx context.Context, raw []byte, root *os.Root) (report Report, err 
 		if used != block.GasUsed() || types.DeriveSha(receipts, trie.NewStackTrie(nil)) != block.ReceiptHash() {
 			return Report{}, ErrInput
 		}
+		if transitions != nil && transitions.blockPhase(header, st, cfg, g.Config, "after_transactions") != nil {
+			return Report{}, ErrInput
+		}
 		if engine.Finalize(chain, header, st, block.Transactions(), block.Uncles()) != nil || st.Error() != nil || header.Root != block.Root() || header.Hash() != block.Hash() {
+			return Report{}, ErrInput
+		}
+		if transitions != nil && transitions.blockPhase(header, st, cfg, g.Config, "finalized") != nil {
 			return Report{}, ErrInput
 		}
 		computed, err := st.Commit(uint64(n), g.Config.IsEIP158(header.Number))

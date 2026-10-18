@@ -29,9 +29,10 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(io.Discard)
 	manifest := fs.String("manifest", "", "checksummed original source manifest")
 	directory := fs.String("root", "", "directory containing relative source files")
+	transitions := fs.Bool("transitions", false, "emit governance storage transition evidence")
 	if err := fs.Parse(args); err != nil {
 		if err == flag.ErrHelp {
-			fmt.Fprintln(stderr, "Usage: wbft-execution-witness --manifest FILE --root DIR")
+			fmt.Fprintln(stderr, "Usage: wbft-execution-witness --manifest FILE --root DIR [--transitions]")
 			return 0
 		}
 		fmt.Fprintln(stderr, "invalid execution witness arguments")
@@ -63,7 +64,18 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 65
 	}
 	defer root.Close()
-	report, err := verify(ctx, raw, root)
+	var output any
+	if *transitions {
+		report, failure := verifyTransitions(ctx, raw, root)
+		err = failure
+		report.Execution.Origin = origin
+		output = report
+	} else {
+		report, failure := verify(ctx, raw, root)
+		err = failure
+		report.Origin = origin
+		output = report
+	}
 	if err != nil {
 		fmt.Fprintln(stderr, "execution witness sources could not be verified")
 		if ctx.Err() != nil {
@@ -71,8 +83,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		}
 		return 65
 	}
-	report.Origin = origin
-	if json.NewEncoder(stdout).Encode(report) != nil {
+	if json.NewEncoder(stdout).Encode(output) != nil {
 		fmt.Fprintln(stderr, "execution witness result could not be written")
 		return 70
 	}

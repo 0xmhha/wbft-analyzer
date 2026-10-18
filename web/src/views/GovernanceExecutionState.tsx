@@ -9,7 +9,7 @@ export function ExecutionKeyStatus({epoch}:{epoch:Epoch}){
   mismatch_execution_keys:"Reported candidates without keys differ from authenticated execution state.",
   ambiguous_execution_keys:"Conflicting or truncated execution-state sources: candidates without keys remain unverified."
  };
- return <section aria-label="Execution key evidence"><p><strong>{labels[epoch.no_key_status]}</strong></p>
+ return <section aria-label="Execution key evidence"><h5>State-proof key comparison</h5><p><strong>{labels[epoch.no_key_status]}</strong></p>
   {epoch.execution_state&&<ExecutionStateEvidence value={epoch.execution_state}/>}
  </section>;
 }

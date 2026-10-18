@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/core"
@@ -79,6 +80,10 @@ func TestSyntheticOriginalGenesisReplay(t *testing.T) {
 	if err != nil || len(report.Source.Blocks) != 1 || report.Source.GenesisHash != hash.Hex() || len(report.Transactions) != 0 {
 		t.Fatal("original synthetic genesis not replayed", err)
 	}
+	transitions, err := verifyTransitions(context.Background(), raw, root)
+	if err != nil || transitions.Protocol != TransitionProtocol || !reflect.DeepEqual(transitions.Execution, report) || len(transitions.Blocks) != 1 || !transitions.Blocks[0].Genesis {
+		t.Fatal("transition mode changed canonical execution or omitted genesis", err)
+	}
 
 	// Uncles are not WBFT execution inputs. A changed body with an unchanged
 	// committed header must be rejected even when its supplied checksum matches.
@@ -100,6 +105,10 @@ func TestSyntheticOriginalGenesisReplay(t *testing.T) {
 	if err == nil || invalid.Protocol != "" {
 		t.Fatal("uncommitted WBFT uncle body accepted")
 	}
+	transitionInvalid, err := verifyTransitions(context.Background(), badRaw, root)
+	if err == nil || transitionInvalid.Protocol != "" {
+		t.Fatal("transition mode accepted uncommitted uncle body")
+	}
 	// A checksum change at the final source must not emit a completed prefix.
 	if err = os.WriteFile(filepath.Join(dir, "genesis.rlp"), append(encoded, 0), 0600); err != nil {
 		t.Fatal(err)
@@ -107,6 +116,10 @@ func TestSyntheticOriginalGenesisReplay(t *testing.T) {
 	refused, err := verify(context.Background(), raw, root)
 	if err == nil || refused.Protocol != "" {
 		t.Fatal("changed final source accepted")
+	}
+	transitionRefused, err := verifyTransitions(context.Background(), raw, root)
+	if err == nil || transitionRefused.Protocol != "" {
+		t.Fatal("transition mode emitted a prefix after final source failure")
 	}
 	if err = os.WriteFile(filepath.Join(dir, "genesis.rlp"), encoded, 0600); err != nil {
 		t.Fatal(err)

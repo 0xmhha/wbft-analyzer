@@ -75,53 +75,57 @@ func snapshotHelper(ctx context.Context, source, target, expected string) (Origi
 	return Origin{}, ErrSource
 }
 
-// Load executes only the operator-selected binary whose fingerprint is passed
+// loadHelper executes only the operator-selected binary whose fingerprint is passed
 // separately from the untrusted source manifest. Files and executable are copied
 // to an isolated directory and rechecked before constructing the opaque bundle.
-func Load(ctx context.Context, raw []byte, root *os.Root, h Helper) (Bundle, error) {
+func loadHelper(ctx context.Context, raw []byte, root *os.Root, h Helper, transitions bool, consume func([]byte, snapshot, Origin) error) error {
 	if root == nil || ctx.Err() != nil || !hash(h.SHA256, 32) || h.Timeout <= 0 || h.Timeout > 30*time.Minute {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
 	raw = bytes.Clone(raw)
 	dir, err := os.MkdirTemp(h.WorkDir, "wbft-execution-witness-")
 	if err != nil {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
 	defer os.RemoveAll(dir)
 	sources := filepath.Join(dir, "sources")
 	if os.Mkdir(sources, 0700) != nil {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
 	s, err := prepare(ctx, raw, root, sources)
 	if err != nil {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
 	path, err := filepath.Abs(h.Path)
 	if err != nil {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
 	binary := filepath.Join(dir, "helper")
 	origin, err := snapshotHelper(ctx, path, binary, h.SHA256)
 	if err != nil {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
 	manifest := filepath.Join(dir, "manifest.json")
 	if os.WriteFile(manifest, raw, 0400) != nil {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
 	child, cancel := context.WithTimeout(ctx, h.Timeout)
 	defer cancel()
-	cmd := exec.CommandContext(child, binary, "--manifest", manifest, "--root", sources)
+	args := []string{"--manifest", manifest, "--root", sources}
+	if transitions {
+		args = append(args, "--transitions")
+	}
+	cmd := exec.CommandContext(child, binary, args...)
 	cmd.Dir = dir
 	cmd.Env = []string{"GOMAXPROCS=2", "GOTOOLCHAIN=local", "TMPDIR=" + dir}
 	cmd.WaitDelay = time.Second
 	cmd.Stderr = io.Discard
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
 	if cmd.Start() != nil {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
 	waited := false
 	defer func() {
@@ -138,23 +142,40 @@ func Load(ctx context.Context, raw []byte, root *os.Root, h Helper) (Bundle, err
 	waitErr := cmd.Wait()
 	waited = true
 	if readErr != nil || waitErr != nil || child.Err() != nil || len(output) > MaxProjectionBytes {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
-	var report Report
-	if exactJSON(output, MaxProjectionBytes, &report) != nil || validate(report, s, origin) != nil {
-		return Bundle{}, ErrSource
+	if consume(output, s, origin) != nil {
+		return ErrSource
 	}
 	actual, err := helperSHA(ctx, binary)
 	if err != nil || actual != h.SHA256 {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
 	actual, err = helperSHA(ctx, path)
 	if err != nil || actual != h.SHA256 {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
 	copied, err := os.ReadFile(manifest)
 	if err != nil || !bytes.Equal(copied, raw) || s.recheck(ctx, root, sources) != nil {
-		return Bundle{}, ErrSource
+		return ErrSource
 	}
-	return Bundle{value: Projection{Report: report, Verifier: Verifier{SHA256: h.SHA256, Origin: origin}}}, nil
+	return nil
+}
+
+// Load admits only the execution protocol. Mode selection is compiled into
+// the loader entry point, outside both the manifest and public HTTP input.
+func Load(ctx context.Context, raw []byte, root *os.Root, h Helper) (Bundle, error) {
+	var projection Projection
+	err := loadHelper(ctx, raw, root, h, false, func(output []byte, s snapshot, origin Origin) error {
+		var report Report
+		if exactJSON(output, MaxProjectionBytes, &report) != nil || validate(report, s, origin) != nil {
+			return ErrSource
+		}
+		projection = Projection{Report: report, Verifier: Verifier{SHA256: h.SHA256, Origin: origin}}
+		return nil
+	})
+	if err != nil {
+		return Bundle{}, err
+	}
+	return Bundle{value: projection}, nil
 }
