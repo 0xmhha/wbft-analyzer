@@ -634,6 +634,9 @@
             },
             "type": "array"
           },
+          "no_key_reported": {
+            "type": "boolean"
+          },
           "removed": {
             "items": {
               "type": "string"
@@ -651,6 +654,7 @@
           "added",
           "candidates",
           "no_key",
+          "no_key_reported",
           "removed",
           "validators"
         ],
@@ -11495,6 +11499,195 @@
         ],
         "type": "object"
       },
+      "StatewitnessCandidateKey": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "key_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "key_sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "key_bytes",
+          "key_sha256"
+        ],
+        "type": "object"
+      },
+      "StatewitnessEpochEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "keys": {
+            "enum": [
+              "not_epoch",
+              "matched",
+              "mismatch"
+            ],
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "keys",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "StatewitnessFileEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bytes",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "StatewitnessPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "block_file": {
+            "$ref": "#/components/schemas/StatewitnessFileEvidence"
+          },
+          "block_hash": {
+            "type": "string"
+          },
+          "epoch": {
+            "$ref": "#/components/schemas/StatewitnessEpochEvidence"
+          },
+          "index": {
+            "type": "string"
+          },
+          "request": {
+            "$ref": "#/components/schemas/StatewitnessFileEvidence"
+          },
+          "response": {
+            "$ref": "#/components/schemas/StatewitnessFileEvidence"
+          },
+          "state": {
+            "$ref": "#/components/schemas/StatewitnessValidatorState"
+          }
+        },
+        "required": [
+          "block_file",
+          "block_hash",
+          "epoch",
+          "index",
+          "request",
+          "response",
+          "state"
+        ],
+        "type": "object"
+      },
+      "StatewitnessSnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "chain_id": {
+            "type": "string"
+          },
+          "config_file": {
+            "$ref": "#/components/schemas/StatewitnessFileEvidence"
+          },
+          "config_sha256": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "genesis_file": {
+            "$ref": "#/components/schemas/StatewitnessFileEvidence"
+          },
+          "genesis_hash": {
+            "type": "string"
+          },
+          "manifest": {
+            "$ref": "#/components/schemas/StatewitnessFileEvidence"
+          },
+          "node": {
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/StatewitnessPoint"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "chain_id",
+          "config_file",
+          "config_sha256",
+          "format",
+          "genesis_file",
+          "genesis_hash",
+          "manifest",
+          "node",
+          "points"
+        ],
+        "type": "object"
+      },
+      "StatewitnessValidatorState": {
+        "additionalProperties": false,
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/StatewitnessCandidateKey"
+            },
+            "type": "array"
+          },
+          "code_hash": {
+            "type": "string"
+          },
+          "contract": {
+            "type": "string"
+          },
+          "layout": {
+            "type": "string"
+          },
+          "slots": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "state_root": {
+            "type": "string"
+          },
+          "storage_root": {
+            "type": "string"
+          },
+          "without_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "candidates",
+          "code_hash",
+          "contract",
+          "layout",
+          "slots",
+          "state_root",
+          "storage_root",
+          "without_keys"
+        ],
+        "type": "object"
+      },
       "StoreBuildLifecycle": {
         "additionalProperties": false,
         "properties": {
@@ -12126,6 +12319,16 @@
             ],
             "type": "string"
           },
+          "execution_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StoreGovernanceStateEvidenceList"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "header_added": {
             "items": {
               "type": "string"
@@ -12152,7 +12355,10 @@
           },
           "no_key_status": {
             "enum": [
-              "unverified_execution_keys"
+              "unverified_execution_keys",
+              "verified_execution_keys",
+              "mismatch_execution_keys",
+              "ambiguous_execution_keys"
             ],
             "type": "string"
           },
@@ -12184,6 +12390,7 @@
         "required": [
           "added",
           "candidates",
+          "execution_state",
           "header_added",
           "header_candidates",
           "header_removed",
@@ -12370,6 +12577,96 @@
           "id",
           "instance",
           "proposal"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceStateEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "point": {
+            "$ref": "#/components/schemas/StatewitnessPoint"
+          },
+          "status": {
+            "enum": [
+              "matched",
+              "header_unavailable",
+              "header_mismatch",
+              "config_mismatch",
+              "network_mismatch",
+              "source_unavailable"
+            ],
+            "type": "string"
+          },
+          "witness": {
+            "$ref": "#/components/schemas/StoreGovernanceStateWitness"
+          }
+        },
+        "required": [
+          "point",
+          "status",
+          "witness"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceStateEvidenceList": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/StoreGovernanceStateEvidence"
+            },
+            "type": "array"
+          },
+          "index": {
+            "type": "string"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "evidence",
+          "index",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "StoreGovernanceStateWitness": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "header_source_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "headers_dataset": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "points": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/StatewitnessSnapshot"
+          }
+        },
+        "required": [
+          "dataset_id",
+          "header_source_id",
+          "headers_dataset",
+          "points",
+          "snapshot",
+          "source"
         ],
         "type": "object"
       },
@@ -16374,6 +16671,75 @@
           }
         },
         "summary": "Read-only comparison of one source block hash with this network's stored canonical header at the exact index. Re-evaluated on each request; no execution cause or missing key-state inference."
+      }
+    },
+    "/v1/networks/{net}/datasets/{dataset}/governance/state-witnesses/{index}": {
+      "get": {
+        "operationId": "getGovernanceStateWitnesses",
+        "parameters": [
+          {
+            "description": "network ID",
+            "in": "path",
+            "name": "net",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "run dataset ID belonging to the network",
+            "in": "path",
+            "name": "dataset",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "canonical decimal uint64 index",
+            "in": "path",
+            "name": "index",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreGovernanceStateEvidenceList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "At most twenty authenticated execution-state witnesses at one exact canonical index, with current header/config binding. Missing or conflicting sources remain explicit; remote identity, full consensus validity and transaction causation are not established."
       }
     },
     "/v1/networks/{net}/datasets/{dataset}/input-storage": {

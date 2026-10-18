@@ -221,7 +221,7 @@ func TestGovernanceAPIStoredBlockHashesAndLegacyUnknown(t *testing.T) {
 	c := client{t, (&Server{Store: s}).Handler()}
 	base := fmt.Sprintf("/v1/networks/%d/datasets/%d/governance", r.NetworkID, r.DatasetID)
 	var info store.GovernanceCapture
-	if c.do("GET", base, nil, &info) != 200 || info.Normalizer != "wbft-governance-normalization/2" {
+	if c.do("GET", base, nil, &info) != 200 || info.Normalizer != "wbft-governance-normalization/3" {
 		t.Fatal(info)
 	}
 	for _, item := range []struct {

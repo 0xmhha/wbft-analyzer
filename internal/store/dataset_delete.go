@@ -202,7 +202,7 @@ func (s *Store) finishDatasetDeletion(ctx context.Context, d DatasetDeletion) (D
 		}
 	}
 	e = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		for _, table := range []string{"scenario_jobs", "scenario_runs", "scenario_sources", "reexec_jobs", "reexec_runs", "whatif_jobs", "whatif_runs", "dataset_storage"} {
+		for _, table := range []string{"governance_state_witnesses", "scenario_jobs", "scenario_runs", "scenario_sources", "reexec_jobs", "reexec_runs", "whatif_jobs", "whatif_runs", "dataset_storage"} {
 			if _, e := tx.Exec(ctx, `DELETE FROM `+table+` WHERE dataset_id=$1`, d.Dataset); e != nil {
 				return e
 			}

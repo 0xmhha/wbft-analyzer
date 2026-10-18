@@ -195,7 +195,7 @@ func changes(raw json.RawMessage, from, to uint64) ([]ValidatorChange, error) {
 				}
 				lists = append(lists, v)
 			}
-			epoch = &Epoch{Candidates: lists[0], Validators: lists[1], Added: lists[2], Removed: lists[3], NoKey: lists[4]}
+			epoch = &Epoch{Candidates: lists[0], Validators: lists[1], Added: lists[2], Removed: lists[3], NoKey: lists[4], NoKeyReported: e.NoKey != nil}
 		}
 		out = append(out, ValidatorChange{Number: w.Number, BlockHash: hash, Validators: vs, ValidatorsReported: validatorsReported, Ops: ops, Epoch: epoch})
 	}

@@ -2015,3 +2015,62 @@ The independent reader checks the bounded typed record and optional expected
 checksum. Packet validation keeps `specification_verdict: not_evaluated`;
 it cannot authenticate source truth or determine specification compliance
 without the original evidence. A partial or unapplied step stays labelled.
+
+### Execution-state evidence for epoch key claims
+
+Attach independently authenticated state evidence to an existing completed
+WBFT governance capture and an explicit completed header dataset:
+
+```
+wbft-analyzer ingest state-witness --db DSN \
+  --dataset-id N --headers-dataset-id N --manifest FILE --root DIR
+```
+
+The `wbft-execution-state-witness-input/1` manifest contains `format`, `node`,
+`config`, `genesis`, and `points`. `node` must match the governance source's
+address. It is a declared source association, not proof of a remote peer's
+identity. Each file reference contains its relative `path` and exact `sha256`.
+`config` references the original chain configuration or full genesis JSON;
+its extracted config bytes must hash identically to the header import.
+`genesis` contains `kind` (`header_rlp` or `block_rlp`) and `file`. Each point
+contains a decimal uint64 `index`, a `block` with explicit encoding and file,
+and original JSON-RPC `request` and `response` files for `eth_getProof`.
+Every source must be a regular file inside `--root`; symbolic links and root
+escapes are refused.
+
+The reader verifies the original request ID, method, account, exact storage
+key set and fixed block tag. It decodes the WBFT header RLP, authenticates the
+account and storage leaves under that header's state root, and checks the
+complete candidate/key read set for a reviewed contract runtime. The effective
+configured contract includes registered upgrades at the point's full height.
+Unknown code/layouts, missing slots, conflicting metadata, changed files and
+invalid proofs are refused. A proven zero differs from a missing proof.
+
+Limits are 1 MiB per manifest, 256 points, 16 MiB per source file, 256 MiB for
+all source reads including the final checksum pass, and 32 MiB for the safe
+projection. Proof nodes, raw public-key bytes, RPC payloads and local paths do
+not enter the stored witness. Keep original sources separately if subsequent
+independent proof verification is needed.
+
+Migration 33 stores immutable witness metadata and indexed points owned by
+the governance dataset. Export includes its current header dependencies and
+preserves unavailable links after a header source is deleted. Each read checks
+the completed header source, network, active build visibility, configuration digest, canonical full
+number/hash and epoch fields again. Deleting or changing that source cannot
+leave a stale verified key result or silently select a different header source.
+Conflicting or truncated witness sets remain ambiguous.
+
+The governance and header views distinguish verified, different, ambiguous and
+unverified candidates-without-keys claims. Expand a witness to inspect the
+proof/context/key checks, candidate key availability and source digests.
+Reveal effects respect reduced-motion settings. Normalization version 3 also
+preserves whether `NoKey` was actually supplied: missing, null and older empty
+claims are not promoted to verified empty lists. Existing nonempty claims keep
+their original values.
+
+Read one index at
+`GET /v1/networks/{net}/datasets/{dataset}/governance/state-witnesses/{index}`.
+It returns at most twenty witnesses and an explicit truncation flag. Evidence
+also accompanies governance header contexts and exact-hash header governance
+claims. An epoch key match does not verify diligence, validator selection,
+aggregate seals, transaction causation or complete governance history.
