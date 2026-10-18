@@ -33,9 +33,19 @@ func assess(ctx context.Context, m Manifest, from, to string) (Assessment, error
 	if !validManifest(m) {
 		return out, errors.New("invalid reconstruction identity or source")
 	}
+	if _, err := genesisConfig(ctx, m); err != nil {
+		return out, err
+	}
+	if m.Genesis != nil {
+		out.Sources.GenesisSHA = m.Genesis.SHA256
+	}
 	var index map[string]int
 	var err error
 	out.Heights, index, err = heightRange(from, to)
+	if err != nil {
+		return out, err
+	}
+	_, out.Sources.Inputs, err = observedInputs(ctx, m)
 	if err != nil {
 		return out, err
 	}

@@ -76,6 +76,8 @@ var exportTables = []exportTable{
 	{"input_files", `dataset_id=ANY($1)`},
 	{"reexec_runs", `dataset_id=ANY($1)`},
 	{"reexec_steps", `run_id IN (SELECT id FROM reexec_runs WHERE dataset_id=ANY($1))`},
+	{"reconstruction_runs", `dataset_id=ANY($1)`},
+	{"reconstruction_steps", `run_id IN (SELECT id FROM reconstruction_runs WHERE dataset_id=ANY($1))`},
 	{"reexec_jobs", `dataset_id=ANY($1)`}, {"whatif_runs", `dataset_id=ANY($1)`},
 	{"whatif_results", `run_id IN (SELECT id FROM whatif_runs WHERE dataset_id=ANY($1))`},
 	{"whatif_jobs", `dataset_id=ANY($1)`},

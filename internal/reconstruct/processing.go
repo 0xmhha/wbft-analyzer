@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/0xmhha/wbft-analyzer/internal/source/logs"
@@ -397,6 +398,15 @@ func validScopes(m Manifest) bool {
 	}
 	used := map[string]bool{}
 	for i, s := range m.Scopes {
+		if s.InputRun != "" || s.InputInstance != "" {
+			instance, err := strconv.ParseUint(s.InputInstance, 10, 64)
+			if m.Inputs == nil || !runIDPattern.MatchString(s.InputRun) || err != nil || instance == 0 || strconv.FormatUint(instance, 10) != s.InputInstance || s.GenesisSHA == "" {
+				return false
+			}
+		}
+		if s.GenesisSHA != "" && (m.Genesis == nil || !shaPattern.MatchString(s.GenesisSHA) || s.GenesisSHA != m.Genesis.SHA256) {
+			return false
+		}
 		from, e1 := time.Parse(time.RFC3339Nano, s.From)
 		to, e2 := time.Parse(time.RFC3339Nano, s.To)
 		if !runIDPattern.MatchString(s.LogRun) || !runIDPattern.MatchString(s.FrameRun) || used[s.LogRun] || e1 != nil || e2 != nil || !to.After(from) || to.Sub(from) > 24*time.Hour {

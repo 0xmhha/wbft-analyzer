@@ -4,6 +4,7 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/derive/baseline"
 	"github.com/0xmhha/wbft-analyzer/internal/derive/latency"
 	"github.com/0xmhha/wbft-analyzer/internal/derive/rounds"
+	"github.com/0xmhha/wbft-analyzer/internal/reconstruct"
 	"github.com/0xmhha/wbft-analyzer/internal/replayjob"
 	"github.com/0xmhha/wbft-analyzer/internal/scenario"
 	"github.com/0xmhha/wbft-analyzer/internal/source/governance"
@@ -46,6 +47,10 @@ var (
 )
 
 var routes = []route{
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reconstruction/{reconstruction}/steps/{position}/review", id: "getReconstructionReview", summary: "One bounded source-bound comparison packet for independent review; no native journal identity or specification verdict.", params: append(reconstructionParams(false), param{name: "position", in: "path", typ: "integer", format: "int64", required: true, doc: "positive immutable storage position"}), answers: map[int]any{200: reconstruct.ReviewPacket{}}, handle: (*Server).reconstructionReview},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reconstruction", id: "listReconstructionRuns", summary: "Latest 100 closed log reconstruction summaries, separate from native journal replay.", params: runParams(), answers: map[int]any{200: ReconstructionList{}}, handle: (*Server).reconstructionList},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reconstruction/{reconstruction}", id: "getReconstructionRun", summary: "Source fingerprints, completeness by height and comparison model. Step arrays are empty; immutable pages provide compared projections.", params: reconstructionParams(false), answers: map[int]any{200: store.ReconstructionDetail{}}, handle: (*Server).reconstructionSummary},
+	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/reconstruction/{reconstruction}/steps", id: "listReconstructionSteps", summary: "At most 100 reconstructed comparisons with original source pointers and separate page positions; no native journal step identity or payloads.", params: reconstructionParams(true), answers: map[int]any{200: ReconstructionPage{}}, handle: (*Server).reconstructionSteps},
 	{method: "GET", path: "/v1/networks/{net}/headers/{index}/governance", id: "getHeaderGovernanceClaims", summary: "At most twenty completed governance source claims with this network's exact canonical index and block hash. Re-evaluated on each read; neither execution causes nor complete history are established.", params: []param{netPath, {name: "index", in: "path", doc: "canonical decimal uint64 block index", typ: "string", required: true}}, answers: map[int]any{200: store.HeaderGovernanceClaims{}}, handle: (*Server).headerGovernanceClaims},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries/{entry}", id: "getGovernanceEntry", summary: "One original collection entry with immutable capture snapshot and source pointer; unavailable or absent rows are not substituted.", params: governanceSingleEntryParams(), answers: map[int]any{200: GovernanceSingleEntry{}}, handle: (*Server).governanceSingleEntry},
 	{method: "GET", path: "/v1/networks/{net}/datasets/{dataset}/governance/calls/{ordinal}/entries/{entry}/header-context", id: "getGovernanceHeaderContext", summary: "Read-only comparison of one source block hash with this network's stored canonical header at the exact index. Re-evaluated on each request; no execution cause or missing key-state inference.", params: governanceHeaderParams(), answers: map[int]any{200: store.GovernanceHeaderContext{}}, handle: (*Server).governanceHeaderContext},

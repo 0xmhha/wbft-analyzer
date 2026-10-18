@@ -30,7 +30,7 @@ func LoadManifest(ctx context.Context, path string) (Manifest, error) {
 	if jsonmeta.Decode(raw, 1<<20, true, &m) != nil || !validManifest(m) {
 		return Manifest{}, errors.New("invalid reconstruction manifest")
 	}
-	for _, file := range []*File{&m.Log, m.Frames, m.Runtime, m.Chain} {
+	for _, file := range []*File{&m.Log, m.Frames, m.Runtime, m.Chain, m.Genesis, m.Inputs} {
 		if file != nil && !filepath.IsAbs(file.Path) {
 			file.Path = filepath.Join(filepath.Dir(path), file.Path)
 		}
@@ -39,11 +39,14 @@ func LoadManifest(ctx context.Context, path string) (Manifest, error) {
 }
 
 func validManifest(m Manifest) bool {
+	if m.Inputs != nil && m.Genesis == nil {
+		return false
+	}
 	n, ok := new(big.Int).SetString(m.Network.ChainID, 10)
 	if !validScopes(m) || m.Format != ManifestFormat || !addressPattern.MatchString(m.Node) || !hashPattern.MatchString(m.Network.GenesisHash) || !ok || n.Sign() < 0 || n.BitLen() > 512 || n.String() != m.Network.ChainID {
 		return false
 	}
-	for _, file := range []*File{&m.Log, m.Frames, m.Runtime, m.Chain} {
+	for _, file := range []*File{&m.Log, m.Frames, m.Runtime, m.Chain, m.Genesis, m.Inputs} {
 		if file != nil && (strings.TrimSpace(file.Path) == "" || !shaPattern.MatchString(file.SHA256)) {
 			return false
 		}

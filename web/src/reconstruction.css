@@ -1,0 +1,16 @@
+.reconstruction-strip { display:flex; flex-wrap:wrap; gap:.3rem; margin:1rem 0; }
+.reconstruction-tick { min-width:2rem; border:2px solid currentColor; transition:background-color .18s, transform .18s; }
+.reconstruction-tick.applied { background:#d6eee4; color:#164d3c; }
+.reconstruction-tick.different { background:#fff0c7; color:#704400; }
+.reconstruction-tick.unavailable { background:#e8e8eb; color:#444453; }
+.reconstruction-tick.selected { outline:3px solid currentColor; outline-offset:2px; transform:translateY(-2px); }
+.reconstruction-selected { animation:reconstruction-entry .22s ease-out; }
+.reconstruction-selected td { vertical-align:top; overflow-wrap:anywhere; }
+.reconstruction-selected dt { font-weight:600; }
+.reconstruction-selected dd { margin-left:.5rem; }
+.reconstruction-difference { border-left:4px solid #956000; padding:.5rem; }
+@keyframes reconstruction-entry { from { opacity:.5; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+@media (prefers-reduced-motion:reduce) {
+ .reconstruction-tick { transition:none; }
+ .reconstruction-selected { animation:none; }
+}
