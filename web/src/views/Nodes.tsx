@@ -1,4 +1,5 @@
 import {ObservationHeaders} from "./ObservationHeaders";
+import {NodeRuleComparison} from "./NodeRuleComparison";
 import {useState} from "react";
 import {get,type Schemas} from "../api/client";
 import {Pending,useLoad} from "../ui";
@@ -12,7 +13,7 @@ export function Nodes({net,onAuth}:{net:number;onAuth:()=>void}){
  const datasets=useLoad(async()=>(await get("/v1/networks/{net}/datasets",{path:{net}})).datasets.filter(d=>d.kind==="observations"),[net]);
  const [chosen,choose]=useState(0);const id=chosen||(datasets.state==="done"?datasets.data.at(-1)?.id:0)||0;
  const capture=useLoad(async()=>id?get("/v1/networks/{net}/datasets/{dataset}/observations",{path:{net,dataset:id}}):null,[net,id]);
- return <section className="node-observations"><h1>Native node observations</h1><p>Read-only RPC claims over a bounded historical range. Calls are collected independently; this is not an atomic node snapshot. Local participation, header-only participation and gaps do not prove complete event coverage or message delivery.</p><Pending load={datasets} onAuth={onAuth}/>{datasets.state==="done"&&(datasets.data.length?<label>Observation capture <select value={id} onChange={e=>choose(Number(e.target.value))}>{datasets.data.map(d=><option key={d.id} value={d.id}>{d.name} · {d.status}</option>)}</select></label>:<p>No observation captures.</p>)}<Pending load={capture} onAuth={onAuth}/>{capture.state==="done"&&capture.data&&<NodeCapture key={`${id}:${capture.data.snapshot}`} net={net} capture={capture.data} onAuth={onAuth}/>}</section>
+ return <section className="node-observations"><h1>Native node observations</h1><p>Read-only RPC claims over a bounded historical range. Calls are collected independently; this is not an atomic node snapshot. Local participation, header-only participation and gaps do not prove complete event coverage or message delivery.</p><Pending load={datasets} onAuth={onAuth}/>{datasets.state==="done"&&(datasets.data.length?<label>Observation capture <select value={id} onChange={e=>choose(Number(e.target.value))}>{datasets.data.map(d=><option key={d.id} value={d.id}>{d.name} · {d.status}</option>)}</select></label>:<p>No observation captures.</p>)}{datasets.state==="done"&&<NodeRuleComparison net={net} datasets={datasets.data} onAuth={onAuth} onCapture={choose}/>}<Pending load={capture} onAuth={onAuth}/>{capture.state==="done"&&capture.data&&<NodeCapture key={`${id}:${capture.data.snapshot}`} net={net} capture={capture.data} onAuth={onAuth}/>}</section>
 }
 function NodeCapture({net,capture,onAuth}:{net:number;capture:Capture;onAuth:()=>void}){
  const dataset=capture.dataset_id,node=capture.node;
