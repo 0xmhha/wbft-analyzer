@@ -718,6 +718,10 @@ Live follow, canonical/header comparison and actual takeover sign-floor acceptan
 remain separate work.
 
 
+Enabled-behavior metadata retains the node-reported sources `profile`, `app`
+and `chain`. Unknown source labels are refused. These labels record node claims
+and do not independently prove historical rule execution.
+
 ## Canonical observation bindings
 
 After importing independent headers (including the preceding parent and following

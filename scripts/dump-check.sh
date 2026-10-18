@@ -407,6 +407,7 @@ import hashlib,json,pathlib,sys
 root,work=map(pathlib.Path,sys.argv[1:])
 archive=json.loads((root/'internal/source/observe/testdata/capture.json').read_text())
 archive['replies'][0]['response']['result']['ruleActivations']={'example-rule':'2'}
+archive['replies'][0]['response']['result']['improvements'].append({'name':'example-rule','source':'chain'})
 (work/'activation-observation.json').write_text(json.dumps(archive)+'\n')
 manifest=json.loads((root/'internal/source/logs/testdata/baseline/manifest-1.json').read_text())
 manifest.update(name='synthetic-activation',run='synthetic-activation',network=dict(chain_id='8',genesis_hash='0x'+'1'*64,name='synthetic-activation'))
