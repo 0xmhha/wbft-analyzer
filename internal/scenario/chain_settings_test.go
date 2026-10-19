@@ -40,7 +40,7 @@ func TestStaticSettingsEvidenceUsesActualSeedJournals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sc.Params.RuleActivations = map[types.RuleName]string{types.RejectNumberJump: "18446744073709551616"}
+	sc.Params.RuleActivations = map[types.RuleName]string{types.RejectNumberJump: "18446744073709551616", types.MinimalSealerBitmap: "2"}
 	sc.Params.AllowedFutureBlockTime = timingNumber(3)
 	configured, err := ExecutionHash(sc)
 	if err != nil || configured == legacy {
@@ -58,7 +58,7 @@ func TestStaticSettingsEvidenceUsesActualSeedJournals(t *testing.T) {
 	}
 	digests := map[string]bool{}
 	for _, row := range observed.Configurations {
-		if row.Run == "" || len(row.SHA256) != 64 || row.Segments < 1 || row.Configuration.SourceRulesDigest != "" || row.Configuration.RuleActivations[string(types.RejectNumberJump)] != "18446744073709551616" || row.Configuration.AllowedFutureBlockTime != 3 {
+		if row.Run == "" || len(row.SHA256) != 64 || row.Segments < 1 || row.Configuration.SourceRulesDigest != "" || row.Configuration.RuleActivations[string(types.RejectNumberJump)] != "18446744073709551616" || row.Configuration.RuleActivations[string(types.MinimalSealerBitmap)] != "2" || row.Configuration.AllowedFutureBlockTime != 3 {
 			t.Fatal("requested settings masqueraded as observed settings", row)
 		}
 		digests[row.RulesDigest] = true
