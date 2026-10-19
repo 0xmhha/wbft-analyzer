@@ -41,7 +41,7 @@ func TestStaticSettingsEvidenceUsesActualSeedJournals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sc.Params.RuleActivations = map[types.RuleName]string{types.RejectNumberJump: "18446744073709551616", types.MinimalSealerBitmap: "2", types.StableCandidateSort: "2", types.FirstProposerDiligenceCap: "2"}
+	sc.Params.RuleActivations = map[types.RuleName]string{types.RejectNumberJump: "18446744073709551616", types.MinimalSealerBitmap: "2", types.StableCandidateSort: "2", types.FirstProposerDiligenceCap: "2", types.CommittedEpochDiligence: "2"}
 	sc.Params.AllowedFutureBlockTime = timingNumber(3)
 	configured, err := ExecutionHash(sc)
 	if err != nil || configured == legacy {
@@ -59,7 +59,7 @@ func TestStaticSettingsEvidenceUsesActualSeedJournals(t *testing.T) {
 	}
 	digests := map[string]bool{}
 	for _, row := range observed.Configurations {
-		if row.Run == "" || len(row.SHA256) != 64 || row.Segments < 1 || row.Configuration.SourceRulesDigest != "" || row.Configuration.RuleActivations[string(types.RejectNumberJump)] != "18446744073709551616" || row.Configuration.RuleActivations[string(types.MinimalSealerBitmap)] != "2" || row.Configuration.RuleActivations[string(types.StableCandidateSort)] != "2" || row.Configuration.RuleActivations[string(types.FirstProposerDiligenceCap)] != "2" || row.Configuration.AllowedFutureBlockTime != 3 {
+		if row.Run == "" || len(row.SHA256) != 64 || row.Segments < 1 || row.Configuration.SourceRulesDigest != "" || row.Configuration.RuleActivations[string(types.RejectNumberJump)] != "18446744073709551616" || row.Configuration.RuleActivations[string(types.MinimalSealerBitmap)] != "2" || row.Configuration.RuleActivations[string(types.StableCandidateSort)] != "2" || row.Configuration.RuleActivations[string(types.FirstProposerDiligenceCap)] != "2" || row.Configuration.RuleActivations[string(types.CommittedEpochDiligence)] != "2" || row.Configuration.AllowedFutureBlockTime != 3 {
 			t.Fatal("requested settings masqueraded as observed settings", row)
 		}
 		digests[row.RulesDigest] = true
@@ -105,7 +105,7 @@ func TestStaticSettingsEvidenceUsesActualSeedJournals(t *testing.T) {
 	}
 	for _, v := range sc.Validators {
 		cfg := recordedTestConfiguration(t, directory, v)
-		if cfg.Base().EpochLength != 2 || cfg.Rules(types.StableCandidateSort, types.HeightFromUint64(1)) || !cfg.Rules(types.StableCandidateSort, types.HeightFromUint64(2)) || cfg.Rules(types.FirstProposerDiligenceCap, types.HeightFromUint64(1)) || !cfg.Rules(types.FirstProposerDiligenceCap, types.HeightFromUint64(2)) {
+		if cfg.Base().EpochLength != 2 || cfg.Rules(types.StableCandidateSort, types.HeightFromUint64(1)) || !cfg.Rules(types.StableCandidateSort, types.HeightFromUint64(2)) || cfg.Rules(types.FirstProposerDiligenceCap, types.HeightFromUint64(1)) || !cfg.Rules(types.FirstProposerDiligenceCap, types.HeightFromUint64(2)) || cfg.Rules(types.CommittedEpochDiligence, types.HeightFromUint64(1)) || !cfg.Rules(types.CommittedEpochDiligence, types.HeightFromUint64(2)) {
 			t.Fatal("actual journal lost the configured epoch or activation boundary")
 		}
 	}
