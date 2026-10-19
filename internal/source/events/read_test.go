@@ -167,7 +167,7 @@ func TestSignFloorMetadataIsTypedAndSurvivesPersistence(t *testing.T) {
 
 func TestNativeHealthConditionsSurviveMetadataBoundaries(t *testing.T) {
 	for _, what := range []string{"head_mismatch", "peer_inbound_overflow", "peer_inbound_disconnect", "privval_refusal", "sign_floor_skip",
-		"snapshot_missing_at_preprepare", "snapshot_missing_at_head", "consensus_halted", "disconnect"} {
+		"snapshot_missing_at_preprepare", "snapshot_missing_at_head", "consensus_halted", "disconnect", "same_block_transitions"} {
 		t.Run(what, func(t *testing.T) {
 			var raw map[string]json.RawMessage
 			err := json.Unmarshal([]byte(`{"kind":"HEALTH","what":"`+what+`","h":"18446744073709551617","error":"private text"}`), &raw)
@@ -252,5 +252,77 @@ func TestReplayPolicyMetadataDistinguishesConfigurationAndResult(t *testing.T) {
 	raw := map[string]json.RawMessage{"kind": json.RawMessage(`"ENGINE_START"`), "replay": json.RawMessage(`{"enabled":null,"available":"true"}`)}
 	if got := Metadata(raw); got["wal_replay_enabled"] != nil || got["wal_available"] != nil {
 		t.Fatal("unknown policy defaulted", got)
+	}
+}
+
+func TestSameBlockTransitionMetadataContext(t *testing.T) {
+	for _, height := range []string{"0", "6", "18446744073709551617"} {
+		t.Run(height, func(t *testing.T) {
+			reason := "2 transitions at block " + height + " retain their configured application order"
+			raw, err := json.Marshal(map[string]any{"kind": "HEALTH", "what": "same_block_transitions", "reason": reason, "error": "private text", "payload": map[string]any{"secret": "not metadata"}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var input map[string]json.RawMessage
+			if err = json.Unmarshal(raw, &input); err != nil {
+				t.Fatal(err)
+			}
+			safe := Metadata(input)
+			if safe["what"] != "same_block_transitions" || safe["h"] != height || safe["count"] != "2" || safe["reason"] != nil || safe["error"] != nil || safe["payload"] != nil {
+				t.Fatal(safe)
+			}
+			raw, err = json.Marshal(safe)
+			if err != nil {
+				t.Fatal(err)
+			}
+			input = map[string]json.RawMessage{}
+			if err = json.Unmarshal(raw, &input); err != nil {
+				t.Fatal(err)
+			}
+			input["kind"] = json.RawMessage(`"HEALTH"`)
+			if again := Metadata(input); !reflect.DeepEqual(safe, again) {
+				t.Fatal("structured warning lost on persistence projection", safe, again)
+			}
+		})
+	}
+	for _, fields := range []map[string]any{
+		{"h": "7"}, {"count": "3"}, {"h": "not a height"}, {"count": -1},
+	} {
+		fields["kind"], fields["what"], fields["reason"] = "HEALTH", "same_block_transitions", "2 transitions at block 6 retain their configured application order"
+		raw, err := json.Marshal(fields)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var input map[string]json.RawMessage
+		if err = json.Unmarshal(raw, &input); err != nil {
+			t.Fatal(err)
+		}
+		if safe := Metadata(input); safe["what"] != "same_block_transitions" || safe["h"] != nil || safe["count"] != nil {
+			t.Fatal("conflicting warning context retained", safe)
+		}
+	}
+
+	for _, reason := range []string{
+		"private text",
+		"2 transitions at block /private/secret retain their configured application order",
+		"02 transitions at block 6 retain their configured application order",
+		"1 transitions at block 6 retain their configured application order",
+		"2 transitions at block -2 retain their configured application order",
+		"2 transitions at block 06 retain their configured application order",
+		"18446744073709551616 transitions at block 6 retain their configured application order",
+		"2 transitions at block " + strings.Repeat("9", 157) + " retain their configured application order",
+	} {
+		raw, err := json.Marshal(map[string]any{"kind": "HEALTH", "what": "same_block_transitions", "reason": reason})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var input map[string]json.RawMessage
+		if err = json.Unmarshal(raw, &input); err != nil {
+			t.Fatal(err)
+		}
+		safe := Metadata(input)
+		if safe["what"] != "same_block_transitions" || safe["h"] != nil || safe["count"] != nil || safe["reason"] != nil {
+			t.Fatal("noncanonical warning context retained", safe)
+		}
 	}
 }
