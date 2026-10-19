@@ -298,7 +298,7 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 		delete(out, "what")
 		switch what {
 		case "head_mismatch", "peer_inbound_overflow", "peer_inbound_disconnect", "privval_refusal", "sign_floor_skip",
-			"snapshot_missing_at_preprepare", "snapshot_missing_at_head", "consensus_halted", "disconnect":
+			"snapshot_missing_at_preprepare", "snapshot_missing_at_head", "consensus_halted", "disconnect", "same_block_transitions":
 			out["what"] = what
 		}
 		var height string
@@ -308,6 +308,9 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 		}
 		if n, ok := new(big.Int).SetString(height, 10); ok && n.Sign() >= 0 && n.String() == height && len(height) <= 156 {
 			out["h"] = height
+		}
+		if what == "same_block_transitions" {
+			sameBlockTransitionMetadata(m, out)
 		}
 	}
 	var round string
@@ -327,4 +330,35 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 		out["op"] = op
 	}
 	return out
+}
+
+// Derive only bounded numbers from the startup warning's fixed format. The
+// original reason is never retained, including when it contains private text.
+func sameBlockTransitionMetadata(m map[string]json.RawMessage, out map[string]any) {
+	var reason string
+	if json.Unmarshal(m["reason"], &reason) != nil || len(reason) > 256 {
+		return
+	}
+	body, ok := strings.CutSuffix(reason, " retain their configured application order")
+	if !ok {
+		return
+	}
+	count, height, ok := strings.Cut(body, " transitions at block ")
+	if !ok || len(count) > 20 || len(height) > 156 {
+		return
+	}
+	n, err := strconv.ParseUint(count, 10, 64)
+	h, valid := new(big.Int).SetString(height, 10)
+	if err != nil || n < 2 || strconv.FormatUint(n, 10) != count || !valid || h.Sign() < 0 || h.String() != height {
+		return
+	}
+	// A conflicting explicit field must not be combined with derived context.
+	for field, value := range map[string]string{"count": count, "h": height} {
+		if len(m[field]) != 0 && out[field] != value {
+			delete(out, "count")
+			delete(out, "h")
+			return
+		}
+	}
+	out["count"], out["h"] = count, height
 }
