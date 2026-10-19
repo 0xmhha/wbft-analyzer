@@ -26,6 +26,7 @@ func TestCorePinTracksExactModuleAndChecksum(t *testing.T) {
 	for _, historical := range []struct{ module, commit string }{
 		{"v0.0.0-20261017021619-54c2a5417d23", "54c2a5417d230daefd8ef49e696ff8af35d66c0d"},
 		{"v0.0.0-20261019010544-fdaa84fde060", "fdaa84fde06014b462122e4c7b53cc7f5a311bd6"},
+		{"v0.0.0-20261019032743-5c5a453e6f5a", "5c5a453e6f5a313f61bc9c1db680d5a2943a8be0"},
 	} {
 		if sameVersion(historical.module, pin.Commit) || sameVersion(historical.commit, pin.Version) {
 			t.Fatal("historical source was relabeled as the current core")
