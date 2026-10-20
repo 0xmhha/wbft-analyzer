@@ -13,7 +13,7 @@ import (
 
 func TestRecordedLocalOptionMasksPreserveEvidence(t *testing.T) {
 	address := types.Address{1}
-	masks := []consensus.ImprovementSet{consensus.RestartSafety, consensus.RestartSafety.With(consensus.WatchCommittedImport), consensus.RestartSafety.With(consensus.AdvanceOnCommitFailure), consensus.RestartSafety.With(consensus.ResetHeightState), consensus.RestartSafety.With(consensus.ScanReadyBacklog), consensus.RestartSafety.With(consensus.ResetHeightState).With(consensus.ScanReadyBacklog), consensus.RestartSafety.With(consensus.CancelStaleRetries), consensus.RestartSafety.With(consensus.FollowHigherRoundChanges), consensus.RestartSafety.With(consensus.CancelStaleRetries).With(consensus.FollowHigherRoundChanges), consensus.KnownImprovements(), 0, 1, 4, 1 << 8, 1 << 63}
+	masks := []consensus.ImprovementSet{consensus.RestartSafety, consensus.RestartSafety.With(consensus.WatchCommittedImport), consensus.RestartSafety.With(consensus.AdvanceOnCommitFailure), consensus.RestartSafety.With(consensus.ResetHeightState), consensus.RestartSafety.With(consensus.ScanReadyBacklog), consensus.RestartSafety.With(consensus.ResetHeightState).With(consensus.ScanReadyBacklog), consensus.RestartSafety.With(consensus.CancelStaleRetries), consensus.RestartSafety.With(consensus.FollowHigherRoundChanges), consensus.RestartSafety.With(consensus.CancelStaleRetries).With(consensus.FollowHigherRoundChanges), consensus.RestartSafety.With(consensus.BindPreparedCertificate), consensus.RestartSafety.With(consensus.DropUnboundExtraSeals), consensus.RestartSafety.With(consensus.ResumeRoundProposals), consensus.RestartSafety.With(consensus.BindPreparedCertificate).With(consensus.DropUnboundExtraSeals).With(consensus.ResumeRoundProposals), consensus.KnownImprovements(), 0, 1, 4, 1 << 11, 1 << 63}
 	for _, profile := range []string{"", "compat", "improved"} {
 		for _, mask := range masks {
 			t.Run(fmt.Sprintf("%s/%d", profile, mask), func(t *testing.T) {
@@ -59,7 +59,7 @@ func TestBuildPreservesKnownMasksAndRefusesUnknownFlags(t *testing.T) {
 	delay := []time.Duration{time.Millisecond}
 	stop := sim.Stop{Height: 3, Duration: time.Minute}
 	for _, profile := range []string{"compat", "improved"} {
-		for _, mask := range []uint64{0, 3, 7, 11, 15, 16, 19, 32, 35, 51, 63, 64, 67, 128, 131, 195, 255, 256, 1 << 63} {
+		for _, mask := range []uint64{0, 3, 7, 11, 15, 16, 19, 32, 35, 51, 63, 64, 67, 128, 131, 195, 255, 256, 259, 512, 515, 1024, 1027, 1795, 2047, 2048, 1 << 63} {
 			nodes, links := completeFixture()
 			nodes[0].Profile, nodes[0].Improvements = profile, mask
 			sc, err := Build(nodes, links, params, delay, delay, stop)

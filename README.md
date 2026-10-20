@@ -2314,3 +2314,9 @@ their exact masks during scenario construction and core re-execution. Known
 flags do not supply missing runtime, WAL, signer or measurement evidence,
 and do not establish a complete improvement profile. Earlier pinned source
 identities remain distinct. Unknown bits remain unsupported.
+
+Recorded `bind_prepared_certificate`, `drop_unbound_extra_seals` and
+`resume_round_proposals` flags retain their exact masks in scenario inspection
+and replay. A recorded local option does not establish runtime/WAL/sign-floor
+or measurement evidence, and does not imply a complete improved profile.
+Unknown flags remain unsupported; historical core sources stay distinct.
