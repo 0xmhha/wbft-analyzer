@@ -2302,3 +2302,9 @@ Seed execution records retain optional `light_checks` observations from the WBFT
 Historical outcomes without these observations keep their existing JSON representation. The view displays only retained observations. A simulation with no recorded violations still carries any partial header-only checks separately.
 
 Recorded and requested candidate selection epochs are translated to the model input height required by the active rule. Membership evidence lists these input heights separately from observed governance events. Requests that would alter an earlier epoch are rejected. Candidate membership is an input; each run recomputes diligence and validator selection.
+
+Recorded local `reset_height_state` and `scan_ready_backlog` options are retained
+in exact journal masks for scenario construction and core re-execution. A known
+mask does not establish a complete improvement profile, runtime/WAL evidence or
+measurement eligibility. Unknown bits remain unsupported. The previous core
+identity remains distinct from the current pinned source.

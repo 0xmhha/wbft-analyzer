@@ -1,6 +1,7 @@
 package reexec
 
 import (
+	"fmt"
 	"io"
 	"testing"
 
@@ -11,8 +12,8 @@ import (
 )
 
 func TestRecordedLocalImportOptionsReplayBoundResults(t *testing.T) {
-	for _, mask := range []consensus.ImprovementSet{consensus.RestartSafety.With(consensus.WatchCommittedImport), consensus.RestartSafety.With(consensus.AdvanceOnCommitFailure), consensus.KnownImprovements()} {
-		t.Run(mask.Names()[len(mask.Names())-1], func(t *testing.T) {
+	for _, mask := range []consensus.ImprovementSet{consensus.RestartSafety.With(consensus.WatchCommittedImport), consensus.RestartSafety.With(consensus.AdvanceOnCommitFailure), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ResetHeightState), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ScanReadyBacklog), consensus.KnownImprovements()} {
+		t.Run(fmt.Sprintf("%d", mask), func(t *testing.T) {
 			nodes := make([]sim.NodeSpec, 4)
 			for i := range nodes {
 				nodes[i] = sim.NodeSpec{Options: consensus.Options{Improvements: mask}, Profile: "compat", ReplayWAL: true}
