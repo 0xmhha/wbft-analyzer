@@ -298,7 +298,7 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 		delete(out, "what")
 		switch what {
 		case "head_mismatch", "peer_inbound_overflow", "peer_inbound_disconnect", "privval_refusal", "sign_floor_skip",
-			"snapshot_missing_at_preprepare", "snapshot_missing_at_head", "consensus_halted", "disconnect", "same_block_transitions":
+			"snapshot_missing_at_preprepare", "snapshot_missing_at_local_reproposal", "snapshot_missing_at_head", "consensus_halted", "disconnect", "same_block_transitions":
 			out["what"] = what
 		}
 		var height string

@@ -167,7 +167,7 @@ func TestSignFloorMetadataIsTypedAndSurvivesPersistence(t *testing.T) {
 
 func TestNativeHealthConditionsSurviveMetadataBoundaries(t *testing.T) {
 	for _, what := range []string{"head_mismatch", "peer_inbound_overflow", "peer_inbound_disconnect", "privval_refusal", "sign_floor_skip",
-		"snapshot_missing_at_preprepare", "snapshot_missing_at_head", "consensus_halted", "disconnect", "same_block_transitions"} {
+		"snapshot_missing_at_preprepare", "snapshot_missing_at_local_reproposal", "snapshot_missing_at_head", "consensus_halted", "disconnect", "same_block_transitions"} {
 		t.Run(what, func(t *testing.T) {
 			var raw map[string]json.RawMessage
 			err := json.Unmarshal([]byte(`{"kind":"HEALTH","what":"`+what+`","h":"18446744073709551617","error":"private text"}`), &raw)
