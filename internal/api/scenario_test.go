@@ -41,12 +41,16 @@ func TestScenarioEpochEvidenceJSONContract(t *testing.T) {
 
 func TestScenarioSeedExecutionJSONContract(t *testing.T) {
 	v := ScenarioSeedPage{Seeds: []store.ScenarioSeed{{Result: scenario.SeedResult{Heights: []scenario.Height{}, Execution: &scenario.SeedExecution{StopHeight: ^uint64(0), DurationNS: 120000000000, Nodes: []scenario.SeedNode{{Index: 0, Address: "simulated-test-node", Head: 9007199254740993}}, Violations: []scenario.SeedViolation{{Kind: "progress", Node: "simulated-test-node", Detail: "head below configured target"}}}, Violations: 1}}}}
+	v.Seeds[0].Result.Execution.LightChecks = []scenario.SeedLightCheck{{Node: "simulated-test-node", Number: "18446744073709551616", Hash: "0x" + strings.Repeat("a", 64), Verdict: "CANNOT_DECIDE", Reason: "application state required", CandidateStateVerified: true}}
 	raw, err := json.Marshal(v)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Contains(raw, []byte(`"head":"9007199254740993"`)) || !bytes.Contains(raw, []byte(`"configured_stop_height":"18446744073709551615"`)) {
 		t.Fatal("large simulator quantities changed JSON representation", string(raw))
+	}
+	if !bytes.Contains(raw, []byte(`"number":"18446744073709551616"`)) || !bytes.Contains(raw, []byte(`"verdict":"CANNOT_DECIDE"`)) || !bytes.Contains(raw, []byte(`"candidate_state_verified":true`)) {
+		t.Fatal("partial light observation changed", string(raw))
 	}
 	var value any
 	decoder := json.NewDecoder(bytes.NewReader(raw))
@@ -306,5 +310,25 @@ func TestNetworkChangeRequestJSONContract(t *testing.T) {
 		if err := s.check(v, body, "$"); err == nil {
 			t.Fatal("invalid network change admitted by contract", raw)
 		}
+	}
+}
+
+func TestCandidateStateInputJSONContract(t *testing.T) {
+	raw, err := json.Marshal(scenario.CandidateInputObservation{Phase: "effective", Index: 0, Epoch: ^uint64(0), StateBlock: ^uint64(0) - 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(raw, []byte(`"epoch":"18446744073709551615"`)) || !bytes.Contains(raw, []byte(`"candidate_state_block":"18446744073709551614"`)) {
+		t.Fatal(string(raw))
+	}
+	var value any
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if err = decoder.Decode(&value); err != nil {
+		t.Fatal(err)
+	}
+	s := loadSpec(t)
+	if err = s.check(value, map[string]any{"$ref": "#/components/schemas/ScenarioCandidateInputObservation"}, "$"); err != nil {
+		t.Fatal(err)
 	}
 }

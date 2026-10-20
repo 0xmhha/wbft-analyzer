@@ -28,6 +28,7 @@ type SeedResult struct {
 // SeedExecution retains the official simulator's outcomes without inferring
 // violation kinds from counts or assigning recorded identities to test keys.
 type SeedExecution struct {
+	LightChecks         []SeedLightCheck                     `json:"light_checks,omitempty"`
 	StaticConfiguration *SeedStaticConfigurationObservations `json:"static_configuration_observations,omitempty"`
 	Membership          *SeedMembershipObservations          `json:"membership_observations,omitempty"`
 	Messages            *SeedMessageObservations             `json:"message_observations,omitempty"`
@@ -51,6 +52,15 @@ type SeedViolation struct {
 	Detail string `json:"detail"`
 }
 
+type SeedLightCheck struct {
+	Node                   string `json:"simulated_node"`
+	Number                 string `json:"number"`
+	Hash                   string `json:"hash"`
+	Verdict                string `json:"verdict" enum:"CANNOT_DECIDE"`
+	Reason                 string `json:"reason"`
+	CandidateStateVerified bool   `json:"candidate_state_verified"`
+}
+
 func seedExecution(sc sim.Scenario, result *sim.Result) *SeedExecution {
 	out := &SeedExecution{StopHeight: sc.Until.Height, DurationNS: int64(sc.Until.Duration), Nodes: []SeedNode{}, Violations: []SeedViolation{}}
 	for i, head := range result.Heads {
@@ -62,6 +72,9 @@ func seedExecution(sc sim.Scenario, result *sim.Result) *SeedExecution {
 	}
 	for _, v := range result.Violations {
 		out.Violations = append(out.Violations, SeedViolation{Kind: v.Kind, Node: v.Node.Hex(), Detail: v.Detail})
+	}
+	for _, check := range result.LightChecks {
+		out.LightChecks = append(out.LightChecks, SeedLightCheck{Node: check.Node.Hex(), Number: check.Number, Hash: check.Hash.Hex(), Verdict: check.Verdict, Reason: check.Reason, CandidateStateVerified: check.FullStateVerified})
 	}
 	return out
 }

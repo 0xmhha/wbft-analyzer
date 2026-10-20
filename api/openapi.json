@@ -8700,6 +8700,39 @@
         ],
         "type": "object"
       },
+      "ScenarioCandidateInputObservation": {
+        "additionalProperties": false,
+        "properties": {
+          "candidate_state_block": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "epoch": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "index": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "phase": {
+            "enum": [
+              "original",
+              "retained",
+              "removed",
+              "effective"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidate_state_block",
+          "epoch",
+          "index",
+          "phase"
+        ],
+        "type": "object"
+      },
       "ScenarioComparisonPlot": {
         "additionalProperties": false,
         "properties": {
@@ -9790,6 +9823,12 @@
           },
           "baseline_execution_sha256": {
             "type": "string"
+          },
+          "candidate_inputs": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioCandidateInputObservation"
+            },
+            "type": "array"
           },
           "counterfactual_execution_sha256": {
             "type": "string"
@@ -11190,6 +11229,12 @@
               }
             ]
           },
+          "light_checks": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioSeedLightCheck"
+            },
+            "type": "array"
+          },
           "membership_observations": {
             "anyOf": [
               {
@@ -11302,6 +11347,41 @@
         "required": [
           "node_starts",
           "source"
+        ],
+        "type": "object"
+      },
+      "ScenarioSeedLightCheck": {
+        "additionalProperties": false,
+        "properties": {
+          "candidate_state_verified": {
+            "type": "boolean"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "simulated_node": {
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "CANNOT_DECIDE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidate_state_verified",
+          "hash",
+          "number",
+          "reason",
+          "simulated_node",
+          "verdict"
         ],
         "type": "object"
       },

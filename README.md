@@ -2285,3 +2285,11 @@ classification and observed calls. More than twenty witnesses or conflicting
 results remain ambiguous; no latest row is chosen to make a match. Receipt
 outcomes and named return values do not establish the original throwing call,
 proposal causation, epoch change causation or complete governance history.
+
+### Partial light checks in seed diagnostics
+
+Seed execution records retain optional `light_checks` observations from the WBFT simulator. Each row records the simulated node, full block number, block hash, header-only verdict, reason and the separately observed epoch candidate-state verification result. The diagnostics view keeps `CANNOT_DECIDE` visible even when the epoch candidate check succeeded, and pages these records in groups of 100. Multiple signed copies can produce multiple checks for the same block.
+
+Historical outcomes without these observations keep their existing JSON representation. The view displays only retained observations. A simulation with no recorded violations still carries any partial header-only checks separately.
+
+Recorded and requested candidate selection epochs are translated to the model input height required by the active rule. Membership evidence lists these input heights separately from observed governance events. Requests that would alter an earlier epoch are rejected. Candidate membership is an input; each run recomputes diligence and validator selection.

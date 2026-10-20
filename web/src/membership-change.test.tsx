@@ -3,7 +3,8 @@ import {renderToStaticMarkup} from "react-dom/server";
 import {membershipChange,type SyntheticNodeFields} from "./membership-change";
 import {MembershipChangeForm} from "./views/MembershipChangeForm";
 import {NetworkChangeEvidence} from "./views/NetworkChangeEvidence";
-import {SeedMembershipEvidence} from "./views/MembershipEvidence";
+import {SeedMembershipEvidence,MembershipEvidence} from "./views/MembershipEvidence";
+import type {Schemas} from "./api/client";
 
 const node=():SyntheticNodeFields=>({alias:"new-test",start:"2000000000",timeout:"2",period:"1",cap:"0",build:"0,1000000",imports:"1000000"});
 const links=Array.from({length:4},(_,i)=>`${i} -> 4 | 1000000,2000000 | 0\n4 -> ${i} | 3000000 | 123`).join("\n");
@@ -41,4 +42,14 @@ it("paginates the full bounded synthetic directed graph",()=>{
 it("distinguishes actual canonical header membership from per-node agreement",()=>{
  const html=renderToStaticMarkup(<SeedMembershipEvidence observations={{source:"official_simulator_epoch_headers/1",scope:"longest_result_chain_not_each_node",unobserved_requests:[{block:"8",candidates:[0,2]}],epochs:[{block:"4",block_hash:"synthetic-hash",governs_from:"5",next_block_observed:false,candidates:[{node:4,simulated_address:"test-new",diligence:"18446744073709551615"}],validators:[{node:4,candidate_index:0,simulated_address:"test-new"}]}]}}/>);
  expect(html).toContain("does not establish what each node imported");expect(html).toContain("Requested epochs without an observed header (1)");expect(html).toContain("18446744073709551615");expect(html).toContain("4 (candidate 0)");expect(html).toContain("not observed");expect(html).not.toContain("all nodes agree on");
+});
+
+it("shows candidate state inputs separately from the requested selection epoch",()=>{
+ const change=membershipChange(4,60000000000,"merge",[],"","4: 0,1,2");
+ if(change.kind!=="synthetic_membership")throw new Error("membership fixture has another kind");
+ const effect:Schemas["ScenarioMembershipEffect"]={source:"declared_synthetic_membership/1",baseline_execution_sha256:"baseline",counterfactual_execution_sha256:"counterfactual",original_nodes:4,genesis_validators:4,synthetic_nodes:[],original_epochs:[],retained_epochs:[],removed_epochs:[],effective_epochs:[{block:"4",candidates:[0,1,2]}],assumptions:[],candidate_inputs:[{phase:"effective",index:0,epoch:"18446744073709551615",candidate_state_block:"18446744073709551614"}]};
+ const html=renderToStaticMarkup(<MembershipEvidence change={change} effect={effect}/>);
+ for(const text of ["Candidate input heights","not observed governance execution times","Selected epoch","Candidate state block","18446744073709551615","18446744073709551614"])expect(html).toContain(text);
+ delete effect.candidate_inputs;
+ expect(renderToStaticMarkup(<MembershipEvidence change={change} effect={effect}/>)).not.toContain("Candidate input heights");
 });

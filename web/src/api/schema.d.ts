@@ -3562,6 +3562,14 @@ export interface components {
             status: string;
             version: string;
         };
+        ScenarioCandidateInputObservation: {
+            candidate_state_block: string;
+            epoch: string;
+            /** Format: int64 */
+            index: number;
+            /** @enum {string} */
+            phase: "original" | "retained" | "removed" | "effective";
+        };
         ScenarioComparisonPlot: {
             baseline: components["schemas"]["ScenarioDistribution"];
             counterfactual: components["schemas"]["ScenarioDistribution"];
@@ -3824,6 +3832,7 @@ export interface components {
         ScenarioMembershipEffect: {
             assumptions: string[];
             baseline_execution_sha256: string;
+            candidate_inputs?: components["schemas"]["ScenarioCandidateInputObservation"][];
             counterfactual_execution_sha256: string;
             effective_epochs: components["schemas"]["ScenarioMembershipEpoch"][];
             /** Format: int64 */
@@ -4160,6 +4169,7 @@ export interface components {
             configured_duration_ns: string;
             configured_stop_height: string;
             lifecycle_observations?: components["schemas"]["ScenarioSeedLifecycleObservations"] | null;
+            light_checks?: components["schemas"]["ScenarioSeedLightCheck"][];
             membership_observations?: components["schemas"]["ScenarioSeedMembershipObservations"] | null;
             message_observations?: components["schemas"]["ScenarioSeedMessageObservations"] | null;
             nodes: components["schemas"]["ScenarioSeedNode"][];
@@ -4180,6 +4190,15 @@ export interface components {
         ScenarioSeedLifecycleObservations: {
             node_starts: components["schemas"]["ScenarioSeedNodeStart"][];
             source: string;
+        };
+        ScenarioSeedLightCheck: {
+            candidate_state_verified: boolean;
+            hash: string;
+            number: string;
+            reason: string;
+            simulated_node: string;
+            /** @enum {string} */
+            verdict: "CANNOT_DECIDE";
         };
         ScenarioSeedMembershipCandidate: {
             diligence: string;

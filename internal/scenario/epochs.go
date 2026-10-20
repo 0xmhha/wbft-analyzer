@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"reflect"
+	"slices"
 
 	"github.com/0xmhha/wbft/chain/epoch"
 	"github.com/0xmhha/wbft/chain/validator"
@@ -145,7 +146,11 @@ func ApplyEpochs(sc sim.Scenario, original []types.Address, genesis int, plan []
 			return sc, errors.New("unverified epoch schedule")
 		}
 		previous = e.Block
-		c := sim.EpochChange{Block: e.Block, Candidates: []int{}}
+		input, err := candidateInputBlock(sc.Params, e.Block)
+		if err != nil {
+			return sc, err
+		}
+		c := sim.EpochChange{Block: input, Candidates: []int{}}
 		seen := map[int]bool{}
 		for _, a := range e.Candidates {
 			i, ok := index[a]
@@ -157,6 +162,12 @@ func ApplyEpochs(sc sim.Scenario, original []types.Address, genesis int, plan []
 		}
 		if len(c.Candidates) == 0 {
 			return sc, errors.New("empty epoch membership")
+		}
+		if len(sc.Epochs) > 0 && sc.Epochs[len(sc.Epochs)-1].Block == c.Block {
+			if !slices.Equal(sc.Epochs[len(sc.Epochs)-1].Candidates, c.Candidates) {
+				return sc, errCandidateState
+			}
+			continue
 		}
 		sc.Epochs = append(sc.Epochs, c)
 	}
