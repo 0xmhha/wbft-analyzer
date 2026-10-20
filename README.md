@@ -2337,3 +2337,11 @@ The message browser labels it **Local proposal wait**. A matching expiry causes
 the core to recheck the current candidate. It is not a received-message timer or
 proof of physical reception. The local timer and checkpoint format extension
 requires a compatible reader; historical three-timer records remain distinct.
+
+
+Recorded local `cap_initial_round_timeout` retains its exact option mask in
+scenario inspection and replay. It changes ordinary local timer arming when
+the base exceeds a positive cap, while the public reference computation stays
+available. A recorded option does not establish runtime, WAL, signing-floor,
+physical timing or complete-profile evidence. Historical source identities and
+unsupported flags remain distinct; reference conformance scopes are unchanged.
