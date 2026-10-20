@@ -2308,3 +2308,9 @@ in exact journal masks for scenario construction and core re-execution. A known
 mask does not establish a complete improvement profile, runtime/WAL evidence or
 measurement eligibility. Unknown bits remain unsupported. The previous core
 identity remains distinct from the current pinned source.
+
+Recorded local `cancel_stale_retries` and `follow_higher_rounds` options retain
+their exact masks during scenario construction and core re-execution. Known
+flags do not supply missing runtime, WAL, signer or measurement evidence,
+and do not establish a complete improvement profile. Earlier pinned source
+identities remain distinct. Unknown bits remain unsupported.

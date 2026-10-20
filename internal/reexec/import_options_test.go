@@ -12,7 +12,7 @@ import (
 )
 
 func TestRecordedLocalImportOptionsReplayBoundResults(t *testing.T) {
-	for _, mask := range []consensus.ImprovementSet{consensus.RestartSafety.With(consensus.WatchCommittedImport), consensus.RestartSafety.With(consensus.AdvanceOnCommitFailure), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ResetHeightState), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ScanReadyBacklog), consensus.KnownImprovements()} {
+	for _, mask := range []consensus.ImprovementSet{consensus.RestartSafety.With(consensus.WatchCommittedImport), consensus.RestartSafety.With(consensus.AdvanceOnCommitFailure), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ResetHeightState), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ScanReadyBacklog), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.CancelStaleRetries), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.FollowHigherRoundChanges), consensus.KnownImprovements()} {
 		t.Run(fmt.Sprintf("%d", mask), func(t *testing.T) {
 			nodes := make([]sim.NodeSpec, 4)
 			for i := range nodes {
