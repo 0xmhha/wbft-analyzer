@@ -19,6 +19,7 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/source/observe"
 	"github.com/0xmhha/wbft-analyzer/internal/source/rpc"
 	"github.com/0xmhha/wbft/codec"
+	"github.com/0xmhha/wbft/observe/journal"
 	"github.com/0xmhha/wbft/observe/participation"
 	"github.com/0xmhha/wbft/types"
 )
@@ -32,6 +33,7 @@ type followRPC struct {
 	roundClaims, roundConflict bool
 	address                    string
 	failMethod                 string
+	checkedPolicy              bool
 	headers                    map[uint64]*types.Header
 	raw                        map[uint64]json.RawMessage
 }
@@ -114,7 +116,11 @@ func (f *followRPC) serve(w http.ResponseWriter, r *http.Request) {
 				result = json.RawMessage("null")
 			}
 		case "wbft_nodeInfo":
-			result = map[string]any{"impl": "wbft", "address": f.address, "validator": true, "chainId": 8283, "genesisHash": codec.BlockHash(f.headers[0]).Hex(), "head": map[string]string{"number": f.headers[f.head].Number.String(), "hash": codec.BlockHash(f.headers[f.head]).Hex()}, "mode": "embedded", "version": "v0.0.0-synthetic", "build": "synthetic", "logProfile": "wbft@synthetic", "rulesDigest": "0x" + strings.Repeat("4", 64), "improvements": []any{}, "ruleActivations": map[string]string{}}
+			improvements := []any{}
+			if f.checkedPolicy {
+				improvements = append(improvements, map[string]string{"name": "checked_proposer_policy", "source": "profile"})
+			}
+			result = map[string]any{"impl": "wbft", "address": f.address, "validator": true, "chainId": 8283, "genesisHash": codec.BlockHash(f.headers[0]).Hex(), "head": map[string]string{"number": f.headers[f.head].Number.String(), "hash": codec.BlockHash(f.headers[f.head]).Hex()}, "mode": "embedded", "version": "v0.0.0-synthetic", "build": "synthetic", "logProfile": "wbft@synthetic", "rulesDigest": "0x" + strings.Repeat("4", 64), "improvements": improvements, "ruleActivations": map[string]string{}}
 		case "wbft_participation":
 			result = records()
 		case "wbft_participationSummary":
@@ -147,6 +153,50 @@ func followOptions(t *testing.T, c *rpc.Client, name string) FollowOptions {
 		t.Fatal(e)
 	}
 	return FollowOptions{Name: name, Node: name, From: 1, Config: raw, RPC: c}
+}
+
+func TestFollowBindsDeclaredPolicyDefaults(t *testing.T) {
+	s := testStore(t)
+	wire, client := newFollowRPC(t)
+	wire.checkedPolicy = true
+	options := followOptions(t, client, "synthetic-follow-policy")
+	var config map[string]any
+	if err := json.Unmarshal(options.Config, &config); err != nil {
+		t.Fatal(err)
+	}
+	delete(config["anzeon"].(map[string]any)["wbft"].(map[string]any), "proposerPolicy")
+	raw, err := json.Marshal(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	options.Config = raw
+	follower, err := OpenFollower(t.Context(), s, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer follower.Close()
+	if follower.ProposerPolicyProfile != journal.CheckedProposerPolicyProfile || string(follower.Options.Config) != string(raw) {
+		t.Fatal("recorded profile or original configuration lost")
+	}
+	result, err := follower.Step(t.Context())
+	if err != nil || result.Headers != 1 {
+		t.Fatal("declared-default follow failed", result, err)
+	}
+	before, err := s.FollowState(t.Context(), follower.Dataset.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wire.mu.Lock()
+	wire.head = 3
+	wire.checkedPolicy = false
+	wire.mu.Unlock()
+	if _, err := follower.Step(t.Context()); !errors.Is(err, ErrFollowIdentity) {
+		t.Fatal("changed policy declaration accepted", err)
+	}
+	after, err := s.FollowState(t.Context(), follower.Dataset.ID)
+	if err != nil || before.Cursor != after.Cursor || before.TotalBatches != after.TotalBatches {
+		t.Fatal("changed profile advanced cursor", before, after, err)
+	}
 }
 
 func TestFollowKeepsCursorOnConflictingRoundChangeClaims(t *testing.T) {

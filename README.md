@@ -769,6 +769,17 @@ event capture or historical send absence.
 
 ## Native follow
 
+Recorded journal proposer-policy profiles control effective configuration:
+`checked_v1` supplies RoundRobin when the base policy is omitted and rejects
+unsupported explicit policies. An absent profile keeps legacy parsing, and an
+unknown profile is refused. Original configuration bytes and hashes stay intact.
+For header imports, `ingest range --proposer-policy-profile checked_v1` explicitly
+declares this derivation; the default remains legacy. Live follow binds the
+node's `checked_proposer_policy` declaration with source `profile` and refuses a
+changed declaration before committing another batch. These declarations identify
+configuration behavior; they do not establish execution or network acceptance.
+Legacy reconstruction inputs retain their original policy checks and identities.
+
 `follow` continuously captures bounded header ranges and native WBFT participation.
 Each source has a separate durable cursor. RPC outages, participation gaps and a
 changing summary retain the cursor for retry. Network, node, configuration and

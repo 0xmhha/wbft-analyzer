@@ -54,7 +54,7 @@ func InspectNodeOptions(ctx context.Context, directory string, address types.Add
 		}
 		if first == nil {
 			first = raw
-			config, err = types.ParseChainConfig(segment.Core.ChainConfig)
+			config, err = segment.Core.Configuration()
 			if err != nil {
 				return out, nil, err
 			}

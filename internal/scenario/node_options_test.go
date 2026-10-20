@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/0xmhha/wbft/conformance/sim"
+	"github.com/0xmhha/wbft/consensus"
+	"github.com/0xmhha/wbft/observe/journal"
 	"github.com/0xmhha/wbft/types"
 )
 
@@ -55,5 +57,36 @@ func TestRecordedNodeOptionsFromOfficialJournal(t *testing.T) {
 	cancel()
 	if _, _, err := InspectNodeOptions(ctx, path, address); err == nil {
 		t.Fatal("cancel ignored")
+	}
+}
+
+func TestRecordedNodePolicyDefaultsAreExplicit(t *testing.T) {
+	address := types.Address{1}
+	for _, profile := range []string{"", journal.CheckedProposerPolicyProfile, "future"} {
+		directory := t.TempDir()
+		raw := []byte(`{"chainId":7,"anzeon":{"wbft":{"epochLength":10}}}`)
+		writer, err := journal.Open(journal.Options{Dir: directory, Synchronous: true}, journal.Identity{Run: "synthetic-policy", Self: address, Core: journal.CoreOptions{Self: address, ChainConfig: raw, Profile: "compat", Improvements: uint64(consensus.RestartSafety), ProposerPolicyProfile: profile}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = writer.Close(); err != nil {
+			t.Fatal(err)
+		}
+		_, cfg, err := InspectNodeOptions(t.Context(), directory, address)
+		if profile == "future" {
+			if err == nil {
+				t.Fatal("unknown recorded policy profile accepted")
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if profile == "" && cfg.Base().ProposerPolicy != nil {
+			t.Fatal("legacy recording acquired a default")
+		}
+		if profile != "" && (cfg.Base().ProposerPolicy == nil || cfg.Base().ProposerPolicy.ID != 0) {
+			t.Fatal("recorded default not applied")
+		}
 	}
 }

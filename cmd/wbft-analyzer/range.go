@@ -15,6 +15,7 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/source/headers"
 	"github.com/0xmhha/wbft-analyzer/internal/source/rpc"
 	"github.com/0xmhha/wbft-analyzer/internal/store"
+	"github.com/0xmhha/wbft/observe/journal"
 )
 
 func runRange(args []string, stdout, stderr io.Writer) int {
@@ -24,6 +25,7 @@ func runRange(args []string, stdout, stderr io.Writer) int {
 	endpoint := fs.String("rpc", "", "read-only RPC endpoint")
 	blocks := fs.String("blocks", "", "directory of zero-padded block RLP files; alternative to RPC")
 	config := fs.String("config", "", "genesis config JSON file (required; no preset assumptions)")
+	policyProfile := fs.String("proposer-policy-profile", "", "declared proposer policy profile: empty (legacy) or checked_v1")
 	from := fs.String("from", "", "first canonical index, decimal")
 	to := fs.String("to", "", "last canonical index, decimal; the child is also fetched")
 	name := fs.String("name", "", "dataset name, repeat to resume")
@@ -31,6 +33,10 @@ func runRange(args []string, stdout, stderr io.Writer) int {
 	network := fs.String("network", "", "display name")
 	rate := fs.Float64("rate", 5, "RPC batches per second, at most 5 (100 headers per batch)")
 	if err := fs.Parse(args); err != nil {
+		return exitUsage
+	}
+	if *policyProfile != "" && *policyProfile != journal.CheckedProposerPolicyProfile {
+		fs.Usage()
 		return exitUsage
 	}
 	a, e1 := strconv.ParseUint(*from, 10, 64)
@@ -82,7 +88,7 @@ func runRange(args []string, stdout, stderr io.Writer) int {
 		return exitInternal
 	}
 	last := time.Now()
-	result, err := ingest.Range(ctx, s, ingest.RangeOptions{Name: *name, Node: *node, NetworkName: *network, From: a, To: b, Config: raw, Source: src, Progress: func(n int64, d time.Duration) {
+	result, err := ingest.Range(ctx, s, ingest.RangeOptions{Name: *name, Node: *node, NetworkName: *network, From: a, To: b, Config: raw, ProposerPolicyProfile: *policyProfile, Source: src, Progress: func(n int64, d time.Duration) {
 		if time.Since(last) >= 10*time.Second {
 			fmt.Fprintf(stderr, "imported %d headers in %s\n", n, d.Round(time.Second))
 			last = time.Now()

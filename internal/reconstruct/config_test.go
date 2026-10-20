@@ -35,6 +35,7 @@ func TestReconstructionGenesisRefusesForeignOrAmbiguousConfiguration(t *testing.
 		strings.Replace(syntheticGenesisConfig, `"chainId":7`, `"chainId":7,"chainId":7`, 1),
 		`{"alloc":{}}`,
 		`{"config":{"chainId":7,"anzeon":{}}}`,
+		strings.Replace(syntheticGenesisConfig, `,"proposerPolicy":0`, ``, 1),
 	} {
 		m := sourceManifest(t, "1", true)
 		f := sourceFile(t, t.TempDir(), "local-genesis.json", []byte(raw))
@@ -49,5 +50,16 @@ func TestReconstructionGenesisRefusesForeignOrAmbiguousConfiguration(t *testing.
 	f.m.Scopes[0].GenesisSHA = strings.Repeat("f", 64)
 	if _, err := Assess(t.Context(), f.write(t), "1", "1"); err == nil {
 		t.Fatal("scope accepted a different configuration identity")
+	}
+}
+
+func TestReconstructionRetainsLegacyPolicyIdentity(t *testing.T) {
+	m := sourceManifest(t, "1", true)
+	raw := strings.Replace(syntheticGenesisConfig, `"proposerPolicy":0`, `"proposerPolicy":2`, 1)
+	f := sourceFile(t, t.TempDir(), "local-genesis.json", []byte(raw))
+	m.Genesis = &f
+	cfg, err := genesisConfig(t.Context(), m)
+	if err != nil || cfg.Base().ProposerPolicy.ID != 2 {
+		t.Fatal("legacy source configuration was normalized", err)
 	}
 }

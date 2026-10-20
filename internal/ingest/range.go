@@ -14,11 +14,13 @@ import (
 	"github.com/0xmhha/wbft-analyzer/internal/store"
 	"github.com/0xmhha/wbft/chain/validator"
 	"github.com/0xmhha/wbft/codec"
+	"github.com/0xmhha/wbft/observe/journal"
 	"github.com/0xmhha/wbft/types"
 )
 
 type RangeOptions struct {
 	Name, Node, NetworkName string
+	ProposerPolicyProfile   string
 	From, To                uint64
 	Config                  []byte
 	Source                  *headers.Source
@@ -35,7 +37,7 @@ func Range(ctx context.Context, s *store.Store, o RangeOptions) (res RangeResult
 	if o.Name == "" || o.Node == "" || o.To < o.From || o.To == ^uint64(0) || o.To-o.From >= 1_000_000 {
 		return res, errors.New("range needs a name, node, and 1..1000000 indices with room for the child")
 	}
-	cfg, err := types.ParseChainConfig(o.Config)
+	cfg, err := (journal.CoreOptions{ChainConfig: o.Config, ProposerPolicyProfile: o.ProposerPolicyProfile}).Configuration()
 	if err != nil {
 		return res, err
 	}
@@ -66,7 +68,11 @@ func Range(ctx context.Context, s *store.Store, o RangeOptions) (res RangeResult
 	}
 	src.CacheLimit = int(length*3) + 200
 	sum := sha256.Sum256(o.Config)
-	meta, _ := json.Marshal(map[string]string{"from": strconv.FormatUint(o.From, 10), "to": strconv.FormatUint(o.To, 10), "config_sha256": hex.EncodeToString(sum[:]), "genesis_hash": codec.BlockHash(g).Hex()})
+	metadata := map[string]string{"from": strconv.FormatUint(o.From, 10), "to": strconv.FormatUint(o.To, 10), "config_sha256": hex.EncodeToString(sum[:]), "genesis_hash": codec.BlockHash(g).Hex()}
+	if o.ProposerPolicyProfile != "" {
+		metadata["proposer_policy_profile"] = o.ProposerPolicyProfile
+	}
+	meta, _ := json.Marshal(metadata)
 	d, release, err := s.BeginRange(ctx, store.NetworkKey{ChainID: cfg.ChainID.String(), GenesisHash: codec.BlockHash(g).Hex(), Name: o.NetworkName}, o.Name, meta)
 	if err != nil {
 		return res, err
