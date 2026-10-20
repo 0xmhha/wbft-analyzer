@@ -32,12 +32,13 @@ type FollowOptions struct {
 	RPC                     *rpc.Client
 }
 type Follower struct {
-	Store    *store.Store
-	Options  FollowOptions
-	Dataset  store.Dataset
-	Address  string
-	Identity store.NetworkKey
-	release  func()
+	Store                 *store.Store
+	Options               FollowOptions
+	Dataset               store.Dataset
+	Address               string
+	Identity              store.NetworkKey
+	ProposerPolicyProfile string
+	release               func()
 }
 type FollowResult struct {
 	DatasetID    int64  `json:"dataset_id"`
@@ -87,6 +88,15 @@ func OpenFollower(ctx context.Context, s *store.Store, o FollowOptions) (f *Foll
 	if snap.Node.ChainID.Cmp(cfg.ChainID) != 0 || snap.Node.GenesisHash.String() != genesis {
 		return nil, ErrFollowIdentity
 	}
+	profile, e := recordedPolicyProfile(snap.Node)
+	if e != nil {
+		return nil, e
+	}
+	if profile != "" {
+		if _, e := cfg.CheckedProposerPolicy(); e != nil {
+			return nil, e
+		}
+	}
 	parent := types.Hash{}.Hex()
 	if o.From > 0 {
 		h, e := src.Read(o.From - 1)
@@ -97,12 +107,17 @@ func OpenFollower(ctx context.Context, s *store.Store, o FollowOptions) (f *Foll
 	}
 	sum := sha256.Sum256(o.Config)
 	address := strings.ToLower(snap.Node.Address.String())
-	meta, _ := json.Marshal(map[string]string{"version": "wbft-follow/1", "from": strconv.FormatUint(o.From, 10), "node": o.Node, "address": address, "config_sha256": hex.EncodeToString(sum[:]), "initial_parent": parent})
+	metadata := map[string]string{"version": "wbft-follow/1", "from": strconv.FormatUint(o.From, 10), "node": o.Node, "address": address, "config_sha256": hex.EncodeToString(sum[:]), "initial_parent": parent}
+	if profile != "" {
+		metadata["proposer_policy_profile"] = profile
+		metadata["proposer_policy_evidence"] = "node_info_declaration"
+	}
+	meta, _ := json.Marshal(metadata)
 	d, release, e := s.BeginFollow(ctx, store.NetworkKey{ChainID: cfg.ChainID.String(), GenesisHash: genesis, Name: o.NetworkName}, o.Name, meta, o.From, parent)
 	if e != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFollowIdentity, e)
 	}
-	return &Follower{Store: s, Options: o, Dataset: d, Address: address, Identity: store.NetworkKey{ChainID: cfg.ChainID.String(), GenesisHash: genesis}, release: release}, nil
+	return &Follower{Store: s, Options: o, Dataset: d, Address: address, Identity: store.NetworkKey{ChainID: cfg.ChainID.String(), GenesisHash: genesis}, ProposerPolicyProfile: profile, release: release}, nil
 }
 func (f *Follower) Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -216,6 +231,10 @@ func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
 	if strings.ToLower(snap.Node.Address.String()) != f.Address || snap.Node.GenesisHash.String() != f.Identity.GenesisHash || snap.Node.ChainID.String() != f.Identity.ChainID {
 		return res, ErrFollowIdentity
 	}
+	profile, e := recordedPolicyProfile(snap.Node)
+	if e != nil || profile != f.ProposerPolicyProfile {
+		return res, ErrFollowIdentity
+	}
 	stage = "validate_observations"
 	if e = completeFollow(snap, src, from, to); e != nil {
 		return res, e
@@ -224,7 +243,7 @@ func (f *Follower) Step(ctx context.Context) (res FollowResult, err error) {
 	// can replay the batch without replacing an earlier observation snapshot.
 	prefix := fmt.Sprintf("follow-%d-%d-%d", f.Dataset.ID, from, to)
 	stage = "ingest_headers"
-	r, e := Range(ctx, f.Store, RangeOptions{Name: prefix + "-headers", Node: f.Options.Node, NetworkName: f.Options.NetworkName, From: from, To: to, Config: f.Options.Config, Source: src})
+	r, e := Range(ctx, f.Store, RangeOptions{Name: prefix + "-headers", Node: f.Options.Node, NetworkName: f.Options.NetworkName, From: from, To: to, Config: f.Options.Config, ProposerPolicyProfile: f.ProposerPolicyProfile, Source: src})
 	if e != nil {
 		return res, e
 	}

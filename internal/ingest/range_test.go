@@ -1,6 +1,7 @@
 package ingest
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/0xmhha/wbft-analyzer/internal/source/headers"
 	"github.com/0xmhha/wbft-analyzer/internal/source/rpc"
+	"github.com/0xmhha/wbft/observe/journal"
 )
 
 // The two RPC surfaces replay actual public headers independently. Node copies
@@ -87,5 +89,38 @@ func TestRangeRPCAndResume(t *testing.T) {
 	}
 	if ds[len(ds)-1].Status != "failed" {
 		t.Fatal(ds)
+	}
+}
+
+func TestRangeUsesOnlyDeclaredPolicyDefaults(t *testing.T) {
+	s := testStore(t)
+	raw, err := os.ReadFile("../source/headers/testdata/config.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var config map[string]any
+	if err := json.Unmarshal(raw, &config); err != nil {
+		t.Fatal(err)
+	}
+	delete(config["anzeon"].(map[string]any)["wbft"].(map[string]any), "proposerPolicy")
+	raw, err = json.Marshal(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	original := bytes.Clone(raw)
+	options := RangeOptions{Name: "declared-default", Node: "a", From: 1, To: 3, Config: raw, Source: &headers.Source{Blocks: "../source/headers/testdata"}}
+	if _, err := Range(t.Context(), s, options); err == nil {
+		t.Fatal("legacy source acquired a default")
+	}
+	options.Name = "checked-default"
+	options.Source = &headers.Source{Blocks: "../source/headers/testdata"}
+	options.ProposerPolicyProfile = journal.CheckedProposerPolicyProfile
+	result, err := Range(t.Context(), s, options)
+	if err != nil || result.Headers != 3 || !bytes.Equal(raw, original) {
+		t.Fatal("declared effective configuration failed or rewrote its input", result, err)
+	}
+	options.ProposerPolicyProfile = "future"
+	if _, err := Range(t.Context(), s, options); err == nil {
+		t.Fatal("unknown policy profile accepted")
 	}
 }
