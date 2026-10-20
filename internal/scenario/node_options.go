@@ -45,6 +45,9 @@ func InspectNodeOptions(ctx context.Context, directory string, address types.Add
 		if segment.Self != address || segment.Core.Self != address || segment.Core.BacklogLimit > math.MaxInt32 || segment.Core.Profile != "" && segment.Core.Profile != "compat" && segment.Core.Profile != "improved" {
 			return out, nil, errors.New("invalid recorded node configuration")
 		}
+		if consensus.ImprovementSet(segment.Core.Improvements) & ^consensus.KnownImprovements() != 0 {
+			return out, nil, errors.New("unknown recorded local behavior flags")
+		}
 		raw, err := json.Marshal(segment.Core)
 		if err != nil {
 			return out, nil, err
@@ -63,13 +66,17 @@ func InspectNodeOptions(ctx context.Context, directory string, address types.Add
 			out.Profile = segment.Core.Profile
 			out.ProfileEvidence = "recorded"
 			if out.Profile == "" {
-				if segment.Core.Improvements != uint64(consensus.RestartSafety) {
+				flags := consensus.ImprovementSet(segment.Core.Improvements)
+				if flags&consensus.RestartSafety != consensus.RestartSafety {
 					return out, nil, errors.New("recorded behavior profile unavailable")
 				}
 				// The name is derived only for simulator metadata; the exact recorded
 				// flags determine behavior and remain authoritative.
 				out.Profile = "compat"
 				out.ProfileEvidence = "derived_restart_safety_flags"
+				if flags != consensus.RestartSafety {
+					out.ProfileEvidence = "derived_recorded_node_flags"
+				}
 			}
 		}
 	}

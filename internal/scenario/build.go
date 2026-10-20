@@ -39,6 +39,9 @@ func buildScenario(nodes []Node, links []Link, params sim.Params, build, imports
 	index := map[string]int{}
 	for i, n := range nodes {
 		modeled := model == EmpiricalCoreModel && n.RuntimeEvidence == "modeled_core_substitution" && n.ProfileEvidence == "modeled_core_substitution" && n.Profile == "compat" && n.Improvements == 0 && n.BacklogLimit == 0 && !n.ReplayWAL
+		if consensus.ImprovementSet(n.Improvements) & ^consensus.KnownImprovements() != 0 {
+			return out, errors.New("unknown local behavior flags")
+		}
 		if n.Profile != "compat" && n.Profile != "improved" || n.BacklogLimit < 0 || n.RuntimeEvidence != "verified" && !modeled || n.SignFloor != nil {
 			return out, errors.New("invalid node configuration")
 		}
