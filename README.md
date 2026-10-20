@@ -2326,3 +2326,14 @@ retain their exact masks in scenario inspection and replay. The recorded
 local options do not establish runtime/WAL/sign-floor or measurement evidence
 and do not imply complete-profile acceptance. Unknown flags remain unsupported;
 historical core source identities stay distinct.
+
+
+Recorded local `validate_round_proposals` retains its exact option mask in
+scenario inspection and replay. Prepared reproposals validate the selected local
+candidate; this option does not establish application execution or full-profile
+acceptance. Native journal and scheduler readers retain `round_proposal` as a
+separate local wait, including full view, generation and four-kind cancellation.
+The message browser labels it **Local proposal wait**. A matching expiry causes
+the core to recheck the current candidate. It is not a received-message timer or
+proof of physical reception. The local timer and checkpoint format extension
+requires a compatible reader; historical three-timer records remain distinct.
