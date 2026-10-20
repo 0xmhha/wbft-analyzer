@@ -224,6 +224,11 @@ func TestHelperBoundsIdentityAndMissingHeight(t *testing.T) {
 
 func simulationInput(t *testing.T) (messages.Prepared, string, string) {
 	t.Helper()
+	return simulationInputWithOptions(t, nil)
+}
+
+func simulationInputWithOptions(t *testing.T, nodes []sim.NodeSpec) (messages.Prepared, string, string) {
+	t.Helper()
 	keys := make([]sim.Validator, 4)
 	for i := range keys {
 		var err error
@@ -241,7 +246,7 @@ func simulationInput(t *testing.T) (messages.Prepared, string, string) {
 		}
 	}
 	dir := t.TempDir()
-	result, err := sim.Run(context.Background(), sim.Scenario{Name: "synthetic-closed-replay", Seed: 3, Validators: keys, Links: links, Until: sim.Stop{Height: 4, Duration: time.Minute}}, sim.Output{JournalDir: dir})
+	result, err := sim.Run(context.Background(), sim.Scenario{Name: "synthetic-closed-replay", Seed: 3, Validators: keys, Nodes: nodes, Links: links, Until: sim.Stop{Height: 4, Duration: time.Minute}}, sim.Output{JournalDir: dir})
 	if err != nil || len(result.Violations) != 0 {
 		t.Fatal(result, err)
 	}

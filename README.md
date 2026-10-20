@@ -1348,6 +1348,15 @@ recorded options and verified replay/signing policy. The model records these
 choices and source hashes in immutable experiment provenance and labels
 substituted nodes on the experiment screen.
 
+Unlabelled node journals with all restart safety flags and only known local
+flags retain their exact recorded mask. The metadata derives `compat` without
+promoting the node to a complete improved profile. Additional recorded options,
+such as `commit_watchdog` and `advance_on_commit_failure`, use
+`derived_recorded_node_flags`; the existing safety-only derivation keeps its
+original evidence label. Unknown flags are refused even with a declared profile.
+This configuration evidence does not establish WAL replay, signing policy,
+complete runtime measurements, or independent baseline validation.
+
 Runtime assembly samples measure worker entry to task offer, including assemblies
 whose later seal was cancelled. They exclude sealing, delivery, and consensus
 acceptance. Import samples require a successful single-block call; batches are

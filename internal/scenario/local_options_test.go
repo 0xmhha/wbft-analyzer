@@ -1,0 +1,80 @@
+package scenario
+
+import (
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/0xmhha/wbft/conformance/sim"
+	"github.com/0xmhha/wbft/consensus"
+	"github.com/0xmhha/wbft/observe/journal"
+	"github.com/0xmhha/wbft/types"
+)
+
+func TestRecordedLocalOptionMasksPreserveEvidence(t *testing.T) {
+	address := types.Address{1}
+	masks := []consensus.ImprovementSet{consensus.RestartSafety, consensus.RestartSafety.With(consensus.WatchCommittedImport), consensus.RestartSafety.With(consensus.AdvanceOnCommitFailure), consensus.KnownImprovements(), 0, 1, 4, 1 << 63}
+	for _, profile := range []string{"", "compat", "improved"} {
+		for _, mask := range masks {
+			t.Run(fmt.Sprintf("%s/%d", profile, mask), func(t *testing.T) {
+				directory := t.TempDir()
+				writer, err := journal.Open(journal.Options{Dir: directory, Synchronous: true}, journal.Identity{Run: "synthetic-local-options", Self: address, Core: journal.CoreOptions{Self: address, ChainConfig: []byte(`{"chainId":7,"anzeon":{"wbft":{"epochLength":10}}}`), Profile: profile, Improvements: uint64(mask)}})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err = writer.Close(); err != nil {
+					t.Fatal(err)
+				}
+				node, _, err := InspectNodeOptions(t.Context(), directory, address)
+				unknown := mask & ^consensus.KnownImprovements() != 0
+				missingSafety := mask&consensus.RestartSafety != consensus.RestartSafety
+				if unknown || profile == "" && missingSafety {
+					if err == nil {
+						t.Fatal("unsupported recorded configuration accepted", node)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				evidence := "recorded"
+				wantProfile := profile
+				if profile == "" {
+					wantProfile = "compat"
+					evidence = "derived_restart_safety_flags"
+					if mask != consensus.RestartSafety {
+						evidence = "derived_recorded_node_flags"
+					}
+				}
+				if node.Improvements != uint64(mask) || node.Profile != wantProfile || node.ProfileEvidence != evidence || node.RuntimeEvidence != "" || node.ReplayWAL || node.SignFloor != nil {
+					t.Fatal("recorded mask or evidence scope changed", node)
+				}
+			})
+		}
+	}
+}
+
+func TestBuildPreservesKnownMasksAndRefusesUnknownFlags(t *testing.T) {
+	params := sim.Params{RequestTimeoutSeconds: 2, BlockPeriodSeconds: 1, EpochLength: 10}
+	delay := []time.Duration{time.Millisecond}
+	stop := sim.Stop{Height: 3, Duration: time.Minute}
+	for _, profile := range []string{"compat", "improved"} {
+		for _, mask := range []uint64{0, 3, 7, 11, 15, 16, 1 << 63} {
+			nodes, links := completeFixture()
+			nodes[0].Profile, nodes[0].Improvements = profile, mask
+			sc, err := Build(nodes, links, params, delay, delay, stop)
+			if consensus.ImprovementSet(mask) & ^consensus.KnownImprovements() != 0 {
+				if err == nil {
+					t.Fatal("unknown model flags accepted", profile, mask)
+				}
+				continue
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if sc.Nodes[0].Profile != profile || uint64(sc.Nodes[0].Options.Improvements) != mask {
+				t.Fatal("exact model flags changed", profile, mask)
+			}
+		}
+	}
+}
