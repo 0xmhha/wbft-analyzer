@@ -1,5 +1,5 @@
-github.com/0xmhha/wbft v0.0.0-20261020173747-567dcb7467b4 h1:BTKi3ll5kb/OACmCJeBrKSxiQvhLDHjipzKZYqqLxVI=
-github.com/0xmhha/wbft v0.0.0-20261020173747-567dcb7467b4/go.mod h1:VrznJCTRhaXNJHDEJ5Bt3Oz+ULbl6UWFm+oaPuqv2TA=
+github.com/0xmhha/wbft v0.0.0-20261020192618-3ce118ba079a h1:iieYeZ8ELvM8UoPRCUwyqB5iOsjvTEiFH8t1nrOyaLY=
+github.com/0xmhha/wbft v0.0.0-20261020192618-3ce118ba079a/go.mod h1:VrznJCTRhaXNJHDEJ5Bt3Oz+ULbl6UWFm+oaPuqv2TA=
 github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608-1fe7b43fc4d6 h1:1zYrtlhrZ6/b6SAjLSfKzWtdgqK0U+HtH/VcBWh1BaU=
 github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608-1fe7b43fc4d6/go.mod h1:ioLG6R+5bUSO1oeGSDxOV3FADARuMoytZCSX6MEMQkI=
 github.com/StackExchange/wmi v1.2.1 h1:VIkavFPXSjcnS+O8yTq7NI32k0R5Aj+v39y29VYDOSA=

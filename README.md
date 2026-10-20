@@ -2320,3 +2320,9 @@ Recorded `bind_prepared_certificate`, `drop_unbound_extra_seals` and
 and replay. A recorded local option does not establish runtime/WAL/sign-floor
 or measurement evidence, and does not imply a complete improved profile.
 Unknown flags remain unsupported; historical core sources stay distinct.
+
+Recorded `refresh_round_certificates` and `clear_current_extra_seals` flags
+retain their exact masks in scenario inspection and replay. The recorded
+local options do not establish runtime/WAL/sign-floor or measurement evidence
+and do not imply complete-profile acceptance. Unknown flags remain unsupported;
+historical core source identities stay distinct.
