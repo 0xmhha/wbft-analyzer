@@ -273,18 +273,26 @@ type SyntheticNodeIdentity struct {
 	Address string `json:"simulated_address"`
 }
 
+type CandidateInputObservation struct {
+	Index      int    `json:"index"`
+	Phase      string `json:"phase" enum:"original,retained,removed,effective"`
+	Epoch      uint64 `json:"epoch,string"`
+	StateBlock uint64 `json:"candidate_state_block,string"`
+}
+
 type MembershipEffect struct {
-	Source               string                  `json:"source"`
-	BaselineSHA256       string                  `json:"baseline_execution_sha256"`
-	CounterfactualSHA256 string                  `json:"counterfactual_execution_sha256"`
-	OriginalNodes        int                     `json:"original_nodes"`
-	Genesis              int                     `json:"genesis_validators"`
-	SyntheticNodes       []SyntheticNodeIdentity `json:"synthetic_nodes"`
-	OriginalEpochs       []MembershipEpoch       `json:"original_epochs"`
-	RetainedEpochs       []MembershipEpoch       `json:"retained_epochs"`
-	RemovedEpochs        []MembershipEpoch       `json:"removed_epochs"`
-	EffectiveEpochs      []MembershipEpoch       `json:"effective_epochs"`
-	Assumptions          []string                `json:"assumptions"`
+	CandidateInputs      []CandidateInputObservation `json:"candidate_inputs,omitempty"`
+	Source               string                      `json:"source"`
+	BaselineSHA256       string                      `json:"baseline_execution_sha256"`
+	CounterfactualSHA256 string                      `json:"counterfactual_execution_sha256"`
+	OriginalNodes        int                         `json:"original_nodes"`
+	Genesis              int                         `json:"genesis_validators"`
+	SyntheticNodes       []SyntheticNodeIdentity     `json:"synthetic_nodes"`
+	OriginalEpochs       []MembershipEpoch           `json:"original_epochs"`
+	RetainedEpochs       []MembershipEpoch           `json:"retained_epochs"`
+	RemovedEpochs        []MembershipEpoch           `json:"removed_epochs"`
+	EffectiveEpochs      []MembershipEpoch           `json:"effective_epochs"`
+	Assumptions          []string                    `json:"assumptions"`
 }
 
 func membershipEpoch(e sim.EpochChange) MembershipEpoch {
@@ -348,27 +356,62 @@ func ApplyMembershipChange(sc sim.Scenario, c NetworkChange) (sim.Scenario, *Mem
 		requested[e.Block] = true
 	}
 	epochs := []sim.EpochChange{}
+	recordInput := func(phase string, index int, epoch, input uint64) {
+		if epoch != input {
+			out.CandidateInputs = append(out.CandidateInputs, CandidateInputObservation{Phase: phase, Index: index, Epoch: epoch, StateBlock: input})
+		}
+	}
 	var previous uint64
-	for _, e := range sc.Epochs {
-		if e.Block == 0 || e.Block <= previous || e.Block%sc.Params.EpochLength != 0 {
+	for i, e := range sc.Epochs {
+		if i > 0 && e.Block <= previous {
 			return sc, nil, "", errNetworkChange
 		}
 		previous = e.Block
-		out.OriginalEpochs = append(out.OriginalEpochs, membershipEpoch(e))
-		if requested[e.Block] || m.Policy == "replace_from_first_epoch" && e.Block >= m.Epochs[0].Block {
-			out.RemovedEpochs = append(out.RemovedEpochs, membershipEpoch(e))
+		selected, err := candidateSelectionEpoch(sc.Params, e.Block)
+		if err != nil {
+			return sc, nil, "", err
+		}
+		observed := membershipEpoch(e)
+		observed.Block = selected
+		out.OriginalEpochs = append(out.OriginalEpochs, observed)
+		recordInput("original", len(out.OriginalEpochs)-1, selected, e.Block)
+		if requested[selected] || m.Policy == "replace_from_first_epoch" && selected >= m.Epochs[0].Block {
+			out.RemovedEpochs = append(out.RemovedEpochs, MembershipEpoch{Block: selected, Candidates: slices.Clone(e.Candidates)})
+			recordInput("removed", len(out.RemovedEpochs)-1, selected, e.Block)
 		} else {
 			epochs = append(epochs, sim.EpochChange{Block: e.Block, Candidates: slices.Clone(e.Candidates)})
-			out.RetainedEpochs = append(out.RetainedEpochs, membershipEpoch(e))
+			out.RetainedEpochs = append(out.RetainedEpochs, MembershipEpoch{Block: selected, Candidates: slices.Clone(e.Candidates)})
+			recordInput("retained", len(out.RetainedEpochs)-1, selected, e.Block)
 		}
 	}
 	for _, e := range m.Epochs {
-		epochs = append(epochs, sim.EpochChange{Block: e.Block, Candidates: slices.Clone(e.Candidates)})
+		input, err := candidateInputBlock(sc.Params, e.Block)
+		if err != nil {
+			return sc, nil, "", err
+		}
+		selected, err := candidateSelectionEpoch(sc.Params, input)
+		if err != nil || selected != e.Block {
+			return sc, nil, "", errCandidateState
+		}
+		epochs = append(epochs, sim.EpochChange{Block: input, Candidates: slices.Clone(e.Candidates)})
 	}
 	slices.SortFunc(epochs, func(a, b sim.EpochChange) int { return cmp.Compare(a.Block, b.Block) })
 	sc.Epochs = epochs
-	for _, e := range epochs {
-		out.EffectiveEpochs = append(out.EffectiveEpochs, membershipEpoch(e))
+	for i, e := range epochs {
+		if i > 0 && epochs[i-1].Block == e.Block {
+			return sc, nil, "", errCandidateState
+		}
+		selected, err := candidateSelectionEpoch(sc.Params, e.Block)
+		if err != nil {
+			return sc, nil, "", err
+		}
+		observed := membershipEpoch(e)
+		observed.Block = selected
+		out.EffectiveEpochs = append(out.EffectiveEpochs, observed)
+		recordInput("effective", len(out.EffectiveEpochs)-1, selected, e.Block)
+	}
+	if len(out.CandidateInputs) > 0 {
+		out.Assumptions = append(out.Assumptions, "candidate_state_heights_are_modeled_inputs_not_observed_governance_events")
 	}
 	out.CounterfactualSHA256, err = ExecutionHash(sc)
 	if err != nil {

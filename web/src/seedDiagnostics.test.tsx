@@ -31,3 +31,24 @@ describe("seed execution diagnostics",()=>{
   expect(html).toContain("Stored violation count and details disagree");expect(html).not.toContain("No simulator violations reported");
  });
 });
+
+describe("partial light checks",()=>{
+ it("shows partial header-only verdicts separately from verified state-bound checks",()=>{
+  const r=seed();r.violations=0;r.execution!.violations=[];
+  const check:Schemas["ScenarioSeedLightCheck"]={number:"18446744073709551616",hash:"0x"+"a".repeat(64),simulated_node:"simulated-node-a",verdict:"CANNOT_DECIDE",reason:"application state required",candidate_state_verified:true};
+  r.execution!.light_checks=[check];
+  const html=renderToStaticMarkup(<SeedDiagnostics mode="Baseline" rows={[r]} expected={1}/>);
+  for(const text of ["Header-only verification: partial","CANNOT_DECIDE","18446744073709551616","application state required","Verified","No simulator violations reported"])expect(html).toContain(text);
+  check.candidate_state_verified=false;
+  expect(renderToStaticMarkup(<SeedDiagnostics mode="Baseline" rows={[r]} expected={1}/>)).toContain("Not established");
+ });
+ it("does not invent partial observations for historical outcomes",()=>{
+  expect(renderToStaticMarkup(<SeedDiagnostics mode="Baseline" rows={[seed()]} expected={1}/>)).not.toContain("Header-only verification: partial");
+ });
+});
+
+ it("bounds the initial partial-check page without dropping its total",()=>{
+  const r=seed();r.execution!.light_checks=Array.from({length:101},(_,i)=>({number:String(i+1),hash:"check-hash-"+(i+1),simulated_node:"simulated-node-a",verdict:"CANNOT_DECIDE" as const,reason:"application state required",candidate_state_verified:true}));
+  const html=renderToStaticMarkup(<SeedDiagnostics mode="Baseline" rows={[r]} expected={1}/>);
+  expect(html).toContain("of 101 partial checks");expect(html).toContain("check-hash-100");expect(html).not.toContain("check-hash-101");expect(html).toContain("Next partial checks");
+ });
