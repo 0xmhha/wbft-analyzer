@@ -59,7 +59,7 @@ jobs:
     # Roadmap A0: a loaded database is kept as a pg_dump artifact, and the
     # dump restored on another server answers the API the same.
     name: dump and restore
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       source:
         image: postgres:16
