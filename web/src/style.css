@@ -275,3 +275,8 @@ article pre { overflow: auto; max-height: 24rem; }
 .activation-results .table-scroll table { width: 100%; min-width: 64rem; table-layout: fixed; overflow-wrap: anywhere; }
 .activation-results .table-scroll th:first-child { width: 14rem; }
 .activation-charts:focus-visible, .activation-results .table-scroll:focus-visible { outline: 2px solid #7954c7; outline-offset: 2px; }
+
+.future-wait-evidence { border: 1px solid #2563eb; border-radius: .5rem; padding: 1rem; margin: 1rem 0; animation: cache-original-reveal 180ms ease-out both; }
+.future-wait-evidence dl { display: grid; grid-template-columns: minmax(7rem, 1fr) minmax(0, 2fr); gap: .4rem 1rem; }
+.future-wait-evidence dd { margin: 0; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .future-wait-evidence { animation: none; } }

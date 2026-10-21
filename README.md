@@ -2345,3 +2345,12 @@ the base exceeds a positive cap, while the public reference computation stays
 available. A recorded option does not establish runtime, WAL, signing-floor,
 physical timing or complete-profile evidence. Historical source identities and
 unsupported flags remain distinct; reference conformance scopes are unchanged.
+
+
+Recorded `use_future_time_allowance` and `limit_future_proposal_wait` retain
+exact local option masks in scenario inspection and replay. A native HEALTH
+record can distinguish a received proposal from a local candidate and show
+its original requested wait and round-timeout limit as decimal nanoseconds.
+These lengths do not measure elapsed or remaining time. Missing evidence
+remains unknown; historical source identities and unsupported flags remain
+distinct. Runtime, WAL, signing-floor and physical-profile scopes are unchanged.
