@@ -12,7 +12,7 @@ import (
 )
 
 func TestRecordedLocalImportOptionsReplayBoundResults(t *testing.T) {
-	for _, mask := range []consensus.ImprovementSet{consensus.RestartSafety.With(consensus.WatchCommittedImport), consensus.RestartSafety.With(consensus.AdvanceOnCommitFailure), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ResetHeightState), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ScanReadyBacklog), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.CancelStaleRetries), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.FollowHigherRoundChanges), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.BindPreparedCertificate), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.DropUnboundExtraSeals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ResumeRoundProposals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.RefreshRoundCertificates), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ClearCurrentExtraSeals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ValidateRoundProposals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.CapInitialRoundTimeout), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.UseFutureTimeAllowance), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.LimitFutureProposalWait), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.UseFutureTimeAllowance).With(consensus.LimitFutureProposalWait), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.RequireInitialRoundBudget), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.PreserveRoundDeadline), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.RequireInitialRoundBudget).With(consensus.PreserveRoundDeadline), consensus.KnownImprovements()} {
+	for _, mask := range []consensus.ImprovementSet{consensus.RestartSafety.With(consensus.WatchCommittedImport), consensus.RestartSafety.With(consensus.AdvanceOnCommitFailure), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ResetHeightState), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ScanReadyBacklog), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.CancelStaleRetries), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.FollowHigherRoundChanges), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.BindPreparedCertificate), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.DropUnboundExtraSeals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ResumeRoundProposals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.RefreshRoundCertificates), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ClearCurrentExtraSeals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ValidateRoundProposals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.CapInitialRoundTimeout), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.UseFutureTimeAllowance), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.LimitFutureProposalWait), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.UseFutureTimeAllowance).With(consensus.LimitFutureProposalWait), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.RequireInitialRoundBudget), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.PreserveRoundDeadline), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.RequireInitialRoundBudget).With(consensus.PreserveRoundDeadline), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.KeepStoppedPeers), consensus.KnownImprovements()} {
 		t.Run(fmt.Sprintf("%d", mask), func(t *testing.T) {
 			nodes := make([]sim.NodeSpec, 4)
 			for i := range nodes {
@@ -76,9 +76,9 @@ func TestRecordedLocalImportOptionsReplayBoundResults(t *testing.T) {
 	}
 }
 
-// The timing options alone retain the normal legacy import-result shape.
+// Local timing and pause options retain the normal legacy import-result shape.
 // Enabling the separate import observer is covered by the bound-result test.
-func TestRecordedTimingOptionsWithLegacyImportResults(t *testing.T) {
+func TestRecordedLocalOptionsWithLegacyImportResults(t *testing.T) {
 	for _, mask := range []consensus.ImprovementSet{
 		consensus.RestartSafety.With(consensus.UseFutureTimeAllowance),
 		consensus.RestartSafety.With(consensus.LimitFutureProposalWait),
@@ -86,6 +86,7 @@ func TestRecordedTimingOptionsWithLegacyImportResults(t *testing.T) {
 		consensus.RestartSafety.With(consensus.RequireInitialRoundBudget),
 		consensus.RestartSafety.With(consensus.PreserveRoundDeadline),
 		consensus.RestartSafety.With(consensus.RequireInitialRoundBudget).With(consensus.PreserveRoundDeadline),
+		consensus.RestartSafety.With(consensus.KeepStoppedPeers),
 	} {
 		t.Run(fmt.Sprintf("%d", mask), func(t *testing.T) {
 			nodes := make([]sim.NodeSpec, 4)

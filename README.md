@@ -2364,3 +2364,18 @@ performed the original node startup checks. Accepted-proposal reservation
 policy and normal restart controls preserve their separate evidence scopes.
 Historical source identities remain distinct from the current linked core.
 Runtime, WAL, signing-floor and complete-profile scopes are unchanged.
+
+
+### Recorded local pause policy
+
+The recorded `keep_stopped_peers` selection uses the existing core option mask.
+It is an optional local receive policy: a paused engine drops consensus frames
+without requesting their peer's disconnection. These frames enter neither the
+receive queue nor the known cache. Normal engine restart restores the usual
+receive checks. The recorded mask, source identity and explicit profile evidence
+remain distinct; an older producer keeps its original identity.
+
+Logical core replay and model reconstruction preserve these options. They do
+not establish actual peer retention, receipt of a paused frame, complete remote
+lifecycles or reference conformance of the changed stopped-engine behavior.
+The existing reference verdict scope and historical observations remain intact.
