@@ -2354,3 +2354,13 @@ its original requested wait and round-timeout limit as decimal nanoseconds.
 These lengths do not measure elapsed or remaining time. Missing evidence
 remains unknown; historical source identities and unsupported flags remain
 distinct. Runtime, WAL, signing-floor and physical-profile scopes are unchanged.
+
+
+Recorded `require_initial_round_budget` and `preserve_round_deadline` retain
+exact local option masks in scenario inspection and replay. Scenario startup
+checks the resolved initial timeout against the block period; recorded core
+replay compares the recorded inputs and outputs without claiming that it
+performed the original node startup checks. Accepted-proposal reservation
+policy and normal restart controls preserve their separate evidence scopes.
+Historical source identities remain distinct from the current linked core.
+Runtime, WAL, signing-floor and complete-profile scopes are unchanged.
