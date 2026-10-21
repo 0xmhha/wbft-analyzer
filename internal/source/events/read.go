@@ -298,7 +298,7 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 		delete(out, "what")
 		switch what {
 		case "head_mismatch", "peer_inbound_overflow", "peer_inbound_disconnect", "privval_refusal", "sign_floor_skip",
-			"snapshot_missing_at_preprepare", "snapshot_missing_at_local_reproposal", "snapshot_missing_at_head", "consensus_halted", "disconnect", "same_block_transitions":
+			"snapshot_missing_at_preprepare", "snapshot_missing_at_local_reproposal", "snapshot_missing_at_head", "consensus_halted", "disconnect", "same_block_transitions", "future_proposal_wait_exceeded":
 			out["what"] = what
 		}
 		var height string
@@ -308,6 +308,9 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 		}
 		if n, ok := new(big.Int).SetString(height, 10); ok && n.Sign() >= 0 && n.String() == height && len(height) <= 156 {
 			out["h"] = height
+		}
+		if what == "future_proposal_wait_exceeded" {
+			futureWaitMetadata(m, out)
 		}
 		if what == "same_block_transitions" {
 			sameBlockTransitionMetadata(m, out)
@@ -361,4 +364,24 @@ func sameBlockTransitionMetadata(m map[string]json.RawMessage, out map[string]an
 		}
 	}
 	out["count"], out["h"] = count, height
+}
+
+// Preserve only the native wait policy's closed origin and exact positive
+// duration strings. The generic number normalization is not its contract.
+func futureWaitMetadata(m map[string]json.RawMessage, out map[string]any) {
+	delete(out, "wait_ns")
+	var origin string
+	if json.Unmarshal(m["proposal_origin"], &origin) == nil && (origin == "preprepare" || origin == "local_reproposal") {
+		out["proposal_origin"] = origin
+	}
+	for _, key := range []string{"wait_ns", "limit_ns"} {
+		var text string
+		if json.Unmarshal(m[key], &text) != nil {
+			continue
+		}
+		value, err := strconv.ParseInt(text, 10, 64)
+		if err == nil && value > 0 && strconv.FormatInt(value, 10) == text {
+			out[key] = text
+		}
+	}
 }
