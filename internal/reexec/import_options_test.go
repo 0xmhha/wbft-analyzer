@@ -12,7 +12,7 @@ import (
 )
 
 func TestRecordedLocalImportOptionsReplayBoundResults(t *testing.T) {
-	for _, mask := range []consensus.ImprovementSet{consensus.RestartSafety.With(consensus.WatchCommittedImport), consensus.RestartSafety.With(consensus.AdvanceOnCommitFailure), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ResetHeightState), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ScanReadyBacklog), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.CancelStaleRetries), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.FollowHigherRoundChanges), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.BindPreparedCertificate), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.DropUnboundExtraSeals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ResumeRoundProposals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.RefreshRoundCertificates), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ClearCurrentExtraSeals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ValidateRoundProposals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.CapInitialRoundTimeout), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.UseFutureTimeAllowance), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.LimitFutureProposalWait), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.UseFutureTimeAllowance).With(consensus.LimitFutureProposalWait), consensus.KnownImprovements()} {
+	for _, mask := range []consensus.ImprovementSet{consensus.RestartSafety.With(consensus.WatchCommittedImport), consensus.RestartSafety.With(consensus.AdvanceOnCommitFailure), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ResetHeightState), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ScanReadyBacklog), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.CancelStaleRetries), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.FollowHigherRoundChanges), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.BindPreparedCertificate), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.DropUnboundExtraSeals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ResumeRoundProposals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.RefreshRoundCertificates), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ClearCurrentExtraSeals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.ValidateRoundProposals), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.CapInitialRoundTimeout), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.UseFutureTimeAllowance), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.LimitFutureProposalWait), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.UseFutureTimeAllowance).With(consensus.LimitFutureProposalWait), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.RequireInitialRoundBudget), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.PreserveRoundDeadline), consensus.RestartSafety.With(consensus.WatchCommittedImport).With(consensus.RequireInitialRoundBudget).With(consensus.PreserveRoundDeadline), consensus.KnownImprovements()} {
 		t.Run(fmt.Sprintf("%d", mask), func(t *testing.T) {
 			nodes := make([]sim.NodeSpec, 4)
 			for i := range nodes {
@@ -76,13 +76,16 @@ func TestRecordedLocalImportOptionsReplayBoundResults(t *testing.T) {
 	}
 }
 
-// The time options alone retain the normal legacy import-result shape.
+// The timing options alone retain the normal legacy import-result shape.
 // Enabling the separate import observer is covered by the bound-result test.
-func TestRecordedFutureTimeOptionsWithLegacyImportResults(t *testing.T) {
+func TestRecordedTimingOptionsWithLegacyImportResults(t *testing.T) {
 	for _, mask := range []consensus.ImprovementSet{
 		consensus.RestartSafety.With(consensus.UseFutureTimeAllowance),
 		consensus.RestartSafety.With(consensus.LimitFutureProposalWait),
 		consensus.RestartSafety.With(consensus.UseFutureTimeAllowance).With(consensus.LimitFutureProposalWait),
+		consensus.RestartSafety.With(consensus.RequireInitialRoundBudget),
+		consensus.RestartSafety.With(consensus.PreserveRoundDeadline),
+		consensus.RestartSafety.With(consensus.RequireInitialRoundBudget).With(consensus.PreserveRoundDeadline),
 	} {
 		t.Run(fmt.Sprintf("%d", mask), func(t *testing.T) {
 			nodes := make([]sim.NodeSpec, 4)
@@ -104,7 +107,7 @@ func TestRecordedFutureTimeOptionsWithLegacyImportResults(t *testing.T) {
 					t.Fatal(err)
 				}
 				if segment, ok := record.Body.(*journal.SegmentRec); ok && segment.Core.Improvements != uint64(mask) {
-					t.Fatal("exact time option mask changed")
+					t.Fatal("exact timing option mask changed")
 				}
 				step, ok := record.Body.(*journal.StepRec)
 				if !ok || step.InputKind != inputlog.KindCommitResult {
@@ -141,7 +144,7 @@ func TestRecordedFutureTimeOptionsWithLegacyImportResults(t *testing.T) {
 				return nil
 			})
 			if err != nil || steps == 0 || result.Mismatches != 0 {
-				t.Fatal("exact time option replay diverged", result, err)
+				t.Fatal("exact timing option replay diverged", result, err)
 			}
 		})
 	}
