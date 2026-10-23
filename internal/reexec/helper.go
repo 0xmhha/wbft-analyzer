@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/0xmhha/wbft/conformance/stepdriver"
+	"github.com/0xmhha/wbft/observe/journal"
 )
 
 var versionPattern = regexp.MustCompile(`^([0-9a-f]{40}|v[0-9]+\.[0-9]+\.[0-9]+(-[0-9]{14}-[0-9a-f]{12})?)$`)
@@ -58,6 +59,7 @@ type Helper struct {
 }
 
 type reply struct {
+	DeferredOrigin   *journal.DeferredEvidence      `json:"deferred_origin"`
 	Schedule         *stepdriver.TraceSchedule      `json:"input_schedule"`
 	Scheduled        *stepdriver.TraceInputPosition `json:"scheduled_input"`
 	ScheduleReason   string                         `json:"suppression_reason"`
@@ -356,6 +358,9 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			}
 			index++
 			if r.Writer != "" && r.Writer != s.Run || strconv.FormatUint(r.Engine, 10) != s.Engine || strconv.FormatUint(r.Step, 10) != s.Number || r.Input != s.Input {
+				return res, ErrHelper
+			}
+			if !reflect.DeepEqual(messages.ProjectDeferredEvidence(r.DeferredOrigin), s.DeferredOrigin) {
 				return res, ErrHelper
 			}
 			if !*r.Match {

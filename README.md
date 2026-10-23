@@ -2379,3 +2379,18 @@ Logical core replay and model reconstruction preserve these options. They do
 not establish actual peer retention, receipt of a paused frame, complete remote
 lifecycles or reference conformance of the changed stopped-engine behavior.
 The existing reference verdict scope and historical observations remain intact.
+
+## Deferred message source evidence
+
+Journal message sources and closed replay steps expose `deferred_origin`
+separately from functional comparison. It identifies the original writer run
+and capture, with a verified or unavailable physical-source status. Missing
+or pruned captures do not prevent closed replay of retained inline inputs.
+A matching packet in a later run cannot substitute for the original capture.
+
+Receipt times belong to the original writer's monotonic clock. Cross-run
+elapsed time remains unavailable. Timed or scheduled replay requires a
+verified capture in the same writer run. Recorded receive profiles are retained
+in source metadata and passed to the simulator with exact limits and WAL replay.
+The receive lane currently supports atomic receive/core processing; positive
+pre-dispatch service samples remain unavailable for that lane.

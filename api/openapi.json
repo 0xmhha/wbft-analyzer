@@ -3261,6 +3261,47 @@
         ],
         "type": "object"
       },
+      "MessagesDeferredEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "origin": {
+            "$ref": "#/components/schemas/MessagesDeferredOrigin"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "receipt_mono_ns": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "origin",
+          "status"
+        ],
+        "type": "object"
+      },
+      "MessagesDeferredOrigin": {
+        "additionalProperties": false,
+        "properties": {
+          "capture_id": {
+            "type": "string"
+          },
+          "writer_run": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "capture_id",
+          "writer_run"
+        ],
+        "type": "object"
+      },
       "MessagesFile": {
         "additionalProperties": false,
         "properties": {
@@ -3730,6 +3771,34 @@
         ],
         "type": "object"
       },
+      "MessagesReceiveProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "type": "string"
+          },
+          "entries": {
+            "type": "string"
+          },
+          "per_peer": {
+            "type": "string"
+          },
+          "per_source": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bytes",
+          "entries",
+          "per_peer",
+          "per_source",
+          "version"
+        ],
+        "type": "object"
+      },
       "MessagesRecord": {
         "additionalProperties": false,
         "properties": {
@@ -3803,6 +3872,16 @@
           },
           "dedup_key": {
             "type": "string"
+          },
+          "deferred_origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesDeferredEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "digest": {
             "type": "string"
@@ -3885,6 +3964,16 @@
             "type": [
               "boolean",
               "null"
+            ]
+          },
+          "next_height": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesReceiveProfile"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "node": {
@@ -7201,6 +7290,16 @@
           },
           "context_answers": {
             "type": "boolean"
+          },
+          "deferred_origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesDeferredEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "engine_run": {
             "type": "string"
@@ -11566,6 +11665,9 @@
           },
           "step": {
             "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "writer_run": {
             "type": "string"
           }
         },

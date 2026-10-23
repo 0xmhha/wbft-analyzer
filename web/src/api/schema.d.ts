@@ -2224,6 +2224,16 @@ export interface components {
             operations: string;
             version: string;
         };
+        MessagesDeferredEvidence: {
+            origin: components["schemas"]["MessagesDeferredOrigin"];
+            reason?: string;
+            receipt_mono_ns?: string | null;
+            status: string;
+        };
+        MessagesDeferredOrigin: {
+            capture_id: string;
+            writer_run: string;
+        };
         MessagesFile: {
             /** Format: int64 */
             bytes: number;
@@ -2340,6 +2350,13 @@ export interface components {
             pairs: number;
             percentile_method: string;
         };
+        MessagesReceiveProfile: {
+            bytes: string;
+            entries: string;
+            per_peer: string;
+            per_source: string;
+            version: string;
+        };
         MessagesRecord: {
             cache_decision?: components["schemas"]["MessagesCacheDecision"] | null;
             cache_evidence?: components["schemas"]["MessagesCacheEvidence"] | null;
@@ -2353,6 +2370,7 @@ export interface components {
             config_digest?: string;
             decode?: string;
             dedup_key?: string;
+            deferred_origin?: components["schemas"]["MessagesDeferredEvidence"] | null;
             digest?: string;
             dir?: string;
             dropped?: string;
@@ -2374,6 +2392,7 @@ export interface components {
             io?: components["schemas"]["MessagesIOInterval"] | null;
             journal_position?: components["schemas"]["MessagesJournalPosition"] | null;
             known_hit?: boolean | null;
+            next_height?: components["schemas"]["MessagesReceiveProfile"] | null;
             node: string;
             of?: string;
             offer?: string;
@@ -3179,6 +3198,7 @@ export interface components {
             class: string;
             completeness: string;
             context_answers?: boolean;
+            deferred_origin?: components["schemas"]["MessagesDeferredEvidence"] | null;
             engine_run: string;
             entry_t_mono_ns?: string | null;
             entry_t_wall?: string;
@@ -4240,6 +4260,7 @@ export interface components {
             journal_sequence: string;
             recorded_step_mono_ns: string;
             step: string;
+            writer_run?: string;
         };
         ScenarioSeedMessageDelivery: {
             arrival_order: string;

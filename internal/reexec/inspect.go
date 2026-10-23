@@ -127,6 +127,7 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 	}
 	run = ""
 	ordinal = 0
+	var deferredProfile bool
 	var lastSeq, lastStep, engine uint64
 	started, lost := false, false
 	status := map[string]*Height{}
@@ -150,6 +151,9 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 			break
 		}
 		ordinal++
+		if seg, ok := rec.Body.(*journal.SegmentRec); ok {
+			deferredProfile = seg.Core.NextHeight != nil && seg.Core.NextHeight.Validate() == nil
+		}
 		if seg, ok := rec.Body.(*journal.SegmentRec); ok && seg.Run != run {
 			run = seg.Run
 			lastSeq = 0
@@ -215,6 +219,17 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		}
 		if len(b.Input) > 16<<20 {
 			markStep(&step, "partial", "payload")
+		} else if b.InputKind == inputlog.KindDeferredMessage {
+			if !deferredProfile {
+				markStep(&step, "not_possible", "receive_profile_unavailable")
+			}
+			m, evidence, err := journal.InspectDeferred(rd, b.Input)
+			if err != nil {
+				markStep(&step, "partial", "input_decode")
+			} else {
+				decodedMessage(&step, m)
+				step.DeferredOrigin = messages.ProjectDeferredEvidence(evidence)
+			}
 		} else if b.InputKind == inputlog.KindCapturedMessage {
 			inspectCaptured(rd, run, b, &step)
 		} else if decoded, e := inputlog.Decode(b.InputKind, b.Input, nil); e != nil {
@@ -333,7 +348,7 @@ func addIssue(xs []string, s string) []string {
 }
 func safeInput(s string) string {
 	switch s {
-	case inputlog.KindStart, inputlog.KindStop, inputlog.KindNewHead, inputlog.KindRequest, inputlog.KindMessage, inputlog.KindCapturedMessage, inputlog.KindBacklog, inputlog.KindTimeout, inputlog.KindCommitResult, inputlog.KindBroadcastFailed, inputlog.KindPeerConnected:
+	case inputlog.KindStart, inputlog.KindStop, inputlog.KindNewHead, inputlog.KindRequest, inputlog.KindMessage, inputlog.KindCapturedMessage, inputlog.KindDeferredMessage, inputlog.KindBacklog, inputlog.KindTimeout, inputlog.KindCommitResult, inputlog.KindBroadcastFailed, inputlog.KindPeerConnected:
 		return s
 	default:
 		return "unknown"

@@ -45,6 +45,7 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 	peers := map[uint32]string{}
 	previousMono := int64(0)
 	haveMono := false
+	var nextHeight *journal.DeferredOptions
 	cacheState := newJournalCacheState()
 	syncState := newJournalSyncState()
 	for {
@@ -86,6 +87,11 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 			r.EngineRun = number(b.EngineRun)
 			r.ConfigDigest = hash(b.ConfigDigest)
 			r.Improvements = number(b.Core.Improvements)
+			if err := b.Core.NextHeight.Validate(); err != nil {
+				return s, errors.New("unsupported next-height receive profile")
+			}
+			nextHeight = b.Core.NextHeight
+			r.NextHeight = ProjectReceiveProfile(nextHeight)
 			if b.Core.TimerTrace != 0 {
 				r.TimerTrace = number(b.Core.TimerTrace)
 			}
@@ -184,6 +190,17 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 				if id, e := inputlog.CapturedReference(b.Input); e == nil {
 					r.Capture = number(id)
 				}
+			}
+			if b.InputKind == inputlog.KindDeferredMessage {
+				if nextHeight == nil {
+					return s, errors.New("deferred input has no receive profile")
+				}
+				_, evidence, err := journal.InspectDeferred(rd, b.Input)
+				if err != nil {
+					return s, errors.New("deferred input cannot be decoded")
+				}
+				r.DeferredOrigin = ProjectDeferredEvidence(evidence)
+				r.InputKind = inputlog.KindDeferredMessage
 			}
 			r.ClockSource = "recorded"
 			r.EngineRun = number(b.EngineRun)

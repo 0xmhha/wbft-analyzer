@@ -77,7 +77,7 @@ func TestTypedSyncPrepareUsesExplicitKindAndDeclaredNetwork(t *testing.T) {
 	var summary struct {
 		Normalizer string `json:"normalizer"`
 	}
-	if json.Unmarshal(meta, &summary) != nil || summary.Normalizer != "wbft-message-normalization/15" {
+	if json.Unmarshal(meta, &summary) != nil || summary.Normalizer != "wbft-message-normalization/16" {
 		t.Fatal(string(meta))
 	}
 	m.Inputs[0].SHA256 = strings.Repeat("0", 64)
