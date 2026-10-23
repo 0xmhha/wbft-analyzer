@@ -123,6 +123,9 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 				}
 			}
 		case *journal.MsgRec:
+			if b.Session != nil || b.WriteAttempt != nil {
+				return s, errCacheFrameSource
+			}
 			r.IO = journalIOInterval(b.IO)
 			r.Type = "frame"
 			if b.Capture != 0 {
@@ -215,6 +218,8 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 			r.HeadHash = hash(b.HeadHash)
 			r.OutDigest = hash(b.OutDigest)
 			r.Via = choice(b.Via, "internal", "app", "timer", "peer", "wal")
+		case *journal.WriteCacheRec, *journal.ReceiveCacheRec, *journal.SessionRec, *journal.CoreStepRec:
+			return s, errCacheFrameSource
 		case *journal.CacheRec:
 			// The closed cache projection below also checks its run capability.
 		case *journal.SyncRec:
