@@ -17,6 +17,9 @@ import (
 	"github.com/0xmhha/wbft/types"
 )
 
+// Application queue metadata needs a separate runtime model.
+var errAppQueueSource = errors.New("application queue sources require an explicit runtime model")
+
 type journalCacheState struct {
 	run      string
 	versions map[string]uint64
@@ -40,6 +43,8 @@ func (s *journalCacheState) project(r *Record, rec journal.Record) error {
 		return errCacheFrameSource
 	}
 	switch rec.Body.(type) {
+	case *journal.AppQueueRec:
+		return errAppQueueSource
 	case *journal.WriteCacheRec, *journal.ReceiveCacheRec, *journal.SessionRec, *journal.CoreStepRec:
 		return errCacheFrameSource
 	}
@@ -282,7 +287,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 		}
 		return encoder.Encode(r)
 	})
-	if errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) {
+	if errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) {
 		return Stats{}, readErr
 	}
 	if len(rows) > 0 {
