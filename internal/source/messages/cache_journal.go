@@ -19,6 +19,7 @@ import (
 
 // Application queue metadata needs a separate runtime model.
 var errAppQueueSource = errors.New("application queue sources require an explicit runtime model")
+var errFinalizeSource = errors.New("application finalization sources require an explicit runtime model")
 
 type journalCacheState struct {
 	run      string
@@ -43,6 +44,8 @@ func (s *journalCacheState) project(r *Record, rec journal.Record) error {
 		return errCacheFrameSource
 	}
 	switch rec.Body.(type) {
+	case *journal.FinalizeRec:
+		return errFinalizeSource
 	case *journal.AppQueueRec:
 		return errAppQueueSource
 	case *journal.WriteCacheRec, *journal.ReceiveCacheRec, *journal.SessionRec, *journal.CoreStepRec:
@@ -287,7 +290,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 		}
 		return encoder.Encode(r)
 	})
-	if errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) {
+	if errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) {
 		return Stats{}, readErr
 	}
 	if len(rows) > 0 {
