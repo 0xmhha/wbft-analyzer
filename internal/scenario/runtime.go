@@ -94,6 +94,12 @@ func FitRuntime(node, input string, xs []logs.Event, origin time.Time) (Runtime,
 		}
 		previous = at
 		if kind == event.NodeStart {
+			if _, declared := x.Record.Fields["write_queue_model"]; declared {
+				return out, errors.New("simulated write queue runtime model unavailable")
+			}
+			if _, declared := x.Record.Fields["transport_cache_profile"]; declared {
+				return out, errors.New("transport cache runtime model unavailable")
+			}
 			if running {
 				return out, errors.New("duplicate node start")
 			}

@@ -217,7 +217,13 @@ func Metadata(m map[string]json.RawMessage) map[string]any {
 	// form when metadata is reapplied at persistence. No arbitrary nested map
 	// crosses this boundary.
 	if kind == event.NodeStart {
+		// Retain only declaration presence until an explicit runtime model can
+		// interpret it. Reapplication must not erase this refusal boundary.
+		if _, exists := m["write_queue_model"]; exists {
+			out["write_queue_model"] = "declared"
+		}
 		applicationPolicyMetadata(m, out)
+		transportCacheMetadata(m, out)
 		if bytes.Equal(bytes.TrimSpace(m["sign_floor"]), []byte("null")) {
 			out["sign_floor_state"] = "none"
 		} else {

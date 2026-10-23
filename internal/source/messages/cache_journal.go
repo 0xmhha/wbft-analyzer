@@ -36,8 +36,20 @@ func cacheAddresses(in []types.Address) []string {
 	return out
 }
 func (s *journalCacheState) project(r *Record, rec journal.Record) error {
+	if m, ok := rec.Body.(*journal.MsgRec); ok && (m.Session != nil || m.WriteAttempt != nil) {
+		return errCacheFrameSource
+	}
+	switch rec.Body.(type) {
+	case *journal.WriteCacheRec, *journal.ReceiveCacheRec, *journal.SessionRec, *journal.CoreStepRec:
+		return errCacheFrameSource
+	}
 	first := false
 	if b, ok := rec.Body.(*journal.SegmentRec); ok {
+		// The legacy trace proves read-loop/before-send mutations. It cannot
+		// prove a different accepted-input/completed-write runtime policy.
+		if b.Core.CachePolicy != nil {
+			return errCacheFrameSource
+		}
 		old, seen := s.versions[b.Run]
 		if b.Core.CacheTrace > journal.CacheTraceVersion || seen && old != b.Core.CacheTrace || seen && s.run != b.Run && (old != 0 || b.Core.CacheTrace != 0) {
 			return errCacheFrameSource

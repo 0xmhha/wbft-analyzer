@@ -280,3 +280,17 @@ article pre { overflow: auto; max-height: 24rem; }
 .future-wait-evidence dl { display: grid; grid-template-columns: minmax(7rem, 1fr) minmax(0, 2fr); gap: .4rem 1rem; }
 .future-wait-evidence dd { margin: 0; overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) { .future-wait-evidence { animation: none; } }
+
+
+.transport-cache-policy { border: 1px solid var(--line); border-left: 3px solid #2563eb; border-radius: .5rem; padding: 1rem; margin: 1rem 0; }
+.transport-cache-flows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+.transport-cache-flows h4 { margin: .5rem 0; }
+.transport-cache-flows ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; list-style: none; padding: 0; }
+.transport-cache-flows li { position: relative; border: 1px solid #b7c9e5; border-radius: .3rem; padding: .6rem; background: #f4f7fc; animation: cache-original-reveal 180ms ease-out both; overflow-wrap: anywhere; }
+.transport-cache-flows li:nth-child(2) { animation-delay: 60ms; }
+.transport-cache-flows li:nth-child(3) { animation-delay: 120ms; }
+.transport-cache-flows li+li::before { content: "→"; position: absolute; left: -.9rem; color: #50627e; }
+.transport-cache-policy table { width: 100%; }
+.transport-cache-policy caption { text-align: left; font-weight: 600; margin-bottom: .5rem; }
+@media (max-width: 700px) { .transport-cache-flows { grid-template-columns: 1fr; gap: .5rem; } }
+@media (prefers-reduced-motion: reduce) { .transport-cache-flows li { animation: none; } }
