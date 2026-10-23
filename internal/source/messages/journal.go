@@ -218,6 +218,8 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 			r.HeadHash = hash(b.HeadHash)
 			r.OutDigest = hash(b.OutDigest)
 			r.Via = choice(b.Via, "internal", "app", "timer", "peer", "wal")
+		case *journal.InboxRec:
+			return s, errInboxSource
 		case *journal.FinalizeRec:
 			return s, errFinalizeSource
 		case *journal.AppQueueRec:
