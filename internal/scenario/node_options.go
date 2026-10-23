@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 
+	"github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/0xmhha/wbft/consensus"
 	"github.com/0xmhha/wbft/observe/journal"
 	"github.com/0xmhha/wbft/types"
@@ -61,6 +62,7 @@ func InspectNodeOptions(ctx context.Context, directory string, address types.Add
 			if err != nil {
 				return out, nil, err
 			}
+			out.NextHeight = messages.ProjectReceiveProfile(segment.Core.NextHeight)
 			out.Improvements = segment.Core.Improvements
 			out.BacklogLimit = int(segment.Core.BacklogLimit)
 			out.Profile = segment.Core.Profile

@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/0xmhha/wbft/conformance/sim"
-	"github.com/0xmhha/wbft/consensus/inputlog"
 	"github.com/0xmhha/wbft/observe/journal"
 )
 
@@ -42,6 +41,7 @@ type SeedMessageDelivery struct {
 	CoreInputs    []SeedMessageCoreInput `json:"recorded_core_inputs"`
 }
 type SeedMessageCoreInput struct {
+	WriterRun       string `json:"writer_run,omitempty"`
 	Engine          uint64 `json:"engine_run,string"`
 	Step            uint64 `json:"step,string"`
 	JournalSequence uint64 `json:"journal_sequence,string"`
@@ -170,15 +170,24 @@ func observedMessages(ctx context.Context, sc sim.Scenario, result *sim.Result, 
 					target.seen++
 				}
 			case *journal.StepRec:
-				if body.InputKind != inputlog.KindCapturedMessage {
-					continue
-				}
-				capture, err := inputlog.CapturedReference(body.Input)
+				originRun, capture, deferred, err := selectedStepCapture(run, body)
 				if err != nil {
 					return nil, err
 				}
-				if target := wanted[node][fmt.Sprintf("%s/%d", run, capture)]; target != nil {
+				if capture == 0 {
+					continue
+				}
+				if target := wanted[node][fmt.Sprintf("%s/%d", originRun, capture)]; target != nil {
+					if deferred {
+						if err := verifyDeferredSelection(reader, body.Input, target.hash); err != nil {
+							return nil, err
+						}
+					}
 					step := SeedMessageCoreInput{Engine: body.EngineRun, Step: body.Step, JournalSequence: record.JSeq, MonoNS: int64(body.Mono)}
+					if deferred {
+						out.Source = "simulator_transport_and_deferred_message_journal/1"
+						step.WriterRun = run
+					}
 					if body.Entry != nil {
 						ns := int64(body.Entry.Mono)
 						step.EntryNS = &ns

@@ -62,7 +62,11 @@ func serveReplay(ctx context.Context, dir, chain string, id uint64, omit bool, w
 		if !s.Match {
 			bad++
 		}
-		return enc.Encode(map[string]any{"type": "step", "id": id, "writer_run": s.WriterRun, "engine_run": s.EngineRun, "step": s.Step, "input": s.RecordedInputKind, "omitted": s.Omitted, "out_digest": digest(s.OutDigest), "match": s.Match, "outputs": len(s.Outputs), "context_answers": s.ContextAnswers, "answer_sources": s.AnswerSources, "approximate": s.Approximate, "warmup": s.Warmup, "scheduled_input": s.Scheduled, "suppression_reason": s.SuppressionReason})
+		reply := map[string]any{"type": "step", "id": id, "writer_run": s.WriterRun, "engine_run": s.EngineRun, "step": s.Step, "input": s.RecordedInputKind, "omitted": s.Omitted, "out_digest": digest(s.OutDigest), "match": s.Match, "outputs": len(s.Outputs), "context_answers": s.ContextAnswers, "answer_sources": s.AnswerSources, "approximate": s.Approximate, "warmup": s.Warmup, "scheduled_input": s.Scheduled, "suppression_reason": s.SuppressionReason}
+		if s.DeferredOrigin != nil {
+			reply["deferred_origin"] = s.DeferredOrigin
+		}
+		return enc.Encode(reply)
 	})
 	if err != nil {
 		code := answerErrorCode(err)

@@ -6,12 +6,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0xmhha/wbft-analyzer/internal/source/messages"
 	"github.com/0xmhha/wbft/conformance/sim"
 	"github.com/0xmhha/wbft/consensus"
 	"github.com/0xmhha/wbft/types"
 )
 
 type Node struct {
+	NextHeight      *messages.ReceiveProfile `json:"next_height,omitempty"`
 	ProfileEvidence string
 	Address         types.Address
 	Improvements    uint64
@@ -45,9 +47,13 @@ func buildScenario(nodes []Node, links []Link, params sim.Params, build, imports
 		if n.Profile != "compat" && n.Profile != "improved" || n.BacklogLimit < 0 || n.RuntimeEvidence != "verified" && !modeled || n.SignFloor != nil {
 			return out, errors.New("invalid node configuration")
 		}
+		nextHeight, err := receiveLimits(n.NextHeight, n.ReplayWAL)
+		if err != nil {
+			return out, err
+		}
 		addresses[i] = n.Address
 		index[strings.ToLower(n.Address.Hex())] = i
-		out.Nodes = append(out.Nodes, sim.NodeSpec{Options: consensus.Options{Improvements: consensus.ImprovementSet(n.Improvements), BacklogLimit: n.BacklogLimit}, Profile: n.Profile, ReplayWAL: n.ReplayWAL})
+		out.Nodes = append(out.Nodes, sim.NodeSpec{Options: consensus.Options{Improvements: consensus.ImprovementSet(n.Improvements), BacklogLimit: n.BacklogLimit}, Profile: n.Profile, ReplayWAL: n.ReplayWAL, NextHeight: nextHeight})
 	}
 	keys, err := TestValidators(addresses)
 	if err != nil {

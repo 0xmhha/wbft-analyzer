@@ -163,6 +163,9 @@ func applyProcessing(sc sim.Scenario, nodes []Node, model *ProcessingModel) (sim
 			profile := &sim.ProcessingProfile{Workers: model.Workers, Costs: []sim.ProcessingCost{}}
 			indices := map[string]int{}
 			for _, sample := range timing.Samples {
+				if sc.Nodes[i].NextHeight != nil && sample.Nanoseconds > 0 {
+					return sc, errors.New("next-height receive lane requires atomic receive and core processing")
+				}
 				key := fmt.Sprintf("%s:%d", sample.Kind, sample.Code)
 				index, exists := indices[key]
 				if !exists {
