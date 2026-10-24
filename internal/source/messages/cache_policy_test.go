@@ -46,7 +46,7 @@ func (o cachePolicyRecordObserver) ObserveReceiveTransition(event transport.Rece
 
 func TestCachePolicyRecordCannotUseLegacyProofWithoutHeader(t *testing.T) {
 	for _, legacy := range []uint64{0, journal.CacheTraceVersion} {
-		for _, domain := range []string{"write", "receive", "session", "session_frame", "write_attempt", "core_step", "app_queue", "finalize", "inbox", "internal", "selection"} {
+		for _, domain := range []string{"write", "receive", "session", "session_frame", "write_attempt", "core_step", "app_queue", "finalize", "inbox", "internal", "selection", "receive_dispatch"} {
 			t.Run(fmt.Sprintf("%s/%d", domain, legacy), func(t *testing.T) {
 				in := Input{ID: "policy-record-journal", Kind: "journal", Node: self, Path: t.TempDir()}
 				writer, err := journal.Open(journal.Options{Dir: in.Path, Synchronous: true}, journal.Identity{Self: types.Address{19: 1}, Run: "policy-record-writer", ChainID: big.NewInt(7), Core: journal.CoreOptions{CacheTrace: legacy}})
@@ -63,6 +63,12 @@ func TestCachePolicyRecordCannotUseLegacyProofWithoutHeader(t *testing.T) {
 					writer.Put(journal.Record{Body: &journal.SessionRec{Session: &journal.SessionRef{Run: "original-writer", Ordinal: 1}, Event: journal.SessionObserved, Active: true}})
 				case "internal":
 					writer.Put(journal.Record{Body: &journal.InternalRec{Version: journal.InternalSourceVersion, Sequence: 1, EngineRun: 1, Action: "reset"}})
+				case "receive_dispatch":
+					input, e := inputlog.Encode(consensus.Message{})
+					if e != nil {
+						t.Fatal(e)
+					}
+					writer.Put(journal.Record{Body: &journal.ReceiveDispatchRec{Version: journal.ReceiveDispatchSourceVersion, Sequence: 1, Request: 1, EngineRun: 1, BeforeStep: 1, Action: "prepare", Via: "peer", Source: transport.ReceivePreparationSource{WriterRun: "original-writer", Ledger: 1, Sequence: 1}, Scope: 1, Decision: uint64(transport.ReceiveReserved), Selection: 1, InboxRequest: 1, InputKind: inputlog.KindMessage, Input: input}})
 				case "selection":
 					writer.Put(journal.Record{Body: &journal.SelectionRec{Version: journal.SelectionSourceVersion, Sequence: 1, Selection: 1, EngineRun: 1, Step: 1, Action: "select", Lane: "none", Internal: journal.InputProbe{State: "empty"}, App: journal.InputProbe{State: "empty"}, Timer: journal.InputProbe{State: "empty"}, Inbox: journal.InputProbe{State: "empty"}, NextHeight: "disabled"}})
 				case "inbox":
@@ -103,6 +109,9 @@ func TestCachePolicyRecordCannotUseLegacyProofWithoutHeader(t *testing.T) {
 				rows, err := readCacheJournal(t, in)
 				if domain == "internal" && !errors.Is(err, errInternalSource) {
 					t.Fatal("internal source used the wrong refusal boundary", err)
+				}
+				if domain == "receive_dispatch" && !errors.Is(err, errReceiveDispatchSource) {
+					t.Fatal("receive disposition source used the wrong refusal boundary", err)
 				}
 				if domain == "selection" && !errors.Is(err, errSelectionSource) {
 					t.Fatal("selection source used the wrong refusal boundary", err)
