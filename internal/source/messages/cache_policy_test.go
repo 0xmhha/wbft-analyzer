@@ -48,7 +48,7 @@ func (o cachePolicyRecordObserver) ObserveReceiveTransition(event transport.Rece
 
 func TestCachePolicyRecordCannotUseLegacyProofWithoutHeader(t *testing.T) {
 	for _, legacy := range []uint64{0, journal.CacheTraceVersion} {
-		for _, domain := range []string{"write", "receive", "session", "session_frame", "write_attempt", "core_step", "app_queue", "finalize", "inbox", "internal", "selection", "receive_dispatch", "wal_read", "restore", "signer", "signer_call", "application"} {
+		for _, domain := range []string{"write", "receive", "session", "session_frame", "write_attempt", "core_step", "app_queue", "finalize", "inbox", "internal", "selection", "receive_dispatch", "wal_read", "restore", "signer", "signer_call", "application", "runtime"} {
 			t.Run(fmt.Sprintf("%s/%d", domain, legacy), func(t *testing.T) {
 				in := Input{ID: "policy-record-journal", Kind: "journal", Node: self, Path: t.TempDir()}
 				writer, err := journal.Open(journal.Options{Dir: in.Path, Synchronous: true}, journal.Identity{Self: types.Address{19: 1}, Run: "policy-record-writer", ChainID: big.NewInt(7), Core: journal.CoreOptions{CacheTrace: legacy}})
@@ -71,6 +71,8 @@ func TestCachePolicyRecordCannotUseLegacyProofWithoutHeader(t *testing.T) {
 					writer.Put(journal.Record{Body: &journal.RestoreRec{Version: journal.RestoreSourceVersion, EngineRun: 1, Read: journal.WALReadRef{Namespace: "original-reader", Log: 1, Sequence: 1}, From: "1"}})
 				case "signer":
 					writer.Put(journal.Record{Body: &journal.SignerRec{Source: privval.Source{Version: privval.SourceVersion, Ref: privval.SourceRef{Namespace: "original-signer", Signer: 1, Sequence: 1}, Action: "initial", Result: "ok", Unavailable: "inspection_limits_required"}}})
+				case "runtime":
+					writer.Put(journal.Record{Body: &journal.RuntimeRec{Version: journal.RuntimeSourceVersion, Sequence: 1, Request: 1, Namespace: "policy-record-writer", Component: journal.RuntimeAppStop, Phase: "enter"}})
 				case "application":
 					writer.Put(journal.Record{Body: &journal.ApplicationRec{Version: journal.ApplicationSourceVersion, Result: "ok", Unavailable: "owner_unavailable"}})
 				case "signer_call":
@@ -122,7 +124,7 @@ func TestCachePolicyRecordCannotUseLegacyProofWithoutHeader(t *testing.T) {
 				if domain == "internal" && !errors.Is(err, errInternalSource) {
 					t.Fatal("internal source used the wrong refusal boundary", err)
 				}
-				for name, want := range map[string]error{"wal_read": errWALReadSource, "restore": errRestoreSource, "signer": errSignerSource, "signer_call": errSignerCallSource, "application": errApplicationSource} {
+				for name, want := range map[string]error{"wal_read": errWALReadSource, "restore": errRestoreSource, "signer": errSignerSource, "signer_call": errSignerCallSource, "application": errApplicationSource, "runtime": errRuntimeSource} {
 					if domain == name && !errors.Is(err, want) {
 						t.Fatal("unsupported source used the wrong refusal boundary", domain, err)
 					}

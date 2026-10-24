@@ -226,6 +226,8 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 			return s, errRestoreSource
 		case *journal.SignerRec:
 			return s, errSignerSource
+		case *journal.RuntimeRec:
+			return s, errRuntimeSource
 		case *journal.ApplicationRec:
 			return s, errApplicationSource
 		case *journal.SignerCallRec:
