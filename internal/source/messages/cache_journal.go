@@ -23,6 +23,10 @@ var errInboxSource = errors.New("inbox sources require an explicit runtime model
 var errInternalSource = errors.New("internal input sources require an explicit runtime model")
 var errSelectionSource = errors.New("input selection sources require an explicit runtime model")
 var errReceiveDispatchSource = errors.New("receive dispatch sources require an explicit runtime model")
+var errWALReadSource = errors.New("WAL read sources require an explicit runtime model")
+var errRestoreSource = errors.New("restore sources require an explicit runtime model")
+var errSignerSource = errors.New("signer sources require an explicit runtime model")
+var errSignerCallSource = errors.New("signer call sources require an explicit runtime model")
 var errFinalizeSource = errors.New("application finalization sources require an explicit runtime model")
 
 type journalCacheState struct {
@@ -50,6 +54,14 @@ func (s *journalCacheState) project(r *Record, rec journal.Record) error {
 	switch rec.Body.(type) {
 	case *journal.InternalRec:
 		return errInternalSource
+	case *journal.WALReadRec:
+		return errWALReadSource
+	case *journal.RestoreRec:
+		return errRestoreSource
+	case *journal.SignerRec:
+		return errSignerSource
+	case *journal.SignerCallRec:
+		return errSignerCallSource
 	case *journal.ReceiveDispatchRec:
 		return errReceiveDispatchSource
 	case *journal.SelectionRec:
@@ -302,7 +314,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 		}
 		return encoder.Encode(r)
 	})
-	if errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) || errors.Is(readErr, errInternalSource) || errors.Is(readErr, errSelectionSource) || errors.Is(readErr, errReceiveDispatchSource) {
+	if errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) || errors.Is(readErr, errInternalSource) || errors.Is(readErr, errSelectionSource) || errors.Is(readErr, errReceiveDispatchSource) || errors.Is(readErr, errWALReadSource) || errors.Is(readErr, errRestoreSource) || errors.Is(readErr, errSignerSource) || errors.Is(readErr, errSignerCallSource) {
 		return Stats{}, readErr
 	}
 	if len(rows) > 0 {
