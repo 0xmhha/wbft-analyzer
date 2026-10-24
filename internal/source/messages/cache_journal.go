@@ -20,6 +20,8 @@ import (
 // Application queue metadata needs a separate runtime model.
 var errAppQueueSource = errors.New("application queue sources require an explicit runtime model")
 var errInboxSource = errors.New("inbox sources require an explicit runtime model")
+var errInternalSource = errors.New("internal input sources require an explicit runtime model")
+var errSelectionSource = errors.New("input selection sources require an explicit runtime model")
 var errFinalizeSource = errors.New("application finalization sources require an explicit runtime model")
 
 type journalCacheState struct {
@@ -45,6 +47,10 @@ func (s *journalCacheState) project(r *Record, rec journal.Record) error {
 		return errCacheFrameSource
 	}
 	switch rec.Body.(type) {
+	case *journal.InternalRec:
+		return errInternalSource
+	case *journal.SelectionRec:
+		return errSelectionSource
 	case *journal.InboxRec:
 		return errInboxSource
 	case *journal.FinalizeRec:
@@ -293,7 +299,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 		}
 		return encoder.Encode(r)
 	})
-	if errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) {
+	if errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) || errors.Is(readErr, errInternalSource) || errors.Is(readErr, errSelectionSource) {
 		return Stats{}, readErr
 	}
 	if len(rows) > 0 {
