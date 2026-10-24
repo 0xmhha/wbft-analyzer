@@ -27,6 +27,7 @@ var errWALReadSource = errors.New("WAL read sources require an explicit runtime 
 var errRestoreSource = errors.New("restore sources require an explicit runtime model")
 var errSignerSource = errors.New("signer sources require an explicit runtime model")
 var errSignerCallSource = errors.New("signer call sources require an explicit runtime model")
+var errApplicationSource = errors.New("application execution sources require an explicit runtime model")
 var errFinalizeSource = errors.New("application finalization sources require an explicit runtime model")
 
 type journalCacheState struct {
@@ -60,6 +61,8 @@ func (s *journalCacheState) project(r *Record, rec journal.Record) error {
 		return errRestoreSource
 	case *journal.SignerRec:
 		return errSignerSource
+	case *journal.ApplicationRec:
+		return errApplicationSource
 	case *journal.SignerCallRec:
 		return errSignerCallSource
 	case *journal.ReceiveDispatchRec:
@@ -314,7 +317,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 		}
 		return encoder.Encode(r)
 	})
-	if errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) || errors.Is(readErr, errInternalSource) || errors.Is(readErr, errSelectionSource) || errors.Is(readErr, errReceiveDispatchSource) || errors.Is(readErr, errWALReadSource) || errors.Is(readErr, errRestoreSource) || errors.Is(readErr, errSignerSource) || errors.Is(readErr, errSignerCallSource) {
+	if errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) || errors.Is(readErr, errInternalSource) || errors.Is(readErr, errSelectionSource) || errors.Is(readErr, errReceiveDispatchSource) || errors.Is(readErr, errWALReadSource) || errors.Is(readErr, errRestoreSource) || errors.Is(readErr, errSignerSource) || errors.Is(readErr, errSignerCallSource) || errors.Is(readErr, errApplicationSource) {
 		return Stats{}, readErr
 	}
 	if len(rows) > 0 {

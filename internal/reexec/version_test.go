@@ -24,6 +24,7 @@ func TestCorePinTracksExactModuleAndChecksum(t *testing.T) {
 		t.Fatal("core identity pin does not match dependency")
 	}
 	for _, historical := range []struct{ module, commit string }{
+		{"v0.0.0-20261024052525-63f309906fba", "63f309906fba13264171d867f1860805247248e2"},
 		{"v0.0.0-20261024030958-cace8f027c8c", "cace8f027c8c952ec06b6247cb09b91fa187b2e7"},
 		{"v0.0.0-20261024010510-6f5036b7d4ef", "6f5036b7d4ef44319f6dfd8d8a5b583ee8312e88"},
 		{"v0.0.0-20261023230918-edaa957ee067", "edaa957ee0674f458ea45b487b8cdbb748c23977"},
