@@ -8,6 +8,8 @@ import (
 
 	"github.com/0xmhha/wbft/consensus"
 	"github.com/0xmhha/wbft/consensus/inputlog"
+	"github.com/0xmhha/wbft/consensus/privval"
+	"github.com/0xmhha/wbft/consensus/wal"
 	"github.com/0xmhha/wbft/observe/journal"
 	"github.com/0xmhha/wbft/p2p/transport"
 	"github.com/0xmhha/wbft/types"
@@ -46,7 +48,7 @@ func (o cachePolicyRecordObserver) ObserveReceiveTransition(event transport.Rece
 
 func TestCachePolicyRecordCannotUseLegacyProofWithoutHeader(t *testing.T) {
 	for _, legacy := range []uint64{0, journal.CacheTraceVersion} {
-		for _, domain := range []string{"write", "receive", "session", "session_frame", "write_attempt", "core_step", "app_queue", "finalize", "inbox", "internal", "selection", "receive_dispatch"} {
+		for _, domain := range []string{"write", "receive", "session", "session_frame", "write_attempt", "core_step", "app_queue", "finalize", "inbox", "internal", "selection", "receive_dispatch", "wal_read", "restore", "signer", "signer_call"} {
 			t.Run(fmt.Sprintf("%s/%d", domain, legacy), func(t *testing.T) {
 				in := Input{ID: "policy-record-journal", Kind: "journal", Node: self, Path: t.TempDir()}
 				writer, err := journal.Open(journal.Options{Dir: in.Path, Synchronous: true}, journal.Identity{Self: types.Address{19: 1}, Run: "policy-record-writer", ChainID: big.NewInt(7), Core: journal.CoreOptions{CacheTrace: legacy}})
@@ -63,6 +65,14 @@ func TestCachePolicyRecordCannotUseLegacyProofWithoutHeader(t *testing.T) {
 					writer.Put(journal.Record{Body: &journal.SessionRec{Session: &journal.SessionRef{Run: "original-writer", Ordinal: 1}, Event: journal.SessionObserved, Active: true}})
 				case "internal":
 					writer.Put(journal.Record{Body: &journal.InternalRec{Version: journal.InternalSourceVersion, Sequence: 1, EngineRun: 1, Action: "reset"}})
+				case "wal_read":
+					writer.Put(journal.Record{Body: &journal.WALReadRec{Source: wal.ReadSource{Version: wal.ReadSourceVersion, Namespace: "original-reader", Log: 1, Sequence: 1}}})
+				case "restore":
+					writer.Put(journal.Record{Body: &journal.RestoreRec{Version: journal.RestoreSourceVersion, EngineRun: 1, Read: journal.WALReadRef{Namespace: "original-reader", Log: 1, Sequence: 1}, From: "1"}})
+				case "signer":
+					writer.Put(journal.Record{Body: &journal.SignerRec{Source: privval.Source{Version: privval.SourceVersion, Ref: privval.SourceRef{Namespace: "original-signer", Signer: 1, Sequence: 1}, Action: "initial", Result: "ok", Unavailable: "inspection_limits_required"}}})
+				case "signer_call":
+					writer.Put(journal.Record{Body: &journal.SignerCallRec{Version: journal.SignerCallSourceVersion, EngineRun: 1, Step: 1, Output: 1, Source: privval.SourceRef{Namespace: "original-signer", Signer: 1, Sequence: 2}, Result: "sent"}})
 				case "receive_dispatch":
 					input, e := inputlog.Encode(consensus.Message{})
 					if e != nil {
@@ -109,6 +119,11 @@ func TestCachePolicyRecordCannotUseLegacyProofWithoutHeader(t *testing.T) {
 				rows, err := readCacheJournal(t, in)
 				if domain == "internal" && !errors.Is(err, errInternalSource) {
 					t.Fatal("internal source used the wrong refusal boundary", err)
+				}
+				for name, want := range map[string]error{"wal_read": errWALReadSource, "restore": errRestoreSource, "signer": errSignerSource, "signer_call": errSignerCallSource} {
+					if domain == name && !errors.Is(err, want) {
+						t.Fatal("unsupported source used the wrong refusal boundary", domain, err)
+					}
 				}
 				if domain == "receive_dispatch" && !errors.Is(err, errReceiveDispatchSource) {
 					t.Fatal("receive disposition source used the wrong refusal boundary", err)

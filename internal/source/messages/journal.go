@@ -220,6 +220,14 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 			r.Via = choice(b.Via, "internal", "app", "timer", "peer", "wal")
 		case *journal.InternalRec:
 			return s, errInternalSource
+		case *journal.WALReadRec:
+			return s, errWALReadSource
+		case *journal.RestoreRec:
+			return s, errRestoreSource
+		case *journal.SignerRec:
+			return s, errSignerSource
+		case *journal.SignerCallRec:
+			return s, errSignerCallSource
 		case *journal.ReceiveDispatchRec:
 			return s, errReceiveDispatchSource
 		case *journal.SelectionRec:
