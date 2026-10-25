@@ -2394,3 +2394,18 @@ verified capture in the same writer run. Recorded receive profiles are retained
 in source metadata and passed to the simulator with exact limits and WAL replay.
 The receive lane currently supports atomic receive/core processing; positive
 pre-dispatch service samples remain unavailable for that lane.
+
+## Recent observation journals
+
+Message ingestion recognizes the explicit recent-observation journal profile.
+Selected segment records show full-width activation and retention H, policy
+digest, history/replay bounds and exact policy limits. The checkpoint indicator
+states whether a writer recorded a checkpoint that still needs its independent
+canonical-chain anchor; imported metadata does not authenticate that state.
+
+Original closed replay uses the released core profile to verify checkpoint and
+bounded observation transitions together with the recorded core output digests.
+Recorded application answers remain recorded answers. The network scenario
+fitter refuses observation-enabled nodes until its execution model can preserve
+their carrier and state rules. A legacy model cannot silently replace that
+profile. Economic participation weights remain a separate policy.

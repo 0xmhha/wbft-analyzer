@@ -92,7 +92,7 @@ func observedStaticConfiguration(ctx context.Context, sc sim.Scenario, result *s
 			if segment.Self != validator.Address() || segment.Run == "" {
 				return nil, errors.New("simulator static configuration identity mismatch")
 			}
-			cfg, err := segment.Core.Configuration()
+			cfg, err := simulationConfiguration(segment)
 			if err != nil {
 				return nil, err
 			}

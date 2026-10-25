@@ -13,6 +13,18 @@ import (
 	"github.com/0xmhha/wbft/types"
 )
 
+var ErrObservationModelUnavailable = errors.New("recorded observation profile requires an observation-aware network model")
+
+func simulationConfiguration(segment *journal.SegmentRec) (*types.Config, error) {
+	if segment.Core.Observation != nil {
+		if err := segment.Core.Observation.ValidateIdentity(segment.ChainID, segment.GenesisHash); err != nil {
+			return nil, err
+		}
+		return nil, ErrObservationModelUnavailable
+	}
+	return segment.Core.Configuration()
+}
+
 // InspectNodeOptions reads an already verified immutable journal directory.
 // Changed options across segments require an explicit time-varying model.
 func InspectNodeOptions(ctx context.Context, directory string, address types.Address) (Node, *types.Config, error) {
@@ -58,7 +70,7 @@ func InspectNodeOptions(ctx context.Context, directory string, address types.Add
 		}
 		if first == nil {
 			first = raw
-			config, err = segment.Core.Configuration()
+			config, err = simulationConfiguration(segment)
 			if err != nil {
 				return out, nil, err
 			}
