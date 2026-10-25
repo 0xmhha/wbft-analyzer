@@ -2294,6 +2294,19 @@ export interface components {
             legacy: components["schemas"]["MessagesSource"];
             native: components["schemas"]["MessagesSource"];
         };
+        MessagesObservationProfile: {
+            activation: string;
+            checkpoint_status: string;
+            history_walk: string;
+            limits: {
+                [key: string]: string;
+            };
+            policy_digest: string;
+            replay_headers: string;
+            retention: string;
+            version: string;
+            window: string;
+        };
         MessagesOwnInputEvidence: {
             engine_run: string;
             input: components["schemas"]["MessagesOwnSourcePoint"];
@@ -2394,6 +2407,7 @@ export interface components {
             known_hit?: boolean | null;
             next_height?: components["schemas"]["MessagesReceiveProfile"] | null;
             node: string;
+            observation?: components["schemas"]["MessagesObservationProfile"] | null;
             of?: string;
             offer?: string;
             /** Format: int64 */

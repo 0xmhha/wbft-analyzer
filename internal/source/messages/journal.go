@@ -76,6 +76,11 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 			if addr(b.Self) != p.Summary.Node || b.ChainID == nil || b.ChainID.String() != chain || !strings.EqualFold(b.GenesisHash.Hex(), genesis) || b.Run == "" || len(b.Run) > 128 {
 				return s, errors.New("journal segment identity mismatch")
 			}
+			observation, err := projectObservationProfile(b)
+			if err != nil {
+				return s, errors.New("unsupported observation profile or inconsistent policy")
+			}
+			r.Observation = observation
 			if b.Run != run {
 				run = b.Run
 				last = 0

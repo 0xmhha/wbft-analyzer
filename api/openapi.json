@@ -3534,6 +3534,55 @@
         ],
         "type": "object"
       },
+      "MessagesObservationProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "activation": {
+            "type": "string"
+          },
+          "checkpoint_status": {
+            "type": "string"
+          },
+          "history_walk": {
+            "type": "string"
+          },
+          "limits": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "policy_digest": {
+            "type": "string"
+          },
+          "replay_headers": {
+            "type": "string"
+          },
+          "retention": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "window": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "activation",
+          "checkpoint_status",
+          "history_walk",
+          "limits",
+          "policy_digest",
+          "replay_headers",
+          "retention",
+          "version",
+          "window"
+        ],
+        "type": "object"
+      },
       "MessagesOwnInputEvidence": {
         "additionalProperties": false,
         "properties": {
@@ -3978,6 +4027,16 @@
           },
           "node": {
             "type": "string"
+          },
+          "observation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesObservationProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "of": {
             "type": "string"

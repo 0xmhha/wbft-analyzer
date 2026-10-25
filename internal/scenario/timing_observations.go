@@ -133,7 +133,7 @@ func observedTiming(sc sim.Scenario, result *sim.Result, dir string) (*SeedTimin
 			if segment.Self != v.Address() || segment.Run == "" {
 				return nil, errors.New("simulator journal node or run identity mismatch")
 			}
-			cfg, err := segment.Core.Configuration()
+			cfg, err := simulationConfiguration(segment)
 			if err != nil {
 				return nil, err
 			}
