@@ -2417,3 +2417,9 @@ available to the normal scenario and journal analysis; the simulator uses the
 same registered-key reveal format across activation and epoch boundaries.
 Independent inspector verdicts retain their stated scope, including undecided
 BLS signature checks when an independent verifier is unavailable.
+
+Recorded `bind_fresh_proposal_author` local options are retained in node
+configuration and scenario reconstruction through the pinned consensus module.
+Exact version, full commit and checksum metadata identify the reexecution
+implementation. Unknown option bits remain unavailable; independently scoped
+inspector verdicts retain their existing coverage.
