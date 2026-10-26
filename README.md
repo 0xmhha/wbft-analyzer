@@ -2409,3 +2409,11 @@ Recorded application answers remain recorded answers. The network scenario
 fitter refuses observation-enabled nodes until its execution model can preserve
 their carrier and state rules. A legacy model cannot silently replace that
 profile. Economic participation weights remain a separate policy.
+
+
+Explicit `consensusRules.blsRandao` activations are read through the pinned WBFT
+configuration and event schema. Recorded full-width activation metadata remains
+available to the normal scenario and journal analysis; the simulator uses the
+same registered-key reveal format across activation and epoch boundaries.
+Independent inspector verdicts retain their stated scope, including undecided
+BLS signature checks when an independent verifier is unavailable.
