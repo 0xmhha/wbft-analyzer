@@ -1454,6 +1454,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tools/observation-bands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check exact observation-band arithmetic from a bounded node report; node provenance remains reported, with no chain authentication, database write or node query. */
+        post: operations["inspectObservationBand"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2699,6 +2716,17 @@ export interface components {
             node: string;
             requirements: string[];
         };
+        ObservationBandInput: {
+            report: string;
+        };
+        ObservationBandInspection: {
+            arithmetic: components["schemas"]["ObservationbandArithmetic"] | null;
+            report: components["schemas"]["RpcObservationBandResult"];
+            schema: string;
+            /** @enum {string} */
+            source_scope: "node_reported";
+            source_sha256: string;
+        };
         ObservationBinding: {
             /** Format: int64 */
             call_ordinal: number;
@@ -2778,6 +2806,12 @@ export interface components {
             /** Format: int64 */
             proposer_rounds: number;
             validator: string;
+        };
+        ObservationbandArithmetic: {
+            /** @enum {string} */
+            history_status: "NO_HISTORY" | "INSUFFICIENT_HISTORY" | "SUFFICIENT_HISTORY";
+            matches_reported: boolean;
+            observed_band: string | null;
         };
         ObserveCall: {
             /** @description a JSON value admitted by the source or report reader */
@@ -3424,6 +3458,16 @@ export interface components {
             proposer: string;
             round: string;
             t_wall: string;
+        };
+        RpcObservationBandResult: {
+            chain_id?: string;
+            core_version?: string;
+            diagnostic?: components["schemas"]["WindowBandDiagnostic"] | null;
+            genesis_hash?: string;
+            reason?: string;
+            schema: string;
+            status: string;
+            verification_scope?: string;
         };
         RuntimeCallPage: {
             calls: components["schemas"]["RuntimeobsCall"][];
@@ -5625,6 +5669,26 @@ export interface components {
             steps: number;
             timer_trace_validated: boolean;
             version: string;
+        };
+        WindowBandDiagnostic: {
+            address: string;
+            carrier_hash: string;
+            carrier_height: string;
+            denominator: string;
+            eligible: string;
+            from: string;
+            history_status: string;
+            minimum: string;
+            numerator: string;
+            observation_policy: string;
+            observed_band: string | null;
+            observed_commit: string;
+            observed_prepare: string;
+            retention: string;
+            schema: string;
+            state_root: string;
+            through: string;
+            view: string;
         };
     };
     responses: never;
@@ -9961,6 +10025,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResultList"];
+                };
+            };
+            /** @description the request failed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the request failed */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    inspectObservationBand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ObservationBandInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservationBandInspection"];
                 };
             };
             /** @description the request failed */

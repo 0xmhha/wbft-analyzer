@@ -2423,3 +2423,7 @@ configuration and scenario reconstruction through the pinned consensus module.
 Exact version, full commit and checksum metadata identify the reexecution
 implementation. Unknown option bits remain unavailable; independently scoped
 inspector verdicts retain their existing coverage.
+
+### Participation observation reports
+
+Open `#/observation-bands` to inspect a UTF-8 `wbft_observationBand` result or JSON-RPC response up to 64 KiB. The tool checks declared counts and exact arithmetic without storing a report, querying a node or running a replay. It separates availability, no history, insufficient history and each phase's observed band. Source identities remain node-reported; matching arithmetic does not authenticate ancestry, signatures, membership or state roots, and supplies no eligibility or reward decision. Phase marks preserve exact decimal values and respect reduced-motion preferences.

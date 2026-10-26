@@ -1,0 +1,28 @@
+{
+  "schema": "wbft-observation-band-rpc/1",
+  "status": "AVAILABLE",
+  "chain_id": "9912",
+  "genesis_hash": "0x3786d8c3f7647bc6873dc83efdb415c0412a0c9093bbaf1d3590912bad5c75e4",
+  "core_version": "v0.0.0-20261026144834-86a089402208",
+  "verification_scope": "node_adopted_observation_state",
+  "diagnostic": {
+    "schema": "wbft-observation-band/1",
+    "view": "recent_preview",
+    "carrier_hash": "0xa31670075521ad1811517a960ead4b3aef7ebf3fbafdb10e1a0070ed0ccc4360",
+    "carrier_height": "7",
+    "state_root": "0x82a7f8da2a15f07374835a3882452bba96ccc242ae0765999d278ce1bc5385d4",
+    "observation_policy": "0xe745925a49def0c97f610e4f6a82058f761c885f32cfc4ac9d06017ea441a107",
+    "retention": "3",
+    "from": "3",
+    "through": "5",
+    "address": "0x1a642f0E3c3aF545E7AcBD38b07251B3990914F1",
+    "eligible": "3",
+    "observed_prepare": "3",
+    "observed_commit": "3",
+    "minimum": "3",
+    "numerator": "4",
+    "denominator": "5",
+    "history_status": "SUFFICIENT_HISTORY",
+    "observed_band": "IN_OBSERVED_BAND"
+  }
+}
