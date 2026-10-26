@@ -52,6 +52,16 @@ export function setToken(t: string): void {
 
 let token = readToken();
 
+/** Checks a report without storing it or querying a node. */
+export async function inspectObservationBand(report: string): Promise<Schemas["ObservationBandInspection"]> {
+  const body: Schemas["ObservationBandInput"] = {report};
+  const headers: Record<string,string> = {Accept:"application/json","Content-Type":"application/json"};
+  if(token) headers.Authorization=`Bearer ${token}`;
+  const r=await fetch("/v1/tools/observation-bands",{method:"POST",headers,body:JSON.stringify(body)});
+  if(!r.ok){let message=r.statusText;try{message=((await r.json()) as Schemas["Error"]).error;}catch{/* Keep the HTTP status. */}throw new ApiError(r.status,message);}
+  return (await r.json()) as Schemas["ObservationBandInspection"];
+}
+
 /** Fills a path template such as /v1/networks/{net}. */
 export function fill(template: string, values: Record<string, string | number> = {}): string {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => {

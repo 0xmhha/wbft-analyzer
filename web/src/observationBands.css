@@ -1,0 +1,26 @@
+.band-nav { margin-left: 1rem; }
+.band-nav[aria-current="page"] { font-weight: 600; }
+.observation-bands { max-width: 72rem; }
+.band-inputs { display: flex; gap: 1.2rem; flex-wrap: wrap; align-items: center; margin: 1rem 0; }
+.observation-bands textarea { width: 100%; box-sizing: border-box; font: 12px/1.5 ui-monospace, monospace; margin-top: .5rem; }
+.band-result { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--line); animation: band-enter 220ms ease-out; }
+.band-status { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; }
+.band-badge { border: 1px solid var(--unknown); border-radius: 4px; padding: 2px 7px; font-size: 12px; }
+.band-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(18rem,1fr)); gap: 1.2rem; margin: 1rem 0; }
+.band-card { border-left: 2px solid var(--line); padding-left: 1rem; overflow-wrap: anywhere; }
+.band-card h2 { font-size: 16px; margin: .3rem 0; }
+.band-number { font-size: 23px; font-variant-numeric: tabular-nums; }
+.band-phases { border-top: 1px solid var(--line); padding-top: 1rem; }
+.band-phase-title { display: flex; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
+.band-meter { display: block; width: 100%; margin-top: .8rem; overflow: visible; }
+.band-track { fill: #eef0f3; }
+.band-fill { fill: #356f9e; transition: width 500ms ease-out; }
+.band-threshold { stroke: var(--fg); stroke-width: 3; stroke-dasharray: 6 5; }
+.band-consistent { color: #285776; border-left: 2px solid currentColor; padding-left: .6rem; }
+.band-mismatch { color: #885b08; border-left: 3px double currentColor; padding-left: .6rem; }
+.band-empty { padding: 1rem 0; color: var(--muted); }
+.band-identity dl { display: grid; grid-template-columns: minmax(8rem,1fr) minmax(0,4fr); gap: .5rem; }
+.band-identity dd { margin: 0; overflow-wrap: anywhere; }
+@keyframes band-enter { from { opacity: .35; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .band-result { animation: none; } .band-fill { transition: none; } }
+@media (max-width: 560px) { .band-identity dl { grid-template-columns: 1fr; } }

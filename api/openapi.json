@@ -5261,6 +5261,56 @@
         ],
         "type": "object"
       },
+      "ObservationBandInput": {
+        "additionalProperties": false,
+        "properties": {
+          "report": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "report"
+        ],
+        "type": "object"
+      },
+      "ObservationBandInspection": {
+        "additionalProperties": false,
+        "properties": {
+          "arithmetic": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationbandArithmetic"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "report": {
+            "$ref": "#/components/schemas/RpcObservationBandResult"
+          },
+          "schema": {
+            "type": "string"
+          },
+          "source_scope": {
+            "enum": [
+              "node_reported"
+            ],
+            "type": "string"
+          },
+          "source_sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "arithmetic",
+          "report",
+          "schema",
+          "source_scope",
+          "source_sha256"
+        ],
+        "type": "object"
+      },
       "ObservationBinding": {
         "additionalProperties": false,
         "properties": {
@@ -5578,6 +5628,34 @@
           "proposed",
           "proposer_rounds",
           "validator"
+        ],
+        "type": "object"
+      },
+      "ObservationbandArithmetic": {
+        "additionalProperties": false,
+        "properties": {
+          "history_status": {
+            "enum": [
+              "NO_HISTORY",
+              "INSUFFICIENT_HISTORY",
+              "SUFFICIENT_HISTORY"
+            ],
+            "type": "string"
+          },
+          "matches_reported": {
+            "type": "boolean"
+          },
+          "observed_band": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "history_status",
+          "matches_reported",
+          "observed_band"
         ],
         "type": "object"
       },
@@ -8178,6 +8256,47 @@
           "proposer",
           "round",
           "t_wall"
+        ],
+        "type": "object"
+      },
+      "RpcObservationBandResult": {
+        "additionalProperties": false,
+        "properties": {
+          "chain_id": {
+            "type": "string"
+          },
+          "core_version": {
+            "type": "string"
+          },
+          "diagnostic": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WindowBandDiagnostic"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "genesis_hash": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "schema": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "verification_scope": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "status"
         ],
         "type": "object"
       },
@@ -17226,6 +17345,89 @@
           "version"
         ],
         "type": "object"
+      },
+      "WindowBandDiagnostic": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "carrier_hash": {
+            "type": "string"
+          },
+          "carrier_height": {
+            "type": "string"
+          },
+          "denominator": {
+            "type": "string"
+          },
+          "eligible": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "history_status": {
+            "type": "string"
+          },
+          "minimum": {
+            "type": "string"
+          },
+          "numerator": {
+            "type": "string"
+          },
+          "observation_policy": {
+            "type": "string"
+          },
+          "observed_band": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "observed_commit": {
+            "type": "string"
+          },
+          "observed_prepare": {
+            "type": "string"
+          },
+          "retention": {
+            "type": "string"
+          },
+          "schema": {
+            "type": "string"
+          },
+          "state_root": {
+            "type": "string"
+          },
+          "through": {
+            "type": "string"
+          },
+          "view": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "carrier_hash",
+          "carrier_height",
+          "denominator",
+          "eligible",
+          "from",
+          "history_status",
+          "minimum",
+          "numerator",
+          "observation_policy",
+          "observed_band",
+          "observed_commit",
+          "observed_prepare",
+          "retention",
+          "schema",
+          "state_root",
+          "through",
+          "view"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -24541,6 +24743,54 @@
           }
         },
         "summary": "The verdicts of a report."
+      }
+    },
+    "/v1/tools/observation-bands": {
+      "post": {
+        "operationId": "inspectObservationBand",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObservationBandInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservationBandInspection"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          },
+          "5XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "the request failed"
+          }
+        },
+        "summary": "Check exact observation-band arithmetic from a bounded node report; node provenance remains reported, with no chain authentication, database write or node query."
       }
     }
   },
