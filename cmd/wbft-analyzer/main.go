@@ -40,6 +40,7 @@ Commands:
   ingest    load a dataset: inspector reports, a chainbench run, or a range of blocks
   follow    load the blocks of a network as they come
   dataset   adopt retained inputs, delete a dataset, or inspect deletion
+  retry-sources check original retry timer, signer, WAL and cache ownership sources
   reexec    compare recorded journal steps with the actual WBFT core
   reconstruct assess fixed sources or compare closed observed inputs with the WBFT core
   whatif    run a counterfactual timer policy on complete retained input
@@ -59,6 +60,7 @@ var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
 	"follow":        runFollow,
 	"reindex":       runReindex,
 	"reexec":        runReexec,
+	"retry-sources": runRetrySources,
 	"reconstruct":   runReconstruct,
 	"whatif":        runWhatif,
 	"scenario":      runScenario,
