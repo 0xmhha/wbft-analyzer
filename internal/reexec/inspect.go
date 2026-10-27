@@ -1,6 +1,7 @@
 package reexec
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -127,7 +128,7 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 	}
 	run = ""
 	ordinal = 0
-	var deferredProfile bool
+	var deferredProfile, priorProfile bool
 	var lastSeq, lastStep, engine uint64
 	started, lost := false, false
 	status := map[string]*Height{}
@@ -153,6 +154,7 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		ordinal++
 		if seg, ok := rec.Body.(*journal.SegmentRec); ok {
 			deferredProfile = seg.Core.NextHeight != nil && seg.Core.NextHeight.Validate() == nil
+			priorProfile = consensus.ImprovementSet(seg.Core.Improvements).Has(consensus.BindPriorHead)
 		}
 		if seg, ok := rec.Body.(*journal.SegmentRec); ok && seg.Run != run {
 			run = seg.Run
@@ -263,6 +265,15 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		out.Contexts[ordinal] = ctx
 		for i, raw := range b.Env {
 			c, err := inputlog.DecodeEnv(raw)
+			if err == nil && c.Kind == inputlog.EnvValidatorsAt && priorProfile {
+				canonical, encodeErr := inputlog.EncodeEnv(c)
+				if encodeErr != nil || !bytes.Equal(canonical, raw) || c.Result != 0 || c.Future != 0 || c.Step != "" || c.Class != "" || c.Bad || c.Validators != nil && c.Err != "" {
+					markStep(&step, "partial", "authority_source")
+				}
+				// Authority records are consumed by the closed core reader.
+				// They never become context-scoped application answers.
+				continue
+			}
 			if err != nil || (c.Kind != inputlog.EnvValidateProposal && c.Kind != inputlog.EnvIsBadBlock) {
 				markStep(&step, "partial", "application_answer")
 				continue
