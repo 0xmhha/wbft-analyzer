@@ -17,6 +17,9 @@ import (
 	"github.com/0xmhha/wbft/types"
 )
 
+// ErrRetrySource distinguishes a new retry source from a legacy cache trace.
+var ErrRetrySource = errors.New("round-change retry sources require the dedicated source check")
+
 // Application queue metadata needs a separate runtime model.
 var errAppQueueSource = errors.New("application queue sources require an explicit runtime model")
 var errInboxSource = errors.New("inbox sources require an explicit runtime model")
@@ -50,6 +53,16 @@ func cacheAddresses(in []types.Address) []string {
 	return out
 }
 func (s *journalCacheState) project(r *Record, rec journal.Record) error {
+	if segment, ok := rec.Body.(*journal.SegmentRec); ok && segment.Core.RoundChangeRetry != nil {
+		return ErrRetrySource
+	}
+	if cache, ok := rec.Body.(*journal.CacheRec); ok && cache.Retry.Version != 0 {
+		return ErrRetrySource
+	}
+	if write, ok := rec.Body.(*journal.WriteCacheRec); ok && write.Transition.Retry.Version != 0 {
+		return ErrRetrySource
+	}
+
 	if m, ok := rec.Body.(*journal.MsgRec); ok && (m.Session != nil || m.WriteAttempt != nil) {
 		return errCacheFrameSource
 	}
@@ -320,7 +333,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 		}
 		return encoder.Encode(r)
 	})
-	if errors.Is(readErr, errRuntimeSource) || errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) || errors.Is(readErr, errInternalSource) || errors.Is(readErr, errSelectionSource) || errors.Is(readErr, errReceiveDispatchSource) || errors.Is(readErr, errWALReadSource) || errors.Is(readErr, errRestoreSource) || errors.Is(readErr, errSignerSource) || errors.Is(readErr, errSignerCallSource) || errors.Is(readErr, errApplicationSource) {
+	if errors.Is(readErr, ErrRetrySource) || errors.Is(readErr, errRuntimeSource) || errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) || errors.Is(readErr, errInternalSource) || errors.Is(readErr, errSelectionSource) || errors.Is(readErr, errReceiveDispatchSource) || errors.Is(readErr, errWALReadSource) || errors.Is(readErr, errRestoreSource) || errors.Is(readErr, errSignerSource) || errors.Is(readErr, errSignerCallSource) || errors.Is(readErr, errApplicationSource) {
 		return Stats{}, readErr
 	}
 	if len(rows) > 0 {

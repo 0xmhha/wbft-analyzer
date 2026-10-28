@@ -62,6 +62,9 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 	_, readErr := messages.Read(ctx, p, chainID, genesis, func(messages.Record) error { return nil })
 	if readErr != nil {
 		out.JournalIssue = "damaged_journal"
+		if errors.Is(readErr, messages.ErrRetrySource) {
+			out.JournalIssue = "retry_sources_require_dedicated_check"
+		}
 	}
 	rd, err := journal.OpenReader(nil, p.Input.Path)
 	if err != nil {

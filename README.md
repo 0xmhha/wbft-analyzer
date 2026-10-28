@@ -2427,3 +2427,26 @@ inspector verdicts retain their existing coverage.
 ### Participation observation reports
 
 Open `#/observation-bands` to inspect a UTF-8 `wbft_observationBand` result or JSON-RPC response up to 64 KiB. The tool checks declared counts and exact arithmetic without storing a report, querying a node or running a replay. It separates availability, no history, insufficient history and each phase's observed band. Source identities remain node-reported; matching arithmetic does not authenticate ancestry, signatures, membership or state roots, and supplies no eligibility or reward decision. Phase marks preserve exact decimal values and respect reduced-motion preferences.
+
+## Original round-change retry sources
+
+`wbft-analyzer retry-sources --journal DIR --source-limits FILE` checks original
+retry evidence through the pinned WBFT source checker. Supply the explicit
+positive JSON limits described by `wbft-journal check-round-change-retry`. The
+64 KiB limits file rejects unknown fields, duplicate keys and trailing values.
+The reader caps the original record count before retaining relevant sources;
+checker byte budgets apply after record decoding. They are not heap, segment
+allocation or node operating limits.
+
+The check joins core execution, original timer ownership, public signer state,
+later own-message WAL frames and cache decisions. Output contains the
+conditional source result without copying secret keys or host paths. Exit 0
+means conditional consistency, 69 means unavailable evidence, 65 means invalid
+input or contradiction, and 64 means usage error. Physical status remains
+unavailable; this is not a delivery, durability or functional runtime replay.
+
+The ordinary legacy cache projection refuses retry declarations and retry
+owner records atomically, including sources without a header declaration.
+Closed legacy reexecution reports that the dedicated source check is required.
+Use original journals, not a legacy cache projection, for this policy. Old
+disabled-profile input retains its existing behavior.
