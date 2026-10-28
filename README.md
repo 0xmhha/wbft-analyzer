@@ -2450,3 +2450,22 @@ owner records atomically, including sources without a header declaration.
 Closed legacy reexecution reports that the dedicated source check is required.
 Use original journals, not a legacy cache projection, for this policy. Old
 disabled-profile input retains its existing behavior.
+
+### Original receive failure sources
+
+`wbft-analyzer receive-failures --journal DIR --source-limits FILE` reads the
+original closed journal through the WBFT source checker. The limits JSON uses
+`Caches`, `Inbox.{Operations,Entries,Peers,Frames,Bytes}` and
+`Inbox.Core.{Records,Runs,Steps,Environments,Outputs,Bytes}`; every value must
+be positive. Limits metadata is at most 64 KiB. Input fingerprints must agree
+before and after checking. Record decoding precedes retained-record limits,
+and byte budgets are inspected after collection; these are not heap bounds.
+
+The complete source result keeps executed checks, verified failures, cache
+lookups and consumed cached failures separate. Exit 0 means conditional source
+consistency, 69 means unavailable, 65 means contradictory or invalid input,
+64 means usage error, and 70 means output failure. Missing original evidence
+and unsupported restored prefixes remain unavailable. No physical delivery,
+verification CPU saving, or functional replay is certified. General message
+projection and reexecution require this dedicated source check for the new
+profile; they never turn a cache hit into an executed check or acceptance.

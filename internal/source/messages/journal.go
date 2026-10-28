@@ -73,6 +73,9 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 		ends[name] = pos.Offset + 8 + int64(binary.BigEndian.Uint32(length[:]))
 		r := Record{Input: p.Input.ID, File: fmt.Sprintf("%020d.wal", pos.Segment), Ordinal: s.Records + 1, Offset: &pos.Offset, Seq: number(rec.JSeq), Node: p.Summary.Node, Run: run}
 		if b, ok := rec.Body.(*journal.SegmentRec); ok {
+			if b.Core.ReceiveFailureCache != nil {
+				return s, ErrReceiveFailureSource
+			}
 			if addr(b.Self) != p.Summary.Node || b.ChainID == nil || b.ChainID.String() != chain || !strings.EqualFold(b.GenesisHash.Hex(), genesis) || b.Run == "" || len(b.Run) > 128 {
 				return s, errors.New("journal segment identity mismatch")
 			}
@@ -223,6 +226,8 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 			r.HeadHash = hash(b.HeadHash)
 			r.OutDigest = hash(b.OutDigest)
 			r.Via = choice(b.Via, "internal", "app", "timer", "peer", "wal")
+		case *journal.ReceiveFailureCacheRec, *journal.InboxFailureHitRec:
+			return s, ErrReceiveFailureSource
 		case *journal.InternalRec:
 			return s, errInternalSource
 		case *journal.WALReadRec:
