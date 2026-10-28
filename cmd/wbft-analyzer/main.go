@@ -40,6 +40,7 @@ Commands:
   ingest    load a dataset: inspector reports, a chainbench run, or a range of blocks
   follow    load the blocks of a network as they come
   dataset   adopt retained inputs, delete a dataset, or inspect deletion
+  receive-failures check original failure checks, bounded cache and inbox consumption
   retry-sources check original retry timer, signer, WAL and cache ownership sources
   reexec    compare recorded journal steps with the actual WBFT core
   reconstruct assess fixed sources or compare closed observed inputs with the WBFT core
@@ -54,18 +55,19 @@ Run "wbft-analyzer <command> -h" for the flags of a command.
 
 // commands dispatches the supported command handlers.
 var commands = map[string]func(args []string, stdout, stderr io.Writer) int{
-	"serve":         runServe,
-	"dataset":       runDataset,
-	"ingest":        runIngest,
-	"follow":        runFollow,
-	"reindex":       runReindex,
-	"reexec":        runReexec,
-	"retry-sources": runRetrySources,
-	"reconstruct":   runReconstruct,
-	"whatif":        runWhatif,
-	"scenario":      runScenario,
-	"reexec-helper": runReexecHelper,
-	"export":        runExport,
+	"serve":            runServe,
+	"dataset":          runDataset,
+	"ingest":           runIngest,
+	"follow":           runFollow,
+	"reindex":          runReindex,
+	"reexec":           runReexec,
+	"retry-sources":    runRetrySources,
+	"receive-failures": runReceiveFailures,
+	"reconstruct":      runReconstruct,
+	"whatif":           runWhatif,
+	"scenario":         runScenario,
+	"reexec-helper":    runReexecHelper,
+	"export":           runExport,
 }
 
 func main() {

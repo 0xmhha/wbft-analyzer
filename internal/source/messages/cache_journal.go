@@ -17,6 +17,9 @@ import (
 	"github.com/0xmhha/wbft/types"
 )
 
+// ErrReceiveFailureSource requires original source inspection instead of projection.
+var ErrReceiveFailureSource = errors.New("receive failure sources require the dedicated source check")
+
 // ErrRetrySource distinguishes a new retry source from a legacy cache trace.
 var ErrRetrySource = errors.New("round-change retry sources require the dedicated source check")
 
@@ -53,6 +56,13 @@ func cacheAddresses(in []types.Address) []string {
 	return out
 }
 func (s *journalCacheState) project(r *Record, rec journal.Record) error {
+	if segment, ok := rec.Body.(*journal.SegmentRec); ok && segment.Core.ReceiveFailureCache != nil {
+		return ErrReceiveFailureSource
+	}
+	switch rec.Body.(type) {
+	case *journal.ReceiveFailureCacheRec, *journal.InboxFailureHitRec:
+		return ErrReceiveFailureSource
+	}
 	if segment, ok := rec.Body.(*journal.SegmentRec); ok && segment.Core.RoundChangeRetry != nil {
 		return ErrRetrySource
 	}
@@ -333,7 +343,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 		}
 		return encoder.Encode(r)
 	})
-	if errors.Is(readErr, ErrRetrySource) || errors.Is(readErr, errRuntimeSource) || errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) || errors.Is(readErr, errInternalSource) || errors.Is(readErr, errSelectionSource) || errors.Is(readErr, errReceiveDispatchSource) || errors.Is(readErr, errWALReadSource) || errors.Is(readErr, errRestoreSource) || errors.Is(readErr, errSignerSource) || errors.Is(readErr, errSignerCallSource) || errors.Is(readErr, errApplicationSource) {
+	if errors.Is(readErr, ErrReceiveFailureSource) || errors.Is(readErr, ErrRetrySource) || errors.Is(readErr, errRuntimeSource) || errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) || errors.Is(readErr, errInternalSource) || errors.Is(readErr, errSelectionSource) || errors.Is(readErr, errReceiveDispatchSource) || errors.Is(readErr, errWALReadSource) || errors.Is(readErr, errRestoreSource) || errors.Is(readErr, errSignerSource) || errors.Is(readErr, errSignerCallSource) || errors.Is(readErr, errApplicationSource) {
 		return Stats{}, readErr
 	}
 	if len(rows) > 0 {
