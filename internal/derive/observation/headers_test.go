@@ -99,12 +99,6 @@ func TestConflictsNeverBecomeBoundCopiesAndDoNotHideComparisons(t *testing.T) {
 		func(f []headers.Fact, c []observe.Call) {
 			var cp observe.Copy
 			_ = json.Unmarshal(c[1].Data, &cp)
-			cp.Round = 1
-			c[1].Data, _ = json.Marshal(cp)
-		},
-		func(f []headers.Fact, c []observe.Call) {
-			var cp observe.Copy
-			_ = json.Unmarshal(c[1].Data, &cp)
 			xs := []uint32{0, 0, 9}
 			cp.Committed = &xs
 			c[1].Data, _ = json.Marshal(cp)
@@ -134,6 +128,30 @@ func TestConflictsNeverBecomeBoundCopiesAndDoNotHideComparisons(t *testing.T) {
 	}
 	if !found {
 		t.Fatal(r.Summary)
+	}
+}
+
+// A node copy can differ from the successor while contradicting its own RPC record.
+func TestCopyRoundDifferenceDoesNotHideRecordConflict(t *testing.T) {
+	f, c := fixture()
+	var cp observe.Copy
+	if err := json.Unmarshal(c[1].Data, &cp); err != nil {
+		t.Fatal(err)
+	}
+	cp.Round = 1
+	c[1].Data, _ = json.Marshal(cp)
+	got, err := Build(f, c, addr(4))
+	if err != nil || got.Rows[1].Status != "matched" || got.Rows[1].Copy == nil || got.Rows[1].Copy.Round != 1 || got.Rows[0].Status != "different" {
+		t.Fatal(got, err)
+	}
+	found := false
+	for _, check := range got.Rows[0].Checks {
+		if check.Field == "record_round_vs_copy" && check.Status == "different" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("record/copy conflict disappeared", got)
 	}
 }
 

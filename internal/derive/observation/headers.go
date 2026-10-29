@@ -19,7 +19,7 @@ import (
 	"github.com/0xmhha/wbft/types"
 )
 
-const Version = "wbft-observation-headers/1"
+const Version = "wbft-observation-headers/2"
 
 type Check struct {
 	Field    string          `json:"field"`
@@ -225,7 +225,8 @@ func resolve(number, hash string, byNumber map[string][]headers.Fact, byIndex ma
 // Build never derives identity from low64 heights or arrival timestamps. Every
 // source row remains visible, including missing/forked headers and gaps.
 func Build(facts []headers.Fact, calls []observe.Call, node string) (Result, error) {
-	out := Result{Rows: []Binding{}, Summary: Summary{Status: "unavailable", Validators: []Totals{}, Checks: []Check{}, Definitions: []string{"Canonical proposer opportunities include rounds through the child-proved decision only; RPC totals also count higher node-entered rounds.", "Previous seal inclusion is network metadata; own seal inclusion and late flags are node-copy claims. Aggregate signatures are not checked by this projection.", "Delay and evidence counters require local observations and cannot be independently derived from headers."}}}
+	out := Result{Rows: []Binding{}, Summary: Summary{Status: "unavailable", Validators: []Totals{}, Checks: []Check{}, Definitions: []string{"Own copy and RPC record rounds are node-local; differences from the successor previous round do not invalidate bindings.",
+		"Canonical proposer opportunities include rounds through the child-proved decision only; RPC totals also count higher node-entered rounds.", "Previous seal inclusion is network metadata; own seal inclusion and late flags are node-copy claims. Aggregate signatures are not checked by this projection.", "Delay and evidence counters require local observations and cannot be independently derived from headers."}}}
 	if len(facts) > 6144 || len(calls) > observe.MaxCalls {
 		return out, fmt.Errorf("observation header projection exceeds source limits")
 	}
@@ -310,9 +311,8 @@ func Build(facts []headers.Fact, calls []observe.Call, node string) (Result, err
 				}
 			}
 			b.Checks = append(b.Checks, check("own_seal_indices", status, true, []any{cp.Prepared, cp.Committed}, "null seals or unique indices within the canonical validator set"))
-			if ctx.childOK {
-				b.Checks = append(b.Checks, equal("copy_round_vs_network", true, own, ctx.child.PrevRound))
-			} else {
+			// The node's round is independent of the successor's hash-bound round.
+			if !ctx.childOK {
 				b.Checks = append(b.Checks, check("network_decision_round", "unknown", false, own, nil))
 			}
 			finish(&b)
@@ -377,9 +377,11 @@ func Build(facts []headers.Fact, calls []observe.Call, node string) (Result, err
 				continue
 			}
 			b.Checks = append(b.Checks, equal("proposer_coinbase", true, canon(r.Proposer), canon(ctx.fact.Coinbase)))
-			if ctx.childOK {
-				b.Checks = append(b.Checks, equal("record_round_vs_network", true, r.Round, strconv.FormatInt(ctx.child.PrevRound, 10)))
-			} else {
+			if own, err := strconv.ParseUint(r.Round, 10, 32); err == nil {
+				round := int64(own)
+				b.OwnRound = &round
+			}
+			if !ctx.childOK {
 				b.Checks = append(b.Checks, check("network_decision_round", "unknown", true, r.Round, nil))
 			}
 			cp, cpKnown := copyClaims[r.Height]

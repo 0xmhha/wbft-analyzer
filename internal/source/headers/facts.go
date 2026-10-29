@@ -198,10 +198,6 @@ func Derive(f Fact, child *Fact, c *Copy, policy *types.ProposerPolicy, last typ
 		v := child.PrevRound
 		r.DecisionRound = &v
 		r.RoundSource = "child_prev_round"
-	} else if c != nil {
-		v := c.Round
-		r.DecisionRound = &v
-		r.RoundSource = "node_copy"
 	}
 	if r.DecisionRound != nil && policy != nil {
 		addresses := make([]types.Address, len(f.Validators))
