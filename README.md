@@ -2469,3 +2469,10 @@ and unsupported restored prefixes remain unavailable. No physical delivery,
 verification CPU saving, or functional replay is certified. General message
 projection and reexecution require this dedicated source check for the new
 profile; they never turn a cache hit into an executed check or acceptance.
+
+### Epoch information presence policy
+
+Recorded `check_epoch_info_presence` selections retain their exact local option
+mask through journal inspection and normal core replay, including the separate
+import-result observer. Core replay does not reexecute application header
+validation or establish physical process reconstruction.
