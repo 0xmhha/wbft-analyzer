@@ -2476,3 +2476,19 @@ Recorded `check_epoch_info_presence` selections retain their exact local option
 mask through journal inspection and normal core replay, including the separate
 import-result observer. Core replay does not reexecute application header
 validation or establish physical process reconstruction.
+
+### Validator startup availability observations
+
+Recorded `defer_validator_start` keeps its exact option mask, ordered validator
+lookup answers and five pre-Start generations during closed core replay. The
+local `validator_start` timer appears as **Validator startup wait** with its full
+height, round, generation and timeout hash. Native journals and scheduler
+snapshots retain all five cancellation kinds. Decoding this metadata does not
+prove arm ownership, delivery, signing, application execution or physical recovery.
+
+Missing nil-versus-empty validator key witnesses remain `unsupported_profile`
+and not comparable; they are not successful replay or an output mismatch.
+Selected restore or original WAL-read sources remain explicitly
+`validator_start_restore_unavailable` in the core plan. The independent restore
+model does not implement the selected functional history. Existing default
+profiles keep their prior interpretation.

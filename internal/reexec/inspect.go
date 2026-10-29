@@ -65,6 +65,9 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		if errors.Is(readErr, messages.ErrReceiveFailureSource) {
 			out.JournalIssue = "receive_failures_require_dedicated_check"
 		}
+		if errors.Is(readErr, messages.ErrValidatorStartRestoreSource) {
+			out.JournalIssue = "validator_start_restore_unavailable"
+		}
 		if errors.Is(readErr, messages.ErrRetrySource) {
 			out.JournalIssue = "retry_sources_require_dedicated_check"
 		}
@@ -77,6 +80,8 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 	exact := map[string]int{}
 	versions := map[string]bool{}
 	var coreFingerprint string
+	validatorStartRestoreRuns := map[string]bool{}
+	var validatorStartProfile bool
 	run := ""
 	var ordinal int64
 	// No payload or configuration is retained in the plan.
@@ -98,6 +103,7 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		}
 		switch b := rec.Body.(type) {
 		case *journal.SegmentRec:
+			validatorStartProfile = consensus.ImprovementSet(b.Core.Improvements).Has(consensus.DeferValidatorStart)
 			if !logs.Identifier(b.Run) {
 				return out, errors.New("invalid journal writer run")
 			}
@@ -114,6 +120,14 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 			}
 			coreFingerprint = fingerprint
 
+		case *journal.WALReadRec:
+			if validatorStartProfile {
+				validatorStartRestoreRuns[run] = true
+			}
+		case *journal.RestoreRec:
+			if validatorStartProfile || b.Unavailable == "validator_start_profile" {
+				validatorStartRestoreRuns[run] = true
+			}
 		case *journal.MsgRec:
 			if b.Dir == journal.In && len(b.Payload) <= 16<<20 && (b.Size == 0 || b.Size == uint64(len(b.Payload))) {
 				payload, code, act, _ := transport.DecodeFrame(b.Code, b.Payload)
@@ -160,7 +174,8 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		ordinal++
 		if seg, ok := rec.Body.(*journal.SegmentRec); ok {
 			deferredProfile = seg.Core.NextHeight != nil && seg.Core.NextHeight.Validate() == nil
-			priorProfile = consensus.ImprovementSet(seg.Core.Improvements).Has(consensus.BindPriorHead)
+			flags := consensus.ImprovementSet(seg.Core.Improvements)
+			priorProfile = flags.Has(consensus.BindPriorHead) || flags.Has(consensus.DeferValidatorStart)
 		}
 		if seg, ok := rec.Body.(*journal.SegmentRec); ok && seg.Run != run {
 			run = seg.Run
@@ -264,7 +279,7 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 		} else if !headers[strconv.FormatUint(index-1, 10)] || !headers[n] || !headers[strconv.FormatUint(index+1, 10)] {
 			markStep(&step, "partial", "headers")
 		}
-		if out.JournalIssue != "" {
+		if out.JournalIssue != "" && (out.JournalIssue != "validator_start_restore_unavailable" || validatorStartRestoreRuns[run]) {
 			markStep(&step, "not_possible", out.JournalIssue)
 		}
 		ctx := answerContext{run, step.Engine, b.HeadNumber.String(), strings.ToLower(b.HeadHash.Hex()), step.ValsetDigest}

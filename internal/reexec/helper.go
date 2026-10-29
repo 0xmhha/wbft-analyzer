@@ -279,7 +279,7 @@ func Execute(ctx context.Context, p Plan, h Helper, yield func(Step) error) (res
 			if r.Code == "input_gap" {
 				res.Issue = "input_gap"
 			}
-			if hasIssue([]string{"env_ambiguous", "env_source_mismatch", "head_mismatch", "answer_limit"}, r.Code) {
+			if hasIssue([]string{"env_ambiguous", "env_source_mismatch", "head_mismatch", "answer_limit", "unsupported_profile"}, r.Code) {
 				res.Issue = r.Code
 			}
 			if hasIssue([]string{"input_schedule", "reservation_unavailable"}, r.Code) {
