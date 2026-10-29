@@ -96,7 +96,7 @@ func TestParticipationAndProposer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if fallback.RoundSource != "node_copy" || fallback.Cells[0].Prepared != nil {
+	if fallback.RoundSource != "unknown" || fallback.DecisionRound != nil || fallback.ExpectedProposer != nil || fallback.ProposerDiffers != nil || len(fallback.Missed) != 0 || fallback.Cells[0].Prepared != nil || fallback.Copy != &c {
 		t.Fatal(fallback)
 	}
 	child.ParentHash = "wrong"

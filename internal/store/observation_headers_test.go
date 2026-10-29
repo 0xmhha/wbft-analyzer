@@ -13,11 +13,33 @@ import (
 )
 
 func bindingFixture(t *testing.T, s *Store) (Dataset, Dataset, []headers.Fact) {
+	return bindingFixtureWithOwnRound(t, s, 0)
+}
+func bindingFixtureWithOwnRound(t *testing.T, s *Store, own uint32) (Dataset, Dataset, []headers.Fact) {
 	t.Helper()
 	ctx := context.Background()
 	a, sha, e := observe.Load("../source/observe/testdata/capture.json")
 	if e != nil {
 		t.Fatal(e)
+	}
+	// These are unsigned RPC envelopes; original signed headers are not involved.
+	if own != 0 {
+		for i := range a.Replies {
+			if a.Replies[i].Method != "wbft_headerCopy" {
+				continue
+			}
+			var envelope map[string]json.RawMessage
+			if e = json.Unmarshal(a.Replies[i].Response, &envelope); e != nil {
+				t.Fatal(e)
+			}
+			var result map[string]json.RawMessage
+			if e = json.Unmarshal(envelope["result"], &result); e != nil {
+				t.Fatal(e)
+			}
+			result["round"], _ = json.Marshal(own)
+			envelope["result"], _ = json.Marshal(result)
+			a.Replies[i].Response, _ = json.Marshal(envelope)
+		}
 	}
 	snap, e := observe.Normalize(a)
 	if e != nil {
