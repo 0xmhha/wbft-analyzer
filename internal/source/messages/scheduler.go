@@ -117,7 +117,7 @@ func projectSchedulerFrame(r *Record, x frameRecord, fields map[string]json.RawM
 		}
 		seen := map[string]bool{}
 		for _, k := range op.Kinds {
-			if !slices.Contains([]string{"round", "retry", "future", "round_proposal"}, k) || seen[k] {
+			if !slices.Contains([]string{"round", "retry", "future", "round_proposal", "validator_start"}, k) || seen[k] {
 				return errSchedulerFrameSource
 			}
 			seen[k] = true
@@ -125,7 +125,7 @@ func projectSchedulerFrame(r *Record, x frameRecord, fields map[string]json.RawM
 		if op.Action == "clear" && len(op.Kinds) > 0 {
 			return errSchedulerFrameSource
 		}
-	} else if deadline < entry || op.Decode != "complete" || !shaPattern.MatchString(op.TimeoutSHA256) || !schedulerCounter(op.Generation) || !schedulerDecimal(op.Height) || !schedulerDecimal(op.Round) || !slices.Contains([]string{"round", "retry", "future", "round_proposal"}, op.Timer) || len(op.Kinds) > 0 {
+	} else if deadline < entry || op.Decode != "complete" || !shaPattern.MatchString(op.TimeoutSHA256) || !schedulerCounter(op.Generation) || !schedulerDecimal(op.Height) || !schedulerDecimal(op.Round) || !slices.Contains([]string{"round", "retry", "future", "round_proposal", "validator_start"}, op.Timer) || len(op.Kinds) > 0 {
 		return errSchedulerFrameSource
 	}
 	r.Timer = &op

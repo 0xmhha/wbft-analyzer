@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"encoding/binary"
+	"github.com/0xmhha/wbft/consensus"
 	"github.com/0xmhha/wbft/consensus/inputlog"
 	"github.com/0xmhha/wbft/observe/journal"
 	"os"
@@ -46,6 +47,7 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 	previousMono := int64(0)
 	haveMono := false
 	var nextHeight *journal.DeferredOptions
+	var validatorStartProfile bool
 	cacheState := newJournalCacheState()
 	syncState := newJournalSyncState()
 	for {
@@ -73,6 +75,7 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 		ends[name] = pos.Offset + 8 + int64(binary.BigEndian.Uint32(length[:]))
 		r := Record{Input: p.Input.ID, File: fmt.Sprintf("%020d.wal", pos.Segment), Ordinal: s.Records + 1, Offset: &pos.Offset, Seq: number(rec.JSeq), Node: p.Summary.Node, Run: run}
 		if b, ok := rec.Body.(*journal.SegmentRec); ok {
+			validatorStartProfile = consensus.ImprovementSet(b.Core.Improvements).Has(consensus.DeferValidatorStart)
 			if b.Core.ReceiveFailureCache != nil {
 				return s, ErrReceiveFailureSource
 			}
@@ -231,8 +234,14 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 		case *journal.InternalRec:
 			return s, errInternalSource
 		case *journal.WALReadRec:
+			if validatorStartProfile {
+				return s, ErrValidatorStartRestoreSource
+			}
 			return s, errWALReadSource
 		case *journal.RestoreRec:
+			if validatorStartProfile || b.Unavailable == "validator_start_profile" {
+				return s, ErrValidatorStartRestoreSource
+			}
 			return s, errRestoreSource
 		case *journal.SignerRec:
 			return s, errSignerSource

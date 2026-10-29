@@ -26,7 +26,7 @@ func projectTimerOperation(b *journal.TimerRec) *TimerOperation {
 		return result
 	}
 	timer, ok := input.(consensus.Timeout)
-	if !ok || timer.Kind > consensus.RoundProposalTimer {
+	if !ok || timer.Kind > consensus.ValidatorStartTimer {
 		return result
 	}
 	result.Decode = "complete"

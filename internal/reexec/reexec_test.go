@@ -23,7 +23,7 @@ import (
 
 func TestProtocolChild(t *testing.T) {
 	mode := os.Args[len(os.Args)-1]
-	if !strings.HasPrefix(mode, "answers_") && !strings.HasPrefix(mode, "warmup_") && mode != "valid" && mode != "oversize" && mode != "bad_id" && mode != "stall" && mode != "core" && mode != "env_error" && mode != "bad_writer" && mode != "generic_error" {
+	if !strings.HasPrefix(mode, "answers_") && !strings.HasPrefix(mode, "warmup_") && mode != "valid" && mode != "oversize" && mode != "bad_id" && mode != "stall" && mode != "core" && mode != "env_error" && mode != "bad_writer" && mode != "generic_error" && mode != "unsupported_profile" {
 		return
 	}
 	if mode == "core" {
@@ -139,10 +139,13 @@ func TestProtocolChild(t *testing.T) {
 		_ = decoder.Decode(&request)
 		os.Exit(0)
 	}
-	if mode == "env_error" || mode == "generic_error" {
+	if mode == "env_error" || mode == "generic_error" || mode == "unsupported_profile" {
 		code := "env_exhausted"
 		if mode == "generic_error" {
 			code = "replay_error"
+		}
+		if mode == "unsupported_profile" {
+			code = "unsupported_profile"
 		}
 		_ = enc.Encode(map[string]any{"type": "error", "id": 1, "code": code, "writer_run": "synthetic-source", "engine_run": uint64(18446744073709551615), "step": 1})
 		_ = decoder.Decode(&request)

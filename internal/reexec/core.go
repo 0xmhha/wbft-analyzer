@@ -97,6 +97,8 @@ func serveReplay(ctx context.Context, dir, chain string, id uint64, omit bool, w
 
 func answerErrorCode(err error) string {
 	switch {
+	case errors.Is(err, stepdriver.ErrUnsupported):
+		return "unsupported_profile"
 	case errors.Is(err, stepdriver.ErrTraceEnvAmbiguous):
 		return "env_ambiguous"
 	case errors.Is(err, stepdriver.ErrTraceEnvSource):
