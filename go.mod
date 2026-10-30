@@ -3,7 +3,7 @@ module github.com/0xmhha/wbft-analyzer
 go 1.26.8
 
 require (
-	github.com/0xmhha/wbft v0.0.0-20261030054048-269f79ed56b3
+	github.com/0xmhha/wbft v0.0.0-20261030185038-3d5562ae4eb7
 	github.com/ethereum/go-ethereum v1.17.4
 	github.com/jackc/pgx/v5 v5.11.0
 )
