@@ -5,6 +5,7 @@ package retrysources
 import (
 	"context"
 	"errors"
+	"github.com/0xmhha/wbft-analyzer/internal/source/domainprofile"
 	"io"
 
 	"github.com/0xmhha/wbft-analyzer/internal/source/jsonmeta"
@@ -42,6 +43,12 @@ func Check(ctx context.Context, directory string, limits journal.RetrySourceLimi
 			return journal.RetrySourceCheck{}, err
 		}
 		record, err := reader.Next()
+		if err == nil {
+			err = domainprofile.Record(record)
+		}
+		if domainprofile.Unsupported(err) {
+			return journal.RetrySourceCheck{Status: "unavailable", Reason: "unsupported_source_profile", PhysicalStatus: "unavailable", Scope: "original_retry_owner_timer_signer_wal_cache_bindings"}, nil
+		}
 		if errors.Is(err, io.EOF) {
 			return journal.CheckRoundChangeRetrySources(records, limits)
 		}

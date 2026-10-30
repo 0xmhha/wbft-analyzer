@@ -2492,3 +2492,34 @@ Selected restore or original WAL-read sources remain explicitly
 `validator_start_restore_unavailable` in the core plan. The independent restore
 model does not implement the selected functional history. Existing default
 profiles keep their prior interpretation.
+
+
+### Recorded chain signing context
+
+Original journals with a supported chain-domain declaration recover message
+signers using that segment's validated configuration, chain ID, genesis and
+activation height. Each round-change uses its own full sequence. The message
+source panel shows the public declaration fingerprint; recovery is not proof
+of validator membership or independent genesis authentication. Writer-domain
+changes are rejected across intervening runs. A bounded optional writer index
+preserves legacy streaming on legacy-only overflow; a subsequent selected
+profile is unavailable when that prefix can no longer be bound.
+
+Future signer/core/domain profiles and configured missing domain descriptions
+remain unsupported, distinct from malformed supported sources. Dedicated retry
+and failed-receive source checks retain `unavailable` outcomes for them.
+Independent selected-profile physical/full-runtime restoration remains
+unavailable. Naked frame and text-log APIs retain their legacy interpretation.
+R01 cannot carry the chain domain; use original journals or original-segment
+bundles. Recorded-message interventions requiring the legacy model are
+unavailable for selected domain records. They are not reinterpreted with a
+legacy signature recovery operation.
+
+Message dataset metadata includes the additive `signing_normalizer` marker so
+an older dataset projection is not reused as a chain-domain result. The base
+normalizer and legacy input contracts are preserved. Existing datasets remain
+historical observations and are not silently rewritten.
+A dataset name created without this signing marker must be imported under a
+new name. A conflicting old name is rejected; the old dataset is preserved.
+Known chain-domain markers in naked frame JSON are unsupported even when
+empty or malformed, and their readable prefix is not emitted as legacy data.

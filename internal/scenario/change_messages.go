@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"strconv"
 	"strings"
@@ -115,10 +116,15 @@ type MessageEffect struct {
 	Selections      []RecordedMessageBinding `json:"selections"`
 }
 
+var ErrRecordedDomainModelUnavailable = errors.New("recorded chain domain requires a domain-aware message model")
+
 // BindRecordedMessage checks the entire signed payload with the official core,
 // separately from the stored top-level signature projection. Relay identity
 // and signer rank are mapped independently to the model's test validators.
 func BindRecordedMessage(ref RecordedMessageSelection, row messages.Record, payload []byte, code uint64, recorded []string) (RecordedMessageBinding, error) {
+	if row.SigningProfile != nil {
+		return RecordedMessageBinding{}, ErrRecordedDomainModelUnavailable
+	}
 	fail := func() (RecordedMessageBinding, error) { return RecordedMessageBinding{}, errNetworkChange }
 	if !validMessageSelection(ref) || ref.Input != row.Input || ref.File != row.File || ref.Ordinal != row.Ordinal || row.Type != "frame" || row.Dir != "in" || row.PeerStatus != "recorded" || row.Decode != "decoded" || row.Signature != "recovered" || code < 0x12 || code > 0x15 {
 		return fail()

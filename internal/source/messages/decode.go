@@ -46,7 +46,13 @@ func hash(h types.Hash) string {
 	}
 	return strings.ToLower(h.Hex())
 }
+
+// decode preserves the legacy-only interpretation of naked frame inputs.
 func decode(r *Record, code uint64, payload []byte, truncated bool) {
+	decodeDomain(r, code, payload, truncated, nil)
+}
+
+func decodeDomain(r *Record, code uint64, payload []byte, truncated bool, domain *types.RoundChangeDomain) {
 	r.Phase = phase(code)
 	if truncated || len(payload) == 0 {
 		r.Decode = "missing_payload"
@@ -81,7 +87,7 @@ func decode(r *Record, code uint64, payload []byte, truncated bool) {
 		r.Digest = hash(codec.BlockHash(m.Proposal.Header))
 	}
 	r.Signature = "invalid"
-	p, e := codec.SigningPayload(m, false, nil)
+	p, e := codec.SigningPayloadWithDomain(m, domain)
 	if e != nil {
 		return
 	}

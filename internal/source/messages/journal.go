@@ -2,8 +2,12 @@ package messages
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/0xmhha/wbft-analyzer/internal/source/domainprofile"
+	"github.com/0xmhha/wbft/types"
 	"io"
 	"strconv"
 	"strings"
@@ -46,6 +50,9 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 	peers := map[uint32]string{}
 	previousMono := int64(0)
 	haveMono := false
+	var domain *types.RoundChangeDomain
+	var domainRegistry domainprofile.Registry
+	var signingProfile *SigningProfile
 	var nextHeight *journal.DeferredOptions
 	var validatorStartProfile bool
 	cacheState := newJournalCacheState()
@@ -59,6 +66,9 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 			return s, journalTail(p, ends)
 		}
 		if e != nil {
+			if domainprofile.Unsupported(e) {
+				return s, domainprofile.ErrUnsupported
+			}
 			return s, errors.New("journal damaged or incomplete; readable prefix retained")
 		}
 		name := fmt.Sprintf("%020d.wal", pos.Segment)
@@ -75,6 +85,15 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 		ends[name] = pos.Offset + 8 + int64(binary.BigEndian.Uint32(length[:]))
 		r := Record{Input: p.Input.ID, File: fmt.Sprintf("%020d.wal", pos.Segment), Ordinal: s.Records + 1, Offset: &pos.Offset, Seq: number(rec.JSeq), Node: p.Summary.Node, Run: run}
 		if b, ok := rec.Body.(*journal.SegmentRec); ok {
+			domain, e = domainRegistry.Observe(b)
+			if e != nil {
+				return s, e
+			}
+			signingProfile = nil
+			if domain != nil {
+				sum := sha256.Sum256(b.Core.DomainBytes)
+				signingProfile = &SigningProfile{Version: number(domain.Version()), Activation: domain.Activation().String(), SHA256: hex.EncodeToString(sum[:])}
+			}
 			validatorStartProfile = consensus.ImprovementSet(b.Core.Improvements).Has(consensus.DeferValidatorStart)
 			if b.Core.ReceiveFailureCache != nil {
 				return s, ErrReceiveFailureSource
@@ -108,6 +127,10 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 			}
 		} else if run == "" {
 			return s, errors.New("journal missing segment identity")
+		}
+		if signingProfile != nil {
+			profile := *signingProfile
+			r.SigningProfile = &profile
 		}
 		if rec.JSeq == 0 || rec.JSeq <= last {
 			return s, errors.New("journal sequence duplicate or regression")
@@ -172,7 +195,7 @@ func readJournalRaw(ctx context.Context, p Prepared, chain, genesis string, emit
 				r.KnownHit = &b.Dedup.Known
 				r.PeerRecentHit = &b.Dedup.PeerRecent
 			}
-			decode(&r, b.Code, b.Payload, size > uint64(len(b.Payload)))
+			decodeDomain(&r, b.Code, b.Payload, size > uint64(len(b.Payload)), domain)
 		case *journal.OutcomeRec:
 			r.Type = "outcome"
 			if b.EngineRun != 0 {
