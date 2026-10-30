@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/0xmhha/wbft-analyzer/internal/source/domainprofile"
 	"io"
 	"os"
 	"strconv"
@@ -103,6 +104,11 @@ func readFramesRaw(ctx context.Context, p Prepared, emit func(Record) error) (s 
 				var fields map[string]json.RawMessage
 				if json.Unmarshal(b, &fields) != nil {
 					return errors.New("invalid frame JSON fields")
+				}
+				for _, name := range []string{"signing_profile", "round_change_domain"} {
+					if _, present := fields[name]; present {
+						return domainprofile.ErrUnsupported
+					}
 				}
 				for _, name := range []string{"cache_trace", "cache_instance", "cache_operation", "cache_decision", "send_attempt"} {
 					if fields[name] != nil {

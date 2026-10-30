@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/0xmhha/wbft-analyzer/internal/source/domainprofile"
 	"io"
 	"regexp"
 	"sort"
@@ -37,6 +38,12 @@ func InspectEvidence(ctx context.Context, directory string, blocks stepdriver.Bl
 			return nil, err
 		}
 		record, err := reader.Next()
+		if err == nil {
+			err = domainprofile.Record(record)
+		}
+		if domainprofile.Unsupported(err) {
+			return nil, domainprofile.ErrUnsupported
+		}
 		if err == io.EOF {
 			break
 		}

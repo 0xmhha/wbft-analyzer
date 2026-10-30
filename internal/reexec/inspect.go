@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0xmhha/wbft-analyzer/internal/source/domainprofile"
 	"io"
 	"math/big"
 	"os"
@@ -61,7 +62,7 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 	}
 	_, readErr := messages.Read(ctx, p, chainID, genesis, func(messages.Record) error { return nil })
 	if readErr != nil {
-		out.JournalIssue = "damaged_journal"
+		out.JournalIssue = sourceIssue(readErr)
 		if errors.Is(readErr, messages.ErrReceiveFailureSource) {
 			out.JournalIssue = "receive_failures_require_dedicated_check"
 		}
@@ -90,11 +91,14 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 			return out, err
 		}
 		rec, e := rd.Next()
+		if e == nil {
+			e = domainprofile.Record(rec)
+		}
 		if e == io.EOF {
 			break
 		}
 		if e != nil {
-			out.JournalIssue = "damaged_journal"
+			out.JournalIssue = sourceIssue(e)
 			break
 		}
 		ordinal++
@@ -164,11 +168,14 @@ func Inspect(ctx context.Context, p messages.Prepared, chain, chainID, genesis s
 			return out, err
 		}
 		rec, pos, e := rd.NextAt()
+		if e == nil {
+			e = domainprofile.Record(rec)
+		}
 		if e == io.EOF {
 			break
 		}
 		if e != nil {
-			out.JournalIssue = "damaged_journal"
+			out.JournalIssue = sourceIssue(e)
 			break
 		}
 		ordinal++
@@ -454,4 +461,14 @@ func inspectCaptured(reader *journal.Reader, run string, record *journal.StepRec
 		return
 	}
 	decodedMessage(step, message)
+}
+
+func sourceIssue(err error) string {
+	if domainprofile.Unsupported(err) {
+		return "unsupported_profile"
+	}
+	if errors.Is(err, domainprofile.ErrInvalid) {
+		return "inconsistent_source_profile"
+	}
+	return "damaged_journal"
 }

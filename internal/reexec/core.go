@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/0xmhha/wbft-analyzer/internal/source/domainprofile"
 
 	"github.com/0xmhha/wbft/conformance/sim"
 	"github.com/0xmhha/wbft/conformance/stepdriver"
@@ -97,7 +98,7 @@ func serveReplay(ctx context.Context, dir, chain string, id uint64, omit bool, w
 
 func answerErrorCode(err error) string {
 	switch {
-	case errors.Is(err, stepdriver.ErrUnsupported):
+	case domainprofile.Unsupported(err), errors.Is(err, stepdriver.ErrUnsupported):
 		return "unsupported_profile"
 	case errors.Is(err, stepdriver.ErrTraceEnvAmbiguous):
 		return "env_ambiguous"

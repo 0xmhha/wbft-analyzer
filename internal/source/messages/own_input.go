@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/0xmhha/wbft-analyzer/internal/source/domainprofile"
 	"io"
 	"os"
 	"strconv"
@@ -90,7 +91,7 @@ func readFrames(ctx context.Context, p Prepared, emit func(Record) error) (Stats
 		}
 		return nil
 	})
-	if readErr != nil && (len(selected) > 0 || errors.Is(readErr, errOwnFrameProvenance) || errors.Is(readErr, errSchedulerFrameSource) || len(schedulerRows) > 0 || sawCache || errors.Is(readErr, errCacheFrameSource) || sawSync || errors.Is(readErr, errSyncSource)) {
+	if readErr != nil && (domainprofile.Unsupported(readErr) || len(selected) > 0 || errors.Is(readErr, errOwnFrameProvenance) || errors.Is(readErr, errSchedulerFrameSource) || len(schedulerRows) > 0 || sawCache || errors.Is(readErr, errCacheFrameSource) || sawSync || errors.Is(readErr, errSyncSource)) {
 		return Stats{}, readErr
 	}
 	if err := validateSchedulerFrames(schedulerRows, lost, conflicted); err != nil {

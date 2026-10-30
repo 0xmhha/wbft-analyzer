@@ -7,6 +7,7 @@ import "github.com/0xmhha/wbft-analyzer/internal/source/logs"
 
 const Format = "wbft-analyzer-messages/1"
 const Normalizer = "wbft-message-normalization/18"
+const SigningNormalizer = "wbft-message-signing-context/1"
 
 type Clock struct {
 	Model  string `json:"model"`
@@ -73,7 +74,15 @@ type SchedulerTrace struct {
 	Steps      string `json:"steps"`
 }
 
+// SigningProfile records a bounded public declaration fingerprint, not authority.
+type SigningProfile struct {
+	Version    string `json:"version"`
+	Activation string `json:"activation"`
+	SHA256     string `json:"sha256"`
+}
+
 type Record struct {
+	SigningProfile       *SigningProfile           `json:"signing_profile,omitempty"`
 	Observation          *ObservationProfile       `json:"observation,omitempty"`
 	DeferredOrigin       *DeferredEvidence         `json:"deferred_origin,omitempty"`
 	NextHeight           *ReceiveProfile           `json:"next_height,omitempty"`

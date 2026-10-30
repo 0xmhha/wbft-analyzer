@@ -4133,6 +4133,16 @@
           "signer": {
             "type": "string"
           },
+          "signing_profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagesSigningProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "size": {
             "type": [
               "string",
@@ -4329,6 +4339,26 @@
           "groups",
           "height",
           "round"
+        ],
+        "type": "object"
+      },
+      "MessagesSigningProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "activation": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "activation",
+          "sha256",
+          "version"
         ],
         "type": "object"
       },
