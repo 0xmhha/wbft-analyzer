@@ -57,6 +57,9 @@ func (w *Worker) MessageCandidates(ctx context.Context, network, dataset int64, 
 	}
 	out := []scenario.RecordedMessageEvidence{}
 	for _, row := range rows {
+		if row.SigningProfile != nil {
+			return nil, nil, "", ErrSource
+		}
 		if row.Dir != "in" || row.Decode != "decoded" || row.Signature != "recovered" || row.PeerStatus != "recorded" || !messageInSourceScope(row, source) {
 			continue
 		}

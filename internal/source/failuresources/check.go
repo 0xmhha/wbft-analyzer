@@ -5,6 +5,7 @@ package failuresources
 import (
 	"context"
 	"errors"
+	"github.com/0xmhha/wbft-analyzer/internal/source/domainprofile"
 	"io"
 
 	"github.com/0xmhha/wbft-analyzer/internal/source/messages"
@@ -59,6 +60,12 @@ func Check(ctx context.Context, directory string, limits journal.ReceiveFailureL
 			return journal.ReceiveFailureCheck{}, err
 		}
 		record, err := reader.Next()
+		if err == nil {
+			err = domainprofile.Record(record)
+		}
+		if domainprofile.Unsupported(err) {
+			return journal.ReceiveFailureCheck{Status: "unavailable", Reason: "unsupported_source_profile", PhysicalStatus: "unavailable", Scope: "original_failure_checks_bounded_cache_and_inbox_consumption", ScheduleStatus: "unavailable"}, nil
+		}
 		if errors.Is(err, io.EOF) {
 			result, checkErr = journal.CheckReceiveFailureSources(records, limits)
 			break

@@ -91,11 +91,12 @@ func Prepare(ctx context.Context, m Manifest) ([]Prepared, json.RawMessage, erro
 		sums = append(sums, p.Summary)
 	}
 	meta, _ := json.Marshal(struct {
-		Format     string    `json:"format"`
-		Normalizer string    `json:"normalizer"`
-		Clock      Clock     `json:"clock"`
-		Inputs     []Summary `json:"inputs"`
-	}{Format, Normalizer, m.Clock, sums})
+		Format            string    `json:"format"`
+		Normalizer        string    `json:"normalizer"`
+		SigningNormalizer string    `json:"signing_normalizer"`
+		Clock             Clock     `json:"clock"`
+		Inputs            []Summary `json:"inputs"`
+	}{Format, Normalizer, SigningNormalizer, m.Clock, sums})
 	return out, meta, nil
 }
 

@@ -2449,6 +2449,7 @@ export interface components {
             seq: string;
             signature_status?: string;
             signer?: string;
+            signing_profile?: components["schemas"]["MessagesSigningProfile"] | null;
             size?: string | null;
             step?: string;
             sync_control?: components["schemas"]["MessagesSyncControl"] | null;
@@ -2482,6 +2483,11 @@ export interface components {
             groups: components["schemas"]["MessagesGroup"][];
             height: string;
             round: string;
+        };
+        MessagesSigningProfile: {
+            activation: string;
+            sha256: string;
+            version: string;
         };
         MessagesSource: {
             association?: string;

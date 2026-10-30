@@ -2,6 +2,7 @@ package scenariojob
 
 import (
 	"context"
+	"errors"
 	"os"
 	"strings"
 
@@ -78,6 +79,9 @@ func (w *Worker) bindMessages(ctx context.Context, source registered, change sce
 			return nil, ErrChange
 		}
 		binding, err := scenario.BindRecordedMessage(selection, row, payload, code, source.info.Nodes)
+		if errors.Is(err, scenario.ErrRecordedDomainModelUnavailable) {
+			return nil, ErrSource
+		}
 		if err != nil {
 			return nil, ErrChange
 		}

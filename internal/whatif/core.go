@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/0xmhha/wbft-analyzer/internal/source/domainprofile"
 	"os"
 	"strconv"
 
@@ -55,6 +56,9 @@ func ServeTimed(ctx context.Context, directory, chain string, id uint64, policy 
 	}
 	answers, err := stepdriver.NewAnswerPool(reader)
 	if err != nil {
+		if domainprofile.Unsupported(err) || errors.Is(err, stepdriver.ErrUnsupported) {
+			return sendError("unsupported_profile")
+		}
 		return sendError("input_gap")
 	}
 	reader, err = journal.OpenReader(nil, directory)
@@ -120,6 +124,8 @@ func ServeTimed(ctx context.Context, directory, chain string, id uint64, policy 
 	if err != nil {
 		code := "replay_error"
 		switch {
+		case domainprofile.Unsupported(err), errors.Is(err, stepdriver.ErrUnsupported):
+			code = "unsupported_profile"
 		case errors.Is(err, stepdriver.ErrTraceSigningUnavailable):
 			code = "signing_unavailable"
 		case errors.Is(err, stepdriver.ErrTraceTiming):

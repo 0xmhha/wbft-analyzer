@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0xmhha/wbft-analyzer/internal/source/domainprofile"
 	"io"
 	"os"
 	"strconv"
@@ -346,7 +347,7 @@ func readJournal(ctx context.Context, p Prepared, chain, genesis string, emit fu
 		}
 		return encoder.Encode(r)
 	})
-	if errors.Is(readErr, ErrValidatorStartRestoreSource) || errors.Is(readErr, ErrReceiveFailureSource) || errors.Is(readErr, ErrRetrySource) || errors.Is(readErr, errRuntimeSource) || errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) || errors.Is(readErr, errInternalSource) || errors.Is(readErr, errSelectionSource) || errors.Is(readErr, errReceiveDispatchSource) || errors.Is(readErr, errWALReadSource) || errors.Is(readErr, errRestoreSource) || errors.Is(readErr, errSignerSource) || errors.Is(readErr, errSignerCallSource) || errors.Is(readErr, errApplicationSource) {
+	if domainprofile.Unsupported(readErr) || errors.Is(readErr, domainprofile.ErrInvalid) || errors.Is(readErr, ErrValidatorStartRestoreSource) || errors.Is(readErr, ErrReceiveFailureSource) || errors.Is(readErr, ErrRetrySource) || errors.Is(readErr, errRuntimeSource) || errors.Is(readErr, errCacheFrameSource) || errors.Is(readErr, errSyncSource) || errors.Is(readErr, errAppQueueSource) || errors.Is(readErr, errFinalizeSource) || errors.Is(readErr, errInboxSource) || errors.Is(readErr, errInternalSource) || errors.Is(readErr, errSelectionSource) || errors.Is(readErr, errReceiveDispatchSource) || errors.Is(readErr, errWALReadSource) || errors.Is(readErr, errRestoreSource) || errors.Is(readErr, errSignerSource) || errors.Is(readErr, errSignerCallSource) || errors.Is(readErr, errApplicationSource) {
 		return Stats{}, readErr
 	}
 	if len(rows) > 0 {
